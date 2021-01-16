@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# Games Assets (Needs to be handled by binary source control)
+assets/game/
+
 # Libraries
 libs/
 
