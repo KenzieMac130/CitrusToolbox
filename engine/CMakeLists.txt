@@ -3,6 +3,7 @@ set (CITRUS_ENGINE_VERSION_MAJOR 1)
 set (CITRUS_ENGINE_VERSION_MINOR 0)
 set (NE_ENGINE_VERSION_PATCH 0)
 
+#Endian Test
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 if(IS_BIG_ENDIAN)
@@ -11,6 +12,7 @@ else()
 	set (CITRUS_ENDIAN 0x00)
 endif()
 
+#Configuration Macros
 configure_file (
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
 	${PROJECT_BINARY_DIR}/generated/Config.h)
@@ -53,5 +55,11 @@ set_property(TARGET engine PROPERTY FOLDER "engine")
 target_include_directories(engine PUBLIC ${PROJECT_BINARY_DIR}/generated/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-#Link Libraries
+#Link Static Libraries
 #target_link_libraries()
+
+#Copy Shared Libraries and Config
+add_custom_command(TARGET engine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${SHARED_LIBRARY_DIRECTORY}/SDL2${SHARED_LIBRARY_FORMAT}"
+        $<TARGET_FILE_DIR:engine>)

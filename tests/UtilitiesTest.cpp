@@ -1,5 +1,7 @@
 #include "utilities/Common.hpp"
 
+#include <stdexcept>
+
 int life_notifier_comp(const int* A, const int* B) {
    return *A - *B;
 }
@@ -44,7 +46,6 @@ int dynamic_array_test() {
       printf("Hash\n");
       /*Verify*/
       printf("Verify\n");
-      bool valid_sort;
       int previous = arr[0];
       for (int i = 1; i < arr.count(); i++) {
          if (arr[i] - 1 != previous) { return -1; }

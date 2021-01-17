@@ -19,7 +19,7 @@ public:
    /* Destructor */
    ~DynamicArray();
    /* Array Access */
-   T& operator[](const size_t index) noexcept;
+   T& operator[](const size_t index);
    /* Reserve */
    Results reserve(const size_t amount);
    /* Data */
@@ -31,6 +31,7 @@ public:
    Results append(T&& val);
    Results append(const T& val);
    Results append(DynamicArray<T>& arr);
+   Results append(T* pArray, const size_t length);
    /* Insert */
    Results insert(const T& val, const int64_t position);
    /* Remove */
@@ -105,7 +106,7 @@ inline DynamicArray<T>::~DynamicArray() {
 }
 
 template<class T>
-inline T& DynamicArray<T>::operator[](const size_t index) noexcept {
+inline T& DynamicArray<T>::operator[](const size_t index) {
 #ifdef TMP_USE_STD
    return _dirtysecret[index];
 #else
@@ -181,10 +182,15 @@ inline Results DynamicArray<T>::append(const T& val) {
 
 template<class T>
 inline Results DynamicArray<T>::append(DynamicArray<T>& arr) {
-   const Results result = reserve(count() + arr.count());
+   return append(arr.data(), arr.count());
+}
+
+template<class T>
+inline Results DynamicArray<T>::append(T* pArray, const size_t length) {
+   const Results result = reserve(count() + length);
    if (result != Results::SUCCESS) { return result; }
-   for (int i = 0; i < arr.count(); i++) {
-      append(arr[i]);
+   for (int i = 0; i < length; i++) {
+      append(pArray[i]);
    }
    return result;
 }
