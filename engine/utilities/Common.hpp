@@ -1,7 +1,7 @@
 #pragma once
 
 /* Config File */
-#include "neConfig.h"
+#include "Config.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -22,9 +22,10 @@
 #define CT_ASSERT(e) assert(e)
 
 /*Namespace*/
-#define CITRUS_NAMESPACE CT
+#define CT_UTILITIES_NAMESPACE Ct
+#define CT_MODULE_NAMESPACE CitrusToolbox
 
-namespace CITRUS_NAMESPACE {
+namespace CT_UTILITIES_NAMESPACE {
 
 /*Errors*/
 enum class Results {
@@ -50,19 +51,19 @@ enum class Results {
 /**
  * @brief should behave just like malloc but with messages to track leaks
  */
-#define Malloc(_size, _label) malloc(_size)
+#define CT_Malloc(_size, _label) malloc(_size)
 /**
  * @brief should behave just like malloc but with messages to track leaks
  */
-#define Calloc(_count, _size, _label) calloc(_count, _size)
+#define CT_Calloc(_count, _size, _label) calloc(_count, _size)
 /**
  * @brief should behave just like realloc but with messages to track leaks
  */
-#define Realloc(_block, _size, _label) realloc(_block, _size)
+#define CT_Realloc(_block, _size, _label) realloc(_block, _size)
 /**
  * @brief should behave just like free
  */
-#define Free(_block) free(_block)
+#define CT_Free(_block) free(_block)
 }
 
 /*Include common files*/

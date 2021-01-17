@@ -13,7 +13,7 @@ endif()
 
 configure_file (
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-	${PROJECT_BINARY_DIR}/Config.h)
+	${PROJECT_BINARY_DIR}/generated/Config.h)
 
 #Source Files
 set(ENGINE_SOURCE_FILES
@@ -50,7 +50,8 @@ set(ENGINE_HEADER_FILES
 #Create Library
 add_library(engine ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES})
 set_property(TARGET engine PROPERTY FOLDER "engine")
-target_include_directories(engine PUBLIC ${PROJECT_BINARY_DIR})
+target_include_directories(engine PUBLIC ${PROJECT_BINARY_DIR}/generated/)
+target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 #Link Libraries
 #target_link_libraries()
