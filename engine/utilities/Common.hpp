@@ -18,12 +18,9 @@
 /*Exportable*/
 #define CT_EXPORT __declspec(dllexport)
 
-/*Assert*/
-#define CT_ASSERT(e) assert(e)
-
 /*Namespace*/
 #define CT_UTILITIES_NAMESPACE Ct
-#define CT_MODULE_NAMESPACE CitrusToolbox
+#define CT_MODULE_NAMESPACE    CitrusToolbox
 
 namespace CT_UTILITIES_NAMESPACE {
 
@@ -46,24 +43,42 @@ enum class Results {
    FAILURE_COULD_NOT_SHRINK = -14
 };
 
-#define CT_ERROR_CHECK(_process) _process != NE_SUCCESS
+/*Assert*/
+#define ctAssert(e) assert(e)
+
+#define ctErrorCheck(_msg) (_msg != NE_SUCCESS)
 
 /**
  * @brief should behave just like malloc but with messages to track leaks
  */
-#define CT_Malloc(_size, _label) malloc(_size)
+#define ctMalloc(_size, _label) malloc(_size)
 /**
  * @brief should behave just like malloc but with messages to track leaks
  */
-#define CT_Calloc(_count, _size, _label) calloc(_count, _size)
+#define ctCalloc(_count, _size, _label) calloc(_count, _size)
 /**
  * @brief should behave just like realloc but with messages to track leaks
  */
-#define CT_Realloc(_block, _size, _label) realloc(_block, _size)
+#define ctRealloc(_block, _size, _label) realloc(_block, _size)
 /**
  * @brief should behave just like free
  */
-#define CT_Free(_block) free(_block)
+#define ctFree(_block) free(_block)
+
+/**
+ * @debug logging
+ */
+#define ctDebugLog(_format, ...)                                               \
+   printf(_format, __VA_ARGS__);                                               \
+   putchar('\n');
+
+#define ctDebugWarning(_format, ...)                                           \
+   printf("[WARNING] ");                                                       \
+   ctDebugLog(_format, __VA_ARGS__);
+
+#define ctDebugError(_format, ...)                                           \
+   printf("[ERROR] ");                                                       \
+   ctDebugLog(_format, __VA_ARGS__);
 }
 
 /*Include common files*/

@@ -7,45 +7,46 @@ int life_notifier_comp(const int* A, const int* B) {
 }
 
 int dynamic_array_test() {
-   printf("Dynamic Array\n");
+    ctDebugLog("Dynamic Array");
+    ctDebugWarning("Warning test");
    {
       Ct::DynamicArray<int> arr = {};
       /*Reserve*/
-      printf("Reserve\n");
+      ctDebugLog("Reserve");
       arr.reserve(64);
       /*Memset*/
-      printf("Memset\n");
+      ctDebugLog("Memset");
       arr.setbytes(0);
       /*Append*/
-      printf("Append\n");
+      ctDebugLog("Append");
       for (int i = 0; i < 32; i++) {
          arr.append(32 - i);
       }
       /*Insert*/
-      printf("Insert\n");
+      ctDebugLog("Insert");
       arr.insert(-32, 0);
       arr.insert(-64, 8);
       arr.insert(-128, -2);
       /*Remove*/
-      printf("Remove\n");
+      ctDebugLog("Remove");
       arr.remove(-2);
       arr.remove(8);
       arr.remove(0);
       /*Exists*/
-      printf("Exists\n");
-      if (arr.exists(4)) { printf("Found 4\n"); }
+      ctDebugLog("Exists");
+      if (arr.exists(4)) { ctDebugLog("Found 4"); }
       /*Find*/
-      printf("Find\n");
+      ctDebugLog("Find");
       int* ln = NULL;
       ln = arr.findptr(12, 0, 1);
       ln = arr.findptr(7, -1, -1);
       /*Sort*/
-      printf("Sort\n");
+      ctDebugLog("Sort");
       arr.sort(0, arr.count(), life_notifier_comp);
       /*Hash*/
-      printf("Hash\n");
+      ctDebugLog("Hash");
       /*Verify*/
-      printf("Verify\n");
+      ctDebugLog("Verify");
       int previous = arr[0];
       for (int i = 1; i < arr.count(); i++) {
          if (arr[i] - 1 != previous) { return -1; }
@@ -53,9 +54,15 @@ int dynamic_array_test() {
       }
       /*End*/
       arr.clear();
-      printf("End\n");
+      ctDebugLog("End");
    }
    return 0;
+}
+
+int dynamic_string_test()
+{
+    Ct::StringUtf8 mystring = "String";
+    return 0;
 }
 
 int main(int argc, char* argv[]) {

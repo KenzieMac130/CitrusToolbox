@@ -53,6 +53,7 @@ set(ENGINE_HEADER_FILES
 add_library(engine ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES})
 set_property(TARGET engine PROPERTY FOLDER "engine")
 target_include_directories(engine PUBLIC ${PROJECT_BINARY_DIR}/generated/)
+target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 #Link Static Libraries
