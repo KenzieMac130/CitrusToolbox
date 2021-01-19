@@ -15,7 +15,27 @@ endif()
 #Configuration Macros
 configure_file (
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-	${PROJECT_BINARY_DIR}/generated/Config.h)
+	${CITRUS_CODEGEN_DIR}/Config.h)
+	
+#Compile ISPC Kernels
+set(ISPC_KERNEL_INPUTS
+	#${CMAKE_CURRENT_SOURCE_DIR}/ispc/kernel.ispc
+)
+
+set(ISPC_KERNEL_OUTPUTS
+	#${CITRUS_CODEGEN_DIR}/ispc/kernel.o
+)
+
+file(MAKE_DIRECTORY ${CITRUS_CODEGEN_DIR}/ispc)
+foreach(ISPC_IN ISPC_OUT IN ZIP_LISTS ISPC_KERNEL_INPUTS ISPC_KERNEL_OUTPUTS)
+file(TOUCH ${ISPC_OUT})
+add_custom_command(OUTPUT ${ISPC_OUT}
+                   COMMAND 
+				   ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc --target=sse2 
+				   ${ISPC_IN} 
+				   -o ${ISPC_OUT}
+                   DEPENDS ${ISPC_IN})
+endforeach()
 
 #Source Files
 set(ENGINE_SOURCE_FILES
@@ -50,9 +70,9 @@ set(ENGINE_HEADER_FILES
 )
 
 #Create Library
-add_library(engine ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES})
+add_library(engine ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES} ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS})
 set_property(TARGET engine PROPERTY FOLDER "engine")
-target_include_directories(engine PUBLIC ${PROJECT_BINARY_DIR}/generated/)
+target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
