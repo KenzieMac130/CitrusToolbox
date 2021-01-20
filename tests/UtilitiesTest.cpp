@@ -61,12 +61,14 @@ int dynamic_array_test() {
 
 int dynamic_string_test()
 {
-    ctStringUtf8 mystring = u8"UUUUUWUUUおはいおおお!";
-    mystring += u8"おはいおおお!";
+    ctStringUtf8 mystring = ctStringUtf8(u8"Hello world! ");
+    mystring += u8"My name Borat!";
     mystring += '?';
     mystring += L'❤';
-    mystring += ctStringUtf8("DOOT");
-    mystring.Printf(32, "Number is: %d", 233969);
+    mystring += ' ';
+    ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
+    mystring += str2;
+    mystring.Printf(32, "The lucky number is: %d", 233969);
     ctStringUtf8 secondstring = mystring;
     mystring.ToUpper();
     mystring += "!!!";

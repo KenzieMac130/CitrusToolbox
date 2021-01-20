@@ -9,8 +9,6 @@ public:
 	ctStringUtf8(const char* input, const size_t count);
 	ctStringUtf8(const char* input);
 
-	ctResults MapMemory(char* dest, size_t capacity);
-
 	const char* CStr() const;
 	void* Data();
 	size_t CodeLength() const;
@@ -33,13 +31,16 @@ public:
 	ctStringUtf8& ToUpper();
 	ctStringUtf8& ToLower();
 
+	uint32_t xxHash32(const int seed) const;
+	uint32_t xxHash32() const;
+	uint64_t xxHash64(const int seed) const;
+	uint64_t xxHash64() const;
+
 private:
 	void* _dataVoid() const;
 	void* _dataVoidOffset(size_t offset) const;
 	void _removeNullTerminator();
 	void _nullTerminate();
 
-	size_t pStaticCapacity;
-	void* pStaticData;
 	ctDynamicArray<char> _data;
 };

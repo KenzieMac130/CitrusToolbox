@@ -26,11 +26,6 @@ ctStringUtf8::ctStringUtf8(const char* input) {
    _nullTerminate();
 }
 
-ctResults ctStringUtf8::MapMemory(char* dest, size_t capacity) {
-   // Todo
-   return ctResults();
-}
-
 const char* ctStringUtf8::CStr() const {
    return (const char*)_dataVoid();
 }
@@ -110,6 +105,26 @@ ctStringUtf8& ctStringUtf8::ToUpper() {
 ctStringUtf8& ctStringUtf8::ToLower() {
    utf8lwr(_dataVoid());
    return *this;
+}
+
+uint32_t ctStringUtf8::xxHash32(const int seed) const
+{
+    return _data.xxHash32(seed);
+}
+
+uint32_t ctStringUtf8::xxHash32() const
+{
+    return xxHash32(0);
+}
+
+uint64_t ctStringUtf8::xxHash64(const int seed) const
+{
+    return _data.xxHash64(seed);
+}
+
+uint64_t ctStringUtf8::xxHash64() const
+{
+    return xxHash64(0);
 }
 
 inline void* ctStringUtf8::_dataVoid() const {
