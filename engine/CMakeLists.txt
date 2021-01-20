@@ -58,6 +58,7 @@ endforeach()
 # ---------- Compile Shaders ----------
 file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core)
 file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders)
+file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
 
 set(SHADERC_SHADER_DEPENDENCIES
 	#${CMAKE_CURRENT_SOURCE_DIR}/renderer/shaders/YYY.glsl
@@ -68,7 +69,7 @@ set(SHADERC_SHADER_INPUTS
 )
 
 set(SHADERC_SHADER_OUTPUTS
-	#${CITRUS_ASSET_BUILD_DIR}/core/shaders/XXX.spv
+	#${CITRUS_ASSET_BUILD_DIR}/core/shaders/XXX/vk.spv
 )
 
 set(SHADERC_SHADER_OPTIONS
@@ -91,6 +92,8 @@ add_custom_command(OUTPUT ${SHADER_OUT}
 				   DEPENDS
 				   ${SHADER_IN} 
 				   ${SHADERC_SHADER_DEPENDENCIES})
+
+# Transpile to other languages here
 endforeach()
 
 # ---------- Source Files ----------
@@ -116,7 +119,7 @@ set(ENGINE_HEADER_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp

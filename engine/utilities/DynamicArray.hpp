@@ -17,6 +17,10 @@ public:
    /* Array Access */
    T& operator[](const size_t index);
    T operator[](const size_t index) const;
+   T& First();
+   T First() const;
+   T& Last();
+   T Last() const;
    /* Reserve */
    ctResults Resize(const size_t amount);
    ctResults Reserve(const size_t amount);
@@ -106,12 +110,12 @@ inline ctDynamicArray<T>::ctDynamicArray() {
 template<class T>
 inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) {
 #ifndef CT_TMP_USE_STD
-    const size_t inputcount = arr.Count();
-    Resize(inputcount);
-    ctAssert(_pData);
-    for (size_t i = 0; i < inputcount; i++) {
-        _pData[i] = arr[i];
-    }
+   const size_t inputcount = arr.Count();
+   Resize(inputcount);
+   ctAssert(_pData);
+   for (size_t i = 0; i < inputcount; i++) {
+      _pData[i] = arr[i];
+   }
 #endif
 }
 
@@ -135,13 +139,45 @@ inline T& ctDynamicArray<T>::operator[](const size_t index) {
 }
 
 template<class T>
-inline T ctDynamicArray<T>::operator[](const size_t index) const
-{
-    #ifdef CT_TMP_USE_STD
-    return _dirtysecret[index];
-    #else
-    return _pData[index];
-    #endif
+inline T ctDynamicArray<T>::operator[](const size_t index) const {
+#ifdef CT_TMP_USE_STD
+   return _dirtysecret[index];
+#else
+   return _pData[index];
+#endif
+}
+
+template<class T>
+inline T& ctDynamicArray<T>::First() {
+#ifdef CT_TMP_USE_STD
+   return _dirtysecret[0];
+#else
+   return _pData[0];
+#endif
+}
+
+template<class T>
+inline T ctDynamicArray<T>::First() const {
+#ifdef CT_TMP_USE_STD
+   return _dirtysecret[0];
+#else
+   return _pData[0];
+#endif
+}
+
+template<class T>
+inline T& ctDynamicArray<T>::Last() {
+   size_t idx = Count() - 1 > 0 ? Count() - 1 : 0;
+#ifdef CT_TMP_USE_STD
+   return _dirtysecret[idx];
+#else
+   return _pData[idx];
+#endif
+}
+
+template<class T>
+inline T ctDynamicArray<T>::Last() const {
+   return T();
 }
 
 template<class T>
@@ -175,17 +211,17 @@ inline ctResults ctDynamicArray<T>::Reserve(const size_t amount) {
 #ifdef CT_TMP_USE_STD
    _dirtysecret.reserve(amount);
 #else
-   if (amount > Capacity()) { 
-       T* pOldData = _pData;
-       _pData = new T[amount];
-       ctAssert(_pData);
-       if (pOldData) {
-           for (size_t i = 0; i < amount; i++) {
-               _pData[i] = pOldData[i];
-           }
-           delete[] pOldData;
-       }
-       _capacity = amount;
+   if (amount > Capacity()) {
+      T* pOldData = _pData;
+      _pData = new T[amount];
+      ctAssert(_pData);
+      if (pOldData) {
+         for (size_t i = 0; i < amount; i++) {
+            _pData[i] = pOldData[i];
+         }
+         delete[] pOldData;
+      }
+      _capacity = amount;
    }
 #endif
    return CT_SUCCESS;
@@ -219,15 +255,15 @@ inline size_t ctDynamicArray<T>::Capacity() const {
 }
 
 template<class T>
-inline ctDynamicArray<T>& ctDynamicArray<T>::operator=(const ctDynamicArray<T>& arr)
-{
-    const size_t inputcount = arr.Count();
-    Resize(inputcount);
-    ctAssert(_pData);
-    for (size_t i = 0; i < inputcount; i++) {
-        _pData[i] = arr[i];
-    }
-    return *this;
+inline ctDynamicArray<T>&
+ctDynamicArray<T>::operator=(const ctDynamicArray<T>& arr) {
+   const size_t inputcount = arr.Count();
+   Resize(inputcount);
+   ctAssert(_pData);
+   for (size_t i = 0; i < inputcount; i++) {
+      _pData[i] = arr[i];
+   }
+   return *this;
 }
 
 template<class T>

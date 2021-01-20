@@ -77,8 +77,28 @@ int dynamic_string_test()
     return 0;
 }
 
+int hash_table_test() {
+    ctHashTable<ctStringUtf8> table;
+    table.Reserve(32);
+    const ctStringUtf8 str2 = ctStringUtf8("Very nice!");
+    const uint32_t str2Hash = str2.xxHash32();
+    table.Insert(XXH32("A", 1, 0), "A");
+    table.Insert(XXH32("B", 1, 0), "B");
+    table.Insert(XXH32("C", 1, 0), "C");
+    table.Insert(str2Hash, str2);
+    table.Insert(XXH32("D", 1, 0), "D");
+    table.Insert(XXH32("E", 1, 0), "E");
+    table.Insert(XXH32("F", 1, 0), "F");
+    const ctStringUtf8* pstr = table.FindPtr(str2Hash);
+    if (pstr) { ctDebugLog(pstr->CStr()); }
+    table.Remove(str2Hash);
+    if (!table.Exists(str2Hash)) { ctDebugLog("Delete Success!"); }
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
    dynamic_array_test();
    dynamic_string_test();
+   hash_table_test();
    return 0;
 }

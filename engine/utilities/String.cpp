@@ -12,6 +12,10 @@ ctStringUtf8::ctStringUtf8(ctStringUtf8& str) {
    _data = str._data;
 }
 
+ctStringUtf8::ctStringUtf8(const ctStringUtf8& str) {
+   _data = str._data;
+}
+
 ctStringUtf8::ctStringUtf8(const char* input, const size_t count) {
    const size_t final_count = strnlen(input, count);
    Reserve(count);
@@ -107,24 +111,20 @@ ctStringUtf8& ctStringUtf8::ToLower() {
    return *this;
 }
 
-uint32_t ctStringUtf8::xxHash32(const int seed) const
-{
-    return _data.xxHash32(seed);
+uint32_t ctStringUtf8::xxHash32(const int seed) const {
+   return _data.xxHash32(seed);
 }
 
-uint32_t ctStringUtf8::xxHash32() const
-{
-    return xxHash32(0);
+uint32_t ctStringUtf8::xxHash32() const {
+   return xxHash32(0);
 }
 
-uint64_t ctStringUtf8::xxHash64(const int seed) const
-{
-    return _data.xxHash64(seed);
+uint64_t ctStringUtf8::xxHash64(const int seed) const {
+   return _data.xxHash64(seed);
 }
 
-uint64_t ctStringUtf8::xxHash64() const
-{
-    return xxHash64(0);
+uint64_t ctStringUtf8::xxHash64() const {
+   return xxHash64(0);
 }
 
 inline void* ctStringUtf8::_dataVoid() const {

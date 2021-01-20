@@ -6,6 +6,7 @@ class ctStringUtf8 {
 public:
 	ctStringUtf8();
 	ctStringUtf8(ctStringUtf8& str);
+	ctStringUtf8(const ctStringUtf8& str);
 	ctStringUtf8(const char* input, const size_t count);
 	ctStringUtf8(const char* input);
 
