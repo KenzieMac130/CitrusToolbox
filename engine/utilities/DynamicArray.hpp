@@ -8,75 +8,77 @@
 #include <vector>
 #endif
 
-namespace CT_UTILITIES_NAMESPACE {
-
 template<class T>
-class DynamicArray {
+class ctDynamicArray {
 public:
    /* Constructors */
-   DynamicArray();
-   DynamicArray(DynamicArray<T>& arr);
+   ctDynamicArray();
+   ctDynamicArray(ctDynamicArray<T>& arr);
    /* Destructor */
-   ~DynamicArray();
+   ~ctDynamicArray();
    /* Array Access */
    T& operator[](const size_t index);
    /* Reserve */
-   Results reserve(const size_t amount);
+   ctResults Resize(const size_t amount);
+   ctResults Reserve(const size_t amount);
    /* Data */
-   T* data();
+   T* Data() const;
    /* Count */
-   size_t count();
-   size_t capacity();
+   size_t Count() const;
+   size_t Capacity() const;
    /* Append */
-   Results append(T&& val);
-   Results append(const T& val);
-   Results append(DynamicArray<T>& arr);
-   Results append(T* pArray, const size_t length);
+   ctResults Append(T&& val);
+   ctResults Append(const T& val);
+   ctResults Append(const ctDynamicArray<T>& arr);
+   ctResults Append(const T* pArray, const size_t length);
+   ctResults Append(const T& val, const size_t amount);
    /* Insert */
-   Results insert(const T& val, const int64_t position);
+   ctResults Insert(const T& val, const int64_t position);
    /* Remove */
-   Results remove(const int64_t position);
+   void RemoveAt(const int64_t position);
+   void RemoveLast();
    /* Clear */
-   void clear();
+   void Clear();
    /* Memset and Clear */
-   void setbytes(int val);
-   /* IsEmpty */
-   bool isEmpty();
+   void SetBytes(int val);
+   /* isEmpty */
+   bool isEmpty() const;
    /* Exists */
-   bool exists(const T& val);
+   bool Exists(const T& val) const;
    /* Find */
-   int64_t findindex(const T& val, const int64_t position);
-   int64_t findindex(const T& val, const int64_t position, const int step);
-   T* findptr(const T& val, const int64_t position);
-   T* findptr(const T& val, const int64_t position, const int step);
+   int64_t FindIndex(const T& val, const int64_t position) const;
+   int64_t
+   FindIndex(const T& val, const int64_t position, const int step) const;
+   T* FindPtr(const T& val, const int64_t position) const;
+   T* FindPtr(const T& val, const int64_t position, const int step) const;
    /* Sort */
-   void sort(const size_t position,
+   void QSort(const size_t position,
              const size_t amount,
              int (*compare)(const T*, const T*));
    /* Hash */
    uint32_t
-   xxHash32(const size_t position, const size_t amount, const int seed);
-   uint32_t xxHash32(const int seed);
-   uint32_t xxHash32();
+   xxHash32(const size_t position, const size_t amount, const int seed) const;
+   uint32_t xxHash32(const int seed) const;
+   uint32_t xxHash32() const;
    uint64_t
-   xxHash64(const size_t position, const size_t amount, const int seed);
-   uint64_t xxHash64(const int seed);
-   uint64_t xxHash64();
+   xxHash64(const size_t position, const size_t amount, const int seed) const;
+   uint64_t xxHash64(const int seed) const;
+   uint64_t xxHash64() const;
 
 private:
 #ifdef CT_TMP_USE_STD
    std::vector<T> _dirtysecret;
 #else
-   Results _expand_size(size_t amount);
+   ctResults _expand_size(size_t amount);
    T* _pData;
    size_t _capacity;
    size_t _count;
- #endif
+#endif
 };
 
 #ifndef CT_TMP_USE_STD
 template<class T>
-inline Results DynamicArray<T>::_expand_size(size_t amount) {
+inline ctResults ctDynamicArray<T>::_expand_size(size_t amount) {
    const size_t neededamount = count() + amount;
    const size_t originalcapacity = capacity();
    if (neededamount > originalcapacity) {
@@ -86,14 +88,14 @@ inline Results DynamicArray<T>::_expand_size(size_t amount) {
       }
       return reserve(targetamount);
    }
-   return Results::SUCCESS;
+   return ctResults::SUCCESS;
 }
 #endif
 
 template<class T>
-inline DynamicArray<T>::DynamicArray() {
+inline ctDynamicArray<T>::ctDynamicArray() {
 #ifndef CT_TMP_USE_STD
- // Todo
+   // Todo
    _pData = NULL;
    _capacity = 0;
    _count = 0;
@@ -101,14 +103,14 @@ inline DynamicArray<T>::DynamicArray() {
 }
 
 template<class T>
-inline DynamicArray<T>::DynamicArray(DynamicArray<T>& arr) {
+inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) {
 #ifndef CT_TMP_USE_STD
-// Todo
+// Todo make copy
 #endif
 }
 
 template<class T>
-inline DynamicArray<T>::~DynamicArray() {
+inline ctDynamicArray<T>::~ctDynamicArray() {
 #ifndef CT_TMP_USE_STD
    CT_Free(_pData);
    _pData = NULL;
@@ -118,7 +120,7 @@ inline DynamicArray<T>::~DynamicArray() {
 }
 
 template<class T>
-inline T& DynamicArray<T>::operator[](const size_t index) {
+inline T& ctDynamicArray<T>::operator[](const size_t index) {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret[index];
 #else
@@ -127,7 +129,16 @@ inline T& DynamicArray<T>::operator[](const size_t index) {
 }
 
 template<class T>
-inline Results DynamicArray<T>::reserve(const size_t amount) {
+inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
+#ifdef CT_TMP_USE_STD
+   _dirtysecret.resize(amount);
+#else
+   // Todo
+#endif
+}
+
+template<class T>
+inline ctResults ctDynamicArray<T>::Reserve(const size_t amount) {
 #ifdef CT_TMP_USE_STD
    _dirtysecret.reserve(amount);
 #else
@@ -138,24 +149,24 @@ inline Results DynamicArray<T>::reserve(const size_t amount) {
          _pData = newptr;
          _capacity = amount;
       } else {
-         return Results::FAILURE_OUT_OF_MEMORY;
+         return ctResults::FAILURE_OUT_OF_MEMORY;
       }
    }
 #endif
-   return Results::SUCCESS;
+   return CT_SUCCESS;
 }
 
 template<class T>
-inline T* DynamicArray<T>::data() {
+inline T* ctDynamicArray<T>::Data() const {
 #ifdef CT_TMP_USE_STD
-   return _dirtysecret.data();
+   return (T*)_dirtysecret.data();
 #else
    return _pData;
 #endif
 }
 
 template<class T>
-inline size_t DynamicArray<T>::count() {
+inline size_t ctDynamicArray<T>::Count() const {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret.size();
 #else
@@ -164,7 +175,7 @@ inline size_t DynamicArray<T>::count() {
 }
 
 template<class T>
-inline size_t DynamicArray<T>::capacity() {
+inline size_t ctDynamicArray<T>::Capacity() const {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret.capacity();
 #else
@@ -173,50 +184,59 @@ inline size_t DynamicArray<T>::capacity() {
 }
 
 template<class T>
-inline Results DynamicArray<T>::append(T&& val) {
+inline ctResults ctDynamicArray<T>::Append(const T& val) {
 #ifdef CT_TMP_USE_STD
    _dirtysecret.push_back(val);
-   return Results::SUCCESS;
+   return CT_SUCCESS;
 #else
    const Results result = _expand_size(1);
    if (result != Results::SUCCESS) { return result; }
-   /* Note (move operators are ignored, data is just copied) */
-   if (_pData) { memmove((void*)&_pData[count()], (void*)&val, sizeof(T)); }
+   if (_pData) { _pData[count()] = val; }
    _count++;
    return result;
 #endif
 }
 
 template<class T>
-inline Results DynamicArray<T>::append(const T& val) {
-   return append((const T&)val);
+inline ctResults ctDynamicArray<T>::Append(T&& val) {
+   return Append((const T&)val);
 }
 
 template<class T>
-inline Results DynamicArray<T>::append(DynamicArray<T>& arr) {
-   return append(arr.data(), arr.count());
+inline ctResults ctDynamicArray<T>::Append(const ctDynamicArray<T>& arr) {
+   return Append(arr._dirtysecret.data(), arr._dirtysecret.size());
 }
 
 template<class T>
-inline Results DynamicArray<T>::append(T* pArray, const size_t length) {
-   const Results result = reserve(count() + length);
-   if (result != Results::SUCCESS) { return result; }
+inline ctResults ctDynamicArray<T>::Append(const T* pArray, const size_t length) {
+   const ctResults result = Reserve(Count() + length);
+   if (result != CT_SUCCESS) { return result; }
    for (int i = 0; i < length; i++) {
-      append(pArray[i]);
+      Append(pArray[i]);
    }
    return result;
 }
 
 template<class T>
-inline Results DynamicArray<T>::insert(const T& val, const int64_t position) {
+inline ctResults ctDynamicArray<T>::Append(const T& val, const size_t amount) {
+   const ctResults result = Reserve(Count() + amount);
+   if (result != CT_SUCCESS) { return result; }
+   for (int i = 0; i < amount; i++) {
+      Append(val);
+   }
+   return result;
+}
+
+template<class T>
+inline ctResults ctDynamicArray<T>::Insert(const T& val, const int64_t position) {
    const int64_t finalposition =
-     position < 0 ? count() + position + 1 : position;
+     position < 0 ? Count() + position + 1 : position;
 #ifdef CT_TMP_USE_STD
    _dirtysecret.insert(_dirtysecret.begin() + finalposition, val);
-   return Results::SUCCESS;
+   return CT_SUCCESS;
 #else
    const Results result = _expand_size(1);
-   if (result != Results::SUCCESS) { return result; }
+   if (result != CT_SUCCESS) { return result; }
    // Todo move higher up (if availible)
    // Todo copy value
    return result;
@@ -224,20 +244,28 @@ inline Results DynamicArray<T>::insert(const T& val, const int64_t position) {
 }
 
 template<class T>
-inline Results DynamicArray<T>::remove(const int64_t position) {
-   if (isEmpty()) { return Results::FAILURE_DATA_DOES_NOT_EXIST; }
-   const int64_t finalposition = position < 0 ? count() + position : position;
+inline void ctDynamicArray<T>::RemoveAt(const int64_t position) {
+   if (isEmpty()) { return; }
+   const int64_t finalposition = position < 0 ? Count() + position : position;
 #ifdef CT_TMP_USE_STD
    _dirtysecret.erase(_dirtysecret.begin() + finalposition);
 #else
    // Todo destructor
    // Todo move higher down (if availible)
 #endif
-   return Results::SUCCESS;
 }
 
 template<class T>
-inline void DynamicArray<T>::clear() {
+inline void ctDynamicArray<T>::RemoveLast() {
+#ifdef CT_TMP_USE_STD
+   _dirtysecret.pop_back();
+#else
+// Todo: remove last element (shrink)
+#endif
+}
+
+template<class T>
+inline void ctDynamicArray<T>::Clear() {
 #ifdef CT_TMP_USE_STD
    _dirtysecret.clear();
 #else
@@ -249,14 +277,14 @@ inline void DynamicArray<T>::clear() {
 }
 
 template<class T>
-inline void DynamicArray<T>::setbytes(int val) {
+inline void ctDynamicArray<T>::SetBytes(int val) {
    if (isEmpty()) { return; }
-   clear();
-   memset(data(), val, capacity() * sizeof(T));
+   Clear();
+   memset(Data(), val, Capacity() * sizeof(T));
 }
 
 template<class T>
-inline bool DynamicArray<T>::isEmpty() {
+inline bool ctDynamicArray<T>::isEmpty() const {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret.empty();
 #else
@@ -265,93 +293,91 @@ inline bool DynamicArray<T>::isEmpty() {
 }
 
 template<class T>
-inline int64_t DynamicArray<T>::findindex(const T& val,
-                                          const int64_t position) {
-   return findindex(val, position, 1);
+inline int64_t ctDynamicArray<T>::FindIndex(const T& val,
+                                          const int64_t position) const {
+   return FindIndex(val, position, 1);
 }
 
 template<class T>
-inline int64_t DynamicArray<T>::findindex(const T& val,
+inline int64_t ctDynamicArray<T>::FindIndex(const T& val,
                                           const int64_t position,
-                                          const int direction) {
+                                          const int direction) const {
    if (isEmpty()) { return -1; }
-   const int64_t amount = (int64_t)count();
-   const int64_t finalposition = position < 0 ? count() + position : position;
+   const int64_t amount = (int64_t)Count();
+   const int64_t finalposition = position < 0 ? Count() + position : position;
    const int finaldirecton = direction >= 0 ? 1 : -1;
    for (int64_t i = finalposition; i < amount; i += finaldirecton) {
       if (i >= amount || i < 0) { return -1; }
-      if (data()[i] == val) { return i; }
+      if (Data()[i] == val) { return i; }
    }
    return -1;
 }
 
 template<class T>
-inline T* DynamicArray<T>::findptr(const T& val, const int64_t position) {
-   return findptr(val, position, 1);
+inline T* ctDynamicArray<T>::FindPtr(const T& val, const int64_t position) const {
+   return FindPtr(val, position, 1);
 }
 
 template<class T>
-inline T* DynamicArray<T>::findptr(const T& val,
+inline T* ctDynamicArray<T>::FindPtr(const T& val,
                                    const int64_t position,
-                                   const int direction) {
+                                   const int direction) const {
    if (isEmpty()) { return NULL; }
-   const int64_t idx = findindex(val, position, direction);
-   return idx >= 0 ? &(data()[idx]) : NULL;
+   const int64_t idx = FindIndex(val, position, direction);
+   return idx >= 0 ? &(Data()[idx]) : NULL;
 }
 
 template<class T>
-inline void DynamicArray<T>::sort(size_t position,
+inline void ctDynamicArray<T>::QSort(size_t position,
                                   size_t amount,
                                   int (*compare)(const T*, const T*)) {
    if (isEmpty()) { return; }
-   const size_t remaining_count = count() - position;
+   const size_t remaining_count = Count() - position;
    const size_t final_amount =
      amount > remaining_count ? remaining_count : amount;
-   qsort(data(),
+   qsort(Data(),
          final_amount,
          sizeof(T),
          (int (*)(void const*, void const*))compare);
 }
 
 template<class T>
-inline uint32_t DynamicArray<T>::xxHash32(const size_t position,
+inline uint32_t ctDynamicArray<T>::xxHash32(const size_t position,
                                           const size_t amount,
-                                          const int seed) {
+                                          const int seed) const {
    if (isEmpty()) { return 0; }
-   return XXH32((const void*)(data() + position), amount, seed);
+   return XXH32((const void*)(Data() + position), amount, seed);
 }
 
 template<class T>
-inline uint32_t DynamicArray<T>::xxHash32(const int seed) {
-   return xxHash32(0, count(), seed);
+inline uint32_t ctDynamicArray<T>::xxHash32(const int seed) const {
+   return xxHash32(0, Count(), seed);
 }
 
 template<class T>
-inline uint32_t DynamicArray<T>::xxHash32() {
+inline uint32_t ctDynamicArray<T>::xxHash32() const {
    return xxHash32(0);
 }
 
 template<class T>
-inline uint64_t DynamicArray<T>::xxHash64(const size_t position,
+inline uint64_t ctDynamicArray<T>::xxHash64(const size_t position,
                                           const size_t amount,
-                                          const int seed) {
+                                          const int seed) const {
    if (isEmpty()) { return 0; }
-   return XXH64((const void*)(data() + position), amount, seed);
+   return XXH64((const void*)(Data() + position), amount, seed);
 }
 
 template<class T>
-inline uint64_t DynamicArray<T>::xxHash64(const int seed) {
-   return xxHash64(0, count(), seed);
+inline uint64_t ctDynamicArray<T>::xxHash64(const int seed) const {
+   return xxHash64(0, Count(), seed);
 }
 
 template<class T>
-inline uint64_t DynamicArray<T>::xxHash64() {
+inline uint64_t ctDynamicArray<T>::xxHash64() const {
    return xxHash64(0);
 }
 
 template<class T>
-inline bool DynamicArray<T>::exists(const T& val) {
-   return findindex(val, 0, 1) != -1 ? true : false;
-}
-
+inline bool ctDynamicArray<T>::Exists(const T& val) const {
+   return FindIndex(val, 0, 1) != -1 ? true : false;
 }

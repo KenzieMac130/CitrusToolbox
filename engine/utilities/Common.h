@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Config File */
 #include "Config.h"
 
@@ -18,29 +22,23 @@
 /*Exportable*/
 #define CT_EXPORT __declspec(dllexport)
 
-/*Namespace*/
-#define CT_UTILITIES_NAMESPACE Ct
-#define CT_MODULE_NAMESPACE    CitrusToolbox
-
-namespace CT_UTILITIES_NAMESPACE {
-
 /*Errors*/
-enum class Results {
-   SUCCESS = 0,
-   FAILURE_UNKNOWN = -1,
-   FAILURE_OUT_OF_MEMORY = -2,
-   FAILURE_INVALID_PARAMETER = -3,
-   FAILURE_UNSUPPORTED_HARDWARE = -4,
-   FAILURE_UNKNOWN_FORMAT = -5,
-   FAILURE_OUT_OF_BOUNDS = -6,
-   FAILURE_PARSE_ERROR = -7,
-   FAILURE_DECOMPRESSION_ERROR = -8,
-   FAILURE_FILE_NOT_FOUND = -9,
-   FAILURE_FILE_INACCESSIBLE = -10,
-   FAILURE_DATA_DOES_NOT_EXIST = -11,
-   FAILURE_DUPLICATE_ENTRY = -12,
-   FAILURE_NOT_UPDATABLE = -13,
-   FAILURE_COULD_NOT_SHRINK = -14
+enum ctResults {
+   CT_SUCCESS = 0,
+   CT_FAILURE_UNKNOWN = -1,
+   CT_FAILURE_OUT_OF_MEMORY = -2,
+   CT_FAILURE_INVALID_PARAMETER = -3,
+   CT_FAILURE_UNSUPPORTED_HARDWARE = -4,
+   CT_FAILURE_UNKNOWN_FORMAT = -5,
+   CT_FAILURE_OUT_OF_BOUNDS = -6,
+   CT_FAILURE_PARSE_ERROR = -7,
+   CT_FAILURE_DECOMPRESSION_ERROR = -8,
+   CT_FAILURE_FILE_NOT_FOUND = -9,
+   CT_FAILURE_FILE_INACCESSIBLE = -10,
+   CT_FAILURE_DATA_DOES_NOT_EXIST = -11,
+   CT_FAILURE_DUPLICATE_ENTRY = -12,
+   CT_FAILURE_NOT_UPDATABLE = -13,
+   CT_FAILURE_COULD_NOT_SHRINK = -14
 };
 
 /*Assert*/
@@ -79,12 +77,17 @@ enum class Results {
 #define ctDebugError(_format, ...)                                           \
    printf("[ERROR] ");                                                       \
    ctDebugLog(_format, __VA_ARGS__);
-}
 
-/*Include common files*/
+#ifdef __cplusplus
+}
+#endif
+
+/*Include common cpp files*/
+#ifdef __cplusplus
+#include "DynamicArray.hpp"
+#include "StaticArray.hpp"
 #include "Math.hpp"
 #include "Hash.hpp"
-#include "DynamicArray.hpp"
 #include "String.hpp"
 #include "HashTable.hpp"
 #include "Vector.hpp"
@@ -92,3 +95,4 @@ enum class Results {
 #include "Quaternion.hpp"
 #include "Color.hpp"
 #include "Matrix.hpp"
+#endif
