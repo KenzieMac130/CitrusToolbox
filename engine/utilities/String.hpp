@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.hpp"
+#include "Common.h"
 
 class ctStringUtf8 {
 public:
