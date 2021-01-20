@@ -1,4 +1,4 @@
-﻿#include "utilities/Common.hpp"
+﻿#include "utilities/Common.h"
 
 #include <stdexcept>
 
