@@ -49,6 +49,15 @@ find_package(Vulkan REQUIRED)
 
 # ---------- Find PhysX ----------
 
+# ---------- Tracy Profiler ---------- 
+option(TRACY_DEBUG "Enable Tracy Debugger" ON)
+if(TRACY_DEBUG)
+	add_compile_definitions(TRACY_ENABLE)
+	set(TRACY_FILES ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy/TracyClient.cpp)
+else()
+	set(TRACY_FILES "")
+endif()
+
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)

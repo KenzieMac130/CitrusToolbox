@@ -69,7 +69,7 @@ set(SHADERC_SHADER_INPUTS
 )
 
 set(SHADERC_SHADER_OUTPUTS
-	#${CITRUS_ASSET_BUILD_DIR}/core/shaders/XXX/vk.spv
+	#${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk/XXX.spv
 )
 
 set(SHADERC_SHADER_OPTIONS
@@ -100,15 +100,15 @@ endforeach()
 set(ENGINE_SOURCE_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONParse.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONWrite.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.cpp
 )
 
@@ -121,13 +121,16 @@ set(ENGINE_HEADER_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONParse.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONWrite.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.hpp
 )
 
@@ -136,7 +139,8 @@ add_library(engine
 	${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES}
 	${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS}
 	${SHADERC_SHADER_DEPENDENCIES} ${SHADERC_SHADER_INPUTS}
-	${SHADERC_SHADER_OUTPUTS})
+	${SHADERC_SHADER_OUTPUTS}
+	${TRACY_FILES})
 set_property(TARGET engine PROPERTY FOLDER "engine")
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
