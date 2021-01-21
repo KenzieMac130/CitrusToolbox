@@ -7,8 +7,8 @@ int life_notifier_comp(const int* A, const int* B) {
 }
 
 int dynamic_array_test() {
-    ctDebugLog("Dynamic Array");
-    ctDebugWarning("Warning test");
+   ctDebugLog("Dynamic Array");
+   ctDebugWarning("Warning test");
    {
       ctDynamicArray<int> arr = {};
       /*Reserve*/
@@ -59,45 +59,61 @@ int dynamic_array_test() {
    return 0;
 }
 
-int dynamic_string_test()
-{
-    ctStringUtf8 mystring = ctStringUtf8(u8"Hello world! ");
-    mystring += u8"My name Borat!";
-    mystring += '?';
-    mystring += L'❤';
-    mystring += ' ';
-    ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
-    mystring += str2;
-    mystring.Printf(32, "The lucky number is: %d", 233969);
-    ctStringUtf8 secondstring = mystring;
-    mystring.ToUpper();
-    mystring += "!!!";
-    ctDebugLog("My String is %s", mystring.CStr());
-    ctDebugLog("My String is %s", secondstring.CStr());
-    return 0;
+int static_array_test() {
+   ctStaticArray<int, 32> arr;
+   arr.SetBytes(0);
+   for (int i = 0; i < 32; i++) {
+      arr.Append(32 - i);
+   }
+   arr.RemoveLast();
+   arr.Insert(8, 2);
+   arr.Capacity();
+   arr.QSort(0, arr.Count(), life_notifier_comp);
+   arr.RemoveAt(0);
+   return 0;
+}
+
+int dynamic_string_test() {
+   ctStringUtf8 mystring = ctStringUtf8(u8"Hello world!");
+   if (mystring.Cmp("Hello world!") == 0) { ctDebugLog("Cmp 0"); }
+   if (mystring == "Hello world!") { ctDebugLog("Compare"); };
+   mystring += u8"My name Borat!";
+   mystring += '?';
+   mystring += L'❤';
+   mystring += ' ';
+   ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
+   mystring += str2;
+   mystring.Printf(32, "The lucky number is: %u", ctxxHash32("LUCKY", 0));
+   ctStringUtf8 secondstring = mystring;
+   mystring.ToUpper();
+   mystring += "!!!";
+   ctDebugLog("My String is %s", mystring.CStr());
+   ctDebugLog("My String is %s", secondstring.CStr());
+   return 0;
 }
 
 int hash_table_test() {
-    ctHashTable<ctStringUtf8> table;
-    table.Reserve(32);
-    const ctStringUtf8 str2 = ctStringUtf8("Very nice!");
-    const uint32_t str2Hash = str2.xxHash32();
-    table.Insert(XXH32("A", 1, 0), "A");
-    table.Insert(XXH32("B", 1, 0), "B");
-    table.Insert(XXH32("C", 1, 0), "C");
-    table.Insert(str2Hash, str2);
-    table.Insert(XXH32("D", 1, 0), "D");
-    table.Insert(XXH32("E", 1, 0), "E");
-    table.Insert(XXH32("F", 1, 0), "F");
-    const ctStringUtf8* pstr = table.FindPtr(str2Hash);
-    if (pstr) { ctDebugLog(pstr->CStr()); }
-    table.Remove(str2Hash);
-    if (!table.Exists(str2Hash)) { ctDebugLog("Delete Success!"); }
-    return 0;
+   ctHashTable<ctStringUtf8> table;
+   table.Reserve(32);
+   const ctStringUtf8 str2 = ctStringUtf8("Very nice!");
+   const uint32_t str2Hash = str2.xxHash32();
+   table.Insert(XXH32("A", 1, 0), "A");
+   table.Insert(XXH32("B", 1, 0), "B");
+   table.Insert(XXH32("C", 1, 0), "C");
+   table.Insert(str2Hash, str2);
+   table.Insert(XXH32("D", 1, 0), "D");
+   table.Insert(XXH32("E", 1, 0), "E");
+   table.Insert(XXH32("F", 1, 0), "F");
+   const ctStringUtf8* pstr = table.FindPtr(str2Hash);
+   if (pstr) { ctDebugLog(pstr->CStr()); }
+   table.Remove(str2Hash);
+   if (!table.Exists(str2Hash)) { ctDebugLog("Delete Success!"); }
+   return 0;
 }
 
 int main(int argc, char* argv[]) {
    dynamic_array_test();
+   static_array_test();
    dynamic_string_test();
    hash_table_test();
    return 0;

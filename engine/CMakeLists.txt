@@ -121,7 +121,7 @@ set(ENGINE_HEADER_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp

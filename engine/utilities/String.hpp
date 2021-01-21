@@ -11,7 +11,7 @@ public:
 	ctStringUtf8(const char* input);
 
 	const char* CStr() const;
-	void* Data();
+	void* Data() const;
 	size_t CodeLength() const;
 	size_t ByteLength() const;
 	size_t Capacity() const;
@@ -27,7 +27,16 @@ public:
 	/* StringUtf8 Concat */
 	ctStringUtf8& operator+=(const ctStringUtf8& str);
 
+	/*Case Sensitive Compare*/
+	friend bool operator==(ctStringUtf8& a, const char* b);
+	friend bool operator==(ctStringUtf8& a, ctStringUtf8& b);
+	friend bool operator==(const char* a, ctStringUtf8& b);
+
 	void Printf(size_t max, const char* format, ...);
+
+	int Cmp(const ctStringUtf8& str) const;
+	int Cmp(const char* str) const;
+	int Cmp(const char* str, const size_t len) const;
 
 	ctStringUtf8& ToUpper();
 	ctStringUtf8& ToLower();

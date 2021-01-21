@@ -34,8 +34,8 @@ const char* ctStringUtf8::CStr() const {
    return (const char*)_dataVoid();
 }
 
-void* ctStringUtf8::Data() {
-   return _dataVoid();
+void* ctStringUtf8::Data() const {
+   return (void*)_dataVoid();
 }
 
 size_t ctStringUtf8::CodeLength() const {
@@ -97,8 +97,20 @@ void ctStringUtf8::Printf(size_t max, const char* format, ...) {
    va_list args;
    va_start(args, format);
    vsnprintf((char*)_dataVoid() + beginning_length, max - 1, format, args);
-   _removeNullTerminator(); /*Remove extra terminator*/
+   _removeNullTerminator(); /*Remove extra terminators*/
    _nullTerminate();
+}
+
+int ctStringUtf8::Cmp(const ctStringUtf8& str) const {
+   return utf8cmp(CStr(), str.CStr());
+}
+
+int ctStringUtf8::Cmp(const char* str) const {
+   return utf8cmp(CStr(), str);
+}
+
+int ctStringUtf8::Cmp(const char* str, const size_t len) const {
+   return utf8ncmp(CStr(), str, len);
 }
 
 ctStringUtf8& ctStringUtf8::ToUpper() {
@@ -143,4 +155,19 @@ void ctStringUtf8::_removeNullTerminator() {
 
 void ctStringUtf8::_nullTerminate() {
    _data.Append('\0');
+}
+
+bool operator==(ctStringUtf8& a, const char* b)
+{
+    return utf8cmp(a.CStr(), b) == 0;
+}
+
+bool operator==(ctStringUtf8& a, ctStringUtf8& b)
+{
+    return utf8cmp(a.CStr(), b.CStr()) == 0;
+}
+
+bool operator==(const char* a, ctStringUtf8& b)
+{
+    return utf8cmp(a, b.CStr()) == 0;
 }

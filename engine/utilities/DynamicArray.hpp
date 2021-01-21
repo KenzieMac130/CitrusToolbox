@@ -134,6 +134,7 @@ inline T& ctDynamicArray<T>::operator[](const size_t index) {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret[index];
 #else
+   ctAssert(index <= Count());
    return _pData[index];
 #endif
 }
@@ -143,6 +144,7 @@ inline T ctDynamicArray<T>::operator[](const size_t index) const {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret[index];
 #else
+   ctAssert(index <= Count());
    return _pData[index];
 #endif
 }
@@ -152,6 +154,7 @@ inline T& ctDynamicArray<T>::First() {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret[0];
 #else
+   ctAssert(Count() > 0);
    return _pData[0];
 #endif
 }
@@ -161,6 +164,7 @@ inline T ctDynamicArray<T>::First() const {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret[0];
 #else
+   ctAssert(Count() > 0);
    return _pData[0];
 #endif
 }
@@ -171,13 +175,20 @@ inline T& ctDynamicArray<T>::Last() {
 #ifdef CT_TMP_USE_STD
    return _dirtysecret[idx];
 #else
+   ctAssert(Count() > 0);
    return _pData[idx];
 #endif
 }
 
 template<class T>
 inline T ctDynamicArray<T>::Last() const {
-   return T();
+   size_t idx = Count() - 1 > 0 ? Count() - 1 : 0;
+#ifdef CT_TMP_USE_STD
+   return _dirtysecret[idx];
+#else
+   ctAssert(Count() > 0);
+   return _pData[idx];
+#endif
 }
 
 template<class T>
@@ -361,9 +372,6 @@ inline void ctDynamicArray<T>::Clear() {
 #ifdef CT_TMP_USE_STD
    _dirtysecret.clear();
 #else
-   for (int i = 0; i < Count(); i++) {
-      _pData[i].~T();
-   }
    _count = 0;
 #endif
 }
