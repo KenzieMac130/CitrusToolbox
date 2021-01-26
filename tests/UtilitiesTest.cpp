@@ -111,10 +111,118 @@ int hash_table_test() {
    return 0;
 }
 
+int json_test() {
+   ctJSONWriter jsonOut;
+   ctStringUtf8 str = "";
+   jsonOut.SetStringPtr(&str);
+
+   /*{
+     "firstName": "John",
+     "lastName": "Smith",
+     "isAlive": true,
+     "age": 27,
+     "address": {
+       "streetAddress": "21 2nd Street",
+       "city": "New York",
+       "state": "NY",
+       "postalCode": "10021-3100"
+     },
+     "phoneNumbers": [
+       {
+         "type": "home",
+         "number": "212 555-1234"
+       },
+       {
+         "type": "office",
+         "number": "646 555-4567"
+       }
+     ],
+     "children": [],
+     "spouse": null
+   }*/
+   jsonOut.PushObject();
+   jsonOut.DeclareVariable("TEST");
+   jsonOut.PushObject();
+   jsonOut.DeclareVariable("firstName");
+   jsonOut.WriteString("John");
+   jsonOut.DeclareVariable("lastName");
+   jsonOut.WriteString("Smith");
+   jsonOut.DeclareVariable("isAlive");
+   jsonOut.WriteBool(true);
+   jsonOut.DeclareVariable("age");
+   jsonOut.WriteNumber(27);
+   jsonOut.DeclareVariable("address");
+   jsonOut.PushObject();
+   jsonOut.DeclareVariable("streetAddress");
+   jsonOut.WriteString("21 2nd Street");
+   jsonOut.DeclareVariable("city");
+   jsonOut.WriteString("New York");
+   jsonOut.DeclareVariable("state");
+   jsonOut.WriteString("NY");
+   jsonOut.DeclareVariable("postalCode");
+   jsonOut.WriteString("10021-3100");
+   jsonOut.PopObject();
+   jsonOut.DeclareVariable("phoneNumbers");
+   jsonOut.PushArray();
+   jsonOut.PushObject();
+   jsonOut.DeclareVariable("type");
+   jsonOut.WriteString("home");
+   jsonOut.DeclareVariable("number");
+   jsonOut.WriteString("212 555-1234");
+   jsonOut.PopObject();
+   jsonOut.PushObject();
+   jsonOut.DeclareVariable("type");
+   jsonOut.WriteString("office");
+   jsonOut.DeclareVariable("number");
+   jsonOut.WriteString("646 555-4567");
+   jsonOut.PopObject();
+   jsonOut.PopArray();
+   jsonOut.DeclareVariable("children");
+   jsonOut.PushArray();
+   jsonOut.PopArray();
+   jsonOut.DeclareVariable("spouse");
+   jsonOut.WriteNull();
+   jsonOut.PopObject();
+
+   jsonOut.DeclareVariable("DOOT");
+   jsonOut.PushObject();
+   jsonOut.DeclareVariable("arara");
+   jsonOut.PushArray();
+   jsonOut.PushArray();
+   jsonOut.WriteNumber(1.0f);
+   jsonOut.WriteNumber(2.0f);
+   jsonOut.WriteNumber(3.0f);
+   jsonOut.PopArray();
+   jsonOut.PushArray();
+   jsonOut.WriteNumber(1.0f);
+   jsonOut.WriteNumber(2.0f);
+   jsonOut.WriteNumber(3.0f);
+   jsonOut.PopArray();
+   jsonOut.PopArray();
+   jsonOut.PopObject();
+   jsonOut.PopObject();
+
+   ctDebugLog(str.CStr());
+
+   /*Read*/
+   ctJSONReader reader;
+   reader.BuildJsonForPtr(str.CStr(), str.ByteLength());
+   ctJSONReader::Entry entry;
+   reader.GetRootEntry(entry);
+   size_t sz = entry.GetRaw(NULL, 0);
+   char* arr = (char*)ctMalloc(sz + 1, "arr");
+   ctAssert(arr);
+   memset(arr, 0, sz + 1);
+   entry.GetRaw(arr, sz);
+   ctDebugLog(arr)
+   return 0;
+}
+
 int main(int argc, char* argv[]) {
    dynamic_array_test();
    static_array_test();
    dynamic_string_test();
    hash_table_test();
+   json_test();
    return 0;
 }

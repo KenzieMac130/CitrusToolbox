@@ -56,8 +56,6 @@ add_custom_command(OUTPUT ${ISPC_OUT}
 endforeach()
 
 # ---------- Compile Shaders ----------
-file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core)
-file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders)
 file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
 
 set(SHADERC_SHADER_DEPENDENCIES
@@ -96,20 +94,57 @@ add_custom_command(OUTPUT ${SHADER_OUT}
 # Transpile to other languages here
 endforeach()
 
+# ---------- Citrus Reflect ----------
+set(CITRUS_REFLECT_INPUTS
+	/utilities/Reflect.hpp
+)
+set(CITRUS_REFLECT_OUTPUTS)
+
+# for each file in relative inputs
+foreach(FILE_IN IN LISTS CITRUS_REFLECT_INPUTS)
+
+# get the file name without path
+get_filename_component(FILE_IN_NAME ${FILE_IN} NAME_WLE)
+get_filename_component(FILE_IN_REL_PATH ${FILE_IN} DIRECTORY)
+# create the reflection output
+string(CONCAT REFLECT_OUT 
+	${CITRUS_REFLECT_OUTPUT_DIR} 
+	${FILE_IN_REL_PATH} "/"
+	${FILE_IN_NAME}
+	${REFLECT_IN} 
+	".gen.hpp")
+
+string(CONCAT FILE_IN ${CMAKE_CURRENT_SOURCE_DIR} ${FILE_IN})
+get_filename_component(REFLECT_OUT_REL_PATH ${REFLECT_OUT} DIRECTORY)
+file(MAKE_DIRECTORY ${REFLECT_OUT_REL_PATH})
+add_custom_command(OUTPUT ${REFLECT_OUT}
+                   COMMAND
+				   python ${CITRUS_REFLECT_PY} 
+				   "${FILE_IN}" 
+				   "${REFLECT_OUT}" 
+				   DEPENDS
+				   ${FILE_IN}
+				   ${CITRUS_REFLECT_PY})
+list(APPEND CITRUS_REFLECT_OUTPUTS ${REFLECT_OUT})
+endforeach()
+
 # ---------- Source Files ----------
 set(ENGINE_SOURCE_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONParse.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONWrite.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
 )
 
 # ----------Header Files ----------
@@ -123,15 +158,19 @@ set(ENGINE_HEADER_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONParse.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSONWrite.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/Application.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.hpp
 )
 
 # ---------- Create Library ----------
@@ -140,11 +179,15 @@ add_library(engine
 	${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS}
 	${SHADERC_SHADER_DEPENDENCIES} ${SHADERC_SHADER_INPUTS}
 	${SHADERC_SHADER_OUTPUTS}
+	${CITRUS_REFLECT_OUTPUTS}
 	${TRACY_FILES})
 set_property(TARGET engine PROPERTY FOLDER "engine")
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
+target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(engine PUBLIC ${TRACY_INCLUDE})
+
 
 target_link_libraries(engine ${SDL2_LIBRARIES})
 target_include_directories(engine PUBLIC ${SDL2_INCLUDE_DIRS})
@@ -159,7 +202,7 @@ add_custom_command(TARGET engine POST_BUILD
         $<TARGET_FILE_DIR:engine>)
 add_custom_command(TARGET engine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${SHARED_LIBRARY_DIRECTORY}/data.redirect"
+        "${SHARED_LIBRARY_DIRECTORY}/assets.redirect"
         $<TARGET_FILE_DIR:engine>)
 add_custom_command(TARGET engine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different

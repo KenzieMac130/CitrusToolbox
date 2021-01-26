@@ -19,6 +19,8 @@ extern "C" {
 #include <assert.h>
 #include <stdarg.h>
 
+#include "SDL.h"
+
 /*Exportable*/
 #define CT_EXPORT __declspec(dllexport)
 
@@ -38,7 +40,8 @@ enum ctResults {
    CT_FAILURE_DATA_DOES_NOT_EXIST = -11,
    CT_FAILURE_DUPLICATE_ENTRY = -12,
    CT_FAILURE_NOT_UPDATABLE = -13,
-   CT_FAILURE_COULD_NOT_SHRINK = -14
+   CT_FAILURE_COULD_NOT_SHRINK = -14,
+   CT_FAILURE_CORRUPTED_CONTENTS = -15,
 };
 
 /*Assert*/
@@ -64,7 +67,7 @@ enum ctResults {
 #define ctFree(_block) free(_block)
 
 /**
- * @debug logging
+ * @brief debug logging (temporary until moved to core)
  */
 #define ctDebugLog(_format, ...)                                               \
    printf(_format, __VA_ARGS__);                                               \
@@ -95,4 +98,6 @@ enum ctResults {
 #include "Quaternion.hpp"
 #include "Color.hpp"
 #include "Matrix.hpp"
+#include "Sync.hpp"
+#include "JSON.hpp"
 #endif

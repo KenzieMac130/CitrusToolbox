@@ -23,6 +23,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
 # ---------- Code Generation Output Directory ----------
 set(CITRUS_CODEGEN_DIR ${PROJECT_BINARY_DIR}/generated)
 
+# ---------- Citrus Reflect Tool ----------
+set(CITRUS_REFLECT_OUTPUT_DIR ${CITRUS_CODEGEN_DIR}/reflect)
+set(CITRUS_REFLECT_PY ${CMAKE_CURRENT_SOURCE_DIR}/tools/reflect/CitrusReflect.py)
+
 # ---------- Built Asset Directory ----------
 set(CITRUS_ASSET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(CITRUS_ASSET_BUILD_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
@@ -54,9 +58,12 @@ option(TRACY_DEBUG "Enable Tracy Debugger" ON)
 if(TRACY_DEBUG)
 	add_compile_definitions(TRACY_ENABLE)
 	set(TRACY_FILES ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy/TracyClient.cpp)
+	set(CITRUS_TRACY 1)
 else()
 	set(TRACY_FILES "")
+	set(CITRUS_TRACY 0)
 endif()
+set(TRACY_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy)
 
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)

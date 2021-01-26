@@ -33,6 +33,7 @@ public:
 	friend bool operator==(const char* a, ctStringUtf8& b);
 
 	void Printf(size_t max, const char* format, ...);
+	void VPrintf(size_t max, const char* format, va_list va);
 
 	int Cmp(const ctStringUtf8& str) const;
 	int Cmp(const char* str) const;
@@ -40,6 +41,9 @@ public:
 
 	ctStringUtf8& ToUpper();
 	ctStringUtf8& ToLower();
+
+	ctStringUtf8& FilePathUnify();
+	ctStringUtf8& FilePathLocalize();
 
 	uint32_t xxHash32(const int seed) const;
 	uint32_t xxHash32() const;
@@ -52,5 +56,6 @@ private:
 	void _removeNullTerminator();
 	void _nullTerminate();
 
+	/* Todo: Small string optimization */
 	ctDynamicArray<char> _data;
 };

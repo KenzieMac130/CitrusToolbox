@@ -12,6 +12,7 @@ public:
    /* Constructors */
    ctDynamicArray();
    ctDynamicArray(ctDynamicArray<T>& arr);
+   ctDynamicArray(const ctDynamicArray<T>& arr);
    /* Destructor */
    ~ctDynamicArray();
    /* Array Access */
@@ -104,6 +105,18 @@ inline ctDynamicArray<T>::ctDynamicArray() {
    _pData = NULL;
    _capacity = 0;
    _count = 0;
+#endif
+}
+
+template<class T>
+inline ctDynamicArray<T>::ctDynamicArray(const ctDynamicArray<T>& arr) {
+#ifndef CT_TMP_USE_STD
+   const size_t inputcount = arr.Count();
+   Resize(inputcount);
+   ctAssert(_pData);
+   for (size_t i = 0; i < inputcount; i++) {
+      _pData[i] = arr[i];
+   }
 #endif
 }
 
@@ -202,7 +215,6 @@ inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
       Clear();
       return CT_SUCCESS;
    }
-   if (amount < _count) { _count = amount; }
    T* pOldData = _pData;
    _pData = new T[amount];
    ctAssert(_pData);
@@ -212,6 +224,7 @@ inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
       }
       delete[] pOldData;
    }
+   _count = amount;
    _capacity = amount;
 #endif
    return CT_SUCCESS;
