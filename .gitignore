@@ -39,3 +39,4 @@ libs/
 
 # Build
 build/
+tools/tracy
