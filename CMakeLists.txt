@@ -10,10 +10,15 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
 #---------- No Exceptions ----------
-add_definitions (-D_HAS_EXCEPTIONS=0)
+add_definitions(-D_HAS_EXCEPTIONS=0)
 string (REGEX REPLACE "/EHsc *" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+if(!MSVC)
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+endif()
+
+#---------- Unhelpful Warnings ----------
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)

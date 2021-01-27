@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "String.hpp"
 
+#define JSMN_PARENT_LINKS
 #define JSMN_HEADER
 #include "jsmn/jsmn.h"
 
@@ -25,16 +26,12 @@ public:
    ctResults WriteNull();
    /*Todo: Vector Math*/
 
-   ctResults Validate();
-
 private:
    void _finishLastEntry();
    void _unmarkFirst();
    void _setDefinition(bool val);
    void _pushStack(bool isArray);
    void _popStack();
-   int _objLevel;
-   int _arrLevel;
    ctStringUtf8* _pStr;
 
    struct _json_stack {
@@ -52,18 +49,17 @@ public:
    class Entry {
    public:
       Entry();
-      Entry(jsmntok_t token,
-            jsmntok_t* pTokenArr,
-            size_t tokenArrCount,
-            const char* pData);
+      Entry(int id, int count, jsmntok_t token, jsmntok_t* pTokenArr, const char* pData);
 
       size_t GetRaw(char* pDest, int size);
 
       bool isObject();
-      void ObjectEntry(const char* name, Entry& entry);
+      ctResults GetObjectEntry(const char* name, Entry& entry);
 
       bool isArray();
-      void ArrayEntry(int index, Entry& entry);
+      ctResults GetArrayEntry(int index, Entry& entry);
+      int ArrayLength();
+      /*Todo: Vector Math*/
 
       bool isString();
       bool isPrimitive();
@@ -71,15 +67,25 @@ public:
       bool isBool();
       bool isNumber();
       void GetString(ctStringUtf8& out);
-      void GetString();
-      void GetBool();
-      void GetNumber();
-      /*Todo: Vector Math*/
+      void GetString(char* pDest, size_t max);
+      ctResults GetBool(bool& out);
+      ctResults GetNumber(float& out);
+      ctResults GetNumber(double& out);
+      ctResults GetNumber(int8_t& out);
+      ctResults GetNumber(int16_t& out);
+      ctResults GetNumber(int32_t& out);
+      ctResults GetNumber(int64_t& out);
+      ctResults GetNumber(uint8_t& out);
+      ctResults GetNumber(uint16_t& out);
+      ctResults GetNumber(uint32_t& out);
+      ctResults GetNumber(uint64_t& out);
 
    protected:
+       ctResults _getEntry(int index, Entry& entry);
       jsmntok_t _token;
-      jsmntok_t* _pTokenArr;
-      size_t _tokenArrCount;
+      int _tokenPos;
+      int _tokenCount;
+      jsmntok_t* _pTokens;
       const char* _pData;
    };
 

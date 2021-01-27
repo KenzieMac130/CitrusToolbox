@@ -1,7 +1,5 @@
 ﻿#include "utilities/Common.h"
 
-#include <stdexcept>
-
 int life_notifier_comp(const int* A, const int* B) {
    return *A - *B;
 }
@@ -194,27 +192,34 @@ int json_test() {
    jsonOut.WriteNumber(3.0f);
    jsonOut.PopArray();
    jsonOut.PushArray();
-   jsonOut.WriteNumber(1.0f);
-   jsonOut.WriteNumber(2.0f);
-   jsonOut.WriteNumber(3.0f);
+   jsonOut.WriteNumber(4.0f);
+   jsonOut.WriteNumber(5.0f);
+   jsonOut.WriteNumber(6.0f);
    jsonOut.PopArray();
    jsonOut.PopArray();
    jsonOut.PopObject();
    jsonOut.PopObject();
 
    ctDebugLog(str.CStr());
+   ctDebugLog("------------------------------------------");
 
    /*Read*/
    ctJSONReader reader;
    reader.BuildJsonForPtr(str.CStr(), str.ByteLength());
    ctJSONReader::Entry entry;
-   reader.GetRootEntry(entry);
-   size_t sz = entry.GetRaw(NULL, 0);
-   char* arr = (char*)ctMalloc(sz + 1, "arr");
-   ctAssert(arr);
-   memset(arr, 0, sz + 1);
-   entry.GetRaw(arr, sz);
-   ctDebugLog(arr)
+   reader.GetRootEntry(entry);          /*Whole JSON*/
+   entry.GetObjectEntry("DOOT", entry); /*"Test"*/
+   entry.GetObjectEntry("arara", entry);
+   entry.GetArrayEntry(0, entry);
+   entry.GetArrayEntry(0, entry);
+   float value = -90.0f;
+   entry.GetNumber(value);
+   // entry.GetObjectEntry("TEST", entry);
+   // entry.GetSubEntry(0, entry); /*{DATA....}*/
+   // entry.GetSubEntry(1, entry);
+   ctStringUtf8 str2;
+   entry.GetString(str2);
+   ctDebugLog("%f", value);
    return 0;
 }
 
