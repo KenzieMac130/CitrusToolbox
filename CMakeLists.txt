@@ -1,3 +1,19 @@
+#
+#   Copyright 2021 MacKenzie Strand
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
 # ---------- Project Config ----------
 cmake_minimum_required(VERSION 3.10)
 project(CitrusToolbox)
@@ -14,7 +30,7 @@ add_definitions(-D_HAS_EXCEPTIONS=0)
 string (REGEX REPLACE "/EHsc *" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
 if(!MSVC)
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 endif()
 
 #---------- Unhelpful Warnings ----------
@@ -38,11 +54,11 @@ set(CITRUS_ASSET_BUILD_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
 
 #---------- Point to Libraries ----------
 if(WIN32)
-	set(BASE_LIBRARY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libs/Win64)
-	set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
-	set(SHARED_LIBRARY_FORMAT ".dll")
+  set(BASE_LIBRARY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libs/Win64)
+  set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
+  set(SHARED_LIBRARY_FORMAT ".dll")
 else()
-	message(FATAL_ERROR "Unsupported platform, please configure.")
+  message(FATAL_ERROR "Currently unsupported platform!")
 endif()
 
 # ---------- Find ISPC ----------
@@ -61,12 +77,12 @@ find_package(Vulkan REQUIRED)
 # ---------- Tracy Profiler ---------- 
 option(TRACY_DEBUG "Enable Tracy Debugger" ON)
 if(TRACY_DEBUG)
-	add_compile_definitions(TRACY_ENABLE)
-	set(TRACY_FILES ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy/TracyClient.cpp)
-	set(CITRUS_TRACY 1)
+   add_compile_definitions(TRACY_ENABLE)
+   set(TRACY_FILES ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy/TracyClient.cpp)
+   set(CITRUS_TRACY 1)
 else()
-	set(TRACY_FILES "")
-	set(CITRUS_TRACY 0)
+   set(TRACY_FILES "")
+   set(CITRUS_TRACY 0)
 endif()
 set(TRACY_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy)
 

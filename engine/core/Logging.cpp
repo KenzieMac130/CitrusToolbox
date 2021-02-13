@@ -1,17 +1,52 @@
-#include "Logging.hpp"
+/*
+   Copyright 2021 MacKenzie Strand
 
-ctDebugSystem::ctDebugSystem(ctFileSystem* pFSystem, uint32_t flushafter) {
-   _logLock = ctMutexCreate();
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "Logging.hpp"
+#include "EngineCore.hpp"
+
+ctDebugSystem::ctDebugSystem(uint32_t flushafter) {
    _flushAfter = flushafter;
-   pFSystem->OpenPreferencesFile(_logFile, "Log.txt", CT_FILE_OPEN_WRITE);
+   _logLock = ctMutexCreate();
 }
 
 ctDebugSystem::~ctDebugSystem() {
+   ctMutexDestroy(_logLock);
+}
+
+ctResults ctDebugSystem::LoadConfig(ctJSONReader::Entry& json) {
+   return CT_SUCCESS;
+}
+
+ctResults ctDebugSystem::SaveConfig(ctJSONWriter& writer) {
+   return CT_SUCCESS;
+}
+
+ctResults ctDebugSystem::Startup(ctEngineCore* pEngine) {
+   Engine = pEngine;
+   Engine->FileSystem->OpenPreferencesFile(
+     _logFile, "Log.txt", CT_FILE_OPEN_WRITE);
+   return CT_SUCCESS;
+}
+
+ctResults ctDebugSystem::Shutdown() {
    ctMutexLock(_logLock);
    _flushMessageQueue();
    _logFile.Close();
    ctMutexUnlock(_logLock);
-   ctMutexDestroy(_logLock);
+   return CT_SUCCESS;
 }
 
 void ctDebugSystem::Log(const char* format, ...) {

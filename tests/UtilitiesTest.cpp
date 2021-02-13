@@ -1,4 +1,20 @@
-﻿#include "utilities/Common.h"
+﻿/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "utilities/Common.h"
 
 int life_notifier_comp(const int* A, const int* B) {
    return *A - *B;
@@ -72,12 +88,12 @@ int static_array_test() {
 }
 
 int dynamic_string_test() {
-   ctStringUtf8 mystring = ctStringUtf8(u8"Hello world!");
+   ctStringUtf8 mystring = ctStringUtf8("Hello world!");
    if (mystring.Cmp("Hello world!") == 0) { ctDebugLog("Cmp 0"); }
    if (mystring == "Hello world!") { ctDebugLog("Compare"); };
-   mystring += u8"My name Borat!";
+   mystring += "My name Borat!";
    mystring += '?';
-   mystring += L'❤';
+   mystring += u8 "❤";
    mystring += ' ';
    ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
    mystring += str2;
@@ -91,7 +107,7 @@ int dynamic_string_test() {
 }
 
 int hash_table_test() {
-   ctHashTable<ctStringUtf8> table;
+   ctIndirectTable<ctStringUtf8> table;
    table.Reserve(32);
    const ctStringUtf8 str2 = ctStringUtf8("Very nice!");
    const uint32_t str2Hash = str2.xxHash32();

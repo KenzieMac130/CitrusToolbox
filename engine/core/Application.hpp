@@ -1,41 +1,44 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #include "utilities/Common.h"
-#include "FileSystem.hpp"
-#include "Logging.hpp"
+#include "EngineCore.hpp"
 
 class ctApplication {
 public:
-	/* Initialize the engine and all subsystems */
-	ctResults Ignite();
-	/* Enter the game loop (returns on shutdown) */
-	ctResults EnterLoop();
-	/* Exit */
-	void Exit();
-	/* Is Running */
-	bool isExitRequested();
-	/* Single shot the game loop (returns after frame) */
-	ctResults LoopSingleShot(const float deltatime);
-	ctResults Shutdown();
+   virtual int Execute(int argc, char* argv[]);
 
-	const ctStringUtf8& GetAppName();
-	int GetAppVersionMajor();
-	int GetAppVersionMinor();
-	int GetAppVersionPatch();
+   /* Event Handling */
+   virtual ctResults InitialWindowSetup();
+   virtual ctResults OnStartup();
+   virtual ctResults OnTick(const float deltatime);
+   virtual ctResults OnShutdown();
 
-	ctFileSystem* FileSystem;
-	ctDebugSystem* Debug;
-protected:
-	/* Event Handling */
-	virtual ctResults OnStartup() = 0;
-	virtual ctResults OnTick(const float deltatime) = 0;
-	virtual ctResults OnShutdown() = 0;
+   const ctStringUtf8& GetAppName();
+   int GetAppVersionMajor();
+   int GetAppVersionMinor();
+   int GetAppVersionPatch();
+
+   class ctEngineCore* Engine;
+
 private:
-	ctStringUtf8 _appName;
-	int _appVersionMajor;
-	int _appVersionMinor;
-	int _appVersionPatch;
-
-	bool _isRunning = true;
-	/* Implimentation */
+   ctStringUtf8 _appName;
+   int _appVersionMajor;
+   int _appVersionMinor;
+   int _appVersionPatch;
 };

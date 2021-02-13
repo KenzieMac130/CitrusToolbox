@@ -1,3 +1,19 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #ifdef __cplusplus
@@ -44,6 +60,9 @@ enum ctResults {
    CT_FAILURE_CORRUPTED_CONTENTS = -15,
 };
 
+/*C Helpers*/
+#define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
+
 /*Assert*/
 #define ctAssert(e) assert(e)
 
@@ -77,9 +96,14 @@ enum ctResults {
    printf("[WARNING] ");                                                       \
    ctDebugLog(_format, __VA_ARGS__);
 
-#define ctDebugError(_format, ...)                                           \
-   printf("[ERROR] ");                                                       \
+#define ctDebugError(_format, ...)                                             \
+   printf("[ERROR] ");                                                         \
    ctDebugLog(_format, __VA_ARGS__);
+
+#define ctFatalError(_code, _format, ...)                                      \
+   printf("[FATAL ERROR] ");                                                   \
+   ctDebugLog(_format, __VA_ARGS__);                                           \
+   exit(_code);
 
 #ifdef __cplusplus
 }
@@ -92,7 +116,7 @@ enum ctResults {
 #include "Math.hpp"
 #include "Hash.hpp"
 #include "String.hpp"
-#include "HashTable.hpp"
+#include "IndirectionTable.hpp"
 #include "Vector.hpp"
 #include "AABB.hpp"
 #include "Quaternion.hpp"

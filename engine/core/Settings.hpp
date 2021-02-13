@@ -16,10 +16,25 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
+#include "utilities/Common.h"
+#include "FileSystem.hpp"
 
-#ifdef __cplusplus
-}
-#endif  // __cplusplus
+class ctSettings {
+public:
+   ctSettings(const ctStringUtf8& fileName, ctFileSystem* pFileSystem);
+   ctResults Load();
+   ctResults Save();
+
+private:
+   struct _settingsEntry {
+      int type;
+      float fval;
+      int ival;
+      bool bval;
+      ctStringUtf8 sval;
+   };
+   ctFileSystem* _pFileSystem;
+   //ctHashTable<_settingsEntry> _settings;
+   ctStringUtf8 _str;
+   ctStringUtf8 _filePath;
+};

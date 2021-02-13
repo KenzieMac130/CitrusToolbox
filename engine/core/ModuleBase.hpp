@@ -16,10 +16,14 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
+#include "utilities/Common.h"
 
-#ifdef __cplusplus
-}
-#endif  // __cplusplus
+class ctModuleBase {
+public:
+    virtual ctResults LoadConfig(ctJSONReader::Entry& json) = 0;
+    virtual ctResults SaveConfig(ctJSONWriter& writer) = 0;
+    virtual ctResults Startup(class ctEngineCore* pEngine) = 0;
+    virtual ctResults Shutdown() = 0;
+protected:
+    class ctEngineCore* Engine;
+};

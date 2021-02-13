@@ -1,3 +1,19 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #include "Common.h"
@@ -20,8 +36,8 @@ public:
    ctResults DeclareVariable(const ctStringUtf8& name);
    ctResults WriteString(const ctStringUtf8& value);
    ctResults WriteNumber(double value);
-   ctResults WriteNumber(int64_t value);
    ctResults WriteNumber(int32_t value);
+   ctResults WriteNumber(int64_t value);
    ctResults WriteBool(bool value);
    ctResults WriteNull();
    /*Todo: Vector Math*/
@@ -49,12 +65,19 @@ public:
    class Entry {
    public:
       Entry();
-      Entry(int id, int count, jsmntok_t token, jsmntok_t* pTokenArr, const char* pData);
+      Entry(int id,
+            int count,
+            jsmntok_t token,
+            jsmntok_t* pTokenArr,
+            const char* pData);
 
       size_t GetRaw(char* pDest, int size);
 
       bool isObject();
       ctResults GetObjectEntry(const char* name, Entry& entry);
+      int ObjectEntryCount();
+      ctResults
+      GetObjectEntryIdx(int index, Entry& entry, ctStringUtf8* pLabel);
 
       bool isArray();
       ctResults GetArrayEntry(int index, Entry& entry);
@@ -81,7 +104,7 @@ public:
       ctResults GetNumber(uint64_t& out);
 
    protected:
-       ctResults _getEntry(int index, Entry& entry);
+      ctResults _getEntry(int index, Entry& entry);
       jsmntok_t _token;
       int _tokenPos;
       int _tokenCount;

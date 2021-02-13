@@ -1,3 +1,19 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #include "Common.h"
@@ -30,6 +46,7 @@ public:
    ctResults Insert(const T& val, const int64_t position);
    /* Remove */
    void RemoveAt(const int64_t position);
+   ctResults Remove(const T& val);
    void RemoveLast();
    /* Clear */
    void Clear();
@@ -40,11 +57,13 @@ public:
    /* Exists */
    bool Exists(const T& val) const;
    /* Find */
-   int64_t FindIndex(const T& val, const int64_t position) const;
-   int64_t
-   FindIndex(const T& val, const int64_t position, const int step) const;
-   T* FindPtr(const T& val, const int64_t position) const;
-   T* FindPtr(const T& val, const int64_t position, const int step) const;
+   int64_t FindIndex(const T& val, const int64_t position = 0) const;
+   int64_t FindIndex(const T& val,
+                     const int64_t position = 0,
+                     const int step = 1) const;
+   T* FindPtr(const T& val,
+              const int64_t position = 0,
+              const int step = 1) const;
    /* Sort */
    void QSort(const size_t position,
               const size_t amount,
@@ -208,6 +227,17 @@ inline void ctStaticArray<T, TCAPACITY>::RemoveAt(const int64_t position) {
 }
 
 template<class T, size_t TCAPACITY>
+inline ctResults ctStaticArray<T, TCAPACITY>::Remove(const T& val) {
+   int64_t idx = FindIndex(val, position, 1);
+   if (idx >= 0 && idx < (int64_t)Count()) {
+      RemoveAt(idx);
+      return CT_SUCCESS;
+   } else {
+      return CT_FAILURE_DATA_DOES_NOT_EXIST;
+   }
+}
+
+template<class T, size_t TCAPACITY>
 inline void ctStaticArray<T, TCAPACITY>::RemoveLast() {
    RemoveAt(-1);
 }
@@ -252,12 +282,6 @@ inline int64_t ctStaticArray<T, TCAPACITY>::FindIndex(
       if (Data()[i] == val) { return i; }
    }
    return -1;
-}
-
-template<class T, size_t TCAPACITY>
-inline T* ctStaticArray<T, TCAPACITY>::FindPtr(const T& val,
-                                               const int64_t position) const {
-   return FindPtr(val, position, 1);
 }
 
 template<class T, size_t TCAPACITY>

@@ -1,3 +1,4 @@
+#include "GfxBase.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -14,12 +15,26 @@
    limitations under the License.
 */
 
-#pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
-#ifdef __cplusplus
+uint32_t ctGfxCanvasBase::GetWidth() {
+   return width;
 }
-#endif  // __cplusplus
+
+uint32_t ctGfxCanvasBase::GetHeight() {
+   return height;
+}
+
+uint32_t ctGfxCanvasBase::GetMaxWidth() {
+   return maxWidth;
+}
+
+uint32_t ctGfxCanvasBase::GetMaxHeight() {
+   return maxHeight;
+}
+
+SDL_Window* ctGfxCanvasBase::GetOutputWindowPtr() {
+   return pWindow;
+}
+
+ctGfxTextureBase* ctGfxCanvasBase::GetOutputTexturePtr() {
+   return pTexture;
+}

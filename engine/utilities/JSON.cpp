@@ -1,3 +1,19 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #define JSMN_PARENT_LINKS
 #include "jsmn/jsmn.h"
 
@@ -158,7 +174,8 @@ ctResults ctJSONReader::BuildJsonForPtr(const char* pData, size_t length) {
 
 void ctJSONReader::GetRootEntry(Entry& entry) {
    if (_tokens.Count() > 0) {
-      entry = Entry(0, (int)_tokens.Count(), _tokens[0], _tokens.Data(), _pData);
+      entry =
+        Entry(0, (int)_tokens.Count(), _tokens[0], _tokens.Data(), _pData);
    }
 }
 
@@ -206,6 +223,31 @@ ctResults ctJSONReader::Entry::GetObjectEntry(const char* name, Entry& entry) {
       if (strncmp(name, str, (size_t)tok.end - tok.start) == 0) {
          return _getEntry(i + 1, entry);
       }
+   }
+   return CT_FAILURE_DATA_DOES_NOT_EXIST;
+}
+
+int ctJSONReader::Entry::ObjectEntryCount() {
+   return _token.size;
+}
+
+ctResults ctJSONReader::Entry::GetObjectEntryIdx(int index,
+                                                 Entry& entry,
+                                                 ctStringUtf8* pLabel) {
+   if (!isObject()) { return CT_FAILURE_PARSE_ERROR; }
+   int occurrance = 0;
+   for (int i = _tokenPos; i < _tokenCount; i++) {
+      const jsmntok_t tok = _pTokens[i];
+      const char* str = &_pData[tok.start];
+      if (tok.parent != _tokenPos) { continue; }
+      if (occurrance == index) {
+         if (pLabel) {
+            *pLabel =
+              ctStringUtf8(&_pData[tok.start], (size_t)tok.end - tok.start);
+         }
+         return _getEntry(i + 1, entry);
+      }
+      occurrance++;
    }
    return CT_FAILURE_DATA_DOES_NOT_EXIST;
 }

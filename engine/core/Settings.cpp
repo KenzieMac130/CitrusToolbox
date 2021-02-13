@@ -14,12 +14,19 @@
    limitations under the License.
 */
 
-#pragma once
+#include "Settings.hpp"
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
-#ifdef __cplusplus
+ctSettings::ctSettings(const ctStringUtf8& fileName,
+                       ctFileSystem* pFileSystem) {
+   _filePath = pFileSystem->GetPreferencesPath();
+   _filePath += fileName;
+   _pFileSystem = pFileSystem;
 }
-#endif  // __cplusplus
+
+ctResults ctSettings::Load() {
+   return CT_SUCCESS;
+}
+
+ctResults ctSettings::Save() {
+   return CT_SUCCESS;
+}

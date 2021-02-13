@@ -17,36 +17,24 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "FileSystem.hpp"
 
-#include "Tracy.hpp"
+#include "lowlevel/GfxBase.hpp"
 
-#include "ModuleBase.hpp"
+#include "core/ModuleBase.hpp"
+#include "core/Logging.hpp"
 
-class ctDebugSystem : public ctModuleBase {
+class ctRenderer : public ctModuleBase {
 public:
-   ctDebugSystem(uint32_t flushafter);
-   ~ctDebugSystem();
+   ctRenderer(ctGfxBackend backend,
+              bool validate,
+              const char* appName,
+              int appVersion[3]);
+   ~ctRenderer();
 
    ctResults LoadConfig(ctJSONReader::Entry& json) final;
    ctResults SaveConfig(ctJSONWriter& writer) final;
    ctResults Startup(ctEngineCore* pEngine) final;
    ctResults Shutdown() final;
 
-   void Log(const char* format, ...);
-   void Warning(const char* format, ...);
-   void Error(const char* format, ...);
-   /* Draw Line */
-private:
-   struct _internalMessage {
-      int level;
-      char msg[512];
-   };
-
-   void _flushMessageQueue();
-   void _addToMessageQueue(const _internalMessage msg);
-   ctDynamicArray<_internalMessage> _messageQueue;
-   ctFile _logFile;
-   uint32_t _flushAfter;
-   ctMutex _logLock;
+   ctGfxCoreBase* GfxCore;
 };
