@@ -18,8 +18,8 @@
 
 #include "Common.h"
 
-#define ctPi  3.141592653589793238462643383279
-#define ctPiF 3.141592653589793238462643383279f
+#define ctPi  3.141592653589793238462643383279f
+#define ctPiD 3.141592653589793238462643383279
 
 /* Float Compare */
 bool ctFloatCompare(const float a,
