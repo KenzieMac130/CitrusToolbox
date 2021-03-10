@@ -259,7 +259,7 @@ inline ctResults ctDynamicArray<T>::Reserve(const size_t amount) {
       _pData = new T[amount];
       ctAssert(_pData);
       if (pOldData) {
-         for (size_t i = 0; i < amount; i++) {
+         for (size_t i = 0; i < Count(); i++) {
             _pData[i] = pOldData[i];
          }
          delete[] pOldData;
@@ -423,7 +423,6 @@ inline void ctDynamicArray<T>::Clear() {
 template<class T>
 inline void ctDynamicArray<T>::SetBytes(int val) {
    if (isEmpty()) { return; }
-   Clear();
    memset(Data(), val, Capacity() * sizeof(T));
 }
 
