@@ -17,20 +17,31 @@
 #include "core/Application.hpp"
 
 class TestApp : public ctApplication {
+   virtual const char* GetAppName();
+   virtual ctAppVersion GetAppVersion();
    virtual ctResults OnStartup();
    virtual ctResults OnTick(const float deltatime);
    virtual ctResults OnShutdown();
 };
 
+const char* TestApp::GetAppName() {
+   return "AppTest";
+}
+
+ctAppVersion TestApp::GetAppVersion() {
+   return {1, 0, 0};
+}
+
 ctResults TestApp::OnStartup() {
    ctStringUtf8 myString = "THIS_IS_A_FILE";
    ctFile file;
-   Engine->FileSystem->OpenPreferencesFile(file, "Test.cfg", CT_FILE_OPEN_WRITE);
+   Engine->FileSystem->OpenPreferencesFile(
+     file, "Test.cfg", CT_FILE_OPEN_WRITE);
    file.WriteRaw(myString.CStr(), 1, myString.ByteLength());
    file.Close();
 
    ctFile asset;
-   Engine->FileSystem->OpenAssetFile(asset, "core/shaders/vk/ABCDEFG.txt");
+   Engine->FileSystem->OpenAssetFile(asset, "core/Test.txt");
    char data[32];
    memset(data, 0, 32);
    asset.ReadRaw(data, 1, 32);
@@ -43,7 +54,7 @@ ctResults TestApp::OnStartup() {
 int loopvar = 0;
 ctResults TestApp::OnTick(const float deltatime) {
    if (loopvar <= 5000) {
-       Engine->Debug->Log("This Message %d", loopvar);
+      Engine->Debug->Log("This Message %d", loopvar);
       loopvar++;
    }
    return CT_SUCCESS;
