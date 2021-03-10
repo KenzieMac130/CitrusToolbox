@@ -21,29 +21,24 @@
 #include "cute/cute_utf.h"
 
 ctStringUtf8::ctStringUtf8() {
-   _nullTerminate();
 }
 
 ctStringUtf8::ctStringUtf8(ctStringUtf8& str) {
-   _data = str._data;
+   *this += str;
 }
 
 ctStringUtf8::ctStringUtf8(const ctStringUtf8& str) {
-   _data = str._data;
+   *this += str;
 }
 
 ctStringUtf8::ctStringUtf8(const char* input, const size_t count) {
    const size_t final_count = strnlen(input, count);
-   Reserve(count);
-   _data.Append(input, final_count);
-   _nullTerminate();
+   Append(input, count);
 }
 
 ctStringUtf8::ctStringUtf8(const char* input) {
    const size_t count = strlen(input);
-   Reserve(count + 1);
-   _data.Append(input, count);
-   _nullTerminate();
+   Append(input, count);
 }
 
 const char* ctStringUtf8::CStr() const {
@@ -51,19 +46,25 @@ const char* ctStringUtf8::CStr() const {
 }
 
 void* ctStringUtf8::Data() const {
-   return (void*)_dataVoid();
+   return _dataVoid();
 }
 
 size_t ctStringUtf8::CodeLength() const {
+   if (isEmpty()) { return 0; }
    return utf8len(_dataVoid());
 }
 
 size_t ctStringUtf8::ByteLength() const {
+   if (isEmpty()) { return 0; }
    return strnlen(CStr(), Capacity());
 }
 
 size_t ctStringUtf8::Capacity() const {
    return _data.Capacity();
+}
+
+bool ctStringUtf8::isEmpty() const {
+   return _data.isEmpty();
 }
 
 ctResults ctStringUtf8::Reserve(const size_t amount) {
@@ -76,32 +77,34 @@ void ctStringUtf8::Clear() {
 }
 
 ctStringUtf8& ctStringUtf8::operator+=(const char c) {
-   _removeNullTerminator();
-   _data.Append(c);
-   _nullTerminate();
-   return *this;
+   return Append(&c, 1);
 }
 
 ctStringUtf8& ctStringUtf8::operator+=(const int32_t c) {
-   _removeNullTerminator();
    char tmp_buf[4] = {0, 0, 0, 0};
    const size_t bytecount =
      (size_t)((const char*)utf8catcodepoint(tmp_buf, c, 4) - tmp_buf);
-   _data.Append(tmp_buf, bytecount);
-   _nullTerminate();
-   return *this;
+   return Append(tmp_buf, bytecount);
 }
 
 ctStringUtf8& ctStringUtf8::operator+=(const char* str) {
+   return Append(str, strlen(str));
+}
+
+ctStringUtf8& ctStringUtf8::operator+=(const ctStringUtf8& str) {
+   return Append(str.CStr(), str.ByteLength());
+}
+
+ctStringUtf8& ctStringUtf8::Append(const char* str, size_t count) {
    _removeNullTerminator();
-   _data.Append(str, strlen(str));
+   _data.Append(str, count);
    _nullTerminate();
    return *this;
 }
 
-ctStringUtf8& ctStringUtf8::operator+=(const ctStringUtf8& str) {
+ctStringUtf8& ctStringUtf8::Append(const char chr, size_t count) {
    _removeNullTerminator();
-   _data.Append(str.CStr(), str.ByteLength());
+   _data.Append(chr, count);
    _nullTerminate();
    return *this;
 }
@@ -115,11 +118,8 @@ void ctStringUtf8::Printf(size_t max, const char* format, ...) {
 
 void ctStringUtf8::VPrintf(size_t max, const char* format, va_list args) {
    const size_t beginning_length = ByteLength();
-   _removeNullTerminator();
-   _data.Append('\0', max);
-   vsnprintf((char*)_dataVoid() + beginning_length, max - 1, format, args);
-   _removeNullTerminator(); /*Remove extra terminators*/
-   _nullTerminate();
+   Append('\0', max);
+   vsnprintf((char*)_dataVoid() + beginning_length, max, format, args);
 }
 
 int ctStringUtf8::Cmp(const ctStringUtf8& str) const {
@@ -164,7 +164,7 @@ ctStringUtf8& ctStringUtf8::FilePathLocalize() {
 }
 
 uint32_t ctStringUtf8::xxHash32(const int seed) const {
-   return _data.xxHash32(seed);
+   return XXH32(_dataVoid(), ByteLength(), seed);
 }
 
 uint32_t ctStringUtf8::xxHash32() const {
@@ -172,7 +172,7 @@ uint32_t ctStringUtf8::xxHash32() const {
 }
 
 uint64_t ctStringUtf8::xxHash64(const int seed) const {
-   return _data.xxHash64(seed);
+   return XXH64(_dataVoid(), ByteLength(), seed);
 }
 
 uint64_t ctStringUtf8::xxHash64() const {
@@ -183,11 +183,8 @@ inline void* ctStringUtf8::_dataVoid() const {
    return (void*)_data.Data();
 }
 
-void* ctStringUtf8::_dataVoidOffset(size_t offset) const {
-   return (void*)&(_data.Data()[offset]);
-}
-
 void ctStringUtf8::_removeNullTerminator() {
+   if (isEmpty()) { return; }
    int64_t idx = _data.Count() - 1;
    if (idx < 0) { idx = 0; }
    while (_data[idx] == '\0') {

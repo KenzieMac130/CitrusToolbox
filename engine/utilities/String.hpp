@@ -31,6 +31,7 @@ public:
    size_t CodeLength() const;
    size_t ByteLength() const;
    size_t Capacity() const;
+   bool isEmpty() const;
    ctResults Reserve(const size_t amount);
    void Clear();
 
@@ -42,6 +43,10 @@ public:
    ctStringUtf8& operator+=(const char* str);
    /* StringUtf8 Concat */
    ctStringUtf8& operator+=(const ctStringUtf8& str);
+   /* Sized C String Concat */
+   ctStringUtf8& Append(const char* str, size_t count);
+   /* Multiple Char Concat */
+   ctStringUtf8& Append(const char chr, size_t count);
 
    /*Case Sensitive Compare*/
    friend bool operator==(ctStringUtf8& a, const char* b);
@@ -68,10 +73,10 @@ public:
 
 private:
    void* _dataVoid() const;
-   void* _dataVoidOffset(size_t offset) const;
    void _removeNullTerminator();
    void _nullTerminate();
 
    /* Todo: Small string optimization */
+   //ctStaticArray<char, 32> _smallData;
    ctDynamicArray<char> _data;
 };
