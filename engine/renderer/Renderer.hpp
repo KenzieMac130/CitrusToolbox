@@ -16,25 +16,11 @@
 
 #pragma once
 
-#include "utilities/Common.h"
-
-#include "lowlevel/GfxBase.hpp"
-
 #include "core/ModuleBase.hpp"
-#include "core/Logging.hpp"
+#include "utilities/Common.h"
 
 class ctRenderer : public ctModuleBase {
 public:
-   ctRenderer(ctGfxBackend backend,
-              bool validate,
-              const char* appName,
-              int appVersion[3]);
-   ~ctRenderer();
-
-   ctResults LoadConfig(ctJSONReader::Entry& json) final;
-   ctResults SaveConfig(ctJSONWriter& writer) final;
-   ctResults Startup(ctEngineCore* pEngine) final;
-   ctResults Shutdown() final;
-
-   ctGfxCoreBase* GfxCore;
+    ctResults Startup() final;
+    ctResults Shutdown() final;
 };

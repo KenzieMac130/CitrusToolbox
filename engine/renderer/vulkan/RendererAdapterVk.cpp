@@ -1,4 +1,3 @@
-#include "GfxBase.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,26 +14,12 @@
    limitations under the License.
 */
 
-uint32_t ctGfxCanvasBase::GetWidth() {
-   return width;
-}
+#include "utilities/Common.h"
+#include "renderer/Renderer.hpp"
 
-uint32_t ctGfxCanvasBase::GetHeight() {
-   return height;
-}
-
-uint32_t ctGfxCanvasBase::GetMaxWidth() {
-   return maxWidth;
-}
-
-uint32_t ctGfxCanvasBase::GetMaxHeight() {
-   return maxHeight;
-}
-
-SDL_Window* ctGfxCanvasBase::GetOutputWindowPtr() {
-   return pWindow;
-}
-
-ctGfxTextureBase* ctGfxCanvasBase::GetOutputTexturePtr() {
-   return pTexture;
-}
+ctResults ctRenderer::Startup() {
+   return CT_SUCCESS;
+};
+ctResults ctRenderer::Shutdown() {
+   return CT_SUCCESS;
+};
