@@ -72,46 +72,6 @@ add_custom_command(OUTPUT ${ISPC_OUT}
 				   ${LIBRARY_INSTALL_DEPENDENCY})
 endforeach()
 
-# ---------- Compile Shaders ----------
-file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
-
-set(SHADER_DEPENDENCIES
-    #${CMAKE_CURRENT_SOURCE_DIR}/renderer/shaders/YYY.hlsl
-)
-
-set(SHADER_INPUTS
-    #${CMAKE_CURRENT_SOURCE_DIR}/renderer/shaders/XXX.hlsl
-)
-
-set(SHADER_OUTPUTS
-    #${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk/XXX.spv
-)
-
-set(SHADER_OPTIONS
-    #""
-)
-
-# Add build command for each file
-foreach(SHADER_IN SHADER_OUT SHADER_OPTIONS
-IN ZIP_LISTS 
-SHADER_INPUTS
-SHADER_OUTPUTS
-SHADER_OPTIONS)
-file(TOUCH ${SHADER_OUT})
-add_custom_command(OUTPUT ${SHADER_OUT}
-                   COMMAND
-                   ${Vulkan_GLSLC_EXECUTABLE} 
-                   ${SHADER_IN} 
-                   -o ${SHADER_OUT} 
-                   ${SHADER_OPTIONS}
-                   DEPENDS
-                   ${SHADER_IN} 
-                   ${SHADER_DEPENDENCIES} 
-				   ${LIBRARY_INSTALL_DEPENDENCY})
-
-# Transpile to other languages here
-endforeach()
-
 # ---------- Citrus Reflect ----------
 set(CITRUS_REFLECT_INPUTS
     /utilities/Reflect.hpp
@@ -164,12 +124,10 @@ set(ENGINE_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/Renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/lowlevel/GfxBase.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/lowlevel/vulkan/GfxCoreVk.cpp
 )
 
 # ----------Header Files ----------
@@ -182,7 +140,7 @@ set(ENGINE_HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/IndirectionTable.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.hpp
@@ -203,16 +161,64 @@ set(ENGINE_HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/Renderer.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/lowlevel/GfxBase.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/lowlevel/vulkan/GfxCoreVk.hpp
 )
 
-# ---------- Create Library ----------
+# ---------- Graphics Backend Files ----------
+set(ENGINE_GFX_SOURCE_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/RendererAdapterVk.cpp)
+
+set(ENGINE_GFX_HEADER_FILES)
+
+# ---------- Compile Shaders ----------
+file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
+
+set(SHADER_DEPENDENCIES
+)
+
+set(SHADER_INPUTS
+    #${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/XXX.glsl
+    #${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/test.glsl
+)
+
+set(SHADER_OUTPUTS
+    #${CITRUS_CODEGEN_DIR}/shaders/vk/XXX.spv
+    #${CITRUS_CODEGEN_DIR}/shaders/vk/test.spv
+)
+
+set(SHADER_HEADERS
+    #${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk/XXX.spv.h
+    #${CITRUS_CODEGEN_DIR}/shaders/vk/test.spv.h
+)
+
+set(SHADER_OPTIONS
+    #"-fshader-stage"
+)
+
+# Add build command for each file
+foreach(SHADER_IN SHADER_OUT SHADER_OPTIONS SHADER_HEADER
+IN ZIP_LISTS 
+SHADER_INPUTS
+SHADER_OUTPUTS
+SHADER_OPTIONS
+SHADER_HEADERS)
+add_custom_command(OUTPUT ${SHADER_OUTPUTS}
+                   COMMAND
+                   ${Vulkan_GLSLC_EXECUTABLE} 
+                   ${SHADER_IN} 
+                   -o ${SHADER_OUT} 
+                   ${SHADER_OPTIONS}
+                   DEPENDS
+                   ${SHADER_IN} 
+                   ${SHADER_DEPENDENCIES} 
+				   ${LIBRARY_INSTALL_DEPENDENCY})
+endforeach()
+
+# ---------- Create Engine Library ----------
 add_library(engine 
     ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES}
+    ${ENGINE_GFX_SOURCE_FILES} ${ENGINE_GFX_HEADER_FILES}
     ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS}
-    ${SHADERC_SHADER_DEPENDENCIES} ${SHADERC_SHADER_INPUTS}
-    ${SHADERC_SHADER_OUTPUTS}
+    ${SHADER_DEPENDENCIES} ${SHADER_INPUTS} ${SHADER_HEADERS}
     ${CITRUS_REFLECT_OUTPUTS}
     ${TRACY_FILES})
 set_property(TARGET engine PROPERTY FOLDER "engine")
