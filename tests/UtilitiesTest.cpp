@@ -91,9 +91,8 @@ int dynamic_string_test() {
    ctStringUtf8 mystring = ctStringUtf8("Hello world!");
    if (mystring.Cmp("Hello world!") == 0) { ctDebugLog("Cmp 0"); }
    if (mystring == "Hello world!") { ctDebugLog("Compare"); };
-   mystring += "My name Borat!";
+   mystring += "This is a test!";
    mystring += '?';
-   mystring += u8 "❤";
    mystring += ' ';
    ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
    mystring += str2;
@@ -107,21 +106,17 @@ int dynamic_string_test() {
 }
 
 int hash_table_test() {
-   ctIndirectTable<ctStringUtf8> table;
-   table.Reserve(32);
-   const ctStringUtf8 str2 = ctStringUtf8("Very nice!");
-   const uint32_t str2Hash = str2.xxHash32();
-   table.Insert(XXH32("A", 1, 0), "A");
-   table.Insert(XXH32("B", 1, 0), "B");
-   table.Insert(XXH32("C", 1, 0), "C");
-   table.Insert(str2Hash, str2);
-   table.Insert(XXH32("D", 1, 0), "D");
-   table.Insert(XXH32("E", 1, 0), "E");
-   table.Insert(XXH32("F", 1, 0), "F");
-   const ctStringUtf8* pstr = table.FindPtr(str2Hash);
-   if (pstr) { ctDebugLog(pstr->CStr()); }
-   table.Remove(str2Hash);
-   if (!table.Exists(str2Hash)) { ctDebugLog("Delete Success!"); }
+   ctHashTable<ctStringUtf8> hashTable = ctHashTable<ctStringUtf8>(40000);
+   uint32_t findhash = 0;
+   for (int i = 1; i < 1000; i++) {
+      ctStringUtf8 result;
+      result.Printf(64, "Number %d", i);
+      uint32_t hash = result.xxHash32();
+      if (i == 156) { findhash = hash; }
+      hashTable.Insert(hash, result);
+   }
+   ctStringUtf8* strptr = hashTable.FindPtr(findhash);
+   if (strptr) { ctDebugLog("%s", strptr->CStr()); }
    return 0;
 }
 
@@ -198,9 +193,9 @@ int json_test() {
    jsonOut.WriteNull();
    jsonOut.PopObject();
 
-   jsonOut.DeclareVariable("DOOT");
+   jsonOut.DeclareVariable("Second Object");
    jsonOut.PushObject();
-   jsonOut.DeclareVariable("arara");
+   jsonOut.DeclareVariable("vectors");
    jsonOut.PushArray();
    jsonOut.PushArray();
    jsonOut.WriteNumber(1.0f);
@@ -224,8 +219,8 @@ int json_test() {
    reader.BuildJsonForPtr(str.CStr(), str.ByteLength());
    ctJSONReader::Entry entry;
    reader.GetRootEntry(entry);          /*Whole JSON*/
-   entry.GetObjectEntry("DOOT", entry); /*"Test"*/
-   entry.GetObjectEntry("arara", entry);
+   entry.GetObjectEntry("Second Object", entry); /*"Test"*/
+   entry.GetObjectEntry("vectors", entry);
    entry.GetArrayEntry(0, entry);
    entry.GetArrayEntry(0, entry);
    float value = -90.0f;
