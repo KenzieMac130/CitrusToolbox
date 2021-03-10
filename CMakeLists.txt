@@ -36,6 +36,14 @@ endif()
 #---------- Unhelpful Warnings ----------
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
+# ---------- Limits ----------
+set(CT_MAX_SMALL_STRING 40)
+set(CT_MAX_FILE_PATH_LENGTH 4096)
+set(CT_MAX_LOG_LENGTH 512)
+set(CT_MAX_SETTINGS_INTS 1024)
+set(CT_MAX_SETTINGS_FLOATS 1024)
+set(CT_MAX_SETTINGS_STRINGS 512)
+
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
@@ -47,6 +55,7 @@ set(CITRUS_CODEGEN_DIR ${PROJECT_BINARY_DIR}/generated)
 # ---------- Citrus Reflect Tool ----------
 set(CITRUS_REFLECT_OUTPUT_DIR ${CITRUS_CODEGEN_DIR}/reflect)
 set(CITRUS_REFLECT_PY ${CMAKE_CURRENT_SOURCE_DIR}/tools/reflect/CitrusReflect.py)
+set(FILE_2_HEADER_PY ${CMAKE_CURRENT_SOURCE_DIR}/tools/file2header/File2Header.py)
 
 # ---------- Built Asset Directory ----------
 set(CITRUS_ASSET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
@@ -71,6 +80,7 @@ HINTS ${BASE_LIBRARY_DIRECTORY}/SDL2 REQUIRED)
 
 # ---------- Find Vulkan ----------
 find_package(Vulkan REQUIRED)
+set(CITRUS_GFX_VULKAN 1)
 
 # ---------- Find PhysX ----------
 
