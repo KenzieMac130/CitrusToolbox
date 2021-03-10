@@ -37,6 +37,11 @@ assets/game/
 # Libraries
 libs/
 
+# Confidential
+*playstation/
+*xbox/
+*nintendo/
+
 # Build
 build/
 tools/tracy
