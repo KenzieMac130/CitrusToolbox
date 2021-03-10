@@ -65,18 +65,18 @@ ctResults ctJSONWriter::PopArray() {
    return CT_SUCCESS;
 }
 
-ctResults ctJSONWriter::DeclareVariable(const ctStringUtf8& name) {
+ctResults ctJSONWriter::DeclareVariable(const char* name) {
    if (!_pStr) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    _finishLastEntry();
-   _pStr->Printf(name.ByteLength() + 6, "\"%s\": ", name.CStr());
+   _pStr->Printf(strlen(name) + 6, "\"%s\": ", name);
    _setDefinition(true);
    return CT_SUCCESS;
 }
 
-ctResults ctJSONWriter::WriteString(const ctStringUtf8& value) {
+ctResults ctJSONWriter::WriteString(const char* value) {
    if (!_pStr) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    _finishLastEntry();
-   _pStr->Printf(value.ByteLength() + 4, "\"%s\"", value.CStr());
+   _pStr->Printf(strlen(value) + 4, "\"%s\"", value);
    _unmarkFirst();
    _setDefinition(false);
    return CT_SUCCESS;

@@ -33,8 +33,8 @@ public:
    ctResults PopObject();
    ctResults PushArray();
    ctResults PopArray();
-   ctResults DeclareVariable(const ctStringUtf8& name);
-   ctResults WriteString(const ctStringUtf8& value);
+   ctResults DeclareVariable(const char* name);
+   ctResults WriteString(const char* value);
    ctResults WriteNumber(double value);
    ctResults WriteNumber(int32_t value);
    ctResults WriteNumber(int64_t value);
