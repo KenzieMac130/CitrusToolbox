@@ -38,9 +38,7 @@ public:
    ctWindowManager();
    ~ctWindowManager();
 
-   ctResults LoadConfig(ctJSONReader::Entry& json) final;
-   ctResults SaveConfig(ctJSONWriter& writer) final;
-   ctResults Startup(ctEngineCore* pEngine) final;
+   ctResults Startup() final;
    ctResults Shutdown() final;
 
    ctResults CreateWindow(ctWindow** ppWindow,
@@ -49,21 +47,6 @@ public:
                           int32_t w,
                           int32_t h,
                           ctWindowMode windowMode);
-
-   ctResults CreateRawWindow(ctWindow** ppWindow,
-                          const char* name,
-                          int32_t monitor,
-                          int32_t w,
-                          int32_t h,
-                          ctWindowMode windowMode);
-
-   ctResults CreateAPIWindow(ctWindow** ppWindow,
-                             const char* name,
-                             int32_t monitor,
-                             int32_t w,
-                             int32_t h,
-                             ctWindowMode windowMode,
-                             ctGfxBackend api);
 
    ctResults CreateNativeWindow(ctWindow* pWindow, const void* pData);
 

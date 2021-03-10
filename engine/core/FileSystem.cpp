@@ -101,26 +101,17 @@ ctFileSystem::ctFileSystem(const ctStringUtf8& appName,
    _organizationName = organizationName;
 }
 
-ctResults ctFileSystem::LoadConfig(ctJSONReader::Entry& json) {
-   return ctResults();
-}
-
-ctResults ctFileSystem::SaveConfig(ctJSONWriter& writer) {
-   return ctResults();
-}
-
-ctResults ctFileSystem::Startup(ctEngineCore* pEngine) {
-   Engine = pEngine;
+ctResults ctFileSystem::Startup() {
    _dataPath = SDL_GetBasePath();
    _prefPath = SDL_GetPrefPath(_organizationName.CStr(), _appName.CStr());
 
    ctFile assetRedirectFile;
    OpenExeRelativeFile(assetRedirectFile, "assets.redirect");
    char pathSetMode = '~';
-   char redirectPath[1025];
-   memset(redirectPath, 0, 1025);
+   char redirectPath[CT_MAX_FILE_PATH_LENGTH];
+   memset(redirectPath, 0, CT_MAX_FILE_PATH_LENGTH);
    assetRedirectFile.ReadRaw(&pathSetMode, 1, 1);
-   assetRedirectFile.ReadRaw(redirectPath, 1, 1024);
+   assetRedirectFile.ReadRaw(redirectPath, 1, CT_MAX_FILE_PATH_LENGTH-1);
    switch (pathSetMode) {
       case '+':
          _assetPath = _dataPath;

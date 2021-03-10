@@ -24,16 +24,7 @@ ctWindowManager::ctWindowManager() {
 ctWindowManager::~ctWindowManager() {
 }
 
-ctResults ctWindowManager::LoadConfig(ctJSONReader::Entry& json) {
-   return CT_SUCCESS;
-}
-
-ctResults ctWindowManager::SaveConfig(ctJSONWriter& writer) {
-   return CT_SUCCESS;
-}
-
-ctResults ctWindowManager::Startup(ctEngineCore* pEngine) {
-   Engine = pEngine;
+ctResults ctWindowManager::Startup() {
    return CT_SUCCESS;
 }
 
@@ -59,48 +50,30 @@ uint32_t windowModeFlags(ctWindowMode windowMode) {
 ctResults ctWindowManager::CreateWindow(ctWindow** ppWindow,
                                         const char* name,
                                         int32_t monitor,
-                                        int32_t h,
                                         int32_t w,
+                                        int32_t h,
                                         ctWindowMode windowMode) {
-   const ctGfxBackend api = Engine->Renderer->GfxCore->GetBackendId();
-   return CreateAPIWindow(ppWindow, name, monitor, h, w, windowMode, api);
-}
-
-ctResults ctWindowManager::CreateRawWindow(ctWindow** ppWindow,
-                                           const char* name,
-                                           int32_t monitor,
-                                           int32_t w,
-                                           int32_t h,
-                                           ctWindowMode windowMode) {
-   return CreateAPIWindow(
-     ppWindow, name, monitor, h, w, windowMode, CT_GFX_NULL);
-}
-
-ctResults ctWindowManager::CreateAPIWindow(ctWindow** ppWindow,
-                                           const char* name,
-                                           int32_t monitor,
-                                           int32_t w,
-                                           int32_t h,
-                                           ctWindowMode windowMode,
-                                           ctGfxBackend api) {
-   uint32_t flags = windowModeFlags(windowMode);
-   if (api == CT_GFX_VULKAN) { flags |= SDL_WINDOW_VULKAN; }
-   SDL_Rect windowDim;
-   if (windowMode == CT_WINDOWMODE_FULLSCREEN_BORDERLESS) {
-      SDL_GetDisplayBounds(monitor, &windowDim);
-   } else {
-      windowDim.x = SDL_WINDOWPOS_CENTERED_DISPLAY(monitor);
-      windowDim.y = SDL_WINDOWPOS_CENTERED_DISPLAY(monitor);
-      windowDim.w = w;
-      windowDim.h = h;
-   }
-   ctWindow* window = SDL_CreateWindow(
-     name, windowDim.x, windowDim.y, windowDim.w, windowDim.h, flags);
-   if (!window) { return CT_FAILURE_UNKNOWN; }
-   SDL_SetWindowMinimumSize(window, 640, 480);
-   windows.Append(window);
-   if (ppWindow) { *ppWindow = window; }
-   return CT_SUCCESS;
+    uint32_t flags = windowModeFlags(windowMode);
+#if CT_GFX_VULKAN
+    flags |= SDL_WINDOW_VULKAN;
+#endif
+    SDL_Rect windowDim;
+    if (windowMode == CT_WINDOWMODE_FULLSCREEN_BORDERLESS) {
+        SDL_GetDisplayBounds(monitor, &windowDim);
+    }
+    else {
+        windowDim.x = SDL_WINDOWPOS_CENTERED_DISPLAY(monitor);
+        windowDim.y = SDL_WINDOWPOS_CENTERED_DISPLAY(monitor);
+        windowDim.w = w;
+        windowDim.h = h;
+    }
+    ctWindow* window = SDL_CreateWindow(
+        name, windowDim.x, windowDim.y, windowDim.w, windowDim.h, flags);
+    if (!window) { return CT_FAILURE_UNKNOWN; }
+    SDL_SetWindowMinimumSize(window, 640, 480);
+    windows.Append(window);
+    if (ppWindow) { *ppWindow = window; }
+    return CT_SUCCESS;
 }
 
 ctResults ctWindowManager::CreateNativeWindow(ctWindow* pWindow,

@@ -20,10 +20,10 @@
 
 class ctModuleBase {
 public:
-    virtual ctResults LoadConfig(ctJSONReader::Entry& json) = 0;
-    virtual ctResults SaveConfig(ctJSONWriter& writer) = 0;
-    virtual ctResults Startup(class ctEngineCore* pEngine) = 0;
+    virtual ctResults Startup() = 0;
     virtual ctResults Shutdown() = 0;
+    ctResults ModuleStartup(class ctEngineCore* pEngine);
+    ctResults ModuleShutdown();
 protected:
     class ctEngineCore* Engine;
 };

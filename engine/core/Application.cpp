@@ -16,22 +16,6 @@
 
 #include "Application.hpp"
 
-const ctStringUtf8& ctApplication::GetAppName() {
-   return _appName;
-}
-
-int ctApplication::GetAppVersionMajor() {
-   return _appVersionMajor;
-}
-
-int ctApplication::GetAppVersionMinor() {
-   return _appVersionMinor;
-}
-
-int ctApplication::GetAppVersionPatch() {
-   return _appVersionPatch;
-}
-
 int ctApplication::Execute(int argc, char* argv[])
 {
     Engine = new ctEngineCore();

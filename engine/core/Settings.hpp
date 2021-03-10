@@ -17,24 +17,25 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "ModuleBase.hpp"
 #include "FileSystem.hpp"
 
-class ctSettings {
+/*Todo: This immediately, needs to be able to register and load console values*/
+
+class ctSettings : ctModuleBase {
 public:
    ctSettings(const ctStringUtf8& fileName, ctFileSystem* pFileSystem);
-   ctResults Load();
-   ctResults Save();
+
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
 private:
-   struct _settingsEntry {
-      int type;
-      float fval;
-      int ival;
-      bool bval;
-      ctStringUtf8 sval;
+   struct _setting {
+      uint8_t type;
+      uint32_t idx;
    };
-   ctFileSystem* _pFileSystem;
-   //ctHashTable<_settingsEntry> _settings;
-   ctStringUtf8 _str;
-   ctStringUtf8 _filePath;
+   ctHashTable<_setting> _commandAssociations;
+   ctStaticArray<int32_t, CT_MAX_SETTINGS_INTS> _ints;
+   ctStaticArray<float, CT_MAX_SETTINGS_FLOATS> _floats;
+   ctStaticArray<ctStringUtf8, CT_MAX_SETTINGS_FLOATS> _strings;
 };

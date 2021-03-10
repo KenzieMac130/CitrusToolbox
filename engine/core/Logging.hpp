@@ -28,19 +28,17 @@ public:
    ctDebugSystem(uint32_t flushafter);
    ~ctDebugSystem();
 
-   ctResults LoadConfig(ctJSONReader::Entry& json) final;
-   ctResults SaveConfig(ctJSONWriter& writer) final;
-   ctResults Startup(ctEngineCore* pEngine) final;
+   ctResults Startup() final;
    ctResults Shutdown() final;
 
    void Log(const char* format, ...);
    void Warning(const char* format, ...);
    void Error(const char* format, ...);
-   /* Draw Line */
+
 private:
    struct _internalMessage {
       int level;
-      char msg[512];
+      char msg[CT_MAX_LOG_LENGTH];
    };
 
    void _flushMessageQueue();

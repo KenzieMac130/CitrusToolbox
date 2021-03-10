@@ -18,28 +18,18 @@
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    App = pApp;
-   int appVersion[3] = {App->GetAppVersionMajor(),
-                        App->GetAppVersionMinor(),
-                        App->GetAppVersionPatch()};
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), "CitrusToolbox");
    Debug = new ctDebugSystem(32);
-   Renderer = new ctRenderer(CT_GFX_VULKAN,
-#ifdef NDEBUG
-                             false,
-#else
-                             true,
-#endif
-                             "appName",
-                             appVersion);
    WindowManager = new ctWindowManager();
+   Renderer = new ctRenderer();
 
    /* Startup Modules */
-   FileSystem->Startup(this);
-   Debug->Startup(this);
-   WindowManager->Startup(this);
+   FileSystem->ModuleStartup(this);
+   Debug->ModuleStartup(this);
+   WindowManager->ModuleStartup(this);
    App->InitialWindowSetup();
-   Renderer->Startup(this);
+   Renderer->ModuleStartup(this);
 
    /* Run User Code */
    App->OnStartup();
@@ -72,10 +62,10 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
 ctResults ctEngineCore::Shutdown() {
    App->OnShutdown();
    /*Shutdown modules*/
-   Renderer->Shutdown();
-   WindowManager->Shutdown();
-   Debug->Shutdown();
-   FileSystem->Shutdown();
+   Renderer->ModuleShutdown();
+   WindowManager->ModuleShutdown();
+   Debug->ModuleShutdown();
+   FileSystem->ModuleShutdown();
    delete WindowManager;
    delete Renderer;
    delete Debug;

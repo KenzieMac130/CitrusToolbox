@@ -1,3 +1,4 @@
+#include "ModuleBase.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -14,16 +15,11 @@
    limitations under the License.
 */
 
-#include "Settings.hpp"
-
-ctSettings::ctSettings(const ctStringUtf8& fileName,
-                       ctFileSystem* pFileSystem) {
+ctResults ctModuleBase::ModuleStartup(class ctEngineCore* pEngine) {
+   Engine = pEngine;
+   return Startup();
 }
 
-ctResults ctSettings::Startup() {
-   return ctResults();
-}
-
-ctResults ctSettings::Shutdown() {
-   return ctResults();
+ctResults ctModuleBase::ModuleShutdown() {
+   return Shutdown();
 }

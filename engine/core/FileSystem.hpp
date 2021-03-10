@@ -63,9 +63,7 @@ public:
    ctFileSystem(const ctStringUtf8& appName,
                 const ctStringUtf8& organizationName);
 
-   ctResults LoadConfig(ctJSONReader::Entry& json) final;
-   ctResults SaveConfig(ctJSONWriter& writer) final;
-   ctResults Startup(ctEngineCore* pEngine) final;
+   ctResults Startup() final;
    ctResults Shutdown() final;
 
    const ctStringUtf8& GetPreferencesPath();

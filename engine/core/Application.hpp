@@ -19,6 +19,8 @@
 #include "utilities/Common.h"
 #include "EngineCore.hpp"
 
+struct ctAppVersion { int32_t major; int32_t minor; int32_t patch; };
+
 class ctApplication {
 public:
    virtual int Execute(int argc, char* argv[]);
@@ -29,16 +31,8 @@ public:
    virtual ctResults OnTick(const float deltatime);
    virtual ctResults OnShutdown();
 
-   const ctStringUtf8& GetAppName();
-   int GetAppVersionMajor();
-   int GetAppVersionMinor();
-   int GetAppVersionPatch();
+   virtual const char* GetAppName() = 0;
+   virtual ctAppVersion GetAppVersion() = 0;
 
    class ctEngineCore* Engine;
-
-private:
-   ctStringUtf8 _appName;
-   int _appVersionMajor;
-   int _appVersionMinor;
-   int _appVersionPatch;
 };

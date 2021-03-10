@@ -26,16 +26,7 @@ ctDebugSystem::~ctDebugSystem() {
    ctMutexDestroy(_logLock);
 }
 
-ctResults ctDebugSystem::LoadConfig(ctJSONReader::Entry& json) {
-   return CT_SUCCESS;
-}
-
-ctResults ctDebugSystem::SaveConfig(ctJSONWriter& writer) {
-   return CT_SUCCESS;
-}
-
-ctResults ctDebugSystem::Startup(ctEngineCore* pEngine) {
-   Engine = pEngine;
+ctResults ctDebugSystem::Startup() {
    Engine->FileSystem->OpenPreferencesFile(
      _logFile, "Log.txt", CT_FILE_OPEN_WRITE);
    return CT_SUCCESS;
@@ -52,13 +43,13 @@ ctResults ctDebugSystem::Shutdown() {
 void ctDebugSystem::Log(const char* format, ...) {
    va_list args;
    va_start(args, format);
-   char tmp[512];
-   memset(tmp, 0, 512);
-   vsnprintf(tmp, 511, format, args);
+   char tmp[CT_MAX_LOG_LENGTH];
+   memset(tmp, 0, CT_MAX_LOG_LENGTH);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH-1, format, args);
    ctMutexLock(_logLock);
    printf("[LOG] %s\n", tmp);
    _internalMessage msg;
-   strncpy(msg.msg, tmp, 512);
+   strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 0;
    _addToMessageQueue(msg);
    ctMutexUnlock(_logLock);
@@ -68,13 +59,13 @@ void ctDebugSystem::Log(const char* format, ...) {
 void ctDebugSystem::Warning(const char* format, ...) {
    va_list args;
    va_start(args, format);
-   char tmp[512];
-   memset(tmp, 0, 512);
-   vsnprintf(tmp, 511, format, args);
+   char tmp[CT_MAX_LOG_LENGTH];
+   memset(tmp, 0, CT_MAX_LOG_LENGTH);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH-1, format, args);
    ctMutexLock(_logLock);
    printf("[WARNING] %s\n", tmp);
    _internalMessage msg;
-   strncpy(msg.msg, tmp, 512);
+   strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 1;
    _addToMessageQueue(msg);
    ctMutexUnlock(_logLock);
@@ -84,13 +75,13 @@ void ctDebugSystem::Warning(const char* format, ...) {
 void ctDebugSystem::Error(const char* format, ...) {
    va_list args;
    va_start(args, format);
-   char tmp[512];
-   memset(tmp, 0, 512);
-   vsnprintf(tmp, 511, format, args);
+   char tmp[CT_MAX_LOG_LENGTH];
+   memset(tmp, 0, CT_MAX_LOG_LENGTH);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH-1, format, args);
    ctMutexLock(_logLock);
    printf("[ERROR] %s\n", tmp);
    _internalMessage msg;
-   strncpy(msg.msg, tmp, 512);
+   strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 2;
    _addToMessageQueue(msg);
    ctMutexUnlock(_logLock);
