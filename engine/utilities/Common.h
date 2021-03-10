@@ -116,7 +116,7 @@ enum ctResults {
 #include "Math.hpp"
 #include "Hash.hpp"
 #include "String.hpp"
-#include "IndirectionTable.hpp"
+#include "HashTable.hpp"
 #include "Vector.hpp"
 #include "AABB.hpp"
 #include "Quaternion.hpp"
