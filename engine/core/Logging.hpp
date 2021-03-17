@@ -45,6 +45,6 @@ private:
    void _addToMessageQueue(const _internalMessage msg);
    ctDynamicArray<_internalMessage> _messageQueue;
    ctFile _logFile;
-   uint32_t _flushAfter;
+   int32_t _flushAfter;
    ctMutex _logLock;
 };

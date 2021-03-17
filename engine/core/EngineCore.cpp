@@ -19,16 +19,15 @@
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    App = pApp;
    /* Create Modules */
+   Settings = new ctSettings();
    FileSystem = new ctFileSystem(App->GetAppName(), "CitrusToolbox");
    Debug = new ctDebugSystem(32);
-   WindowManager = new ctWindowManager();
    Renderer = new ctRenderer();
 
    /* Startup Modules */
+   Settings->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
    Debug->ModuleStartup(this);
-   WindowManager->ModuleStartup(this);
-   App->InitialWindowSetup();
    Renderer->ModuleStartup(this);
 
    /* Run User Code */
@@ -63,12 +62,12 @@ ctResults ctEngineCore::Shutdown() {
    App->OnShutdown();
    /*Shutdown modules*/
    Renderer->ModuleShutdown();
-   WindowManager->ModuleShutdown();
    Debug->ModuleShutdown();
+   Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();
-   delete WindowManager;
    delete Renderer;
    delete Debug;
    delete FileSystem;
+   delete Settings;
    return CT_SUCCESS;
 }

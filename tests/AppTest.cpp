@@ -33,21 +33,6 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
-   ctStringUtf8 myString = "THIS_IS_A_FILE";
-   ctFile file;
-   Engine->FileSystem->OpenPreferencesFile(
-     file, "Test.cfg", CT_FILE_OPEN_WRITE);
-   file.WriteRaw(myString.CStr(), 1, myString.ByteLength());
-   file.Close();
-
-   ctFile asset;
-   Engine->FileSystem->OpenAssetFile(asset, "core/Test.txt");
-   char data[32];
-   memset(data, 0, 32);
-   asset.ReadRaw(data, 1, 32);
-   Engine->Debug->Log(data);
-   asset.Close();
-
    return CT_SUCCESS;
 }
 

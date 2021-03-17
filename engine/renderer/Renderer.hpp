@@ -21,6 +21,10 @@
 
 class ctRenderer : public ctModuleBase {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup() final;
+   ctResults Shutdown() final;
+
+#ifdef CITRUS_GFX_VULKAN
+   class ctVkBackend* vkBackend;
+#endif
 };

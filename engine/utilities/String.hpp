@@ -44,17 +44,17 @@ public:
    /* StringUtf8 Concat */
    ctStringUtf8& operator+=(const ctStringUtf8& str);
    /* Sized C String Concat */
-   ctStringUtf8& Append(const char* str, size_t count);
+   ctStringUtf8& Append(const char* str, const size_t count);
    /* Multiple Char Concat */
-   ctStringUtf8& Append(const char chr, size_t count);
+   ctStringUtf8& Append(const char chr, const size_t count);
 
    /*Case Sensitive Compare*/
-   friend bool operator==(ctStringUtf8& a, const char* b);
-   friend bool operator==(ctStringUtf8& a, ctStringUtf8& b);
-   friend bool operator==(const char* a, ctStringUtf8& b);
+   friend bool operator==(const ctStringUtf8& a, const char* b);
+   friend bool operator==(const ctStringUtf8& a, const ctStringUtf8& b);
+   friend bool operator==(const char* a, const ctStringUtf8& b);
 
-   void Printf(size_t max, const char* format, ...);
-   void VPrintf(size_t max, const char* format, va_list va);
+   void Printf(const size_t max, const char* format, ...);
+   void VPrintf(const size_t max, const char* format, va_list va);
 
    int Cmp(const ctStringUtf8& str) const;
    int Cmp(const char* str) const;
@@ -62,6 +62,9 @@ public:
 
    ctStringUtf8& ToUpper();
    ctStringUtf8& ToLower();
+
+   bool isNumber() const;
+   bool isInteger() const;
 
    ctStringUtf8& FilePathUnify();
    ctStringUtf8& FilePathLocalize();

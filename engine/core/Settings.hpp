@@ -20,22 +20,82 @@
 #include "ModuleBase.hpp"
 #include "FileSystem.hpp"
 
-/*Todo: This immediately, needs to be able to register and load console values*/
-
-class ctSettings : ctModuleBase {
+class ctSettingsSection {
 public:
-   ctSettings(const ctStringUtf8& fileName, ctFileSystem* pFileSystem);
+   ctSettingsSection();
+   ctSettingsSection(int max);
+   ctResults BindInteger(int32_t* ptr,
+                         bool save,
+                         bool load,
+                         const char* name,
+                         const char* help,
+                         void (*setCallback)(const char* value,
+                                             void* customData) = NULL,
+                         void* customData = NULL);
+   ctResults BindFloat(float* ptr,
+                       bool save,
+                       bool load,
+                       const char* name,
+                       const char* help,
+                       void (*setCallback)(const char* value,
+                                           void* customData) = NULL,
+                       void* customData = NULL);
+   ctResults BindString(ctStringUtf8* ptr,
+                        bool save,
+                        bool load,
+                        const char* name,
+                        const char* help,
+                        void (*setCallback)(const char* value,
+                                            void* customData) = NULL,
+                        void* customData = NULL);
+   ctResults BindFunction(const char* name,
+                          const char* help,
+                          void (*setCallback)(const char* value,
+                                              void* customData) = NULL,
+                          void* customData = NULL);
+
+   ctResults ExecCommand(const char* name, const char* command);
+   ctResults GetValue(const char* name, ctStringUtf8& out);
+   ctResults GetHelp(const char* name, ctStringUtf8& out);
+
+private:
+   enum _setting_type {
+      SETTING_TYPE_FLOAT,
+      SETTING_TYPE_INTEGER,
+      SETTING_TYPE_STRING,
+      SETTING_TYPE_FUNCTION,
+   };
+
+   ctResults _bindvar(_setting_type type,
+                      bool save,
+                      bool load,
+                      const char* name,
+                      const char* help,
+                      void* ptr,
+                      void (*setCallback)(const char* value, void* customData),
+                      void* customData);
+
+   struct _setting {
+      _setting_type type;
+      bool save;
+      bool load;
+      const char* name;
+      const char* help;
+      void* dataPtr;
+      void (*setCallback)(const char* value, void* customData);
+      void* customData;
+   };
+   ctHashTable<_setting> _settings;
+};
+
+class ctSettings : public ctModuleBase {
+public:
+   ctSettingsSection* CreateSection(const char* name, int max);
+   ctSettingsSection* GetSection(const char* name);
 
    ctResults Startup() final;
    ctResults Shutdown() final;
 
 private:
-   struct _setting {
-      uint8_t type;
-      uint32_t idx;
-   };
-   ctHashTable<_setting> _commandAssociations;
-   ctStaticArray<int32_t, CT_MAX_SETTINGS_INTS> _ints;
-   ctStaticArray<float, CT_MAX_SETTINGS_FLOATS> _floats;
-   ctStaticArray<ctStringUtf8, CT_MAX_SETTINGS_FLOATS> _strings;
+   ctHashTable<ctSettingsSection> _sections;
 };

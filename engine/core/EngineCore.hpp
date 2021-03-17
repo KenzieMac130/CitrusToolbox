@@ -22,7 +22,6 @@
 #include "FileSystem.hpp"
 #include "Logging.hpp"
 #include "Settings.hpp"
-#include "WindowManager.hpp"
 #include "renderer/Renderer.hpp"
 
 class ctEngineCore {
@@ -41,8 +40,8 @@ public:
 
     class ctApplication* App;
     ctFileSystem* FileSystem;
+    ctSettings* Settings;
     ctDebugSystem* Debug;
-    ctWindowManager* WindowManager;
     ctRenderer* Renderer;
 private:
     bool _isRunning = true;

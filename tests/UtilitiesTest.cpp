@@ -218,16 +218,13 @@ int json_test() {
    ctJSONReader reader;
    reader.BuildJsonForPtr(str.CStr(), str.ByteLength());
    ctJSONReader::Entry entry;
-   reader.GetRootEntry(entry);          /*Whole JSON*/
-   entry.GetObjectEntry("Second Object", entry); /*"Test"*/
+   reader.GetRootEntry(entry);
+   entry.GetObjectEntry("Second Object", entry);
    entry.GetObjectEntry("vectors", entry);
    entry.GetArrayEntry(0, entry);
    entry.GetArrayEntry(0, entry);
    float value = -90.0f;
    entry.GetNumber(value);
-   // entry.GetObjectEntry("TEST", entry);
-   // entry.GetSubEntry(0, entry); /*{DATA....}*/
-   // entry.GetSubEntry(1, entry);
    ctStringUtf8 str2;
    entry.GetString(str2);
    ctDebugLog("%f", value);

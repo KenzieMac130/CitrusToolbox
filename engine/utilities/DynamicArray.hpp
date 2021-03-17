@@ -132,7 +132,6 @@ inline ctDynamicArray<T>::ctDynamicArray(const ctDynamicArray<T>& arr) {
 #ifndef CT_TMP_USE_STD
    const size_t inputcount = arr.Count();
    Resize(inputcount);
-   ctAssert(_pData);
    for (size_t i = 0; i < inputcount; i++) {
       _pData[i] = arr[i];
    }
@@ -144,7 +143,6 @@ inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) {
 #ifndef CT_TMP_USE_STD
    const size_t inputcount = arr.Count();
    Resize(inputcount);
-   ctAssert(_pData);
    for (size_t i = 0; i < inputcount; i++) {
       _pData[i] = arr[i];
    }
@@ -231,6 +229,7 @@ inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
    if (amount == Count()) {
       return CT_SUCCESS;
    } else if (amount <= 0) {
+      _pData = NULL;
       Clear();
       return CT_SUCCESS;
    }
@@ -302,7 +301,6 @@ inline ctDynamicArray<T>&
 ctDynamicArray<T>::operator=(const ctDynamicArray<T>& arr) {
    const size_t inputcount = arr.Count();
    Resize(inputcount);
-   ctAssert(_pData);
    for (size_t i = 0; i < inputcount; i++) {
       _pData[i] = arr[i];
    }

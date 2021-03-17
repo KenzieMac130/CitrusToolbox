@@ -25,12 +25,6 @@ int ctApplication::Execute(int argc, char* argv[])
     return 0;
 }
 
-ctResults ctApplication::InitialWindowSetup() {
-   Engine->WindowManager->CreateWindow(
-     NULL, "Test", 0, 640, 480, CT_WINDOWMODE_WINDOWED_RESIZABLE);
-   return CT_SUCCESS;
-}
-
 ctResults ctApplication::OnStartup() {
    return ctResults();
 }

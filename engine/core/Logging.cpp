@@ -15,7 +15,7 @@
 */
 
 #include "Logging.hpp"
-#include "EngineCore.hpp"
+#include "core/EngineCore.hpp"
 
 ctDebugSystem::ctDebugSystem(uint32_t flushafter) {
    _flushAfter = flushafter;
@@ -27,6 +27,15 @@ ctDebugSystem::~ctDebugSystem() {
 }
 
 ctResults ctDebugSystem::Startup() {
+   ctSettingsSection* settings =
+     Engine->Settings->CreateSection("DebugSystem", 1);
+   settings->BindInteger(
+     &_flushAfter,
+     false,
+     true,
+     "FlushAfter",
+     "Write the debug log contents after a certain amount of logs.");
+
    Engine->FileSystem->OpenPreferencesFile(
      _logFile, "Log.txt", CT_FILE_OPEN_WRITE);
    return CT_SUCCESS;
@@ -45,9 +54,9 @@ void ctDebugSystem::Log(const char* format, ...) {
    va_start(args, format);
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
-   vsnprintf(tmp, CT_MAX_LOG_LENGTH-1, format, args);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
-   printf("[LOG] %s\n", tmp);
+   fprintf(stdout, "[LOG] %s\n", tmp);
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 0;
@@ -61,9 +70,9 @@ void ctDebugSystem::Warning(const char* format, ...) {
    va_start(args, format);
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
-   vsnprintf(tmp, CT_MAX_LOG_LENGTH-1, format, args);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
-   printf("[WARNING] %s\n", tmp);
+   fprintf(stderr, "[WARNING] %s\n", tmp);
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 1;
@@ -77,9 +86,9 @@ void ctDebugSystem::Error(const char* format, ...) {
    va_start(args, format);
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
-   vsnprintf(tmp, CT_MAX_LOG_LENGTH-1, format, args);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
-   printf("[ERROR] %s\n", tmp);
+   fprintf(stderr, "[ERROR] %s\n", tmp);
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 2;

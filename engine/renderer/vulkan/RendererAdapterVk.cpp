@@ -16,10 +16,40 @@
 
 #include "utilities/Common.h"
 #include "renderer/Renderer.hpp"
+#include "core/EngineCore.hpp"
+
+class ctVkBackend {
+public:
+   int32_t width;
+   int32_t height;
+   int32_t centerMonitorIdx;
+   ctStringUtf8 windowMode;
+};
 
 ctResults ctRenderer::Startup() {
+   vkBackend = new ctVkBackend();
+
+   ctSettingsSection* settings = Engine->Settings->CreateSection("Renderer", 16);
+   settings->BindInteger(
+     &vkBackend->width, true, true, "WindowWidth", "Width of the main window.");
+   settings->BindInteger(&vkBackend->height,
+                         true,
+                         true,
+                         "WindowHeight",
+                         "Height of the main window.");
+   settings->BindInteger(&vkBackend->centerMonitorIdx,
+                         true,
+                         true,
+                         "MonitorIndex",
+                         "Target monitor to place the window in.");
+   settings->BindString(&vkBackend->windowMode,
+                        true,
+                        true,
+                        "WindowMode",
+                        "Main Window Mode. (Windowed, Resizable, Borderless)");
    return CT_SUCCESS;
 };
 ctResults ctRenderer::Shutdown() {
+   delete vkBackend;
    return CT_SUCCESS;
 };

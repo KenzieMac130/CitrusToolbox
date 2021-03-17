@@ -18,9 +18,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(CitrusToolbox)
 
-# ---------- Organization ----------
-set(GLOBAL PROPERTY USE_FOLDERS ON)
-
 # ---------- Unicode ----------
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
@@ -40,9 +37,7 @@ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 set(CT_MAX_SMALL_STRING 40)
 set(CT_MAX_FILE_PATH_LENGTH 4096)
 set(CT_MAX_LOG_LENGTH 512)
-set(CT_MAX_SETTINGS_INTS 1024)
-set(CT_MAX_SETTINGS_FLOATS 1024)
-set(CT_MAX_SETTINGS_STRINGS 512)
+set(CT_MAX_SETTINGS_SECTIONS 64)
 
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)

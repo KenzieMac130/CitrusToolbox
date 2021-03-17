@@ -51,6 +51,7 @@ if /i "%DOWNLOAD%" equ "n" (
 	exit 1
 )
 if /i "%DOWNLOAD%" equ "y" (
+	@rem Todo: Better file hosting solution!
 	git clone https://github.com/KenzieMac130/CitrusDeps-Win64.git libs\Win64
 	goto :get_python_deps
 )

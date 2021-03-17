@@ -69,8 +69,9 @@ size_t ctFile::ReadRaw(void* pDest, const size_t size, const size_t count) {
 }
 
 size_t ctFile::ReadString(ctStringUtf8& pDest, const size_t count) {
-   // size_t readCount ReadRaw(;
-   return size_t();
+    //if (!_fp) { return 0; }
+    //return fread(pDest, size, count, _fp);
+    return 0;
 }
 
 size_t ctFile::WriteRaw(const void* pData, size_t size, const size_t count) {

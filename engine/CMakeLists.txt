@@ -108,7 +108,7 @@ list(APPEND CITRUS_REFLECT_OUTPUTS ${REFLECT_OUT})
 endforeach()
 
 # ---------- Source Files ----------
-set(ENGINE_SOURCE_FILES
+set(ENGINE_SOURCE_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
@@ -120,21 +120,10 @@ set(ENGINE_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
 )
 
-# ----------Header Files ----------
-set(ENGINE_HEADER_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
+set(ENGINE_HEADER_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
@@ -152,6 +141,19 @@ set(ENGINE_HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.hpp
+)
+
+set(ENGINE_SOURCE_FILES_CORE
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
+)
+
+set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
@@ -159,15 +161,19 @@ set(ENGINE_HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
+)
+
+set(ENGINE_SOURCE_FILES_RENDERER)
+
+set(ENGINE_HEADER_FILES_RENDERER
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/Renderer.hpp
 )
 
 # ---------- Graphics Backend Files ----------
-set(ENGINE_GFX_SOURCE_FILES
+set(ENGINE_SOURCE_FILES_VULKAN
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/RendererAdapterVk.cpp)
 
-set(ENGINE_GFX_HEADER_FILES)
+set(ENGINE_HEADER_FILES_VULKAN)
 
 # ---------- Compile Shaders ----------
 file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
@@ -213,15 +219,25 @@ add_custom_command(OUTPUT ${SHADER_OUTPUTS}
 				   ${LIBRARY_INSTALL_DEPENDENCY})
 endforeach()
 
+set(ENGINE_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
+    ${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
+    ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
+    ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
+    ${ENGINE_SOURCE_FILES_VULKAN} ${ENGINE_HEADER_FILES_VULKAN}
+    ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS})
+
 # ---------- Create Engine Library ----------
 add_library(engine 
-    ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES}
-    ${ENGINE_GFX_SOURCE_FILES} ${ENGINE_GFX_HEADER_FILES}
-    ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
+    ${ENGINE_FILES}
     ${SHADER_DEPENDENCIES} ${SHADER_INPUTS} ${SHADER_HEADERS}
     ${CITRUS_REFLECT_OUTPUTS}
     ${TRACY_FILES})
-set_property(TARGET engine PROPERTY FOLDER "engine")
+
+# ---------- Setup Folders ----------
+#source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
+
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
 target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)

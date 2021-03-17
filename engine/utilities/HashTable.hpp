@@ -18,13 +18,15 @@
 
 #include "Common.h"
 
+/*Todo: Itterator*/
+
 template<class T>
 class ctHashTable {
 public:
    ctHashTable();
    ctHashTable(const size_t capacity);
-   ctResults Insert(const uint32_t key, const T& value);
-   ctResults Insert(const uint32_t key, T&& value);
+   T* Insert(const uint32_t key, const T& value);
+   T* Insert(const uint32_t key, T&& value);
    T* FindPtr(const uint32_t key);
    void Remove(const uint32_t key);
    bool isEmpty() const;
@@ -56,23 +58,23 @@ inline ctHashTable<T>::ctHashTable(const size_t reserve) {
 #define _HASH_LOOP_END }
 
 template<class T>
-inline ctResults ctHashTable<T>::Insert(const uint32_t key, const T& value) {
-   if (key == 0) { return CT_FAILURE_INVALID_PARAMETER; }
-   if (Count() >= Capacity()) { return CT_FAILURE_OUT_OF_MEMORY; }
+inline T* ctHashTable<T>::Insert(const uint32_t key, const T& value) {
+   if (key == 0) { return NULL; }
+   if (Count() >= Capacity()) { return NULL; }
    _HASH_LOOP_BEGIN {
       if (_keys[idx] == 0) {
          _keys[idx] = key;
          _values[idx] = value;
          _actualCount++;
-         return CT_SUCCESS;
+         return &_values[idx];
       }
       _HASH_LOOP_END
    }
-   return CT_FAILURE_UNKNOWN;
+   return NULL;
 }
 
 template<class T>
-inline ctResults ctHashTable<T>::Insert(const uint32_t key, T&& value) {
+inline T* ctHashTable<T>::Insert(const uint32_t key, T&& value) {
    return Insert(key, value);
 }
 

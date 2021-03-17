@@ -19,6 +19,7 @@
 #include "utf8/utf8.h"
 #define CUTE_UTF_IMPLEMENTATION
 #include "cute/cute_utf.h"
+#include <ctype.h>
 
 ctStringUtf8::ctStringUtf8() {
 }
@@ -95,28 +96,28 @@ ctStringUtf8& ctStringUtf8::operator+=(const ctStringUtf8& str) {
    return Append(str.CStr(), str.ByteLength());
 }
 
-ctStringUtf8& ctStringUtf8::Append(const char* str, size_t count) {
+ctStringUtf8& ctStringUtf8::Append(const char* str, const size_t count) {
    _removeNullTerminator();
    _data.Append(str, count);
    _nullTerminate();
    return *this;
 }
 
-ctStringUtf8& ctStringUtf8::Append(const char chr, size_t count) {
+ctStringUtf8& ctStringUtf8::Append(const char chr, const size_t count) {
    _removeNullTerminator();
    _data.Append(chr, count);
    _nullTerminate();
    return *this;
 }
 
-void ctStringUtf8::Printf(size_t max, const char* format, ...) {
+void ctStringUtf8::Printf(const size_t max, const char* format, ...) {
    va_list args;
    va_start(args, format);
    VPrintf(max, format, args);
    va_end(args);
 }
 
-void ctStringUtf8::VPrintf(size_t max, const char* format, va_list args) {
+void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
    const size_t beginning_length = ByteLength();
    Append('\0', max);
    vsnprintf((char*)_dataVoid() + beginning_length, max, format, args);
@@ -142,6 +143,24 @@ ctStringUtf8& ctStringUtf8::ToUpper() {
 ctStringUtf8& ctStringUtf8::ToLower() {
    utf8lwr(_dataVoid());
    return *this;
+}
+
+bool ctStringUtf8::isNumber() const {
+   for (int i = 0; i < ByteLength(); i++) {
+      if (!(_data[i] == '.' || _data[i] == '-' || isdigit(_data[i]))) {
+         return false;
+      }
+   }
+   return true;
+}
+
+bool ctStringUtf8::isInteger() const {
+    for (int i = 0; i < ByteLength(); i++) {
+        if (!(_data[i] == '-' || isdigit(_data[i]))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 ctStringUtf8& ctStringUtf8::FilePathUnify() {
@@ -198,14 +217,14 @@ void ctStringUtf8::_nullTerminate() {
    _data.Append('\0');
 }
 
-bool operator==(ctStringUtf8& a, const char* b) {
+bool operator==(const ctStringUtf8& a, const char* b) {
    return utf8cmp(a.CStr(), b) == 0;
 }
 
-bool operator==(ctStringUtf8& a, ctStringUtf8& b) {
+bool operator==(const ctStringUtf8& a, const ctStringUtf8& b) {
    return utf8cmp(a.CStr(), b.CStr()) == 0;
 }
 
-bool operator==(const char* a, ctStringUtf8& b) {
+bool operator==(const char* a, const ctStringUtf8& b) {
    return utf8cmp(a, b.CStr()) == 0;
 }
