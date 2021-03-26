@@ -85,32 +85,13 @@ enum ctResults {
  */
 #define ctFree(_block) free(_block)
 
-/**
- * @brief debug logging (temporary until moved to core)
- */
-#define ctDebugLog(_format, ...)                                               \
-   printf(_format, __VA_ARGS__);                                               \
-   putchar('\n');
-
-#define ctDebugWarning(_format, ...)                                           \
-   printf("[WARNING] ");                                                       \
-   ctDebugLog(_format, __VA_ARGS__);
-
-#define ctDebugError(_format, ...)                                             \
-   printf("[ERROR] ");                                                         \
-   ctDebugLog(_format, __VA_ARGS__);
-
-#define ctFatalError(_code, _format, ...)                                      \
-   printf("[FATAL ERROR] ");                                                   \
-   ctDebugLog(_format, __VA_ARGS__);                                           \
-   exit(_code);
-
 #ifdef __cplusplus
 }
 #endif
 
 /*Include common cpp files*/
 #ifdef __cplusplus
+#include "SharedLogging.h"
 #include "DynamicArray.hpp"
 #include "StaticArray.hpp"
 #include "Math.hpp"

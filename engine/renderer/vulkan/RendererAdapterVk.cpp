@@ -17,39 +17,41 @@
 #include "utilities/Common.h"
 #include "renderer/Renderer.hpp"
 #include "core/EngineCore.hpp"
-
-class ctVkBackend {
-public:
-   int32_t width;
-   int32_t height;
-   int32_t centerMonitorIdx;
-   ctStringUtf8 windowMode;
-};
+#include "renderer/vulkan/VkBackend.hpp"
 
 ctResults ctRenderer::Startup() {
    vkBackend = new ctVkBackend();
 
-   ctSettingsSection* settings = Engine->Settings->CreateSection("Renderer", 16);
-   settings->BindInteger(
-     &vkBackend->width, true, true, "WindowWidth", "Width of the main window.");
-   settings->BindInteger(&vkBackend->height,
-                         true,
-                         true,
-                         "WindowHeight",
-                         "Height of the main window.");
-   settings->BindInteger(&vkBackend->centerMonitorIdx,
-                         true,
-                         true,
-                         "MonitorIndex",
-                         "Target monitor to place the window in.");
-   settings->BindString(&vkBackend->windowMode,
-                        true,
-                        true,
-                        "WindowMode",
-                        "Main Window Mode. (Windowed, Resizable, Borderless)");
-   return CT_SUCCESS;
+   ctSettingsSection* vkSettings =
+     Engine->Settings->CreateSection("VulkanBackend", 2);
+   vkSettings->BindInteger(
+     &vkBackend->preferredDevice,
+     false,
+     true,
+     "PreferredDevice",
+     "Index of the preferred device to use for rendering.");
+   vkSettings->BindInteger(&vkBackend->validationEnabled,
+                           false,
+                           true,
+                           "ValidationEnabled",
+                           "Use validation layers for debug testing.");
+
+   /* Check for power usage */
+   int percent;
+   SDL_PowerState power = SDL_GetPowerInfo(NULL, &percent);
+   if (power == SDL_POWERSTATE_ON_BATTERY) {
+      ctDebugWarning("!!!USER IS ON BATTERY!!! Expect performance issues!");
+      if (percent <= 5) {
+         Engine->WindowManager->ShowErrorMessage(
+           "Battery Warning!", CT_NC("Battery is almost dead! Plug in ASAP!"));
+      }
+   }
+
+   return vkBackend->ModuleStartup(Engine);
 };
+
 ctResults ctRenderer::Shutdown() {
+   const ctResults results = vkBackend->ModuleShutdown();
    delete vkBackend;
-   return CT_SUCCESS;
+   return results;
 };

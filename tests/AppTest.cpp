@@ -18,6 +18,8 @@
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
+   virtual const char* GetAppPublisher();
+   virtual const char* GetNativeLanguage();
    virtual ctAppVersion GetAppVersion();
    virtual ctResults OnStartup();
    virtual ctResults OnTick(const float deltatime);
@@ -26,6 +28,14 @@ class TestApp : public ctApplication {
 
 const char* TestApp::GetAppName() {
    return "AppTest";
+}
+
+const char* TestApp::GetAppPublisher() {
+    return "CitrusToolbox";
+}
+
+const char* TestApp::GetNativeLanguage() {
+    return "English";
 }
 
 ctAppVersion TestApp::GetAppVersion() {

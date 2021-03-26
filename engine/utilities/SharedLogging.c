@@ -1,4 +1,3 @@
-#include "OSEvents.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,23 +14,20 @@
    limitations under the License.
 */
 
-#include "EngineCore.hpp"
+#include "SharedLogging.h"
 
-ctResults ctOSEventManager::Startup() {
-   return CT_SUCCESS;
+void (*shared_callback)(int level, const char* format, va_list args);
+
+void _ctDebugLogSetCallback(void (*callback)(int level,
+                                             const char* format,
+                                             va_list args)) {
+    shared_callback = callback;
 }
 
-ctResults ctOSEventManager::Shutdown() {
-   return CT_SUCCESS;
-}
-
-ctResults ctOSEventManager::PollOSEvents() {
-   SDL_Event event;
-   while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { Engine->Exit(); }
-      for (size_t i = 0; i < EventHandlers.Count(); i++) {
-         EventHandlers[i](&event);
-      }
-   }
-   return CT_SUCCESS;
+void _ctDebugLogCallLogger(int level, const char* format, ...) {
+    if (!shared_callback) { return; }
+    va_list args;
+    va_start(args, format);
+    shared_callback(level, format, args);
+    va_end(args);
 }

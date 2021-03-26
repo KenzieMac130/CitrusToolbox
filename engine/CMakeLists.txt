@@ -117,6 +117,7 @@ set(ENGINE_SOURCE_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.cpp
@@ -136,6 +137,7 @@ set(ENGINE_HEADER_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SparseArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
@@ -147,20 +149,26 @@ set(ENGINE_SOURCE_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
 )
 
 set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
 )
 
 set(ENGINE_SOURCE_FILES_RENDERER)
@@ -171,9 +179,11 @@ set(ENGINE_HEADER_FILES_RENDERER
 
 # ---------- Graphics Backend Files ----------
 set(ENGINE_SOURCE_FILES_VULKAN
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/RendererAdapterVk.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/RendererAdapterVk.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp)
 
-set(ENGINE_HEADER_FILES_VULKAN)
+set(ENGINE_HEADER_FILES_VULKAN
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp)
 
 # ---------- Compile Shaders ----------
 file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)

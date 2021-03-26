@@ -1,4 +1,3 @@
-#include "OSEvents.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,23 +14,22 @@
    limitations under the License.
 */
 
-#include "EngineCore.hpp"
+#pragma once
 
-ctResults ctOSEventManager::Startup() {
-   return CT_SUCCESS;
-}
+#include "utilities/Common.h"
+#include "ModuleBase.hpp"
 
-ctResults ctOSEventManager::Shutdown() {
-   return CT_SUCCESS;
-}
+class ctJobSystem : public ctModuleBase {
+public:
+   ctJobSystem(int32_t threadReserve);
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
-ctResults ctOSEventManager::PollOSEvents() {
-   SDL_Event event;
-   while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { Engine->Exit(); }
-      for (size_t i = 0; i < EventHandlers.Count(); i++) {
-         EventHandlers[i](&event);
-      }
-   }
-   return CT_SUCCESS;
-}
+   ctResults PushJob(void (*function)(void*), void* data);
+   ctResults RunAllJobs();
+
+protected:
+   int32_t threadReserve;
+   int32_t threadCount;
+   struct cute_threadpool_t* pool;
+};

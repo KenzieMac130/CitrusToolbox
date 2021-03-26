@@ -1,4 +1,3 @@
-#include "OSEvents.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,23 +14,31 @@
    limitations under the License.
 */
 
-#include "EngineCore.hpp"
+#pragma once
 
-ctResults ctOSEventManager::Startup() {
-   return CT_SUCCESS;
-}
+#include "utilities/Common.h"
+#include "ModuleBase.hpp"
 
-ctResults ctOSEventManager::Shutdown() {
-   return CT_SUCCESS;
-}
+#include "SDL_video.h"
 
-ctResults ctOSEventManager::PollOSEvents() {
-   SDL_Event event;
-   while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { Engine->Exit(); }
-      for (size_t i = 0; i < EventHandlers.Count(); i++) {
-         EventHandlers[i](&event);
-      }
-   }
-   return CT_SUCCESS;
-}
+class ctWindow {
+public:
+    SDL_Window* pSDLWindow;
+};
+
+class ctWindowManager : public ctModuleBase {
+public:
+    ctWindowManager();
+
+    ctResults Startup() final;
+    ctResults Shutdown() final;
+
+    ctResults ShowErrorMessage(const char* title, const char* msg);
+
+    ctWindow mainWindow;
+
+    int32_t mainWindowWidth;
+    int32_t mainWindowHeight;
+    int32_t mainWindowMonitorIdx;
+    ctStringUtf8 mainWindowMode;
+};

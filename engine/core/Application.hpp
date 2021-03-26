@@ -31,6 +31,8 @@ public:
    virtual ctResults OnShutdown();
 
    virtual const char* GetAppName() = 0;
+   virtual const char* GetAppPublisher() = 0;
+   virtual const char* GetNativeLanguage() = 0;
    virtual ctAppVersion GetAppVersion() = 0;
 
    class ctEngineCore* Engine;

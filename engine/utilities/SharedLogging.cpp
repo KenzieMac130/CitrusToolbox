@@ -1,4 +1,3 @@
-#include "OSEvents.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,23 +14,4 @@
    limitations under the License.
 */
 
-#include "EngineCore.hpp"
-
-ctResults ctOSEventManager::Startup() {
-   return CT_SUCCESS;
-}
-
-ctResults ctOSEventManager::Shutdown() {
-   return CT_SUCCESS;
-}
-
-ctResults ctOSEventManager::PollOSEvents() {
-   SDL_Event event;
-   while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { Engine->Exit(); }
-      for (size_t i = 0; i < EventHandlers.Count(); i++) {
-         EventHandlers[i](&event);
-      }
-   }
-   return CT_SUCCESS;
-}
+#include "SharedLogging.hpp"

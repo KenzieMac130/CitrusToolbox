@@ -85,7 +85,7 @@ private:
       void (*setCallback)(const char* value, void* customData);
       void* customData;
    };
-   ctHashTable<_setting> _settings;
+   ctHashTable<_setting, uint32_t> _settings;
 };
 
 class ctSettings : public ctModuleBase {
@@ -97,5 +97,5 @@ public:
    ctResults Shutdown() final;
 
 private:
-   ctHashTable<ctSettingsSection> _sections;
+   ctHashTable<ctSettingsSection, uint32_t> _sections;
 };

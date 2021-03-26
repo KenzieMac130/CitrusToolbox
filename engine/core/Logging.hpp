@@ -25,15 +25,20 @@
 
 class ctDebugSystem : public ctModuleBase {
 public:
-   ctDebugSystem(uint32_t flushafter);
+   ctDebugSystem(uint32_t flushafter, bool shared_log);
    ~ctDebugSystem();
 
    ctResults Startup() final;
    ctResults Shutdown() final;
 
    void Log(const char* format, ...);
+   void LogArgs(const char* format, va_list args);
    void Warning(const char* format, ...);
+   void WarningArgs(const char* format, va_list args);
    void Error(const char* format, ...);
+   void ErrorArgs(const char* format, va_list args);
+   void PopupError(const char* format, ...);
+   void PopupErrorArgs(const char* format, va_list args);
 
 private:
    struct _internalMessage {

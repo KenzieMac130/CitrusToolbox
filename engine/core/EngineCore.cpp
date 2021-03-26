@@ -20,14 +20,22 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    App = pApp;
    /* Create Modules */
    Settings = new ctSettings();
-   FileSystem = new ctFileSystem(App->GetAppName(), "CitrusToolbox");
-   Debug = new ctDebugSystem(32);
+   JobSystem = new ctJobSystem(1);
+   Translation = new ctTranslation(App->GetNativeLanguage(), true);
+   OSEventManager = new ctOSEventManager();
+   FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
+   Debug = new ctDebugSystem(32, true);
+   WindowManager = new ctWindowManager();
    Renderer = new ctRenderer();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
+   JobSystem->ModuleStartup(this);
+   Translation->ModuleStartup(this);
+   OSEventManager->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
    Debug->ModuleStartup(this);
+   WindowManager->ModuleStartup(this);
    Renderer->ModuleStartup(this);
 
    /* Run User Code */
@@ -55,6 +63,7 @@ bool ctEngineCore::isExitRequested() {
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    /*Update modules*/
    App->OnTick(deltatime);
+   OSEventManager->PollOSEvents();
    return CT_SUCCESS;
 }
 
@@ -62,12 +71,20 @@ ctResults ctEngineCore::Shutdown() {
    App->OnShutdown();
    /*Shutdown modules*/
    Renderer->ModuleShutdown();
+   WindowManager->ModuleShutdown();
    Debug->ModuleShutdown();
-   Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();
+   OSEventManager->ModuleShutdown();
+   Translation->ModuleShutdown();
+   JobSystem->ModuleShutdown();
+   Settings->ModuleShutdown();
    delete Renderer;
+   delete WindowManager;
    delete Debug;
    delete FileSystem;
    delete Settings;
+   delete OSEventManager;
+   delete Translation;
+   delete JobSystem;
    return CT_SUCCESS;
 }

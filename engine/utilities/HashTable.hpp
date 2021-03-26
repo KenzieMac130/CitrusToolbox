@@ -20,32 +20,32 @@
 
 /*Todo: Itterator*/
 
-template<class T>
+template<class T, class K>
 class ctHashTable {
 public:
    ctHashTable();
    ctHashTable(const size_t capacity);
-   T* Insert(const uint32_t key, const T& value);
-   T* Insert(const uint32_t key, T&& value);
-   T* FindPtr(const uint32_t key);
-   void Remove(const uint32_t key);
+   T* Insert(const K key, const T& value);
+   T* Insert(const K key, T&& value);
+   T* FindPtr(const K key);
+   void Remove(const K key);
    bool isEmpty() const;
    size_t Count() const;
    size_t Capacity() const;
 
 private:
-   ctDynamicArray<uint32_t> _keys;
+   ctDynamicArray<K> _keys;
    ctDynamicArray<T> _values;
    size_t _actualCount;
 };
 
-template<class T>
-inline ctHashTable<T>::ctHashTable() {
+template<class T, class K>
+inline ctHashTable<T, K>::ctHashTable() {
    _actualCount = 0;
 }
 
-template<class T>
-inline ctHashTable<T>::ctHashTable(const size_t reserve) {
+template<class T, class K>
+inline ctHashTable<T, K>::ctHashTable(const size_t reserve) {
    _values.Resize(reserve);
    _keys.Resize(reserve);
    _keys.SetBytes(0);
@@ -53,12 +53,12 @@ inline ctHashTable<T>::ctHashTable(const size_t reserve) {
 }
 
 #define _HASH_LOOP_BEGIN                                                       \
-   for (uint32_t attempt = 0; attempt < Capacity(); attempt++) {               \
-      const uint32_t idx = (key + attempt) % Capacity();
+   for (K attempt = 0; attempt < Capacity(); attempt++) {                      \
+      const K idx = (key + attempt) % Capacity();
 #define _HASH_LOOP_END }
 
-template<class T>
-inline T* ctHashTable<T>::Insert(const uint32_t key, const T& value) {
+template<class T, class K>
+inline T* ctHashTable<T, K>::Insert(const K key, const T& value) {
    if (key == 0) { return NULL; }
    if (Count() >= Capacity()) { return NULL; }
    _HASH_LOOP_BEGIN {
@@ -73,13 +73,13 @@ inline T* ctHashTable<T>::Insert(const uint32_t key, const T& value) {
    return NULL;
 }
 
-template<class T>
-inline T* ctHashTable<T>::Insert(const uint32_t key, T&& value) {
+template<class T, class K>
+inline T* ctHashTable<T, K>::Insert(const K key, T&& value) {
    return Insert(key, value);
 }
 
-template<class T>
-inline T* ctHashTable<T>::FindPtr(const uint32_t key) {
+template<class T, class K>
+inline T* ctHashTable<T, K>::FindPtr(const K key) {
    if (key == 0) { return NULL; }
    _HASH_LOOP_BEGIN {
       if (_keys[idx] == key) { return &_values[idx]; }
@@ -88,8 +88,8 @@ inline T* ctHashTable<T>::FindPtr(const uint32_t key) {
    return NULL;
 }
 
-template<class T>
-inline void ctHashTable<T>::Remove(const uint32_t key) {
+template<class T, class K>
+inline void ctHashTable<T, K>::Remove(const K key) {
    if (key == 0) { return; }
    _HASH_LOOP_BEGIN {
       if (_keys[idx] == key) {
@@ -101,17 +101,17 @@ inline void ctHashTable<T>::Remove(const uint32_t key) {
    }
 }
 
-template<class T>
-inline bool ctHashTable<T>::isEmpty() const {
+template<class T, class K>
+inline bool ctHashTable<T, K>::isEmpty() const {
    return _keys.isEmpty();
 }
 
-template<class T>
-inline size_t ctHashTable<T>::Count() const {
+template<class T, class K>
+inline size_t ctHashTable<T, K>::Count() const {
    return _actualCount;
 }
 
-template<class T>
-inline size_t ctHashTable<T>::Capacity() const {
+template<class T, class K>
+inline size_t ctHashTable<T, K>::Capacity() const {
    return _keys.Count();
 }

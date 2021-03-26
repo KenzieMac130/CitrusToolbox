@@ -524,7 +524,7 @@ void cute_rw_lock_destroy(cute_rw_lock_t* rw)
 
 #if !defined(CUTE_THREAD_YIELD)
 	#ifdef _MSC_VER
-		#include <winnt.h>
+		#include <windef.h>
 		#define CUTE_THREAD_YIELD YieldProcessor
 	#else
 		#include <sched.h>
@@ -544,7 +544,7 @@ static void* cute_malloc_aligned(size_t size, int alignment, void* mem_ctx)
 {
 	void* p = CUTE_THREAD_ALLOC(size + alignment, mem_ctx);
 	if (!p) return 0;
-	unsigned char offset = (size_t)p & (alignment - 1);
+	unsigned char offset = (unsigned char)((size_t)p & (alignment - 1));
 	p = (void*)CUTE_THREAD_ALIGN_PTR(p + 1, alignment);
 	*((char*)p - 1) = alignment - offset;
 	return p;

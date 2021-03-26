@@ -17,7 +17,7 @@
 #include "Settings.hpp"
 
 ctResults ctSettings::Startup() {
-   _sections = ctHashTable<ctSettingsSection>(CT_MAX_SETTINGS_SECTIONS);
+   _sections = ctHashTable<ctSettingsSection, uint32_t>(CT_MAX_SETTINGS_SECTIONS);
    return CT_SUCCESS;
 }
 
@@ -36,11 +36,11 @@ ctSettingsSection* ctSettings::GetSection(const char* name) {
 }
 
 ctSettingsSection::ctSettingsSection() {
-   _settings = ctHashTable<_setting>();
+   _settings = ctHashTable<_setting, uint32_t>();
 }
 
 ctSettingsSection::ctSettingsSection(int max) {
-   _settings = ctHashTable<_setting>(max);
+   _settings = ctHashTable<_setting, uint32_t>(max);
 }
 
 ctResults ctSettingsSection::_bindvar(_setting_type type,

@@ -17,9 +17,24 @@
 #include "Logging.hpp"
 #include "core/EngineCore.hpp"
 
-ctDebugSystem::ctDebugSystem(uint32_t flushafter) {
+ctDebugSystem* mainDebugSystem = NULL;
+void shared_callback(int level, const char* format, va_list args) {
+   switch (level) {
+      case 0: mainDebugSystem->LogArgs(format, args); break;
+      case 1: mainDebugSystem->WarningArgs(format, args); break;
+      case 2: mainDebugSystem->ErrorArgs(format, args); break;
+      case 3: mainDebugSystem->PopupErrorArgs(format, args); break;
+      default: break;
+   }
+}
+
+ctDebugSystem::ctDebugSystem(uint32_t flushafter, bool shared_log) {
    _flushAfter = flushafter;
    _logLock = ctMutexCreate();
+   if (shared_log) {
+      mainDebugSystem = this;
+      _ctDebugLogSetCallback(shared_callback);
+   }
 }
 
 ctDebugSystem::~ctDebugSystem() {
@@ -52,6 +67,11 @@ ctResults ctDebugSystem::Shutdown() {
 void ctDebugSystem::Log(const char* format, ...) {
    va_list args;
    va_start(args, format);
+   LogArgs(format, args);
+   va_end(args);
+}
+
+void ctDebugSystem::LogArgs(const char* format, va_list args) {
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
@@ -62,12 +82,16 @@ void ctDebugSystem::Log(const char* format, ...) {
    msg.level = 0;
    _addToMessageQueue(msg);
    ctMutexUnlock(_logLock);
-   va_end(args);
 }
 
 void ctDebugSystem::Warning(const char* format, ...) {
    va_list args;
    va_start(args, format);
+   WarningArgs(format, args);
+   va_end(args);
+}
+
+void ctDebugSystem::WarningArgs(const char* format, va_list args) {
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
@@ -78,12 +102,16 @@ void ctDebugSystem::Warning(const char* format, ...) {
    msg.level = 1;
    _addToMessageQueue(msg);
    ctMutexUnlock(_logLock);
-   va_end(args);
 }
 
 void ctDebugSystem::Error(const char* format, ...) {
    va_list args;
    va_start(args, format);
+   ErrorArgs(format, args);
+   va_end(args);
+}
+
+void ctDebugSystem::ErrorArgs(const char* format, va_list args) {
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
@@ -94,7 +122,22 @@ void ctDebugSystem::Error(const char* format, ...) {
    msg.level = 2;
    _addToMessageQueue(msg);
    ctMutexUnlock(_logLock);
+}
+
+void ctDebugSystem::PopupError(const char* format, ...) {
+   va_list args;
+   va_start(args, format);
+   PopupErrorArgs(format, args);
    va_end(args);
+}
+
+void ctDebugSystem::PopupErrorArgs(const char* format, va_list args) {
+   ErrorArgs(format, args);
+   if (!Engine) { return; }
+   if (!Engine->WindowManager) { return; }
+   ctStringUtf8 msg = ctStringUtf8();
+   msg.VPrintf(64, format, args);
+   Engine->WindowManager->ShowErrorMessage("Error", msg.CStr());
 }
 
 void ctDebugSystem::_flushMessageQueue() {

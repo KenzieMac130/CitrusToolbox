@@ -13,3 +13,20 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#pragma once
+
+#include "utilities/Common.h"
+#include "ModuleBase.hpp"
+
+typedef void (*ctOSEventCallback)(SDL_Event*);
+
+class ctOSEventManager : public ctModuleBase {
+public:
+   ctResults Startup() final;
+   ctResults Shutdown() final;
+
+   ctResults PollOSEvents();
+
+    ctDynamicArray<ctOSEventCallback> EventHandlers;
+};

@@ -124,28 +124,32 @@ void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
 }
 
 int ctStringUtf8::Cmp(const ctStringUtf8& str) const {
-   return utf8cmp(CStr(), str.CStr());
+   return Cmp(str.CStr());
 }
 
 int ctStringUtf8::Cmp(const char* str) const {
-   return utf8cmp(CStr(), str);
+   return Cmp(str, strlen(str));
 }
 
 int ctStringUtf8::Cmp(const char* str, const size_t len) const {
-   return utf8ncmp(CStr(), str, len);
+   const size_t maxlen = len > ByteLength() ? ByteLength() : len;
+   return utf8ncmp(CStr(), str, maxlen);
 }
 
 ctStringUtf8& ctStringUtf8::ToUpper() {
+   if (isEmpty()) { return *this; }
    utf8upr(_dataVoid());
    return *this;
 }
 
 ctStringUtf8& ctStringUtf8::ToLower() {
+   if (isEmpty()) { return *this; }
    utf8lwr(_dataVoid());
    return *this;
 }
 
 bool ctStringUtf8::isNumber() const {
+   if (isEmpty()) { return false; }
    for (int i = 0; i < ByteLength(); i++) {
       if (!(_data[i] == '.' || _data[i] == '-' || isdigit(_data[i]))) {
          return false;
@@ -155,12 +159,11 @@ bool ctStringUtf8::isNumber() const {
 }
 
 bool ctStringUtf8::isInteger() const {
-    for (int i = 0; i < ByteLength(); i++) {
-        if (!(_data[i] == '-' || isdigit(_data[i]))) {
-            return false;
-        }
-    }
-    return true;
+   if (isEmpty()) { return false; }
+   for (int i = 0; i < ByteLength(); i++) {
+      if (!(_data[i] == '-' || isdigit(_data[i]))) { return false; }
+   }
+   return true;
 }
 
 ctStringUtf8& ctStringUtf8::FilePathUnify() {
@@ -183,6 +186,7 @@ ctStringUtf8& ctStringUtf8::FilePathLocalize() {
 }
 
 uint32_t ctStringUtf8::xxHash32(const int seed) const {
+   if (isEmpty()) { return 0; }
    return XXH32(_dataVoid(), ByteLength(), seed);
 }
 
@@ -191,6 +195,7 @@ uint32_t ctStringUtf8::xxHash32() const {
 }
 
 uint64_t ctStringUtf8::xxHash64(const int seed) const {
+   if (isEmpty()) { return 0; }
    return XXH64(_dataVoid(), ByteLength(), seed);
 }
 
@@ -218,13 +223,19 @@ void ctStringUtf8::_nullTerminate() {
 }
 
 bool operator==(const ctStringUtf8& a, const char* b) {
-   return utf8cmp(a.CStr(), b) == 0;
+   if (a.isEmpty() && b == NULL) { return true; }
+   if (!a.isEmpty() && b != NULL) { return utf8cmp(a.CStr(), b) == 0; }
+   return false;
 }
 
 bool operator==(const ctStringUtf8& a, const ctStringUtf8& b) {
-   return utf8cmp(a.CStr(), b.CStr()) == 0;
+    if (a.isEmpty() && b.isEmpty()) { return true; }
+    if (!a.isEmpty() && !b.isEmpty()) { return utf8cmp(a.CStr(), b.CStr()) == 0; }
+    return false;
 }
 
 bool operator==(const char* a, const ctStringUtf8& b) {
-   return utf8cmp(a, b.CStr()) == 0;
+    if (a == NULL && b.isEmpty()) { return true; }
+    if (a != NULL && !b.isEmpty()) { return utf8cmp(a, b.CStr()) == 0; }
+    return false;
 }
