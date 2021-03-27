@@ -42,6 +42,15 @@ ctStringUtf8::ctStringUtf8(const char* input) {
    Append(input, count);
 }
 
+ctStringUtf8::ctStringUtf8(const wchar_t* input)
+{
+    const wchar_t* next = input;
+    while (*next != 0) {
+        *this += (int)*next;
+        next++;
+    }
+}
+
 const char* ctStringUtf8::CStr() const {
    return (const char*)_dataVoid();
 }

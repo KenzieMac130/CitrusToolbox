@@ -25,6 +25,7 @@ public:
    ctStringUtf8(const ctStringUtf8& str);
    ctStringUtf8(const char* input, const size_t count);
    ctStringUtf8(const char* input);
+   ctStringUtf8(const wchar_t* input);
 
    const char* CStr() const;
    void* Data() const;
