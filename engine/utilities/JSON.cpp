@@ -161,6 +161,7 @@ void ctJSONWriter::_popStack() {
 /*Parser*/
 
 ctResults ctJSONReader::BuildJsonForPtr(const char* pData, size_t length) {
+   ZoneScoped;
    _pData = pData;
    jsmn_parser parser;
    jsmn_init(&parser);

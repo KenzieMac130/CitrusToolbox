@@ -19,11 +19,12 @@
 #include "utilities/Common.h"
 #include "ModuleBase.hpp"
 #include "FileSystem.hpp"
+#include "Translation.hpp"
 
 class ctSettingsSection {
 public:
    ctSettingsSection();
-   ctSettingsSection(int max);
+   ctSettingsSection(int max, ctTranslationCatagory translationCatagory);
    ctResults BindInteger(int32_t* ptr,
                          bool save,
                          bool load,
@@ -85,12 +86,16 @@ private:
       void (*setCallback)(const char* value, void* customData);
       void* customData;
    };
+   ctTranslationCatagory _translationCatagory;
    ctHashTable<_setting, uint32_t> _settings;
 };
 
 class ctSettings : public ctModuleBase {
 public:
-   ctSettingsSection* CreateSection(const char* name, int max);
+   ctSettingsSection* CreateSection(
+     const char* name,
+     int max,
+     ctTranslationCatagory translationCatagory = CT_TRANSLATION_CATAGORY_CORE);
    ctSettingsSection* GetSection(const char* name);
 
    ctResults Startup() final;

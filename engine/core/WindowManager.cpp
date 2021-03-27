@@ -42,6 +42,7 @@ ctWindowManager::ctWindowManager() {
 }
 
 ctResults ctWindowManager::Startup() {
+   ZoneScoped;
    ctSettingsSection* settings = Engine->Settings->CreateSection("Window", 4);
    settings->BindInteger(
      &mainWindowWidth, true, true, "WindowWidth", "Width of the main window.");
@@ -66,6 +67,7 @@ ctResults ctWindowManager::Startup() {
 #ifdef CITRUS_GFX_VULKAN
    flags |= SDL_WINDOW_VULKAN;
 #endif
+   flags |= SDL_WINDOW_HIDDEN;
    SDL_Rect windowDim;
    if (mainWindowMode == "Borderless") {
       SDL_GetDisplayBounds(mainWindowMonitorIdx, &windowDim);
@@ -92,12 +94,16 @@ ctResults ctWindowManager::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) {
-   if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-                                title,
-                                msg,
-                                mainWindow.pSDLWindow)) {
+ctResults ctWindowManager::ShowErrorMessage(const char* title,
+                                            const char* msg) {
+   if (SDL_ShowSimpleMessageBox(
+         SDL_MESSAGEBOX_ERROR, title, msg, mainWindow.pSDLWindow)) {
       return CT_FAILURE_UNKNOWN;
    }
+   return CT_SUCCESS;
+}
+
+ctResults ctWindowManager::ShowMainWindow() {
+   if (mainWindow.pSDLWindow) { SDL_ShowWindow(mainWindow.pSDLWindow); }
    return CT_SUCCESS;
 }

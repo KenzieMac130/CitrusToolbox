@@ -197,6 +197,13 @@ ctVkBackend::ctVkBackend() {
 }
 
 ctResults ctVkBackend::Startup() {
+   ZoneScoped;
+   if (!Engine->WindowManager->isStarted()) {
+      return CT_FAILURE_DEPENDENCY_NOT_MET;
+   }
+   if (!Engine->OSEventManager->isStarted()) {
+      return CT_FAILURE_DEPENDENCY_NOT_MET;
+   }
    ctDebugLog("Starting Vulkan Backend...");
    /* Fill in AppInfo */
    {
@@ -218,8 +225,8 @@ ctResults ctVkBackend::Startup() {
    /* Create Instance */
    {
       if (validationEnabled && !isValidationLayersAvailible()) {
-         ctFatalError(-1,
-                      "Vulkan Validation layers requested but not avalible");
+         ctFatalError(
+           -1, CT_NC("Vulkan Validation layers requested but not avalible"));
       }
 
       unsigned int sdlExtCount;
@@ -227,8 +234,8 @@ ctResults ctVkBackend::Startup() {
       if (!SDL_Vulkan_GetInstanceExtensions(
             Engine->WindowManager->mainWindow.pSDLWindow, &sdlExtCount, NULL)) {
          ctFatalError(-1,
-                      "SDL_Vulkan_GetInstanceExtensions() Failed to get "
-                      "instance extensions");
+                      CT_NC("SDL_Vulkan_GetInstanceExtensions() Failed to get "
+                            "instance extensions"));
       }
       instanceExtensions.Resize(sdlExtCount + extraExtCount);
       instanceExtensions[0] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
@@ -253,7 +260,7 @@ ctResults ctVkBackend::Startup() {
       instanceInfo.ppEnabledExtensionNames = instanceExtensions.Data();
       CT_VK_CHECK(
         vkCreateInstance(&instanceInfo, pVkAllocCallback, &vkInstance),
-        "vkCreateInstance() Failed to create vulkan instance");
+        CT_NC("vkCreateInstance() Failed to create vulkan instance"));
    }
    /* Initialize a first surface to check for support */
    {
@@ -262,21 +269,28 @@ ctResults ctVkBackend::Startup() {
    } /* Pick a GPU */
    {
       uint32_t gpuCount;
-      CT_VK_CHECK(vkEnumeratePhysicalDevices(vkInstance, &gpuCount, NULL),
-                  "Failed to find devices with vkEnumeratePhysicalDevices()");
+      CT_VK_CHECK(
+        vkEnumeratePhysicalDevices(vkInstance, &gpuCount, NULL),
+        CT_NC("Failed to find devices with vkEnumeratePhysicalDevices()"));
       if (!gpuCount) {
-         ctFatalError(-1, "No Supported Vulkan Compatible GPU found!");
+         ctFatalError(-1, CT_NC("No supported Vulkan compatible GPU found"));
       }
       ctDynamicArray<VkPhysicalDevice> gpus;
       gpus.Resize(gpuCount);
       vkEnumeratePhysicalDevices(vkInstance, &gpuCount, gpus.Data());
       if (preferredDevice >= 0 && preferredDevice < (int32_t)gpuCount) {
          vkPhysicalDevice = gpus[preferredDevice];
+
+         VkPhysicalDeviceFeatures deviceFeatures;
+         vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &deviceFeatures);
+         if (!vDeviceHasRequiredFeatures(&deviceFeatures) ||
+             !vDeviceHasRequiredExtensions(vkPhysicalDevice)) {
+            ctFatalError(-1, CT_NC("Graphics card doesn't meet requirements"));
+         }
       } else {
          vkPhysicalDevice = PickBestDevice(gpus.Data(), gpuCount);
          if (vkPhysicalDevice == VK_NULL_HANDLE) {
-            ctFatalError(-1,
-                         "Could not automatically find suitable graphics card");
+            ctFatalError(-1, CT_NC("Could not find suitable graphics card"));
          }
       }
    }
@@ -286,8 +300,7 @@ ctResults ctVkBackend::Startup() {
       /* Queue Creation */
       queueFamilyIndices = FindQueueFamilyIndices(vkPhysicalDevice);
       if (!vIsQueueFamilyComplete(queueFamilyIndices)) {
-         ctFatalError(
-           -1, "Device does not have the necessary queues for rendering");
+         ctFatalError(-1, CT_NC("Device doesn't have the necessary queues"));
       }
 
       uint32_t uniqueIdxCount = 0;
@@ -355,7 +368,7 @@ ctResults ctVkBackend::Startup() {
       deviceInfo.ppEnabledExtensionNames = deviceReqExtensions;
       CT_VK_CHECK(vkCreateDevice(
                     vkPhysicalDevice, &deviceInfo, pVkAllocCallback, &vkDevice),
-                  "vkCreateDevice() failed to create the device");
+                  CT_NC("vkCreateDevice() failed to create the device"));
 
       /* Get Queues */
       vkGetDeviceQueue(
@@ -377,21 +390,21 @@ ctResults ctVkBackend::Startup() {
       allocatorInfo.instance = vkInstance;
 
       CT_VK_CHECK(vmaCreateAllocator(&allocatorInfo, &vmaAllocator),
-                  "vmaCreateAllocator() failed to create allocator");
+                  CT_NC("vmaCreateAllocator() failed to create allocator"));
    }
    /* Pipeline Factory */
    {
-       //Todo: :)
-       // https://gpuopen.com/performance/#pso
-       // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#pipelines-cache
-       // Compile uber-shaders
-       // 
-   }
-   /* Bindless System */
+     // Todo: :)
+     // https://gpuopen.com/performance/#pso
+     // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#pipelines-cache
+     // Compile uber-shaders
+     //
+   } /* Bindless System */
    {
-       // https://ourmachinery.com/post/moving-the-machinery-to-bindless/ 
-       // https://roar11.com/2019/06/vulkan-textures-unbound/ 
+      // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
+      // https://roar11.com/2019/06/vulkan-textures-unbound/
    }
+   Engine->WindowManager->ShowMainWindow();
    return CT_SUCCESS;
 }
 

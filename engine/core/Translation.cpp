@@ -15,14 +15,19 @@
    limitations under the License.
 */
 
+#include "Translation.hpp"
+#include "EngineCore.hpp"
+
 ctTranslation* mainTranslationSystem;
 
-ctTranslation::ctTranslation(const char* nativeLanguage, bool shared) {
-   language = nativeLanguage;
+ctTranslation::ctTranslation(bool shared) {
    if (shared) { mainTranslationSystem = this; }
 }
 
 ctResults ctTranslation::Startup() {
+   ZoneScoped;
+   language = GetLocalLanguage();
+   ctDebugLog("Detected Language: %s", language.CStr());
    return CT_SUCCESS;
 }
 
@@ -31,39 +36,81 @@ ctResults ctTranslation::Shutdown() {
 }
 
 ctResults ctTranslation::SetDictionary(ctTranslationCatagory category,
-                                       size_t count,
-                                       const char** nativeTexts) {
+                                       const char* basePath) {
    _dictionary& dict = dictionaries[category];
-   dict.strings = ctHashTable<const char*, uint64_t>(count * 1.5);
-   for (int i = 0; i < count; i++) {
-      const char* str = nativeTexts[i];
-      const uint64_t hash = XXH64(str, strlen(str), 0);
-      dict.strings.Insert(hash, str);
-   }
-   SetLanguage(language.CStr());
+   dict.basePath = basePath;
+   dict.strings = ctHashTable<const char*, uint64_t>();
    return CT_SUCCESS;
 }
 
-ctResults ctTranslation::SetLanguage(const char* languageName) {
+ctResults ctTranslation::LoadLanguage(const char* languageName) {
    language = languageName;
    LoadAll();
    return CT_SUCCESS;
 }
 
 ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
+   ZoneScoped;
    /* Todo: Load from CSV */
+   /* dict.strings = ctHashTable<const char*, uint64_t>(count * 1.5);
+   for (int i = 0; i < count; i++) {
+       const char* str = nativeTexts[i];
+       const uint64_t hash = XXH64(str, strlen(str), 0);
+       dict.strings.Insert(hash, localTexts[i]);
+   }*/
    return CT_SUCCESS;
 }
 
 ctResults ctTranslation::LoadAll() {
+   ZoneScoped;
    LoadDictionary(CT_TRANSLATION_CATAGORY_CORE);
+   LoadDictionary(CT_TRANSLATION_CATAGORY_APP);
    LoadDictionary(CT_TRANSLATION_CATAGORY_GAME);
+   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK);
    return CT_SUCCESS;
 }
 
-const char* ctTranslation::ctGetLocalString(ctTranslationCatagory category,
-                                            const char* nativeText) {
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <locale.h>
+#endif
+
+ctStringUtf8 ctTranslation::GetLocalLanguage() const {
+   ctStringUtf8 result;
+#ifdef _WIN32
+   wchar_t data[LOCALE_NAME_MAX_LENGTH];
+   GetLocaleInfoEx(
+     LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
+   result = ctStringUtf8(data);
+#else
+   /* Try to extract a similar string off "setlocale" (tested on Ubuntu) */
+   const char* cbuf = setlocale(LC_ALL, "");
+   size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
+   char scratch[256];
+   memset(scratch, 0, 256);
+   strncpy(scratch, cbuf, max);
+   char* nextVal = scratch;
+   while (*nextVal != '\0') {
+      if (*nextVal == '_') { *nextVal = '-'; }
+      if (*nextVal == '.') {
+         *nextVal = '\0';
+         break;
+      }
+      nextVal++;
+   }
+   result = scratch;
+   if (result == "C") { result = "DEFAULT"; }
+#endif
+   return result;
+}
+
+const char* ctTranslation::GetLocalString(ctTranslationCatagory category,
+                                          const char* nativeText) const {
+   ZoneScoped;
+   if (!isStarted()) { return nativeText; }
    uint64_t hash = XXH64(nativeText, strlen(nativeText), 0);
+   /* Todo: use bloom filter to detect if translation exists */
    const char** localText = dictionaries[category].strings.FindPtr(hash);
    if (localText) { return *localText; }
    return nativeText;
@@ -72,7 +119,7 @@ const char* ctTranslation::ctGetLocalString(ctTranslationCatagory category,
 const char* ctGetLocalString(ctTranslationCatagory category,
                              const char* nativeText) {
    if (mainTranslationSystem) {
-      mainTranslationSystem->ctGetLocalString(category, nativeText);
+      mainTranslationSystem->GetLocalString(category, nativeText);
    }
    return nativeText;
 }

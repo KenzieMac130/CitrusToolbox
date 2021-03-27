@@ -17,22 +17,13 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "EngineCore.hpp"
 
-struct ctAppVersion { int32_t major; int32_t minor; int32_t patch; };
-
-class ctApplication {
+class ctCSVWriter {
 public:
-   virtual int Execute(int argc, char* argv[]);
+};
 
-   /* Event Handling */
-   virtual ctResults OnStartup();
-   virtual ctResults OnTick(const float deltatime);
-   virtual ctResults OnShutdown();
-
-   virtual const char* GetAppName() = 0;
-   virtual const char* GetAppPublisher() = 0;
-   virtual ctAppVersion GetAppVersion() = 0;
-
-   class ctEngineCore* Engine;
+class ctCSVReader {
+public:
+    class Entry {
+    };
 };

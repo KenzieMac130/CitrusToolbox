@@ -20,6 +20,7 @@
 #include "renderer/vulkan/VkBackend.hpp"
 
 ctResults ctRenderer::Startup() {
+   ZoneScoped;
    vkBackend = new ctVkBackend();
 
    ctSettingsSection* vkSettings =

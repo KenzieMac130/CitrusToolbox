@@ -20,37 +20,51 @@
 #include "ModuleBase.hpp"
 
 enum ctTranslationCatagory {
-   CT_TRANSLATION_CATAGORY_CORE,
-   CT_TRANSLATION_CATAGORY_GAME,
+   CT_TRANSLATION_CATAGORY_CORE, /* Engine strings */
+   CT_TRANSLATION_CATAGORY_APP,  /* Application specific strings */
+   CT_TRANSLATION_CATAGORY_GAME, /* Game strings */
+   CT_TRANSLATION_CATAGORY_BANK, /* Banked strings (ex: mission specific) */
    CT_TRANSLATION_CATAGORY_COUNT,
 };
 
+/* Get a translated string
+WARNING! NOT GUARANTEED TO BE LONG TERM STORAGE! ONLY TRUST FOR ONE FRAME!
+Character maps can change when language is set, do not cache! */
 const char* ctGetLocalString(ctTranslationCatagory category,
                              const char* nativeText);
+
 #define CT_NC(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_CORE, _text_)
+#define CT_NA(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_APP, _text_)
 #define CT_NG(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_GAME, _text_)
+#define CT_NB(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_BANK, _text_)
 
 class ctTranslation : public ctModuleBase {
 public:
-   ctTranslation(const char* nativeLanguage, bool shared);
+   ctTranslation(bool shared);
 
    ctResults Startup() final;
    ctResults Shutdown() final;
 
    ctResults SetDictionary(ctTranslationCatagory category,
-                           size_t count,
-                           const char** nativeTexts);
-   ctResults SetLanguage(const char* languageName);
+                           const char* basePath);
+   ctResults LoadLanguage(const char* languageName);
    ctResults LoadDictionary(ctTranslationCatagory category);
    ctResults LoadAll();
 
-   const char* ctGetLocalString(ctTranslationCatagory category,
-                                const char* nativeText);
+   const char* GetLocalString(ctTranslationCatagory category,
+                              const char* nativeText) const;
 
 private:
+   /* Returns the users preferred language if possible
+    Ideally in RFC 4646 but the OS might have other plans
+    Search key-words to find the closest known language or
+    skip language auto-detect if data is in unknown format */
+   ctStringUtf8 GetLocalLanguage() const;
+
    class _dictionary {
    public:
       ctHashTable<const char*, uint64_t> strings;
+      ctStringUtf8 basePath;
    };
    ctStringUtf8 language;
    ctStaticArray<_dictionary, CT_TRANSLATION_CATAGORY_COUNT> dictionaries;

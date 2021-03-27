@@ -106,9 +106,10 @@ int dynamic_string_test() {
 }
 
 int hash_table_test() {
-   ctHashTable<ctStringUtf8, uint32_t> hashTable = ctHashTable<ctStringUtf8>(40000);
+   ctHashTable<ctStringUtf8, uint32_t> hashTable =
+     ctHashTable<ctStringUtf8, uint32_t>(40000);
    uint32_t findhash = 0;
-   for (int i = 1; i < 1000; i++) {
+   for (int i = 1; i < 20000; i++) {
       ctStringUtf8 result;
       result.Printf(64, "Number %d", i);
       uint32_t hash = result.xxHash32();

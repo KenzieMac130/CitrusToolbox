@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2021 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,6 @@
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
    virtual const char* GetAppPublisher();
-   virtual const char* GetNativeLanguage();
    virtual ctAppVersion GetAppVersion();
    virtual ctResults OnStartup();
    virtual ctResults OnTick(const float deltatime);
@@ -31,11 +30,7 @@ const char* TestApp::GetAppName() {
 }
 
 const char* TestApp::GetAppPublisher() {
-    return "CitrusToolbox";
-}
-
-const char* TestApp::GetNativeLanguage() {
-    return "English";
+   return "CitrusToolbox";
 }
 
 ctAppVersion TestApp::GetAppVersion() {

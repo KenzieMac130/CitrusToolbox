@@ -17,7 +17,9 @@
 #include "Settings.hpp"
 
 ctResults ctSettings::Startup() {
-   _sections = ctHashTable<ctSettingsSection, uint32_t>(CT_MAX_SETTINGS_SECTIONS);
+   ZoneScoped;
+   _sections =
+     ctHashTable<ctSettingsSection, uint32_t>(CT_MAX_SETTINGS_SECTIONS);
    return CT_SUCCESS;
 }
 
@@ -25,9 +27,11 @@ ctResults ctSettings::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctSettingsSection* ctSettings::CreateSection(const char* name, int max) {
+ctSettingsSection* ctSettings::CreateSection(
+  const char* name, int max, ctTranslationCatagory translationCatagory) {
+   ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
-   return _sections.Insert(hash, ctSettingsSection(max));
+   return _sections.Insert(hash, ctSettingsSection(max, translationCatagory));
 }
 
 ctSettingsSection* ctSettings::GetSection(const char* name) {
@@ -39,8 +43,10 @@ ctSettingsSection::ctSettingsSection() {
    _settings = ctHashTable<_setting, uint32_t>();
 }
 
-ctSettingsSection::ctSettingsSection(int max) {
+ctSettingsSection::ctSettingsSection(
+  int max, ctTranslationCatagory translationCatagory) {
    _settings = ctHashTable<_setting, uint32_t>(max);
+   _translationCatagory = translationCatagory;
 }
 
 ctResults ctSettingsSection::_bindvar(_setting_type type,
@@ -52,6 +58,7 @@ ctResults ctSettingsSection::_bindvar(_setting_type type,
                                       void (*setCallback)(const char* value,
                                                           void* customData),
                                       void* customData) {
+   ZoneScoped;
    if (!ptr) { return CT_FAILURE_INVALID_PARAMETER; }
    const uint32_t hash = XXH32(name, strlen(name), 0);
    const _setting setting =
@@ -133,6 +140,7 @@ ctResults ctSettingsSection::BindFunction(const char* name,
 
 ctResults ctSettingsSection::ExecCommand(const char* name,
                                          const char* command) {
+   ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    _setting* pSetting = _settings.FindPtr(hash);
    if (!pSetting) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
@@ -164,6 +172,7 @@ ctResults ctSettingsSection::ExecCommand(const char* name,
 }
 
 ctResults ctSettingsSection::GetValue(const char* name, ctStringUtf8& out) {
+   ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    _setting* pSetting = _settings.FindPtr(hash);
    if (!pSetting) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
@@ -185,10 +194,12 @@ ctResults ctSettingsSection::GetValue(const char* name, ctStringUtf8& out) {
 }
 
 ctResults ctSettingsSection::GetHelp(const char* name, ctStringUtf8& out) {
+   ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    _setting* pSetting = _settings.FindPtr(hash);
    if (!pSetting) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    ctAssert(pSetting->help);
-   out += pSetting->help;
+   const char* text = ctGetLocalString(_translationCatagory, pSetting->help);
+   out += text;
    return CT_SUCCESS;
 }

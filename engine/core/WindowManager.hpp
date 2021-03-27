@@ -34,6 +34,7 @@ public:
     ctResults Shutdown() final;
 
     ctResults ShowErrorMessage(const char* title, const char* msg);
+    ctResults ShowMainWindow();
 
     ctWindow mainWindow;
 

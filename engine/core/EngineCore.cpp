@@ -17,36 +17,41 @@
 #include "EngineCore.hpp"
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {
+   ZoneScoped;
    App = pApp;
    /* Create Modules */
-   Settings = new ctSettings();
-   JobSystem = new ctJobSystem(1);
-   Translation = new ctTranslation(App->GetNativeLanguage(), true);
-   OSEventManager = new ctOSEventManager();
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
-   Debug = new ctDebugSystem(32, true);
+   Settings = new ctSettings();
+   Debug = new ctDebugSystem(1, true);
+   Translation = new ctTranslation(true);
+   JobSystem = new ctJobSystem(1);
+   OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
    Renderer = new ctRenderer();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
-   JobSystem->ModuleStartup(this);
-   Translation->ModuleStartup(this);
-   OSEventManager->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
    Debug->ModuleStartup(this);
+   Translation->ModuleStartup(this);
+   JobSystem->ModuleStartup(this);
+   OSEventManager->ModuleStartup(this);
    WindowManager->ModuleStartup(this);
    Renderer->ModuleStartup(this);
+   ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
    App->OnStartup();
+   ctDebugLog("Application has Started!");
    return CT_SUCCESS;
 }
 
 ctResults ctEngineCore::EnterLoop() {
    _isRunning = true;
    while (_isRunning) {
+      ZoneScoped;
       LoopSingleShot(1.0f / 60.0f);
+      FrameMark;
    }
    Shutdown();
    return CT_SUCCESS;
@@ -68,16 +73,21 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
 }
 
 ctResults ctEngineCore::Shutdown() {
+   ZoneScoped;
+   /*Shutdown application*/
+   ctDebugLog("Application is Shutting Down...");
    App->OnShutdown();
+
    /*Shutdown modules*/
+   ctDebugLog("Citrus Toolbox is Shutting Down...");
    Renderer->ModuleShutdown();
    WindowManager->ModuleShutdown();
-   Debug->ModuleShutdown();
-   FileSystem->ModuleShutdown();
    OSEventManager->ModuleShutdown();
-   Translation->ModuleShutdown();
    JobSystem->ModuleShutdown();
+   Translation->ModuleShutdown();
+   Debug->ModuleShutdown();
    Settings->ModuleShutdown();
+   FileSystem->ModuleShutdown();
    delete Renderer;
    delete WindowManager;
    delete Debug;
