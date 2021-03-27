@@ -25,7 +25,8 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
-   ctResults PushJob(void (*function)(void*), void* data);
+   ctResults PushJob(void (*fpFunction)(void*), void* pData);
+   ctResults PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData);
    ctResults RunAllJobs();
 
 protected:

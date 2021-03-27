@@ -39,6 +39,7 @@ ctJobSystem::ctJobSystem(int32_t _threadReserve) {
 }
 
 ctResults ctJobSystem::Startup() {
+   ZoneScoped;
    ctSettingsSection* settings =
      Engine->Settings->CreateSection("JobSystem", 1);
    settings->BindInteger(&threadCount,
@@ -57,7 +58,8 @@ ctResults ctJobSystem::Startup() {
    }
    pool = cute_threadpool_create(finalThreadCount, NULL);
    if (pool == NULL) {
-      ctFatalError(-1, "Failed to create threadpool! Check \"JobSystem.ini\"!");
+      ctFatalError(
+        -1, CT_NC("Failed to create threadpool! Check \"JobSystem.ini\"!"));
       return CT_FAILURE_UNSUPPORTED_HARDWARE;
    }
    return CT_SUCCESS;
@@ -68,12 +70,22 @@ ctResults ctJobSystem::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults ctJobSystem::PushJob(void (*function)(void*), void* data) {
-   cute_threadpool_add_task(pool, function, data);
+ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
+   cute_threadpool_add_task(pool, fpFunction, pData);
+   return CT_SUCCESS;
+}
+
+ctResults ctJobSystem::PushJobs(size_t count,
+                                void (**pfpFunction)(void*),
+                                void** ppData) {
+   for (size_t i = 0; i < count; i++) {
+      PushJob(pfpFunction[i], ppData[i]);
+   }
    return CT_SUCCESS;
 }
 
 ctResults ctJobSystem::RunAllJobs() {
+   ZoneScoped;
    cute_threadpool_kick_and_wait(pool);
-   return ctResults();
+   return CT_SUCCESS;
 }
