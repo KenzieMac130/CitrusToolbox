@@ -17,6 +17,10 @@
 #pragma once
 
 #ifdef __cplusplus
+#include "Tracy.hpp"
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -58,6 +62,7 @@ enum ctResults {
    CT_FAILURE_NOT_UPDATABLE = -13,
    CT_FAILURE_COULD_NOT_SHRINK = -14,
    CT_FAILURE_CORRUPTED_CONTENTS = -15,
+   CT_FAILURE_DEPENDENCY_NOT_MET = -16,
 };
 
 /*C Helpers*/
