@@ -21,13 +21,17 @@ void (*shared_callback)(int level, const char* format, va_list args);
 void _ctDebugLogSetCallback(void (*callback)(int level,
                                              const char* format,
                                              va_list args)) {
-    shared_callback = callback;
+   shared_callback = callback;
 }
 
 void _ctDebugLogCallLogger(int level, const char* format, ...) {
-    if (!shared_callback) { return; }
-    va_list args;
-    va_start(args, format);
-    shared_callback(level, format, args);
-    va_end(args);
+   va_list args;
+   va_start(args, format);
+   if (shared_callback) {
+      shared_callback(level, format, args);
+   } else {
+      vprintf(format, args);
+      putchar('\n');
+   }
+   va_end(args);
 }
