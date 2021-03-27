@@ -69,7 +69,6 @@ public:
    /* Exists */
    bool Exists(const T& val) const;
    /* Find */
-   int64_t FindIndex(const T& val, const int64_t position = 0) const;
    int64_t FindIndex(const T& val,
                      const int64_t position = 0,
                      const int step = 1) const;
@@ -431,12 +430,6 @@ inline bool ctDynamicArray<T>::isEmpty() const {
 #else
    return _count == 0 || !_pData;
 #endif
-}
-
-template<class T>
-inline int64_t ctDynamicArray<T>::FindIndex(const T& val,
-                                            const int64_t position) const {
-   return FindIndex(val, position, 1);
 }
 
 template<class T>
