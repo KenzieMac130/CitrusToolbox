@@ -43,9 +43,13 @@ ctResults TestApp::OnStartup() {
 
 int loopvar = 0;
 ctResults TestApp::OnTick(const float deltatime) {
+   ZoneScoped;
    if (loopvar <= 5000) {
       Engine->Debug->Log("This Message %d", loopvar);
       loopvar++;
+      if (loopvar == 5001) { 
+          ctDebugLog("Help");
+      }
    }
    return CT_SUCCESS;
 }

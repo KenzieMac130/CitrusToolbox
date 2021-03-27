@@ -116,6 +116,7 @@ set(ENGINE_SOURCE_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c

@@ -22,7 +22,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
    Settings = new ctSettings();
-   Debug = new ctDebugSystem(1, true);
+   Debug = new ctDebugSystem(32, true);
    Translation = new ctTranslation(true);
    JobSystem = new ctJobSystem(1);
    OSEventManager = new ctOSEventManager();

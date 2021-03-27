@@ -79,8 +79,7 @@ ctVkBackend::FindQueueFamilyIndices(VkPhysicalDevice gpu) {
    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, NULL);
    VkQueueFamilyProperties* queueFamilyProps =
      (VkQueueFamilyProperties*)ctMalloc(sizeof(VkQueueFamilyProperties) *
-                                          queueFamilyCount,
-                                        "Vulkan Queue Family Search");
+                                        queueFamilyCount);
    vkGetPhysicalDeviceQueueFamilyProperties(
      gpu, &queueFamilyCount, queueFamilyProps);
    for (uint32_t i = 0; i < queueFamilyCount; i++) {
@@ -108,8 +107,8 @@ ctVkBackend::FindQueueFamilyIndices(VkPhysicalDevice gpu) {
 bool vDeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
    uint32_t extCount;
    vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, NULL);
-   VkExtensionProperties* availible = (VkExtensionProperties*)ctMalloc(
-     sizeof(VkExtensionProperties) * extCount, "Extension List");
+   VkExtensionProperties* availible =
+     (VkExtensionProperties*)ctMalloc(sizeof(VkExtensionProperties) * extCount);
    vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, availible);
 
    bool foundAll = true;
@@ -182,7 +181,6 @@ VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus,
 }
 
 ctVkBackend::ctVkBackend() {
-   pVkAllocCallback = NULL;
    preferredDevice = -1;
 #ifndef NDEBUG
    validationEnabled = 1;
@@ -194,6 +192,25 @@ ctVkBackend::ctVkBackend() {
    vkPhysicalDevice = VkPhysicalDevice();
    vkDevice = VkDevice();
    mainScreenResources = ctVkScreenResources();
+}
+
+void* vAllocFunction(void* pUserData,
+                     size_t size,
+                     size_t alignment,
+                     VkSystemAllocationScope allocationScope) {
+   return ctAlignedMalloc(size, alignment);
+}
+
+void* vReallocFunction(void* pUserData,
+                       void* pOriginal,
+                       size_t size,
+                       size_t alignment,
+                       VkSystemAllocationScope allocationScope) {
+   return ctAlignedRealloc(pOriginal, size, alignment);
+}
+
+void vFreeFunction(void* pUserData, void* pMemory) {
+   ctAlignedFree(pMemory);
 }
 
 ctResults ctVkBackend::Startup() {
@@ -218,12 +235,18 @@ ctResults ctVkBackend::Startup() {
       ;
       vkAppInfo.applicationVersion =
         VK_MAKE_VERSION(appVersion.major, appVersion.minor, appVersion.patch);
-      pVkAllocCallback = NULL;
+
+      vkAllocCallback = VkAllocationCallbacks {};
+      vkAllocCallback.pUserData = NULL;
+      vkAllocCallback.pfnAllocation = vAllocFunction;
+      vkAllocCallback.pfnReallocation = vReallocFunction;
+      vkAllocCallback.pfnFree = vFreeFunction;
 
       validationLayers.Append("VK_LAYER_KHRONOS_validation");
    }
    /* Create Instance */
    {
+      ctDebugLog("Getting Extensions...");
       if (validationEnabled && !isValidationLayersAvailible()) {
          ctFatalError(
            -1, CT_NC("Vulkan Validation layers requested but not avalible"));
@@ -258,8 +281,9 @@ ctResults ctVkBackend::Startup() {
 
       instanceInfo.enabledExtensionCount = (uint32_t)instanceExtensions.Count();
       instanceInfo.ppEnabledExtensionNames = instanceExtensions.Data();
+      ctDebugLog("Creating Instance...");
       CT_VK_CHECK(
-        vkCreateInstance(&instanceInfo, pVkAllocCallback, &vkInstance),
+        vkCreateInstance(&instanceInfo, &vkAllocCallback, &vkInstance),
         CT_NC("vkCreateInstance() Failed to create vulkan instance"));
    }
    /* Initialize a first surface to check for support */
@@ -268,6 +292,7 @@ ctResults ctVkBackend::Startup() {
                                  Engine->WindowManager->mainWindow.pSDLWindow);
    } /* Pick a GPU */
    {
+      ctDebugLog("Finding GPU...");
       uint32_t gpuCount;
       CT_VK_CHECK(
         vkEnumeratePhysicalDevices(vkInstance, &gpuCount, NULL),
@@ -296,6 +321,7 @@ ctResults ctVkBackend::Startup() {
    }
    /* Queues and Device */
    {
+      ctDebugLog("Setting Queues...");
       VkDeviceCreateInfo deviceInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
       /* Queue Creation */
       queueFamilyIndices = FindQueueFamilyIndices(vkPhysicalDevice);
@@ -366,10 +392,12 @@ ctResults ctVkBackend::Startup() {
 
       deviceInfo.enabledExtensionCount = 1;
       deviceInfo.ppEnabledExtensionNames = deviceReqExtensions;
+      ctDebugLog("Creating Device...");
       CT_VK_CHECK(vkCreateDevice(
-                    vkPhysicalDevice, &deviceInfo, pVkAllocCallback, &vkDevice),
+                    vkPhysicalDevice, &deviceInfo, &vkAllocCallback, &vkDevice),
                   CT_NC("vkCreateDevice() failed to create the device"));
 
+      ctDebugLog("Getting Queues...");
       /* Get Queues */
       vkGetDeviceQueue(
         vkDevice, queueFamilyIndices.graphicsIdx, 0, &graphicsQueue);
@@ -382,6 +410,7 @@ ctResults ctVkBackend::Startup() {
    }
    /* Memory Allocator */
    {
+      ctDebugLog("Creating Memory Allocator...");
       VmaAllocatorCreateInfo allocatorInfo = {};
       /* Current version won't go further than Vulkan 1.1 */
       allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_1;
@@ -401,29 +430,33 @@ ctResults ctVkBackend::Startup() {
      //
    } /* Bindless System */
    {
-      // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
-      // https://roar11.com/2019/06/vulkan-textures-unbound/
+     // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
+     // https://roar11.com/2019/06/vulkan-textures-unbound/
+   } { /* Make Window Visible */
+      ctDebugLog("Showing Window...");
+      Engine->WindowManager->ShowMainWindow();
    }
-   Engine->WindowManager->ShowMainWindow();
+
+   ctDebugLog("Vulkan Backend has Started!");
    return CT_SUCCESS;
 }
 
 ctResults ctVkBackend::Shutdown() {
    mainScreenResources.Destroy(this);
    vmaDestroyAllocator(vmaAllocator);
-   vkDestroyDevice(vkDevice, pVkAllocCallback);
-   vkDestroyInstance(vkInstance, pVkAllocCallback);
+   vkDestroyDevice(vkDevice, &vkAllocCallback);
+   vkDestroyInstance(vkInstance, &vkAllocCallback);
    return CT_SUCCESS;
 }
 
 ctResults ctVkScreenResources::Create(ctVkBackend* pBackend,
                                       SDL_Window* pWindow) {
+   ctDebugLog("Creating Surface...");
    SDL_Vulkan_CreateSurface(pWindow, pBackend->vkInstance, &surface);
    return CT_SUCCESS;
 }
 
 ctResults ctVkScreenResources::Destroy(ctVkBackend* pBackend) {
-   vkDestroySurfaceKHR(
-     pBackend->vkInstance, surface, pBackend->pVkAllocCallback);
+   vkDestroySurfaceKHR(pBackend->vkInstance, surface, NULL);
    return CT_SUCCESS;
 }

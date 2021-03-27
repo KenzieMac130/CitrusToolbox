@@ -92,6 +92,7 @@ void ctDebugSystem::_EmergencExit() {
 }
 
 void ctDebugSystem::Log(const char* format, ...) {
+   ZoneScoped;
    va_list args;
    va_start(args, format);
    LogArgs(format, args);
@@ -104,8 +105,8 @@ void ctDebugSystem::LogArgs(const char* format, va_list args) {
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
-   fprintf(stdout, "[LOG] %s\n", tmp);
    TracyMessage(tmp, strlen(tmp));
+   fprintf(stdout, "[LOG] %s\n", tmp);
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 0;
@@ -114,6 +115,7 @@ void ctDebugSystem::LogArgs(const char* format, va_list args) {
 }
 
 void ctDebugSystem::Warning(const char* format, ...) {
+   ZoneScoped;
    va_list args;
    va_start(args, format);
    WarningArgs(format, args);
@@ -126,8 +128,8 @@ void ctDebugSystem::WarningArgs(const char* format, va_list args) {
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
-   fprintf(stderr, "[WARNING] %s\n", tmp);
    TracyMessageC(tmp, strlen(tmp), 0xE5A91A);
+   fprintf(stderr, "[WARNING] %s\n", tmp);
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 1;
@@ -136,6 +138,7 @@ void ctDebugSystem::WarningArgs(const char* format, va_list args) {
 }
 
 void ctDebugSystem::Error(const char* format, ...) {
+   ZoneScoped;
    va_list args;
    va_start(args, format);
    ErrorArgs(format, args);
@@ -148,8 +151,8 @@ void ctDebugSystem::ErrorArgs(const char* format, va_list args) {
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
-   fprintf(stderr, "[ERROR] %s\n", tmp);
    TracyMessageC(tmp, strlen(tmp), 0xE51A1A);
+   fprintf(stderr, "[ERROR] %s\n", tmp);
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 2;
@@ -158,6 +161,7 @@ void ctDebugSystem::ErrorArgs(const char* format, va_list args) {
 }
 
 void ctDebugSystem::PopupError(const char* format, ...) {
+   ZoneScoped;
    va_list args;
    va_start(args, format);
    PopupErrorArgs(format, args);
@@ -192,6 +196,7 @@ void ctDebugSystem::_flushMessageQueue() {
 }
 
 void ctDebugSystem::_addToMessageQueue(const _internalMessage msg) {
+   ZoneScoped;
    _messageQueue.Append(msg);
    if (_messageQueue.Count() >= _flushAfter) {
       _flushMessageQueue();

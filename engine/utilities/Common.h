@@ -76,19 +76,23 @@ enum ctResults {
 /**
  * @brief should behave just like malloc but with messages to track leaks
  */
-#define ctMalloc(_size, _label) malloc(_size)
-/**
- * @brief should behave just like malloc but with messages to track leaks
- */
-#define ctCalloc(_count, _size, _label) calloc(_count, _size)
-/**
- * @brief should behave just like realloc but with messages to track leaks
- */
-#define ctRealloc(_block, _size, _label) realloc(_block, _size)
+void* ctMalloc(size_t size);
 /**
  * @brief should behave just like free
  */
-#define ctFree(_block) free(_block)
+void ctFree(void* block);
+/**
+ * @brief should behave similarly to malloc with alignment but with messages to track leaks
+ */
+void* ctAlignedMalloc(size_t size, size_t alignment);
+/**
+ * @brief should behave similarly to realloc with alignment but with messages to track leaks
+ */
+void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
+/**
+ * @brief should behave similarly to free with alignment
+ */
+void ctAlignedFree(void* block);
 
 #ifdef __cplusplus
 }

@@ -58,7 +58,7 @@ public:
    ctVkQueueFamilyIndices FindQueueFamilyIndices(VkPhysicalDevice gpu);
 
    /* Vulkan Objects */
-   VkAllocationCallbacks* pVkAllocCallback;
+   VkAllocationCallbacks vkAllocCallback;
    ctDynamicArray<const char*> validationLayers;
    ctDynamicArray<const char*> instanceExtensions;
    VkApplicationInfo vkAppInfo;
