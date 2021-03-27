@@ -52,6 +52,8 @@ public:
 
    FILE* CFile() const;
 
+   bool isOpen() const;
+
 private:
    ctFileOpenMode _mode;
    int64_t _fSize;

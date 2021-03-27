@@ -15,6 +15,7 @@
 */
 
 #include "FileSystem.hpp"
+#include "EngineCore.hpp"
 
 ctFile::ctFile() {
    _fSize = -1;
@@ -23,15 +24,18 @@ ctFile::ctFile() {
 }
 
 void ctFile::FromCStream(FILE* fp) {
+   ZoneScoped;
    Close();
    _fp = fp;
 }
 
 ctResults ctFile::Open(const ctStringUtf8& filePath,
                        const ctFileOpenMode mode) {
+   ZoneScoped;
    if (mode >= 3 || mode < 0) { return CT_FAILURE_INVALID_PARAMETER; }
    const char* modestr[] = {"rb", "wb", "r", "w"};
    _fp = fopen(filePath.CStr(), modestr[mode]);
+   _mode = mode;
    if (_fp) {
       return CT_SUCCESS;
    } else {
@@ -40,10 +44,13 @@ ctResults ctFile::Open(const ctStringUtf8& filePath,
 }
 
 void ctFile::Close() {
+   ZoneScoped;
    if (_fp) { fclose(_fp); }
+   _fp = NULL;
 }
 
 int64_t ctFile::GetFileSize() {
+   ZoneScoped;
    if (!_fp) { return 0; }
    if (_fSize == -1) {
       Seek(0, CT_FILE_SEEK_END);
@@ -53,33 +60,39 @@ int64_t ctFile::GetFileSize() {
 }
 
 int64_t ctFile::Tell() {
+   ZoneScoped;
    if (!_fp) { return 0; }
    return ftell(_fp);
 }
 
 ctResults ctFile::Seek(const int64_t offset, const ctFileSeekMode mode) {
+   ZoneScoped;
    if (!_fp) { return CT_FAILURE_FILE_INACCESSIBLE; }
    return fseek(_fp, (long)offset, mode) == 0 ? CT_SUCCESS
                                               : CT_FAILURE_FILE_INACCESSIBLE;
 }
 
 size_t ctFile::ReadRaw(void* pDest, const size_t size, const size_t count) {
+   ZoneScoped;
    if (!_fp) { return 0; }
    return fread(pDest, size, count, _fp);
 }
 
 size_t ctFile::ReadString(ctStringUtf8& pDest, const size_t count) {
-    //if (!_fp) { return 0; }
-    //return fread(pDest, size, count, _fp);
-    return 0;
+   ZoneScoped;
+   // if (!_fp) { return 0; }
+   // return fread(pDest, size, count, _fp);
+   return 0;
 }
 
 size_t ctFile::WriteRaw(const void* pData, size_t size, const size_t count) {
+   ZoneScoped;
    if (!_fp) { return 0; }
    return fwrite(pData, size, count, _fp);
 }
 
 int64_t ctFile::Printf(const char* format, ...) {
+   ZoneScoped;
    va_list args;
    va_start(args, format);
    const int64_t result = VPrintf(format, args);
@@ -88,11 +101,16 @@ int64_t ctFile::Printf(const char* format, ...) {
 }
 
 int64_t ctFile::VPrintf(const char* format, va_list va) {
+   ZoneScoped;
    if (!_fp) { return 0; }
    return vfprintf(_fp, format, va);
 }
 
 FILE* ctFile::CFile() const {
+   return _fp;
+}
+
+bool ctFile::isOpen() const {
    return _fp;
 }
 
@@ -103,6 +121,7 @@ ctFileSystem::ctFileSystem(const ctStringUtf8& appName,
 }
 
 ctResults ctFileSystem::Startup() {
+   ZoneScoped;
    _dataPath = SDL_GetBasePath();
    _prefPath = SDL_GetPrefPath(_organizationName.CStr(), _appName.CStr());
 
@@ -112,7 +131,7 @@ ctResults ctFileSystem::Startup() {
    char redirectPath[CT_MAX_FILE_PATH_LENGTH];
    memset(redirectPath, 0, CT_MAX_FILE_PATH_LENGTH);
    assetRedirectFile.ReadRaw(&pathSetMode, 1, 1);
-   assetRedirectFile.ReadRaw(redirectPath, 1, CT_MAX_FILE_PATH_LENGTH-1);
+   assetRedirectFile.ReadRaw(redirectPath, 1, CT_MAX_FILE_PATH_LENGTH - 1);
    switch (pathSetMode) {
       case '+':
          _assetPath = _dataPath;
