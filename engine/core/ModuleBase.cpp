@@ -17,9 +17,17 @@
 
 ctResults ctModuleBase::ModuleStartup(class ctEngineCore* pEngine) {
    Engine = pEngine;
-   return Startup();
+   ctResults result = Startup();
+   if (result == CT_SUCCESS) { _started = true; }
+   return result;
 }
 
 ctResults ctModuleBase::ModuleShutdown() {
+   _started = false;
    return Shutdown();
+}
+
+bool ctModuleBase::isStarted() const
+{
+    return _started;
 }

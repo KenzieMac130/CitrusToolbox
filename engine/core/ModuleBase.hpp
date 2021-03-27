@@ -24,6 +24,9 @@ public:
     virtual ctResults Shutdown() = 0;
     ctResults ModuleStartup(class ctEngineCore* pEngine);
     ctResults ModuleShutdown();
+    bool isStarted() const;
 protected:
     class ctEngineCore* Engine;
+private:
+    bool _started;
 };
