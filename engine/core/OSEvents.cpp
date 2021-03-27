@@ -18,6 +18,7 @@
 #include "EngineCore.hpp"
 
 ctResults ctOSEventManager::Startup() {
+   ZoneScoped;
    return CT_SUCCESS;
 }
 
@@ -26,6 +27,7 @@ ctResults ctOSEventManager::Shutdown() {
 }
 
 ctResults ctOSEventManager::PollOSEvents() {
+   ZoneScoped;
    SDL_Event event;
    while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) { Engine->Exit(); }
