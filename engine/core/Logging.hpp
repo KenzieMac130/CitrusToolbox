@@ -19,8 +19,6 @@
 #include "utilities/Common.h"
 #include "FileSystem.hpp"
 
-#include "Tracy.hpp"
-
 #include "ModuleBase.hpp"
 
 class ctDebugSystem : public ctModuleBase {
@@ -40,6 +38,7 @@ public:
    void PopupError(const char* format, ...);
    void PopupErrorArgs(const char* format, va_list args);
 
+   void _EmergencExit();
 private:
    struct _internalMessage {
       int level;
