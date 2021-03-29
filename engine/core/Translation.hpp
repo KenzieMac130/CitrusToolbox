@@ -23,20 +23,30 @@ enum ctTranslationCatagory {
    CT_TRANSLATION_CATAGORY_CORE, /* Engine strings */
    CT_TRANSLATION_CATAGORY_APP,  /* Application specific strings */
    CT_TRANSLATION_CATAGORY_GAME, /* Game strings */
-   CT_TRANSLATION_CATAGORY_BANK, /* Banked strings (ex: mission specific) */
+   CT_TRANSLATION_CATAGORY_BANK0, /* Banked strings (ex: mission specific) */
+   CT_TRANSLATION_CATAGORY_BANK1, /* Banked strings (ex: level specific) */
+   CT_TRANSLATION_CATAGORY_BANK2, /* Banked strings (ex: story progress) */
    CT_TRANSLATION_CATAGORY_COUNT,
 };
 
 /* Get a translated string
 WARNING! NOT GUARANTEED TO BE LONG TERM STORAGE! ONLY TRUST FOR ONE FRAME!
-Character maps can change when language is set, do not cache! */
+Character maps can change when language is set. DO NOT CACHE! */
 const char* ctGetLocalString(ctTranslationCatagory category,
                              const char* nativeText);
 
+/* Translate core string */
 #define CT_NC(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_CORE, _text_)
+/* Translate application string */
 #define CT_NA(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_APP, _text_)
+/* Translate game string */
 #define CT_NG(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_GAME, _text_)
-#define CT_NB(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_BANK, _text_)
+/* Translate string from bank 0 (tip: make the native string a generic identifier) */
+#define CT_NB0(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_BANK0, _text_)
+/* Translate string from bank 1 (tip: make the native string a generic identifier) */
+#define CT_NB1(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_BANK1, _text_)
+/* Translate string from bank 2 (tip: make the native string a generic identifier) */
+#define CT_NB2(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_BANK2, _text_)
 
 class ctTranslation : public ctModuleBase {
 public:
@@ -54,13 +64,15 @@ public:
    const char* GetLocalString(ctTranslationCatagory category,
                               const char* nativeText) const;
 
-private:
    /* Returns the users preferred language if possible
     Ideally in RFC 4646 but the OS might have other plans
     Search key-words to find the closest known language or
-    skip language auto-detect if data is in unknown format */
-   ctStringUtf8 GetLocalLanguage() const;
+    skip language auto-detect if data is in unknown format.
+    Modify this function when porting to other platforms.
+    Do not rely on this, always provide language selection.*/
+   static ctStringUtf8 GetUserOSLanguage();
 
+private:
    class _dictionary {
    public:
       ctHashTable<const char*, uint64_t> strings;

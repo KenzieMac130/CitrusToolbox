@@ -26,7 +26,7 @@ ctTranslation::ctTranslation(bool shared) {
 
 ctResults ctTranslation::Startup() {
    ZoneScoped;
-   language = GetLocalLanguage();
+   language = GetUserOSLanguage();
    ctDebugLog("Detected Language: %s", language.CStr());
    return CT_SUCCESS;
 }
@@ -66,7 +66,9 @@ ctResults ctTranslation::LoadAll() {
    LoadDictionary(CT_TRANSLATION_CATAGORY_CORE);
    LoadDictionary(CT_TRANSLATION_CATAGORY_APP);
    LoadDictionary(CT_TRANSLATION_CATAGORY_GAME);
-   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK);
+   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK0);
+   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK1);
+   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK2);
    return CT_SUCCESS;
 }
 
@@ -76,15 +78,15 @@ ctResults ctTranslation::LoadAll() {
 #include <locale.h>
 #endif
 
-ctStringUtf8 ctTranslation::GetLocalLanguage() const {
+ctStringUtf8 ctTranslation::GetUserOSLanguage() {
    ctStringUtf8 result;
-#ifdef _WIN32
+#if defined(_WIN32)
    wchar_t data[LOCALE_NAME_MAX_LENGTH];
    GetLocaleInfoEx(
      LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
    result = ctStringUtf8(data);
-#else
-   /* Try to extract a similar string off "setlocale" (tested on Ubuntu) */
+#elif defined(__linux__)
+   /* Try to extract a similar string off "setlocale" (tested only on Ubuntu) */
    const char* cbuf = setlocale(LC_ALL, "");
    size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
    char scratch[256];
@@ -101,6 +103,8 @@ ctStringUtf8 ctTranslation::GetLocalLanguage() const {
    }
    result = scratch;
    if (result == "C") { result = "DEFAULT"; }
+#else
+   result = "DEFAULT";
 #endif
    return result;
 }
