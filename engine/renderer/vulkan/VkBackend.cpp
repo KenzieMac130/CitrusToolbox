@@ -17,6 +17,8 @@
 
 #include "VkBackend.hpp"
 
+#include "Tracy.hpp"
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -423,16 +425,27 @@ ctResults ctVkBackend::Startup() {
    }
    /* Pipeline Factory */
    {
-     // Todo: :)
-     // https://gpuopen.com/performance/#pso
-     // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#pipelines-cache
-     // Compile uber-shaders
-     //
-   } /* Bindless System */
+      // Todo: :)
+      // https://gpuopen.com/performance/#pso
+      // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#pipelines-cache
+      // Compile uber-shaders
+      //
+      bool test = false;
+   }
+   /* Bindless System */
    {
-     // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
-     // https://roar11.com/2019/06/vulkan-textures-unbound/
-   } { /* Make Window Visible */
+      // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
+      // https://roar11.com/2019/06/vulkan-textures-unbound/
+      ////
+      bool test = false;
+   }
+   /* Command Buffer Manager */
+   {
+       // arrays of buffers for each queue
+       bool test = false;
+   }
+   /* Make Window Visible */
+   {
       ctDebugLog("Showing Window...");
       Engine->WindowManager->ShowMainWindow();
    }

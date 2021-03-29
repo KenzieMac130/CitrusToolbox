@@ -21,6 +21,10 @@
 #include "SDL_vulkan.h"
 #include "vma/vk_mem_alloc.h"
 
+#if CITRUS_TRACY
+#include "TracyVulkan.hpp"
+#endif
+
 #include "core/EngineCore.hpp"
 
 #define CT_VK_CHECK(_args, _msg)                                               \
