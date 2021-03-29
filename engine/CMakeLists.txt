@@ -111,7 +111,6 @@ endforeach()
 set(ENGINE_SOURCE_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/CSV.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.cpp
@@ -130,7 +129,6 @@ set(ENGINE_HEADER_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/CSV.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp

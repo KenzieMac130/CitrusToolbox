@@ -51,7 +51,7 @@ ctResults ctTranslation::LoadLanguage(const char* languageName) {
 
 ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
    ZoneScoped;
-   /* Todo: Load from CSV */
+   /* Todo: Load from JSON */
    /* dict.strings = ctHashTable<const char*, uint64_t>(count * 1.5);
    for (int i = 0; i < count; i++) {
        const char* str = nativeTexts[i];
