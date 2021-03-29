@@ -16,16 +16,18 @@
 
 #pragma once
 
+/* Config File */
+#include "Config.h"
+
 #ifdef __cplusplus
+#if CITRUS_TRACY
 #include "Tracy.hpp"
+#endif
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* Config File */
-#include "Config.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
