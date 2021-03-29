@@ -151,7 +151,7 @@ inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) {
 template<class T>
 inline ctDynamicArray<T>::~ctDynamicArray() {
 #ifndef CT_TMP_USE_STD
-   delete[] _pData;
+   if (_pData) { delete[] _pData; }
    _pData = NULL;
    _capacity = 0;
    _count = 0;
