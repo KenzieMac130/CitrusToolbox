@@ -31,7 +31,7 @@ enum ctTranslationCatagory {
 
 /* Get a translated string
 WARNING! NOT GUARANTEED TO BE LONG TERM STORAGE! ONLY TRUST FOR ONE FRAME!
-Character maps can change when language is set. DO NOT CACHE! */
+String maps can change when language is set. DO NOT CACHE POINTER! */
 const char* ctGetLocalString(ctTranslationCatagory category,
                              const char* nativeText);
 
