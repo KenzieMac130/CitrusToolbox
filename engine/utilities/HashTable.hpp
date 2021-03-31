@@ -18,55 +18,80 @@
 
 #include "Common.h"
 
-/*Todo: Itterator*/
-
+/* See: https://github.com/jamesroutley/write-a-hash-table.
+ In this implementation we use open addressing instead of double hashing.
+ Containers use zipped arrays instead of linked lists for performance.
+ Collisions are expected to be resolved offline or by the key being a mask.
+ A key value of 0 is reserved for empty items, make sure keys are never 0! */
 template<class T, class K>
 class ctHashTable {
 public:
    ctHashTable();
-   ctHashTable(const size_t capacity);
+   ctHashTable(const size_t baseSize);
+   /* Key must never be 0! */
    T* Insert(const K key, const T& value);
+   /* Key must never be 0! */
    T* Insert(const K key, T&& value);
    T* FindPtr(const K key);
+   /* Does not call destructor or free for value! */
    void Remove(const K key);
    bool isEmpty() const;
    size_t Count() const;
    size_t Capacity() const;
+   ctResults Reserve(const size_t amount);
+
+   /*Todo: Itterator*/
 
 private:
-   ctDynamicArray<K> _keys;
-   ctDynamicArray<T> _values;
-   size_t _actualCount;
+   K* _pKeys;
+   T* _pValues;
+   size_t _Capacity;
+   size_t _Count;
+   size_t _baseSize;
 };
 
 template<class T, class K>
 inline ctHashTable<T, K>::ctHashTable() {
-   _actualCount = 0;
+   _Count = 0;
+   _baseSize = 0;
 }
 
 template<class T, class K>
-inline ctHashTable<T, K>::ctHashTable(const size_t reserve) {
-   _values.Resize(reserve);
-   _keys.Resize(reserve);
-   _keys.SetBytes(0);
-   _actualCount = 0;
+inline ctHashTable<T, K>::ctHashTable(const size_t baseSize) {
+   _baseSize = baseSize > 0 ? baseSize : 1;
+
+   size_t capacity = ctNextPrime(_baseSize);
+   _pValues = new T[capacity];
+   _pKeys = new K[capacity];
+   memset(_pKeys, 0, sizeof(K) * capacity);
+   _Capacity = capacity;
+   _Count = 0;
 }
 
-#define _HASH_LOOP_BEGIN                                                       \
-   for (K attempt = 0; attempt < Capacity(); attempt++) {                      \
-      const K idx = (key + attempt) % Capacity();
+#define _HASH_LOOP_BEGIN(_capacity_)                                           \
+   for (K attempt = 0; attempt < _capacity_; attempt++) {                      \
+      const K idx = (key + attempt) % _capacity_;
 #define _HASH_LOOP_END }
 
 template<class T, class K>
 inline T* ctHashTable<T, K>::Insert(const K key, const T& value) {
    if (key == 0) { return NULL; }
-   if (Count() >= Capacity()) { return NULL; }
-   _HASH_LOOP_BEGIN {
-      if (_keys[idx] == 0) {
-         _keys[idx] = key;
-         _values[idx] = value;
-         _actualCount++;
-         return &_values[idx];
+   if (!_pKeys || !_pValues) { return NULL; }
+
+   /* Resize if needed */
+   size_t load = Count() * 100 / Capacity();
+   while (load > 70 || Count() >= Capacity()) {
+      Reserve(_baseSize * 2);
+      load = Count() * 100 / Capacity();
+   }
+
+   /* Look for empty slot and insert */
+   _HASH_LOOP_BEGIN(Capacity()) {
+      if (_pKeys[idx] == 0) {
+         _pKeys[idx] = key;
+         _pValues[idx] = value;
+         _Count++;
+         return &_pValues[idx];
       }
       _HASH_LOOP_END
    }
@@ -81,8 +106,9 @@ inline T* ctHashTable<T, K>::Insert(const K key, T&& value) {
 template<class T, class K>
 inline T* ctHashTable<T, K>::FindPtr(const K key) {
    if (key == 0) { return NULL; }
-   _HASH_LOOP_BEGIN {
-      if (_keys[idx] == key) { return &_values[idx]; }
+   if (!_pKeys || !_pValues) { return NULL; }
+   _HASH_LOOP_BEGIN(Capacity()) {
+      if (_pKeys[idx] == key) { return &_pValues[idx]; }
       _HASH_LOOP_END
    }
    return NULL;
@@ -91,10 +117,11 @@ inline T* ctHashTable<T, K>::FindPtr(const K key) {
 template<class T, class K>
 inline void ctHashTable<T, K>::Remove(const K key) {
    if (key == 0) { return; }
-   _HASH_LOOP_BEGIN {
-      if (_keys[idx] == key) {
-         _keys[idx] = 0;
-         _actualCount--;
+   if (!_pKeys || !_pValues) { return; }
+   _HASH_LOOP_BEGIN(Capacity()) {
+      if (_pKeys[idx] == key) {
+         _pKeys[idx] = 0;
+         _Count--;
          return;
       }
       _HASH_LOOP_END
@@ -103,15 +130,41 @@ inline void ctHashTable<T, K>::Remove(const K key) {
 
 template<class T, class K>
 inline bool ctHashTable<T, K>::isEmpty() const {
-   return _keys.isEmpty();
+   return _Count == 0;
 }
 
 template<class T, class K>
 inline size_t ctHashTable<T, K>::Count() const {
-   return _actualCount;
+   return _Count;
 }
 
 template<class T, class K>
 inline size_t ctHashTable<T, K>::Capacity() const {
-   return _keys.Count();
+   return _Capacity;
+}
+
+template<class T, class K>
+inline ctResults ctHashTable<T, K>::Reserve(const size_t baseSize) {
+   if (baseSize <= _baseSize) { return CT_SUCCESS; }
+   _baseSize = baseSize;
+
+   T* oldValues = _pValues;
+   K* oldKeys = _pKeys;
+   size_t oldCapacity = _Capacity;
+
+   size_t capacity = ctNextPrime(baseSize);
+   _pValues = new T[capacity];
+   _pKeys = new K[capacity];
+   memset(_pKeys, 0, sizeof(K) * capacity);
+   _Capacity = capacity;
+   _Count = 0;
+
+   for (size_t i = 0; i < oldCapacity; i++) {
+      if (oldKeys[i] != 0) { Insert(oldKeys[i], oldValues[i]); }
+   }
+
+   delete[] oldValues;
+   delete[] oldKeys;
+
+   return CT_SUCCESS;
 }

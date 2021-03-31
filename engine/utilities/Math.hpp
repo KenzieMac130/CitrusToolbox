@@ -97,3 +97,7 @@ float ctArcTan(const float a);
 
 /* ArcTan2 */
 float ctArcTan2(const float a, const float b);
+
+/* Prime number */
+bool ctIsPrime(const size_t x);
+size_t ctNextPrime(size_t x);
