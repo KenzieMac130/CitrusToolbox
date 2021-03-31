@@ -128,7 +128,7 @@ ctResults ctSettingsSection::BindFunction(const char* name,
                                           void (*setCallback)(const char* value,
                                                               void* customData),
                                           void* customData) {
-   return _bindvar(SETTING_TYPE_STRING,
+   return _bindvar(SETTING_TYPE_FUNCTION,
                    false,
                    false,
                    name,
