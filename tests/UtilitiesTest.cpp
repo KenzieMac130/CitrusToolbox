@@ -107,7 +107,7 @@ int dynamic_string_test() {
 
 int hash_table_test() {
    ctHashTable<ctStringUtf8, uint32_t> hashTable =
-     ctHashTable<ctStringUtf8, uint32_t>(40000);
+     ctHashTable<ctStringUtf8, uint32_t>(0);
    uint32_t findhash = 0;
    for (int i = 1; i < 20000; i++) {
       ctStringUtf8 result;
