@@ -70,7 +70,10 @@ ctResults ctDebugSystem::Startup() {
       Log("Debug System: Online");
    }
    danglingDebugSystems.Append(this);
-   if (!savedExit) { atexit(saveDanglingDebugSystems); }
+   if (!savedExit) {
+      atexit(saveDanglingDebugSystems);
+      savedExit = true;
+   }
    return CT_SUCCESS;
 }
 
@@ -175,7 +178,7 @@ void ctDebugSystem::PopupErrorArgs(const char* format, va_list args) {
    if (!Engine->WindowManager) { return; }
    if (!Engine->WindowManager->isStarted()) { return; };
    ctStringUtf8 msg = ctStringUtf8();
-   msg.VPrintf(64, format, args);
+   msg.VPrintf(CT_MAX_LOG_LENGTH, format, args);
    Engine->WindowManager->ShowErrorMessage("Fatal Error", msg.CStr());
 }
 
