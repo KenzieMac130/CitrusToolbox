@@ -30,17 +30,15 @@ void _ctDebugLogCallLogger(int level, const char* format, ...);
 /**
  * @brief debug logging
  */
-#define ctDebugLog(_format_, ...)                                              \
-   _ctDebugLogCallLogger(0, _format_, __VA_ARGS__);
+#define ctDebugLog(_format_, ...) _ctDebugLogCallLogger(0, _format_, __VA_ARGS__);
 
-#define ctDebugWarning(_format_, ...)                                          \
-   _ctDebugLogCallLogger(1, _format_, __VA_ARGS__);
+#define ctDebugWarning(_format_, ...) _ctDebugLogCallLogger(1, _format_, __VA_ARGS__);
 
-#define ctDebugError(_format, ...)                                             \
-   _ctDebugLogCallLogger(2, _format_, __VA_ARGS__);
+#define ctDebugError(_format_, ...) _ctDebugLogCallLogger(2, _format_, __VA_ARGS__);
 
-#define ctFatalError(_code, _format_, ...)                                     \
-   _ctDebugLogCallLogger(3, _format_, __VA_ARGS__);                            \
+#define ctFatalError(_code, _format_, ...)                                               \
+   _ctDebugLogCallLogger(3, _format_, __VA_ARGS__);                                      \
+   ctDebugError("ERROR EXIT CODE: %d", _code);                                           \
    exit(_code);
 
 #ifdef __cplusplus
