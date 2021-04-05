@@ -1,2 +1,2 @@
 # CitrusToolbox
- In-House Game Engine
+ Minimalist Game Engine
