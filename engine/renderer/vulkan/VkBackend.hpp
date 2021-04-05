@@ -27,12 +27,10 @@
 
 #include "core/EngineCore.hpp"
 
-#define CT_VK_CHECK(_args, _msg)                                               \
-   {                                                                           \
-      VkResult _tmpvresult = _args;                                            \
-      if (_tmpvresult != VK_SUCCESS) {                                         \
-         ctFatalError((int)_tmpvresult, #_msg);                                \
-      }                                                                        \
+#define CT_VK_CHECK(_args, _msg)                                                         \
+   {                                                                                     \
+      VkResult _tmpvresult = _args;                                                      \
+      if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, #_msg); }          \
    }
 
 struct ctVkQueueFamilyIndices {
@@ -44,16 +42,30 @@ struct ctVkQueueFamilyIndices {
 
 class ctVkScreenResources {
 public:
-    VkSurfaceKHR surface;
+   VkSurfaceKHR surface;
 
-    ctResults Create(class ctVkBackend* pBackend, SDL_Window* pWindow);
-    ctResults Destroy(class ctVkBackend* pBackend);
+   ctResults Create(class ctVkBackend* pBackend, SDL_Window* pWindow);
+   ctResults Destroy(class ctVkBackend* pBackend);
+};
+
+class ctVkDescriptorManager {
+public:
+   ctVkDescriptorManager();
+   ctVkDescriptorManager(int32_t max);
+
+   /* Get the next open slot to place a resource in the bindless system */
+   int32_t AllocateSlot();
+   /* Only call once the resource is not in-flight! */
+   void ReleaseSlot(const int32_t idx);
+
+private:
+   int32_t _max;
+   ctDynamicArray<int32_t> freedIdx;
+   int32_t nextNewIdx;
 };
 
 class ctVkBackend : public ctModuleBase {
 public:
-   ctVkBackend();
-
    ctResults Startup() final;
    ctResults Shutdown() final;
 
@@ -63,6 +75,7 @@ public:
 
    /* Vulkan Objects */
    VkAllocationCallbacks vkAllocCallback;
+   VkDebugReportCallbackEXT vkDebugCallback;
    ctDynamicArray<const char*> validationLayers;
    ctDynamicArray<const char*> instanceExtensions;
    VkApplicationInfo vkAppInfo;
@@ -77,9 +90,24 @@ public:
    VkQueue computeQueue;
    VkQueue transferQueue;
 
+   VkPipelineCache vkPipelineCache;
+   ctHashTable<VkPipeline, uint64_t> pipelineHashTable;
+
+   VkDescriptorSetLayout vkDescriptorSetLayout;
+   VkDescriptorPool vkDescriptorPool;
+   VkDescriptorSet vkGlobalDescriptorSet;
+   ctVkDescriptorManager descriptorsSamplers;
+   ctVkDescriptorManager descriptorsSampledImage;
+   ctVkDescriptorManager descriptorsStorageImage;
+   ctVkDescriptorManager descriptorsStorageBuffer;
+
    ctVkScreenResources mainScreenResources;
 
    /* Settings */
    int32_t preferredDevice;
    int32_t validationEnabled;
+   int32_t maxSamplers;
+   int32_t maxSampledImages;
+   int32_t maxStorageImages;
+   int32_t maxStorageBuffers;
 };

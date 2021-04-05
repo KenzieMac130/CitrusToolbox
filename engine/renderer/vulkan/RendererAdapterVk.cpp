@@ -22,31 +22,49 @@
 ctResults ctRenderer::Startup() {
    ZoneScoped;
    vkBackend = new ctVkBackend();
+   vkBackend->preferredDevice = -1;
+#ifndef NDEBUG
+   vkBackend->validationEnabled = 1;
+#else
+   vkBackend->validationEnabled = 0;
+#endif
+   vkBackend->maxSamplers = CT_MAX_GFX_SAMPLERS;
+   vkBackend->maxSampledImages = CT_MAX_GFX_SAMPLED_IMAGES;
+   vkBackend->maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
+   vkBackend->maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
 
-   ctSettingsSection* vkSettings =
-     Engine->Settings->CreateSection("VulkanBackend", 2);
-   vkSettings->BindInteger(
-     &vkBackend->preferredDevice,
-     false,
-     true,
-     "PreferredDevice",
-     "Index of the preferred device to use for rendering.");
+   ctSettingsSection* vkSettings = Engine->Settings->CreateSection("VulkanBackend", 2);
+   vkSettings->BindInteger(&vkBackend->preferredDevice,
+                           false,
+                           true,
+                           "PreferredDevice",
+                           "Index of the preferred device to use for rendering.");
    vkSettings->BindInteger(&vkBackend->validationEnabled,
                            false,
                            true,
                            "ValidationEnabled",
                            "Use validation layers for debug testing.");
 
-   /* Check for power usage */
-   int percent;
-   SDL_PowerState power = SDL_GetPowerInfo(NULL, &percent);
-   if (power == SDL_POWERSTATE_ON_BATTERY) {
-      ctDebugWarning("!!!USER IS ON BATTERY!!! Expect performance issues!");
-      if (percent <= 5) {
-         Engine->WindowManager->ShowErrorMessage(
-           "Battery Warning!", CT_NC("Battery is almost dead! Plug in ASAP!"));
-      }
-   }
+   vkSettings->BindInteger(&vkBackend->maxSamplers,
+                           false,
+                           true,
+                           "MaxSamplers",
+                           "Max number of samplers.");
+   vkSettings->BindInteger(&vkBackend->maxSampledImages,
+                           false,
+                           true,
+                           "MaxSampledImages",
+                           "Max number of sampled images.");
+   vkSettings->BindInteger(&vkBackend->maxStorageImages,
+                           false,
+                           true,
+                           "MaxStorageImages",
+                           "Max number of storage images.");
+   vkSettings->BindInteger(&vkBackend->maxStorageBuffers,
+                           false,
+                           true,
+                           "MaxStorageBuffers",
+                           "Max number of storage buffers.");
 
    return vkBackend->ModuleStartup(Engine);
 };
