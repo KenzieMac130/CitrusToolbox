@@ -62,30 +62,24 @@ public:
    void RemoveLast();
    /* Clear */
    void Clear();
-   /* Memset and Clear */
-   void SetBytes(int val);
+   /* Memset */
+   void Memset(int val);
    /* isEmpty */
    bool isEmpty() const;
    /* Exists */
    bool Exists(const T& val) const;
    /* Find */
-   int64_t FindIndex(const T& val,
-                     const int64_t position = 0,
-                     const int step = 1) const;
-   T* FindPtr(const T& val,
-              const int64_t position = 0,
-              const int step = 1) const;
+   int64_t FindIndex(const T& val, const int64_t position = 0, const int step = 1) const;
+   T* FindPtr(const T& val, const int64_t position = 0, const int step = 1) const;
    /* Sort */
-   void QSort(const size_t position,
-              const size_t amount,
-              int (*compare)(const T*, const T*));
+   void QSort(int (*compare)(const T*, const T*),
+              const size_t position = 0,
+              const size_t amount = 0);
    /* Hash */
-   uint32_t
-   xxHash32(const size_t position, const size_t amount, const int seed) const;
+   uint32_t xxHash32(const size_t position, const size_t amount, const int seed) const;
    uint32_t xxHash32(const int seed) const;
    uint32_t xxHash32() const;
-   uint64_t
-   xxHash64(const size_t position, const size_t amount, const int seed) const;
+   uint64_t xxHash64(const size_t position, const size_t amount, const int seed) const;
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
 
@@ -296,8 +290,7 @@ inline size_t ctDynamicArray<T>::Capacity() const {
 }
 
 template<class T>
-inline ctDynamicArray<T>&
-ctDynamicArray<T>::operator=(const ctDynamicArray<T>& arr) {
+inline ctDynamicArray<T>& ctDynamicArray<T>::operator=(const ctDynamicArray<T>& arr) {
    const size_t inputcount = arr.Count();
    Resize(inputcount);
    for (size_t i = 0; i < inputcount; i++) {
@@ -331,8 +324,7 @@ inline ctResults ctDynamicArray<T>::Append(const ctDynamicArray<T>& arr) {
 }
 
 template<class T>
-inline ctResults ctDynamicArray<T>::Append(const T* pArray,
-                                           const size_t length) {
+inline ctResults ctDynamicArray<T>::Append(const T* pArray, const size_t length) {
    const ctResults result = Reserve(Count() + length);
    if (result != CT_SUCCESS) { return result; }
    for (int i = 0; i < length; i++) {
@@ -352,8 +344,7 @@ inline ctResults ctDynamicArray<T>::Append(const T& val, const size_t amount) {
 }
 
 template<class T>
-inline ctResults ctDynamicArray<T>::Insert(const T& val,
-                                           const int64_t position) {
+inline ctResults ctDynamicArray<T>::Insert(const T& val, const int64_t position) {
    int64_t finalposition = position < 0 ? Count() + position + 1 : position;
 #ifdef CT_TMP_USE_STD
    _dirtysecret.insert(_dirtysecret.begin() + finalposition, val);
@@ -388,8 +379,7 @@ inline void ctDynamicArray<T>::RemoveAt(const int64_t position) {
 }
 
 template<class T>
-inline ctResults ctDynamicArray<T>::Remove(const T& val,
-                                           const int64_t position) {
+inline ctResults ctDynamicArray<T>::Remove(const T& val, const int64_t position) {
    int64_t idx = FindIndex(val, position, 1);
    if (idx >= 0 && idx < (int64_t)Count()) {
       RemoveAt(idx);
@@ -418,7 +408,7 @@ inline void ctDynamicArray<T>::Clear() {
 }
 
 template<class T>
-inline void ctDynamicArray<T>::SetBytes(int val) {
+inline void ctDynamicArray<T>::Memset(int val) {
    if (isEmpty()) { return; }
    memset(Data(), val, Capacity() * sizeof(T));
 }
@@ -457,17 +447,15 @@ inline T* ctDynamicArray<T>::FindPtr(const T& val,
 }
 
 template<class T>
-inline void ctDynamicArray<T>::QSort(size_t position,
-                                     size_t amount,
-                                     int (*compare)(const T*, const T*)) {
+inline void ctDynamicArray<T>::QSort(int (*compare)(const T*, const T*),
+                                     const size_t position,
+                                     const size_t amount) {
    if (isEmpty()) { return; }
-   const size_t remaining_count = Count() - position;
-   const size_t final_amount =
-     amount > remaining_count ? remaining_count : amount;
-   qsort(Data(),
-         final_amount,
-         sizeof(T),
-         (int (*)(void const*, void const*))compare);
+   size_t adjustedAmount = amount == 0 ? Count() : amount;
+   const size_t remainingCount = Count() - position;
+   const size_t finalAmount =
+     adjustedAmount > remainingCount ? remainingCount : adjustedAmount;
+   qsort(Data(), finalAmount, sizeof(T), (int (*)(void const*, void const*))compare);
 }
 
 template<class T>
