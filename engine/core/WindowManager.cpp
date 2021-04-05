@@ -46,22 +46,30 @@ ctResults ctWindowManager::Startup() {
    ctSettingsSection* settings = Engine->Settings->CreateSection("Window", 4);
    settings->BindInteger(
      &mainWindowWidth, true, true, "WindowWidth", "Width of the main window.");
-   settings->BindInteger(&mainWindowHeight,
-                         true,
-                         true,
-                         "WindowHeight",
-                         "Height of the main window.");
+   settings->BindInteger(
+     &mainWindowHeight, true, true, "WindowHeight", "Height of the main window.");
    settings->BindInteger(&mainWindowMonitorIdx,
                          true,
                          true,
                          "MonitorIndex",
                          "Target monitor to place the window in.");
-   settings->BindString(&mainWindowMode,
-                        true,
-                        true,
-                        "WindowMode",
-                        "Main Window Mode. (Windowed, Resizable, Fullscreen, "
-                        "Desktop, Borderless)");
+   settings->BindString(
+     &mainWindowMode,
+     true,
+     true,
+     "WindowMode",
+     "Main Window Mode. (Windowed, Resizable, Fullscreen, Desktop, Borderless)");
+
+   /* Check for power usage */
+   int percent;
+   SDL_PowerState power = SDL_GetPowerInfo(NULL, &percent);
+   if (power == SDL_POWERSTATE_ON_BATTERY) {
+      ctDebugWarning("!!!USER IS ON BATTERY!!! Expect performance issues!");
+      if (percent <= 5) {
+         ShowErrorMessage("Battery Warning!",
+                          CT_NC("Battery is almost dead!\n Please plug in the charger."));
+      }
+   }
 
    uint32_t flags = windowModeFlags(mainWindowMode);
 #ifdef CITRUS_GFX_VULKAN
@@ -94,8 +102,7 @@ ctResults ctWindowManager::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults ctWindowManager::ShowErrorMessage(const char* title,
-                                            const char* msg) {
+ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) {
    if (SDL_ShowSimpleMessageBox(
          SDL_MESSAGEBOX_ERROR, title, msg, mainWindow.pSDLWindow)) {
       return CT_FAILURE_UNKNOWN;
