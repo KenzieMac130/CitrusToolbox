@@ -30,7 +30,7 @@ int dynamic_array_test() {
       arr.Reserve(64);
       /*Memset*/
       ctDebugLog("Memset");
-      arr.SetBytes(0);
+      arr.Memset(0);
       /*Append*/
       ctDebugLog("Append");
       for (int i = 0; i < 32; i++) {
@@ -56,7 +56,7 @@ int dynamic_array_test() {
       ln = arr.FindPtr(7, -1, -1);
       /*Sort*/
       ctDebugLog("Sort");
-      arr.QSort(0, arr.Count(), life_notifier_comp);
+      arr.QSort(life_notifier_comp);
       /*Hash*/
       ctDebugLog("Hash");
       /*Verify*/
@@ -106,18 +106,36 @@ int dynamic_string_test() {
 }
 
 int hash_table_test() {
-   ctHashTable<ctStringUtf8, uint32_t> hashTable =
-     ctHashTable<ctStringUtf8, uint32_t>(0);
-   uint32_t findhash = 0;
-   for (int i = 1; i < 20000; i++) {
-      ctStringUtf8 result;
-      result.Printf(64, "Number %d", i);
-      uint32_t hash = result.xxHash32();
-      if (i == 156) { findhash = hash; }
-      hashTable.Insert(hash, result);
+   ctDebugLog("Hash Table (POD)...");
+   {
+      ctHashTable<int, uint32_t> hashTable = ctHashTable<int, uint32_t>(600000);
+      uint32_t findhash = 0;
+      for (int i = 1; i < 500000; i++) {
+         uint32_t hash = XXH32(&i, sizeof(int), 0);
+         if (i == 156) { findhash = hash; }
+         hashTable.Insert(hash, i);
+      }
+      int* iptr = hashTable.FindPtr(findhash);
+      if (iptr) { ctDebugLog("Number %d", *iptr); }
    }
-   ctStringUtf8* strptr = hashTable.FindPtr(findhash);
-   if (strptr) { ctDebugLog("%s", strptr->CStr()); }
+   ctDebugLog("Hash Table (Worst Case Dynamic String)...");
+   {
+      ctHashTable<ctStringUtf8, uint32_t> hashTable =
+        ctHashTable<ctStringUtf8, uint32_t>(0);
+      uint32_t findhash = 0;
+      for (int i = 1; i < 500000; i++) {
+         ctStringUtf8 result;
+         result.Printf(
+           64,
+           "Number %d  (PUSH PAST OPT.................................)",
+           i);
+         uint32_t hash = result.xxHash32();
+         if (i == 156) { findhash = hash; }
+         hashTable.Insert(hash, result);
+      }
+      ctStringUtf8* strptr = hashTable.FindPtr(findhash);
+      if (strptr) { ctDebugLog("%s", strptr->CStr()); }
+   }
    return 0;
 }
 
