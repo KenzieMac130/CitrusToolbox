@@ -159,6 +159,8 @@ inline ctResults ctHashTable<T, K>::Reserve(const size_t baseSize) {
    _Capacity = capacity;
    _Count = 0;
 
+   if (!oldKeys || !oldValues) { return CT_SUCCESS; }
+
    for (size_t i = 0; i < oldCapacity; i++) {
       if (oldKeys[i] != 0) { Insert(oldKeys[i], oldValues[i]); }
    }
