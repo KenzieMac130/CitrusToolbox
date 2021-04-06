@@ -56,7 +56,7 @@ public:
                           void* customData = NULL);
 
    ctResults ExecCommand(const char* name, const char* command);
-   ctResults GetValue(const char* name, ctStringUtf8& out);
+   ctResults GetValueStr(const char* name, ctStringUtf8& out);
    ctResults GetHelp(const char* name, ctStringUtf8& out);
 
 private:

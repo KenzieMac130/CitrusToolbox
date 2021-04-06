@@ -171,7 +171,7 @@ ctResults ctSettingsSection::ExecCommand(const char* name,
    return CT_FAILURE_UNKNOWN;
 }
 
-ctResults ctSettingsSection::GetValue(const char* name, ctStringUtf8& out) {
+ctResults ctSettingsSection::GetValueStr(const char* name, ctStringUtf8& out) {
    ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    _setting* pSetting = _settings.FindPtr(hash);
