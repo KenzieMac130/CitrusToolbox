@@ -59,7 +59,7 @@ ctResults ctJobSystem::Startup() {
    pool = cute_threadpool_create(finalThreadCount, NULL);
    if (pool == NULL) {
       ctFatalError(
-        -1, CT_NC("Failed to create threadpool! Check \"JobSystem.ini\"!"));
+        -1, CT_NC("Failed to create threadpool!"));
       return CT_FAILURE_UNSUPPORTED_HARDWARE;
    }
    return CT_SUCCESS;
