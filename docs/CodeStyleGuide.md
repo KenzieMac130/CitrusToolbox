@@ -79,7 +79,7 @@
 * Indent the contents any multi-line "{}" or "()".
 
 ### Line Length
-* Keep the line length bellow the length of 80 characters without indents.
+* Keep the line length bellow the length of 90 characters without indents.
 
 ### Comments
 * Always use old-fashioned C style multi-line comments "/**/".
@@ -229,7 +229,7 @@ CMake 3.10
 * Indent with tab multi-line arguments or branch contents.
 
 ### Line Length
-* Keep the line length bellow the length of 80 characters without indents.
+* Keep the line length bellow the length of 90 characters without indents.
 
 ### Comments
 * Single and multi-line comments must be made using "#" and only be used when necessary.
