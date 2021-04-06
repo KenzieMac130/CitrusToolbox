@@ -48,7 +48,7 @@ ctResults TestApp::OnTick(const float deltatime) {
       Engine->Debug->Log("This Message %d", loopvar);
       loopvar++;
       if (loopvar == 5001) { 
-          ctDebugLog("Help");
+          ctDebugLog("Finished");
       }
    }
    return CT_SUCCESS;
