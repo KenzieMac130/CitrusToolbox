@@ -27,9 +27,9 @@
 
 #include "core/EngineCore.hpp"
 
-#define CT_VK_CHECK(_args, _msg)                                                         \
+#define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \
-      VkResult _tmpvresult = _args;                                                      \
+      const VkResult _tmpvresult = _func;                                                \
       if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, #_msg); }          \
    }
 
@@ -53,6 +53,7 @@ public:
    ctVkDescriptorManager();
    ctVkDescriptorManager(int32_t max);
 
+protected:
    /* Get the next open slot to place a resource in the bindless system */
    int32_t AllocateSlot();
    /* Only call once the resource is not in-flight! */

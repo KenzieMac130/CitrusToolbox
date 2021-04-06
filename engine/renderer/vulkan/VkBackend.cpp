@@ -240,7 +240,7 @@ ctResults ctVkBackend::Startup() {
    {
       ctDebugLog("Getting Extensions...");
       if (validationEnabled && !isValidationLayersAvailible()) {
-         ctFatalError(-1, CT_NC("Vulkan Validation layers requested but not avalible"));
+         ctFatalError(-1, CT_NC("Vulkan Validation layers requested but not avalible."));
       }
 
       unsigned int sdlExtCount;
@@ -249,7 +249,7 @@ ctResults ctVkBackend::Startup() {
             Engine->WindowManager->mainWindow.pSDLWindow, &sdlExtCount, NULL)) {
          ctFatalError(-1,
                       CT_NC("SDL_Vulkan_GetInstanceExtensions() Failed to get "
-                            "instance extensions"));
+                            "instance extensions."));
       }
       instanceExtensions.Resize(sdlExtCount + extraExtCount);
       instanceExtensions[0] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
@@ -273,7 +273,7 @@ ctResults ctVkBackend::Startup() {
       instanceInfo.ppEnabledExtensionNames = instanceExtensions.Data();
       ctDebugLog("Creating Instance...");
       CT_VK_CHECK(vkCreateInstance(&instanceInfo, &vkAllocCallback, &vkInstance),
-                  CT_NC("vkCreateInstance() Failed to create vulkan instance"));
+                  CT_NC("vkCreateInstance() Failed to create vulkan instance."));
    }
    /*Setup Validation Debug Callback*/
    {
@@ -302,9 +302,9 @@ ctResults ctVkBackend::Startup() {
       ctDebugLog("Finding GPU...");
       uint32_t gpuCount;
       CT_VK_CHECK(vkEnumeratePhysicalDevices(vkInstance, &gpuCount, NULL),
-                  CT_NC("Failed to find devices with vkEnumeratePhysicalDevices()"));
+                  CT_NC("Failed to find devices with vkEnumeratePhysicalDevices()."));
       if (!gpuCount) {
-         ctFatalError(-1, CT_NC("No supported Vulkan compatible GPU found"));
+         ctFatalError(-1, CT_NC("No supported Vulkan compatible GPU found."));
       }
       ctDynamicArray<VkPhysicalDevice> gpus;
       gpus.Resize(gpuCount);
@@ -324,12 +324,12 @@ ctResults ctVkBackend::Startup() {
 
          if (!vDeviceHasRequiredFeatures(deviceFeatures, descriptorIndexingFeatures) ||
              !vDeviceHasRequiredExtensions(vkPhysicalDevice)) {
-            ctFatalError(-1, CT_NC("Graphics card doesn't meet requirements"));
+            ctFatalError(-1, CT_NC("Graphics card doesn't meet requirements."));
          }
       } else {
          vkPhysicalDevice = PickBestDevice(gpus.Data(), gpuCount);
          if (vkPhysicalDevice == VK_NULL_HANDLE) {
-            ctFatalError(-1, CT_NC("Could not find suitable graphics card"));
+            ctFatalError(-1, CT_NC("Could not find suitable graphics card."));
          }
       }
    }
@@ -340,7 +340,7 @@ ctResults ctVkBackend::Startup() {
       /* Queue Creation */
       queueFamilyIndices = FindQueueFamilyIndices(vkPhysicalDevice);
       if (!vIsQueueFamilyComplete(queueFamilyIndices)) {
-         ctFatalError(-1, CT_NC("Device doesn't have the necessary queues"));
+         ctFatalError(-1, CT_NC("Device doesn't have the necessary queues."));
       }
 
       uint32_t uniqueIdxCount = 0;
@@ -419,7 +419,7 @@ ctResults ctVkBackend::Startup() {
       ctDebugLog("Creating Device...");
       CT_VK_CHECK(
         vkCreateDevice(vkPhysicalDevice, &deviceInfo, &vkAllocCallback, &vkDevice),
-        CT_NC("vkCreateDevice() failed to create the device"));
+        CT_NC("vkCreateDevice() failed to create the device."));
 
       ctDebugLog("Getting Queues...");
       /* Get Queues */
@@ -439,7 +439,7 @@ ctResults ctVkBackend::Startup() {
       allocatorInfo.instance = vkInstance;
 
       CT_VK_CHECK(vmaCreateAllocator(&allocatorInfo, &vmaAllocator),
-                  CT_NC("vmaCreateAllocator() failed to create allocator"));
+                  CT_NC("vmaCreateAllocator() failed to create allocator."));
    }
    /* Pipeline Factory */
    {
@@ -461,7 +461,7 @@ ctResults ctVkBackend::Startup() {
       cacheInfo.initialDataSize = cacheSize;
       CT_VK_CHECK(
         vkCreatePipelineCache(vkDevice, &cacheInfo, &vkAllocCallback, &vkPipelineCache),
-        CT_NC("vkCreatePipelineCache() failed to create cache"));
+        CT_NC("vkCreatePipelineCache() failed to create cache."));
       if (cacheData) { ctFree(cacheData); }
 
       // Todo: (maybe later inside of key lime) :)
@@ -530,7 +530,7 @@ ctResults ctVkBackend::Startup() {
       CT_VK_CHECK(
         vkCreateDescriptorSetLayout(
           vkDevice, &descSetLayoutInfo, &vkAllocCallback, &vkDescriptorSetLayout),
-        CT_NC("vkCreateDescriptorSetLayout() failed to create descriptor set layout"));
+        CT_NC("vkCreateDescriptorSetLayout() failed to create descriptor set layout."));
 
       VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
@@ -541,7 +541,16 @@ ctResults ctVkBackend::Startup() {
       poolInfo.maxSets = 1;
       CT_VK_CHECK(
         vkCreateDescriptorPool(vkDevice, &poolInfo, &vkAllocCallback, &vkDescriptorPool),
-        CT_NC("vkCreateDescriptorPool() failed to create descriptor pool"));
+        CT_NC("vkCreateDescriptorPool() failed to create descriptor pool."));
+
+      VkDescriptorSetAllocateInfo allocInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+      allocInfo.descriptorSetCount = 1;
+      allocInfo.descriptorPool = vkDescriptorPool;
+      allocInfo.pSetLayouts = &vkDescriptorSetLayout;
+      CT_VK_CHECK(
+        vkAllocateDescriptorSets(vkDevice, &allocInfo, &vkGlobalDescriptorSet),
+        CT_NC("vkAllocateDescriptorSets() failed to allocate global descriptor set."));
 
       // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
       // https://roar11.com/2019/06/vulkan-textures-unbound/
