@@ -274,7 +274,7 @@ https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_tra
 
 ### Simplicity
 * Python should be treated as a small scripting language for offline tools.
-* Avoid deeply nested Python scripts with imports.0
+* Avoid deeply nested Python scripts with imports.
 
 ### Follow PEP-8
 https://www.python.org/dev/peps/pep-0008/
