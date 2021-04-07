@@ -97,7 +97,7 @@
 * Avoid functions that have dubious single threading limitations or allocate more memory outside malloc/calloc
 
 ### Typedefs
-* Naming: neTypeName
+* Naming: ctTypeName
 * Avoid unnecessary typedefs
 * Only use typedefs for base types and not structs/enums
 
@@ -208,6 +208,10 @@ enum myEnum {
 
 ### Exceptions
 * Exceptions will be disabled.
+
+### Namespaces
+* Namespaces will not be used in the engine in favor of the "ct" prefix.
+* Namespaces from 3rd party libraries should not be shortened by "using" unless it has a redundant prefix.
 
 ### Templates
 * Avoid templates as much as possible outside of containers.
