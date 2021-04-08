@@ -85,6 +85,9 @@
 * Always use old-fashioned C style multi-line comments "/**/".
 * Do not leave code commented out.
 
+### Language Compatibility
+* Always make it C++ compatible, Unless the project is compiled in C or there is a "#ifdef __cplusplus".
+
 ### Namespaces
 * C does not have namespaces so follow this:
 * "ct" is the engine wide namespace prefix
@@ -174,7 +177,9 @@ enum myEnum {
 * Avoid small functions with internal SIMD implementations, one of SIMD's main benefits is that there are more registers to not get evicted from.
 
 ### Additional Features
-* Bit packing is allowed only internally in the implementation.
+* Bit packing is allowed but discouraged.
+* Unions should make their use case immediately obvious
+* Designated initializers are unfortunately not used for compatibility. :(
 * Variable length arrays are disabled.
 
 ## C++
