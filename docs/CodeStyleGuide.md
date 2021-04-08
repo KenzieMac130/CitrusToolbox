@@ -108,12 +108,25 @@
 
 ### Functions
 * Naming: ctFunctionName()
-* NO HIDDEN STATES!!! Only modify what is passed to a function! (Even if this is just a module context object)
+* MINIMIZE HIDDEN STATES!!! Only modify what is passed to a function! (Even if this is just a module context object)
 * You can break up function calls and definitions into multiple lines.
+
+### Current Hidden State Exceptions
+* Shared Logging
+* Shared String Translation
+* Tracy Profiling Markup
+* ImGUI and Im3D
 
 ### Pointers
 * Pointer example format: int* pVariables;
 * Pointer-to-pointer format: int** ppVariables;
+
+### C Strings
+* Use const char* wherever read-only string data needs to be passed.
+* Raw string pointers for modifiable strings are discouraged in favor of utilities.
+* Always assume data is UTF-8 unless otherwise marked and do not assume 1-byte per character.
+* Do not cache C string pointers, always copy to another structure to avoid dangling.
+* Text that can be presented to the user should be wrapped in a "CT_N*" prefix for translation.
 
 ### Function Pointers
 * Format: void (*fpFuncPtrName)(int)
@@ -122,8 +135,8 @@
 * WILL MY FUNCTION INPUT BE MODIFIED? (Y/N) (to const or not to const)
 
 ### Returns
-* Generally try to only return type neResult for error checking
-* Return value optimization should only be applied in performance critical code (
+* Generally try to only return type ctResult for error checking
+* Return value optimization should only be applied in performance critical code.
 
 ### Arrays
 * Fixed sizes must be #defined in the global defines file
@@ -230,7 +243,7 @@ CMake 3.10
 * Avoid globbing and explicitly include files using "set".
 
 ### Indentation
-* Indent with tab multi-line arguments or branch contents.
+* Indent with 3 spaces multi-line arguments or branch contents.
 
 ### Line Length
 * Keep the line length bellow the length of 90 characters without indents.
