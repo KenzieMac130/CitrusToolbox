@@ -38,3 +38,15 @@ struct ctVec3 {
       float data[3];
    };
 };
+
+struct ctVec4 {
+    union {
+        struct {
+            float x;
+            float y;
+            float z;
+            float w;
+        };
+        float data[4];
+    };
+};
