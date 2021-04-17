@@ -85,6 +85,9 @@
 * Always use old-fashioned C style multi-line comments "/**/".
 * Do not leave code commented out.
 
+### Language Compatibility
+* Always make it C++ compatible, Unless the project is compiled in C or there is a "#ifdef __cplusplus".
+
 ### Namespaces
 * C does not have namespaces so follow this:
 * "ct" is the engine wide namespace prefix
@@ -97,7 +100,7 @@
 * Avoid functions that have dubious single threading limitations or allocate more memory outside malloc/calloc
 
 ### Typedefs
-* Naming: neTypeName
+* Naming: ctTypeName
 * Avoid unnecessary typedefs
 * Only use typedefs for base types and not structs/enums
 
@@ -108,12 +111,25 @@
 
 ### Functions
 * Naming: ctFunctionName()
-* NO HIDDEN STATES!!! Only modify what is passed to a function! (Even if this is just a module context object)
+* MINIMIZE HIDDEN STATES!!! Only modify what is passed to a function! (Even if this is just a module context object)
 * You can break up function calls and definitions into multiple lines.
+
+### Current Hidden State Exceptions
+* Shared Logging
+* Shared String Translation
+* Tracy Profiling Markup
+* ImGUI and Im3D
 
 ### Pointers
 * Pointer example format: int* pVariables;
 * Pointer-to-pointer format: int** ppVariables;
+
+### C Strings
+* Use const char* wherever read-only string data needs to be passed.
+* Raw string pointers for modifiable strings are discouraged in favor of utilities.
+* Always assume data is UTF-8 unless otherwise marked and do not assume 1-byte per character.
+* Do not cache C string pointers, always copy to another structure to avoid dangling.
+* Text that can be presented to the user should be wrapped in a "CT_N*" prefix for translation.
 
 ### Function Pointers
 * Format: void (*fpFuncPtrName)(int)
@@ -122,8 +138,8 @@
 * WILL MY FUNCTION INPUT BE MODIFIED? (Y/N) (to const or not to const)
 
 ### Returns
-* Generally try to only return type neResult for error checking
-* Return value optimization should only be applied in performance critical code (
+* Generally try to only return type ctResult for error checking
+* Return value optimization should only be applied in performance critical code.
 
 ### Arrays
 * Fixed sizes must be #defined in the global defines file
@@ -161,7 +177,9 @@ enum myEnum {
 * Avoid small functions with internal SIMD implementations, one of SIMD's main benefits is that there are more registers to not get evicted from.
 
 ### Additional Features
-* Bit packing is allowed only internally in the implementation.
+* Bit packing is allowed but discouraged.
+* Unions should make their use case immediately obvious
+* Designated initializers are unfortunately not used for compatibility. :(
 * Variable length arrays are disabled.
 
 ## C++
@@ -209,6 +227,10 @@ enum myEnum {
 ### Exceptions
 * Exceptions will be disabled.
 
+### Namespaces
+* Namespaces will not be used in the engine in favor of the "ct" prefix.
+* Namespaces from 3rd party libraries should not be shortened by "using" unless it has a redundant prefix.
+
 ### Templates
 * Avoid templates as much as possible outside of containers.
 * Use C++03 style formatting (code generator reasons)
@@ -226,7 +248,7 @@ CMake 3.10
 * Avoid globbing and explicitly include files using "set".
 
 ### Indentation
-* Indent with tab multi-line arguments or branch contents.
+* Indent with 3 spaces multi-line arguments or branch contents.
 
 ### Line Length
 * Keep the line length bellow the length of 90 characters without indents.
