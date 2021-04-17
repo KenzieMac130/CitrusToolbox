@@ -51,18 +51,16 @@ ctDebugSystem::~ctDebugSystem() {
 
 ctResults ctDebugSystem::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings =
-     Engine->Settings->CreateSection("DebugSystem", 1);
-   settings->BindInteger(
-     &_flushAfter,
-     false,
-     true,
-     "FlushAfter",
-     "Write the debug log contents after a certain amount of logs.");
+   ctSettingsSection* settings = Engine->Settings->CreateSection("DebugSystem", 1);
+   settings->BindInteger(&_flushAfter,
+                         false,
+                         true,
+                         "FlushAfter",
+                         "Write the debug log contents after a certain amount of logs.",
+                         CT_SETTINGS_BOUNDS_UINT);
 
    if (Engine->FileSystem->isStarted()) {
-      Engine->FileSystem->OpenPreferencesFile(
-        _logFile, "Log.txt", CT_FILE_OPEN_WRITE);
+      Engine->FileSystem->OpenPreferencesFile(_logFile, "Log.txt", CT_FILE_OPEN_WRITE);
    }
    if (!_logFile.isOpen()) {
       Error("Debug System: Log.txt CANNOT BE OPENED!");
