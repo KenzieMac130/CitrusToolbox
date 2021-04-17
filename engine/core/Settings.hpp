@@ -21,6 +21,9 @@
 #include "FileSystem.hpp"
 #include "Translation.hpp"
 
+#define CT_SETTINGS_BOUNDS_BOOL 0,1
+#define CT_SETTINGS_BOUNDS_UINT 0,UINT32_MAX
+
 class ctSettingsSection {
 public:
    ctSettingsSection();
@@ -30,6 +33,8 @@ public:
                          bool load,
                          const char* name,
                          const char* help,
+                         int32_t min = INT32_MIN,
+                         int32_t max = INT32_MAX,
                          void (*setCallback)(const char* value,
                                              void* customData) = NULL,
                          void* customData = NULL);
@@ -38,6 +43,8 @@ public:
                        bool load,
                        const char* name,
                        const char* help,
+                       float min = -FLT_MAX,
+                       float max = FLT_MAX,
                        void (*setCallback)(const char* value,
                                            void* customData) = NULL,
                        void* customData = NULL);
@@ -74,7 +81,9 @@ private:
                       const char* help,
                       void* ptr,
                       void (*setCallback)(const char* value, void* customData),
-                      void* customData);
+                      void* customData,
+                      double min = -DBL_MAX,
+                      double max = DBL_MAX);
 
    struct _setting {
       _setting_type type;
@@ -85,6 +94,8 @@ private:
       void* dataPtr;
       void (*setCallback)(const char* value, void* customData);
       void* customData;
+      double minimum;
+      double maximum;
    };
    ctTranslationCatagory _translationCatagory;
    ctHashTable<_setting, uint32_t> _settings;

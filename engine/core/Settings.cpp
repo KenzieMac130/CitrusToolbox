@@ -18,8 +18,7 @@
 
 ctResults ctSettings::Startup() {
    ZoneScoped;
-   _sections =
-     ctHashTable<ctSettingsSection, uint32_t>(CT_MAX_SETTINGS_SECTIONS);
+   _sections = ctHashTable<ctSettingsSection, uint32_t>(CT_MAX_SETTINGS_SECTIONS);
    return CT_SUCCESS;
 }
 
@@ -27,8 +26,9 @@ ctResults ctSettings::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctSettingsSection* ctSettings::CreateSection(
-  const char* name, int max, ctTranslationCatagory translationCatagory) {
+ctSettingsSection* ctSettings::CreateSection(const char* name,
+                                             int max,
+                                             ctTranslationCatagory translationCatagory) {
    ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    return _sections.Insert(hash, ctSettingsSection(max, translationCatagory));
@@ -43,8 +43,7 @@ ctSettingsSection::ctSettingsSection() {
    _settings = ctHashTable<_setting, uint32_t>();
 }
 
-ctSettingsSection::ctSettingsSection(
-  int max, ctTranslationCatagory translationCatagory) {
+ctSettingsSection::ctSettingsSection(int max, ctTranslationCatagory translationCatagory) {
    _settings = ctHashTable<_setting, uint32_t>(max);
    _translationCatagory = translationCatagory;
 }
@@ -57,15 +56,15 @@ ctResults ctSettingsSection::_bindvar(_setting_type type,
                                       void* ptr,
                                       void (*setCallback)(const char* value,
                                                           void* customData),
-                                      void* customData) {
+                                      void* customData,
+                                      double min,
+                                      double max) {
    ZoneScoped;
    if (!ptr) { return CT_FAILURE_INVALID_PARAMETER; }
    const uint32_t hash = XXH32(name, strlen(name), 0);
    const _setting setting =
-     _setting {type, save, load, name, help, ptr, setCallback, customData};
-   if (_settings.Insert(hash, setting) != NULL) {
-      return CT_FAILURE_DUPLICATE_ENTRY;
-   };
+     _setting {type, save, load, name, help, ptr, setCallback, customData, min, max};
+   if (_settings.Insert(hash, setting) != NULL) { return CT_FAILURE_DUPLICATE_ENTRY; };
    return CT_SUCCESS;
 }
 
@@ -74,6 +73,8 @@ ctResults ctSettingsSection::BindInteger(int32_t* ptr,
                                          bool load,
                                          const char* name,
                                          const char* help,
+                                         int32_t min,
+                                         int32_t max,
                                          void (*setCallback)(const char* value,
                                                              void* customData),
                                          void* customData) {
@@ -84,7 +85,9 @@ ctResults ctSettingsSection::BindInteger(int32_t* ptr,
                    help,
                    (void*)ptr,
                    setCallback,
-                   customData);
+                   customData,
+                   (double)min,
+                   (double)max);
 }
 
 ctResults ctSettingsSection::BindFloat(float* ptr,
@@ -92,6 +95,8 @@ ctResults ctSettingsSection::BindFloat(float* ptr,
                                        bool load,
                                        const char* name,
                                        const char* help,
+                                       float min,
+                                       float max,
                                        void (*setCallback)(const char* value,
                                                            void* customData),
                                        void* customData) {
@@ -102,7 +107,9 @@ ctResults ctSettingsSection::BindFloat(float* ptr,
                    help,
                    (void*)ptr,
                    setCallback,
-                   customData);
+                   customData,
+                   (double)min,
+                   (double)max);
 }
 
 ctResults ctSettingsSection::BindString(ctStringUtf8* ptr,
@@ -113,14 +120,8 @@ ctResults ctSettingsSection::BindString(ctStringUtf8* ptr,
                                         void (*setCallback)(const char* value,
                                                             void* customData),
                                         void* customData) {
-   return _bindvar(SETTING_TYPE_STRING,
-                   save,
-                   load,
-                   name,
-                   help,
-                   (void*)ptr,
-                   setCallback,
-                   customData);
+   return _bindvar(
+     SETTING_TYPE_STRING, save, load, name, help, (void*)ptr, setCallback, customData);
 }
 
 ctResults ctSettingsSection::BindFunction(const char* name,
@@ -128,18 +129,11 @@ ctResults ctSettingsSection::BindFunction(const char* name,
                                           void (*setCallback)(const char* value,
                                                               void* customData),
                                           void* customData) {
-   return _bindvar(SETTING_TYPE_FUNCTION,
-                   false,
-                   false,
-                   name,
-                   help,
-                   NULL,
-                   setCallback,
-                   customData);
+   return _bindvar(
+     SETTING_TYPE_FUNCTION, false, false, name, help, NULL, setCallback, customData);
 }
 
-ctResults ctSettingsSection::ExecCommand(const char* name,
-                                         const char* command) {
+ctResults ctSettingsSection::ExecCommand(const char* name, const char* command) {
    ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    _setting* pSetting = _settings.FindPtr(hash);
@@ -153,13 +147,19 @@ ctResults ctSettingsSection::ExecCommand(const char* name,
          if (!cmdStr.isInteger()) { return CT_FAILURE_INVALID_PARAMETER; }
          int32_t* pData = (int32_t*)pSetting->dataPtr;
          ctAssert(pData);
-         *pData = atoi(command);
+         int32_t val = atoi(command);
+         if (val > pSetting->maximum) { val = (int32_t)pSetting->maximum; }
+         if (val < pSetting->minimum) { val = (int32_t)pSetting->minimum; }
+         *pData = val;
          return CT_SUCCESS;
       } else if (pSetting->type == SETTING_TYPE_FLOAT) {
          if (!cmdStr.isNumber()) { return CT_FAILURE_INVALID_PARAMETER; }
          float* pData = (float*)pSetting->dataPtr;
          ctAssert(pData);
-         *pData = (float)atof(command);
+         float val = (float)atof(command);
+         if (val > pSetting->maximum) { val = (float)pSetting->maximum; }
+         if (val < pSetting->minimum) { val = (float)pSetting->minimum; }
+         *pData = val;
          return CT_SUCCESS;
       } else if (pSetting->type == SETTING_TYPE_STRING) {
          ctStringUtf8* pData = (ctStringUtf8*)pSetting->dataPtr;
