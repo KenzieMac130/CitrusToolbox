@@ -72,6 +72,8 @@ public:
    const ctStringUtf8& GetDataPath();
    const ctStringUtf8& GetAssetPath();
 
+   const void LogPaths();
+
    const ctResults OpenPreferencesFile(ctFile& file,
                                        const ctStringUtf8& relativePath,
                                        const ctFileOpenMode mode);

@@ -29,8 +29,7 @@ void ctFile::FromCStream(FILE* fp) {
    _fp = fp;
 }
 
-ctResults ctFile::Open(const ctStringUtf8& filePath,
-                       const ctFileOpenMode mode) {
+ctResults ctFile::Open(const ctStringUtf8& filePath, const ctFileOpenMode mode) {
    ZoneScoped;
    if (mode >= 3 || mode < 0) { return CT_FAILURE_INVALID_PARAMETER; }
    const char* modestr[] = {"rb", "wb", "r", "w"};
@@ -68,8 +67,7 @@ int64_t ctFile::Tell() {
 ctResults ctFile::Seek(const int64_t offset, const ctFileSeekMode mode) {
    ZoneScoped;
    if (!_fp) { return CT_FAILURE_FILE_INACCESSIBLE; }
-   return fseek(_fp, (long)offset, mode) == 0 ? CT_SUCCESS
-                                              : CT_FAILURE_FILE_INACCESSIBLE;
+   return fseek(_fp, (long)offset, mode) == 0 ? CT_SUCCESS : CT_FAILURE_FILE_INACCESSIBLE;
 }
 
 size_t ctFile::ReadRaw(void* pDest, const size_t size, const size_t count) {
@@ -162,16 +160,22 @@ const ctStringUtf8& ctFileSystem::GetAssetPath() {
    return _assetPath;
 }
 
-const ctResults ctFileSystem::OpenPreferencesFile(
-  ctFile& file, const ctStringUtf8& relativePath, const ctFileOpenMode mode) {
+const void ctFileSystem::LogPaths() {
+   ctDebugLog("Preference Path: %s", _prefPath.CStr());
+   ctDebugLog("Data Path: %s", _dataPath.CStr());
+   ctDebugLog("Asset Path: %s", _assetPath.CStr());
+}
+
+const ctResults ctFileSystem::OpenPreferencesFile(ctFile& file,
+                                                  const ctStringUtf8& relativePath,
+                                                  const ctFileOpenMode mode) {
    ctStringUtf8 finalPath = _prefPath;
    finalPath += relativePath;
    return file.Open(finalPath, mode);
 }
 
-const ctResults
-ctFileSystem::OpenExeRelativeFile(ctFile& file,
-                                  const ctStringUtf8& relativePath) {
+const ctResults ctFileSystem::OpenExeRelativeFile(ctFile& file,
+                                                  const ctStringUtf8& relativePath) {
    ctStringUtf8 finalPath = _dataPath;
    finalPath += relativePath;
    return file.Open(finalPath, CT_FILE_OPEN_READ);
