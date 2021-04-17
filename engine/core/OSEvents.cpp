@@ -31,8 +31,17 @@ ctResults ctOSEventManager::PollOSEvents() {
    SDL_Event event;
    while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) { Engine->Exit(); }
-      for (size_t i = 0; i < EventHandlers.Count(); i++) {
-         EventHandlers[i](&event);
+      else if (event.type == SDL_WINDOWEVENT) {
+          for (size_t i = 0; i < WindowEventHandlers.Count(); i++) {
+              const ctOSEventHandler handler = WindowEventHandlers[i];
+              handler.callback(&event, handler.data);
+          }
+      }
+      else {
+          for (size_t i = 0; i < MiscEventHandlers.Count(); i++) {
+              const ctOSEventHandler handler = MiscEventHandlers[i];
+              handler.callback(&event, handler.data);
+          }
       }
    }
    return CT_SUCCESS;
