@@ -46,7 +46,7 @@ ctResults ctJobSystem::Startup() {
                          true,
                          true,
                          "ThreadCount",
-                         "Number of threads to use for common jobs.");
+                         "Number of threads to use for common jobs. (-1: Auto-select)");
 
    int finalThreadCount = 1;
    if (threadCount <= 0) {
@@ -62,6 +62,7 @@ ctResults ctJobSystem::Startup() {
         -1, CT_NC("Failed to create threadpool!"));
       return CT_FAILURE_UNSUPPORTED_HARDWARE;
    }
+   ctDebugLog("Thread Pool: Reserved %d threads...", finalThreadCount);
    return CT_SUCCESS;
 }
 
