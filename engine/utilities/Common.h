@@ -69,6 +69,8 @@ enum ctResults {
 
 /*C Helpers*/
 #define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
+#define ctCStrEql(a,b) strcmp(a,b) == 0
+#define ctCStrNEql(a,b,n) strncmp(a,b,n) == 0
 
 /*Assert*/
 #define ctAssert(e) assert(e)
