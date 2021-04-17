@@ -17,6 +17,7 @@
 
 #include "WindowManager.hpp"
 #include "core/EngineCore.hpp"
+#include "core/Application.hpp"
 
 uint32_t windowModeFlags(const ctStringUtf8& windowMode) {
    if (windowMode == "Windowed") {
@@ -37,17 +38,29 @@ ctWindowManager::ctWindowManager() {
    mainWindowWidth = 640;
    mainWindowHeight = 480;
    mainWindowMonitorIdx = 0;
-   mainWindowMode = "Windowed";
+#ifdef NDEBUG
+   mainWindowMode = "Borderless";
+#else
+   mainWindowMode = "Resizable";
+#endif
    mainWindow = ctWindow();
 }
 
 ctResults ctWindowManager::Startup() {
    ZoneScoped;
    ctSettingsSection* settings = Engine->Settings->CreateSection("Window", 4);
-   settings->BindInteger(
-     &mainWindowWidth, true, true, "WindowWidth", "Width of the main window.");
-   settings->BindInteger(
-     &mainWindowHeight, true, true, "WindowHeight", "Height of the main window.");
+   settings->BindInteger(&mainWindowWidth,
+                         true,
+                         true,
+                         "WindowWidth",
+                         "Width of the main window.",
+                         CT_SETTINGS_BOUNDS_UINT);
+   settings->BindInteger(&mainWindowHeight,
+                         true,
+                         true,
+                         "WindowHeight",
+                         "Height of the main window.",
+                         CT_SETTINGS_BOUNDS_UINT);
    settings->BindInteger(&mainWindowMonitorIdx,
                          true,
                          true,
@@ -59,6 +72,12 @@ ctResults ctWindowManager::Startup() {
      true,
      "WindowMode",
      "Main Window Mode. (Windowed, Resizable, Fullscreen, Desktop, Borderless)");
+   settings->BindInteger(&mainWindowVSync,
+                         false,
+                         true,
+                         "VSync",
+                         "Enable vertical sync.",
+                         CT_SETTINGS_BOUNDS_BOOL);
 
    /* Check for power usage */
    int percent;

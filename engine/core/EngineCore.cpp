@@ -15,24 +15,29 @@
 */
 
 #include "EngineCore.hpp"
+#include "Application.hpp"
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    ZoneScoped;
    App = pApp;
+   /*SDL*/
+   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER | SDL_INIT_HAPTIC);
+
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
    Settings = new ctSettings();
    Debug = new ctDebugSystem(32, true);
    Translation = new ctTranslation(true);
-   JobSystem = new ctJobSystem(1);
+   JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
-   Renderer = new ctRenderer();
+   Renderer = new ctKeyLimeRenderer();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
    Debug->ModuleStartup(this);
+   FileSystem->LogPaths();
    Translation->ModuleStartup(this);
    JobSystem->ModuleStartup(this);
    OSEventManager->ModuleStartup(this);
@@ -49,7 +54,6 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 ctResults ctEngineCore::EnterLoop() {
    _isRunning = true;
    while (_isRunning) {
-      ZoneScoped;
       LoopSingleShot(1.0f / 60.0f);
       FrameMark;
    }
@@ -66,6 +70,7 @@ bool ctEngineCore::isExitRequested() {
 }
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
+   ZoneScoped;
    /*Update modules*/
    App->OnTick(deltatime);
    OSEventManager->PollOSEvents();
@@ -96,5 +101,8 @@ ctResults ctEngineCore::Shutdown() {
    delete OSEventManager;
    delete Translation;
    delete JobSystem;
+
+   /*SDL*/
+   SDL_Quit();
    return CT_SUCCESS;
 }

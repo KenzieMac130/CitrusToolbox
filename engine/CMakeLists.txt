@@ -175,15 +175,17 @@ set(ENGINE_HEADER_FILES_CORE
 set(ENGINE_SOURCE_FILES_RENDERER)
 
 set(ENGINE_HEADER_FILES_RENDERER
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/Renderer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
 )
 
 # ---------- Graphics Backend Files ----------
 set(ENGINE_SOURCE_FILES_VULKAN
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/RendererAdapterVk.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp)
 
 set(ENGINE_HEADER_FILES_VULKAN
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp)
 
 # ---------- Compile Shaders ----------

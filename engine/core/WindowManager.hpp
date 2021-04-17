@@ -41,5 +41,6 @@ public:
     int32_t mainWindowWidth;
     int32_t mainWindowHeight;
     int32_t mainWindowMonitorIdx;
+    int32_t mainWindowVSync;
     ctStringUtf8 mainWindowMode;
 };

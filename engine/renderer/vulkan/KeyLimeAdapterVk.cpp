@@ -13,3 +13,22 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "utilities/Common.h"
+#include "renderer/KeyLime.hpp"
+#include "core/EngineCore.hpp"
+#include "renderer/vulkan/VkKeyLimeCore.hpp"
+
+ctResults ctKeyLimeRenderer::Startup() {
+   vkKeyLime = new ctVkKeyLimeCore();
+   return vkKeyLime->ModuleStartup(Engine);
+};
+
+ctResults ctKeyLimeRenderer::Shutdown() {
+   const ctResults results = vkKeyLime->ModuleShutdown();
+   delete vkKeyLime;
+   return results;
+}
+ctResults ctKeyLimeRenderer::RenderFrame() {
+   return vkKeyLime->Render();
+};

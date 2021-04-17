@@ -17,3 +17,14 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "VkBackend.hpp"
+
+class ctVkKeyLimeCore : public ctModuleBase {
+public:
+    ctResults Startup() final;
+    ctResults Shutdown() final;
+
+    ctResults Render();
+
+    ctVkBackend vkBackend;
+};

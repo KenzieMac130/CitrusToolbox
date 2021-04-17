@@ -40,12 +40,37 @@ struct ctVkQueueFamilyIndices {
    uint32_t transferIdx;
 };
 
+class ctVkSwapchainSupport {
+public:
+   VkSurfaceCapabilitiesKHR surfaceCapabilities;
+   ctDynamicArray<VkSurfaceFormatKHR> surfaceFormats;
+   ctDynamicArray<VkPresentModeKHR> presentModes;
+   void GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface);
+};
+
 class ctVkScreenResources {
 public:
+   SDL_Window* window;
    VkSurfaceKHR surface;
+   VkSwapchainKHR swapchain;
+   VkSurfaceFormatKHR surfaceFormat;
+   VkPresentModeKHR presentMode;
 
-   ctResults Create(class ctVkBackend* pBackend, SDL_Window* pWindow);
-   ctResults Destroy(class ctVkBackend* pBackend);
+   VkExtent2D extent;
+   uint32_t imageCount;
+   ctDynamicArray<VkImage> swapImages;
+   ctDynamicArray<VkImageView> swapImageViews;
+
+   bool resizeTriggered;
+
+
+   ctResults CreateSurface(class ctVkBackend* pBackend, SDL_Window* pWindow);
+   ctResults CreateSwapchain(class ctVkBackend* pBackend,
+                             ctVkQueueFamilyIndices indices,
+                             int32_t vsyncLevel,
+                             VkSwapchainKHR oldSwapchain);
+   ctResults DestroySurface(class ctVkBackend* pBackend);
+   ctResults DestroySwapchain(class ctVkBackend* pBackend);
 };
 
 class ctVkDescriptorManager {
@@ -53,7 +78,6 @@ public:
    ctVkDescriptorManager();
    ctVkDescriptorManager(int32_t max);
 
-protected:
    /* Get the next open slot to place a resource in the bindless system */
    int32_t AllocateSlot();
    /* Only call once the resource is not in-flight! */
@@ -65,13 +89,34 @@ private:
    int32_t nextNewIdx;
 };
 
+class ctVkCommandBufferManager {
+public:
+   ctResults Create(class ctVkBackend* pBackend, uint32_t max, uint32_t familyIdx);
+   ctResults Destroy(class ctVkBackend* pBackend);
+
+   VkCommandBuffer GetNextCommandBuffer();
+   VkResult SubmitCommands(VkQueue queue,
+                           uint32_t signalSemaphoreCount,
+                           VkSemaphore* pSignalSemaphores,
+                           uint32_t waitSemaphoreCount,
+                           VkSemaphore* pWaitSemaphores,
+                           VkFence fence = VK_NULL_HANDLE,
+                           VkPipelineStageFlags* pCustomWaitStages = NULL);
+
+private:
+   VkCommandPool pool;
+   ctDynamicArray<VkCommandBuffer> cmdBuffers;
+   uint32_t activeBufferCount;
+};
+
 class ctVkBackend : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
    bool isValidationLayersAvailible();
-   VkPhysicalDevice PickBestDevice(VkPhysicalDevice* pGpus, uint32_t count);
+   VkPhysicalDevice
+   PickBestDevice(VkPhysicalDevice* pGpus, uint32_t count, VkSurfaceKHR surface);
    ctVkQueueFamilyIndices FindQueueFamilyIndices(VkPhysicalDevice gpu);
 
    /* Vulkan Objects */
@@ -91,6 +136,10 @@ public:
    VkQueue computeQueue;
    VkQueue transferQueue;
 
+   ctVkCommandBufferManager graphicsCommands[CT_MAX_INFLIGHT_FRAMES];
+   ctVkCommandBufferManager computeCommands[CT_MAX_INFLIGHT_FRAMES];
+   ctVkCommandBufferManager transferCommands[CT_MAX_INFLIGHT_FRAMES];
+
    VkPipelineCache vkPipelineCache;
    ctHashTable<VkPipeline, uint64_t> pipelineHashTable;
 
@@ -103,12 +152,20 @@ public:
    ctVkDescriptorManager descriptorsStorageBuffer;
 
    ctVkScreenResources mainScreenResources;
+   ctResults WindowReset(SDL_Window* pWindow);
 
    /* Settings */
    int32_t preferredDevice;
    int32_t validationEnabled;
+
    int32_t maxSamplers;
    int32_t maxSampledImages;
    int32_t maxStorageImages;
    int32_t maxStorageBuffers;
+
+   int32_t maxGraphicsCommandBuffers;
+   int32_t maxComputeCommandBuffers;
+   int32_t maxTransferCommandBuffers;
+
+   int32_t vsync;
 };

@@ -43,6 +43,9 @@ set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
 set(CT_MAX_GFX_STORAGE_IMAGES 64)
 set(CT_MAX_GFX_STORAGE_BUFFERS 4096)
 set(CT_MAX_INFLIGHT_FRAMES 3)
+set(CT_MAX_GFX_GRAPHICS_COMMAND_BUFFERS 8)
+set(CT_MAX_GFX_COMPUTE_COMMAND_BUFFERS 32)
+set(CT_MAX_GFX_TRANSFER_COMMAND_BUFFERS 32)
 
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
@@ -63,12 +66,13 @@ set(CITRUS_ASSET_BUILD_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
 
 #---------- Point to Libraries ----------
 if(WIN32)
-  set(BASE_LIBRARY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libs/Win64)
-  set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
-  set(SHARED_LIBRARY_FORMAT ".dll")
-  set(NATIVE_SOURCE_FILES)
+   set(BASE_LIBRARY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libs/Win64)
+   set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
+   set(SHARED_LIBRARY_FORMAT ".dll")
+   set(EXECUTABLE_FORMAT ".exe")
+   set(NATIVE_SOURCE_FILES)
 else()
-  message(FATAL_ERROR "Currently unsupported platform!")
+   message(FATAL_ERROR "Currently unsupported platform!")
 endif()
 
 # ---------- Find ISPC ----------
@@ -80,8 +84,17 @@ NAMES sdl2
 HINTS ${BASE_LIBRARY_DIRECTORY}/SDL2 REQUIRED)
 
 # ---------- Find Vulkan ----------
-find_package(Vulkan REQUIRED)
 set(CITRUS_GFX_VULKAN 1)
+if(CITRUS_GFX_VULKAN)
+   find_package(Vulkan REQUIRED)
+   if(NOT Vulkan_FOUND)
+      set(Vulkan_INCLUDE_DIRS ${BASE_LIBRARY_DIRECTORY}/Vulkan/Include)
+      set(Vulkan_INCLUDE_DIR ${Vulkan_INCLUDE_DIRS}/vulkan)
+      set(Vulkan_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Vulkan/Lib/vulkan-1.lib)
+      set(Vulkan_LIBRARIES ${Vulkan_LIBRARY})
+      set(Vulkan_GLSLC_EXECUTABLE ${BASE_LIBRARY_DIRECTORY}/Vulkan/Bin/glslc${EXECUTABLE_FORMAT})
+   endif()
+endif()
 
 # ---------- Find PhysX ----------
 

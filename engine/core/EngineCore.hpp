@@ -18,15 +18,15 @@
 
 #include "utilities/Common.h"
 
-#include "Application.hpp"
 #include "JobSystem.hpp"
 #include "FileSystem.hpp"
 #include "Logging.hpp"
 #include "Settings.hpp"
 #include "WindowManager.hpp"
 #include "OSEvents.hpp"
-#include "renderer/Renderer.hpp"
 #include "Translation.hpp"
+
+#include "renderer/KeyLime.hpp"
 
 class ctEngineCore {
 public:
@@ -50,7 +50,7 @@ public:
     ctSettings* Settings;
     ctDebugSystem* Debug;
     ctWindowManager* WindowManager;
-    ctRenderer* Renderer;
+    ctKeyLimeRenderer* Renderer;
 private:
     bool _isRunning = true;
 };

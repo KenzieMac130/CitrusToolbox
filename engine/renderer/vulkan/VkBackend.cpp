@@ -16,6 +16,7 @@
 */
 
 #include "VkBackend.hpp"
+#include "core/Application.hpp"
 
 #include "Tracy.hpp"
 
@@ -30,7 +31,8 @@
 const char* deviceReqExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                                      "VK_EXT_descriptor_indexing"};
 
-/* Debug Callback */
+/* ------------- Debug Callback ------------- */
+
 VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
                                               VkDebugReportObjectTypeEXT objType,
                                               uint64_t srcObject,
@@ -42,6 +44,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
    ctDebugError("VK Validation Layer: [%s] Code %u : %s", pLayerPrefix, msgCode, pMsg);
    return VK_FALSE;
 }
+
+/* ------------- Helpers ------------- */
 
 bool ctVkBackend::isValidationLayersAvailible() {
    uint32_t layerCount = 0;
@@ -99,6 +103,34 @@ ctVkQueueFamilyIndices ctVkBackend::FindQueueFamilyIndices(VkPhysicalDevice gpu)
    return result;
 }
 
+ctResults ctVkBackend::WindowReset(SDL_Window* pWindow) {
+   if (pWindow == mainScreenResources.window) {
+      mainScreenResources.DestroySwapchain(this);
+      mainScreenResources.CreateSwapchain(this, queueFamilyIndices, vsync, NULL);
+   }
+   return CT_SUCCESS;
+}
+
+void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
+   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &surfaceCapabilities);
+
+   uint32_t formatCount;
+   vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, NULL);
+   if (formatCount) {
+      surfaceFormats.Resize(formatCount);
+      vkGetPhysicalDeviceSurfaceFormatsKHR(
+        gpu, surface, &formatCount, surfaceFormats.Data());
+   }
+
+   uint32_t presentModeCount;
+   vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentModeCount, NULL);
+   if (presentModeCount) {
+      presentModes.Resize(presentModeCount);
+      vkGetPhysicalDeviceSurfacePresentModesKHR(
+        gpu, surface, &presentModeCount, presentModes.Data());
+   }
+}
+
 bool vDeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
    uint32_t extCount;
    vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, NULL);
@@ -123,6 +155,12 @@ bool vDeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
    return foundAll;
 }
 
+bool vDeviceHasSwapChainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
+   ctVkSwapchainSupport support;
+   support.GetSupport(gpu, surface);
+   return !support.presentModes.isEmpty() && !support.surfaceFormats.isEmpty();
+}
+
 bool vDeviceHasRequiredFeatures(
   const VkPhysicalDeviceFeatures& features,
   const VkPhysicalDeviceDescriptorIndexingFeatures& descriptorIndexing) {
@@ -143,7 +181,9 @@ bool vDeviceHasRequiredFeatures(
    return true;
 }
 
-VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus, uint32_t count) {
+VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus,
+                                             uint32_t count,
+                                             VkSurfaceKHR surface) {
    int64_t bestGPUIdx = -1;
    int64_t bestGPUScore = -1;
    int64_t currentGPUScore;
@@ -169,6 +209,8 @@ VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus, uint32_t c
          continue; /*Queue families are incomplete*/
       if (!vDeviceHasRequiredExtensions(pGpus[i]))
          continue; /*Doesn't have the required extensions*/
+      if (!vDeviceHasSwapChainSupport(pGpus[i], surface))
+         continue; /*Doesn't have swap chain support*/
 
       /*Benifits*/
       if (deviceProperties.deviceType ==
@@ -189,6 +231,8 @@ VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus, uint32_t c
    return pGpus[bestGPUIdx];
 }
 
+/* ------------- Alloc Functions ------------- */
+
 void* vAllocFunction(void* pUserData,
                      size_t size,
                      size_t alignment,
@@ -207,6 +251,8 @@ void* vReallocFunction(void* pUserData,
 void vFreeFunction(void* pUserData, void* pMemory) {
    ctAlignedFree(pMemory);
 }
+
+/* ------------- Backend Core ------------- */
 
 ctResults ctVkBackend::Startup() {
    ZoneScoped;
@@ -296,7 +342,8 @@ ctResults ctVkBackend::Startup() {
    }
    /* Initialize a first surface to check for support */
    {
-      mainScreenResources.Create(this, Engine->WindowManager->mainWindow.pSDLWindow);
+      mainScreenResources.CreateSurface(this,
+                                        Engine->WindowManager->mainWindow.pSDLWindow);
    } /* Pick a GPU */
    {
       ctDebugLog("Finding GPU...");
@@ -323,11 +370,13 @@ ctResults ctVkBackend::Startup() {
          vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &deviceFeatures2);
 
          if (!vDeviceHasRequiredFeatures(deviceFeatures, descriptorIndexingFeatures) ||
-             !vDeviceHasRequiredExtensions(vkPhysicalDevice)) {
+             !vDeviceHasRequiredExtensions(vkPhysicalDevice) ||
+             !vDeviceHasSwapChainSupport(vkPhysicalDevice, mainScreenResources.surface)) {
             ctFatalError(-1, CT_NC("Graphics card doesn't meet requirements."));
          }
       } else {
-         vkPhysicalDevice = PickBestDevice(gpus.Data(), gpuCount);
+         vkPhysicalDevice =
+           PickBestDevice(gpus.Data(), gpuCount, mainScreenResources.surface);
          if (vkPhysicalDevice == VK_NULL_HANDLE) {
             ctFatalError(-1, CT_NC("Could not find suitable graphics card."));
          }
@@ -427,6 +476,22 @@ ctResults ctVkBackend::Startup() {
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.presentIdx, 0, &presentQueue);
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.computeIdx, 0, &computeQueue);
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.transferIdx, 0, &transferQueue);
+   }
+   /* Swapchain */
+   {
+      mainScreenResources.CreateSwapchain(
+        this, queueFamilyIndices, vsync, VK_NULL_HANDLE);
+   }
+   /* Command Buffer Manager */
+   {
+      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+         graphicsCommands[i].Create(
+           this, maxGraphicsCommandBuffers, queueFamilyIndices.graphicsIdx);
+         computeCommands[i].Create(
+           this, maxComputeCommandBuffers, queueFamilyIndices.computeIdx);
+         transferCommands[i].Create(
+           this, maxTransferCommandBuffers, queueFamilyIndices.transferIdx);
+      }
    }
    /* Memory Allocator */
    {
@@ -557,11 +622,6 @@ ctResults ctVkBackend::Startup() {
       // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_descriptor_indexing.html
       // https://gpuopen.com/performance/#descriptors
    }
-   /* Command Buffer Manager */
-   {
-      // arrays of buffers for each queue
-      bool test = false;
-   }
    /* Make Window Visible */
    {
       ctDebugLog("Showing Window...");
@@ -596,9 +656,16 @@ ctResults ctVkBackend::Shutdown() {
       vkDestroyPipelineCache(vkDevice, vkPipelineCache, &vkAllocCallback);
    }
 
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      graphicsCommands[i].Destroy(this);
+      computeCommands[i].Destroy(this);
+      transferCommands[i].Destroy(this);
+   }
+
    vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, &vkAllocCallback);
    vkDestroyDescriptorSetLayout(vkDevice, vkDescriptorSetLayout, &vkAllocCallback);
-   mainScreenResources.Destroy(this);
+   mainScreenResources.DestroySwapchain(this);
+   mainScreenResources.DestroySurface(this);
    vmaDestroyAllocator(vmaAllocator);
    vkDestroyDevice(vkDevice, &vkAllocCallback);
 
@@ -615,13 +682,166 @@ ctResults ctVkBackend::Shutdown() {
 
 /* ------------- Screen Resources ------------- */
 
-ctResults ctVkScreenResources::Create(ctVkBackend* pBackend, SDL_Window* pWindow) {
+ctResults ctVkScreenResources::CreateSurface(ctVkBackend* pBackend, SDL_Window* pWindow) {
    ctDebugLog("Creating Surface...");
-   SDL_Vulkan_CreateSurface(pWindow, pBackend->vkInstance, &surface);
+   window = pWindow;
+   if (SDL_Vulkan_CreateSurface(pWindow, pBackend->vkInstance, &surface)) {
+      return CT_SUCCESS;
+   }
+   return CT_FAILURE_UNKNOWN;
+}
+
+VkSurfaceFormatKHR vPickBestSurfaceFormat(VkSurfaceFormatKHR* formats, size_t count) {
+   for (uint32_t i = 0; i < count; i++) {
+      const VkSurfaceFormatKHR fmt = formats[i];
+      if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB &&
+          fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+         return fmt;
+      }
+   }
+   return formats[0];
+}
+
+VkPresentModeKHR vPickPresentMode(VkPresentModeKHR* modes, size_t count, bool vsync) {
+   int64_t bestIdx = 0;
+   int64_t bestScore = -1;
+   int64_t currentScore;
+
+   for (uint32_t i = 0; i < count; i++) {
+      const VkPresentModeKHR mode = modes[i];
+      currentScore = 0;
+
+      /* Present to screen ASAP, no V-Sync */
+      if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+         if (vsync == false) {
+            currentScore = 1000;
+         } else {
+            currentScore = 0;
+         }
+      }
+      /* Present and swap to backbuffer. Needs to wait if full. */
+      if (mode == VK_PRESENT_MODE_FIFO_KHR) {
+         if (vsync == true) {
+            currentScore = 500;
+         } else {
+            currentScore = 0;
+         }
+      }
+      /* Present and swap to backbuffer. Can continue if full. */
+      if (mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
+         if (vsync == true) {
+            currentScore = 1000;
+         } else {
+            currentScore = 0;
+         }
+      }
+
+      if (currentScore > bestScore) {
+         bestIdx = i;
+         bestScore = currentScore;
+      }
+   }
+   return modes[bestIdx];
+}
+
+ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
+                                               ctVkQueueFamilyIndices indices,
+                                               int32_t vsync,
+                                               VkSwapchainKHR oldSwapchain) {
+   ctDebugLog("Creating Swapchain...");
+
+   ctVkSwapchainSupport swapChainSupport;
+   swapChainSupport.GetSupport(pBackend->vkPhysicalDevice, surface);
+
+   /* Select a Image and Color Format */
+   surfaceFormat = vPickBestSurfaceFormat(swapChainSupport.surfaceFormats.Data(),
+                                          swapChainSupport.surfaceFormats.Count());
+
+   /* Select a Present Mode */
+   presentMode = vPickPresentMode(
+     swapChainSupport.presentModes.Data(), swapChainSupport.presentModes.Count(), vsync);
+
+   /* Get Size */
+   int w, h;
+   SDL_Vulkan_GetDrawableSize(window, &w, &h);
+   extent.width = w;
+   extent.height = h;
+
+   /* Get Image Count */
+   imageCount = swapChainSupport.surfaceCapabilities.minImageCount + 1;
+   if (swapChainSupport.surfaceCapabilities.maxImageCount > 0 &&
+       imageCount > swapChainSupport.surfaceCapabilities.maxImageCount) {
+      imageCount = swapChainSupport.surfaceCapabilities.maxImageCount;
+   }
+
+   /* Create swapchain */
+   uint32_t sharedIndices[] {indices.graphicsIdx, indices.presentIdx};
+   VkSwapchainCreateInfoKHR swapChainInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
+   swapChainInfo.surface = surface;
+   swapChainInfo.imageFormat = surfaceFormat.format;
+   swapChainInfo.imageColorSpace = surfaceFormat.colorSpace;
+   swapChainInfo.presentMode = presentMode;
+   swapChainInfo.imageExtent = extent;
+   swapChainInfo.imageArrayLayers = 1;
+   swapChainInfo.minImageCount = imageCount;
+   swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+   swapChainInfo.preTransform = swapChainSupport.surfaceCapabilities.currentTransform;
+   swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   swapChainInfo.clipped = VK_TRUE;
+   swapChainInfo.oldSwapchain = oldSwapchain;
+   if (sharedIndices[0] == sharedIndices[1]) {
+      swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      swapChainInfo.queueFamilyIndexCount = 0;
+      swapChainInfo.pQueueFamilyIndices = NULL;
+   } else {
+      swapChainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+      swapChainInfo.queueFamilyIndexCount = 2;
+      swapChainInfo.pQueueFamilyIndices = sharedIndices;
+   }
+   CT_VK_CHECK(
+     vkCreateSwapchainKHR(
+       pBackend->vkDevice, &swapChainInfo, &pBackend->vkAllocCallback, &swapchain),
+     CT_NC("vkCreateSwapchainKHR() failed to create swapchain."));
+
+   /* Get images */
+   vkGetSwapchainImagesKHR(pBackend->vkDevice, swapchain, &imageCount, NULL);
+   swapImages.Resize(imageCount);
+   swapImageViews.Resize(imageCount);
+   vkGetSwapchainImagesKHR(pBackend->vkDevice, swapchain, &imageCount, swapImages.Data());
+
+   /* Create image views */
+   for (uint32_t i = 0; i < imageCount; i++) {
+      VkImageViewCreateInfo viewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+      viewInfo.image = swapImages[i];
+      viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+      viewInfo.format = surfaceFormat.format;
+      viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      viewInfo.subresourceRange.baseMipLevel = 0;
+      viewInfo.subresourceRange.levelCount = 1;
+      viewInfo.subresourceRange.baseArrayLayer = 0;
+      viewInfo.subresourceRange.layerCount = 1;
+      CT_VK_CHECK(
+        vkCreateImageView(
+          pBackend->vkDevice, &viewInfo, &pBackend->vkAllocCallback, &swapImageViews[i]),
+        CT_NC("vkCreateImageView() failed to create swapchain image view."));
+   }
    return CT_SUCCESS;
 }
 
-ctResults ctVkScreenResources::Destroy(ctVkBackend* pBackend) {
+ctResults ctVkScreenResources::DestroySwapchain(ctVkBackend* pBackend) {
+   for (uint32_t i = 0; i < imageCount; i++) {
+      vkDestroyImageView(
+        pBackend->vkDevice, swapImageViews[i], &pBackend->vkAllocCallback);
+   }
+   vkDestroySwapchainKHR(pBackend->vkDevice, swapchain, &pBackend->vkAllocCallback);
+   return CT_SUCCESS;
+}
+
+ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
    vkDestroySurfaceKHR(pBackend->vkInstance, surface, NULL);
    return CT_SUCCESS;
 }
@@ -649,4 +869,66 @@ int32_t ctVkDescriptorManager::AllocateSlot() {
 
 void ctVkDescriptorManager::ReleaseSlot(const int32_t idx) {
    freedIdx.Append(idx);
+}
+
+/* ------------- Command Buffer Manager ------------- */
+
+ctResults ctVkCommandBufferManager::Create(ctVkBackend* pBackend,
+                                           uint32_t max,
+                                           uint32_t familyIdx) {
+   cmdBuffers.Resize(max);
+   VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+   createInfo.queueFamilyIndex = familyIdx;
+   CT_VK_CHECK(vkCreateCommandPool(
+                 pBackend->vkDevice, &createInfo, &pBackend->vkAllocCallback, &pool),
+               CT_NC("vkCreateCommandPool() failed to create command pool."));
+
+   VkCommandBufferAllocateInfo allocInfo = {
+     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+   allocInfo.commandBufferCount = max;
+   allocInfo.commandPool = pool;
+   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   CT_VK_CHECK(
+     vkAllocateCommandBuffers(pBackend->vkDevice, &allocInfo, cmdBuffers.Data()),
+     CT_NC("vkAllocateCommandBuffers() failed to allocate command buffers."));
+   return CT_SUCCESS;
+}
+
+ctResults ctVkCommandBufferManager::Destroy(ctVkBackend* pBackend) {
+   vkFreeCommandBuffers(
+     pBackend->vkDevice, pool, (uint32_t)cmdBuffers.Count(), cmdBuffers.Data());
+   vkDestroyCommandPool(pBackend->vkDevice, pool, &pBackend->vkAllocCallback);
+   return CT_SUCCESS;
+}
+
+VkCommandBuffer ctVkCommandBufferManager::GetNextCommandBuffer() {
+   if (cmdBuffers.Count() <= activeBufferCount) {
+      return VK_NULL_HANDLE;
+   } else {
+      const VkCommandBuffer result = cmdBuffers[activeBufferCount];
+      activeBufferCount++;
+      return result;
+   }
+}
+
+VkResult
+ctVkCommandBufferManager::SubmitCommands(VkQueue queue,
+                                         uint32_t signalSemaphoreCount,
+                                         VkSemaphore* pSignalSemaphores,
+                                         uint32_t waitSemaphoreCount,
+                                         VkSemaphore* pWaitSemaphores,
+                                         VkFence fence,
+                                         VkPipelineStageFlags* pCustomWaitStages) {
+   VkPipelineStageFlags defaultWaitStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+   submitInfo.commandBufferCount = activeBufferCount;
+   submitInfo.pCommandBuffers = cmdBuffers.Data();
+   submitInfo.signalSemaphoreCount = signalSemaphoreCount;
+   submitInfo.pSignalSemaphores = pSignalSemaphores;
+   submitInfo.waitSemaphoreCount = waitSemaphoreCount;
+   submitInfo.pWaitSemaphores = pWaitSemaphores;
+   submitInfo.pWaitDstStageMask =
+     pCustomWaitStages ? pCustomWaitStages : &defaultWaitStage;
+   activeBufferCount = 0;
+   return vkQueueSubmit(queue, 1, &submitInfo, fence);
 }
