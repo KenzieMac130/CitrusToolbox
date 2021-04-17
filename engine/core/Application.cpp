@@ -16,13 +16,12 @@
 
 #include "Application.hpp"
 
-int ctApplication::Execute(int argc, char* argv[])
-{
-    Engine = new ctEngineCore();
-    Engine->Ignite(this);
-    Engine->EnterLoop();
-    delete Engine;
-    return 0;
+int ctApplication::Execute(int argc, char* argv[]) {
+   Engine = new ctEngineCore();
+   Engine->Ignite(this);
+   Engine->EnterLoop();
+   delete Engine;
+   return 0;
 }
 
 ctResults ctApplication::OnStartup() {
