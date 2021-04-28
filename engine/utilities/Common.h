@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 #if CITRUS_TRACY
-#include "Tracy.hpp"
+#include "tracy/Tracy.hpp"
 #endif
 #endif
 
@@ -112,9 +112,7 @@ void ctAlignedFree(void* block);
 #include "String.hpp"
 #include "HashTable.hpp"
 #include "Vector.hpp"
-#include "AABB.hpp"
 #include "Quaternion.hpp"
-#include "Color.hpp"
 #include "Matrix.hpp"
 #include "Sync.hpp"
 #include "JSON.hpp"
