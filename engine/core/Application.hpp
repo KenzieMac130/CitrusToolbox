@@ -28,6 +28,7 @@ public:
    /* Event Handling */
    virtual ctResults OnStartup();
    virtual ctResults OnTick(const float deltatime);
+   virtual ctResults OnUIUpdate();
    virtual ctResults OnShutdown();
 
    virtual const char* GetAppName() = 0;

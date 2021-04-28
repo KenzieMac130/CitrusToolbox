@@ -32,6 +32,10 @@ ctResults ctApplication::OnTick(const float deltatime) {
    return ctResults();
 }
 
+ctResults ctApplication::OnUIUpdate() {
+   return ctResults();
+}
+
 ctResults ctApplication::OnShutdown() {
    return ctResults();
 }
