@@ -109,8 +109,6 @@ endforeach()
 
 # ---------- Source Files ----------
 set(ENGINE_SOURCE_FILES_UTILITIES
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.cpp
@@ -126,8 +124,6 @@ set(ENGINE_SOURCE_FILES_UTILITIES
 
 set(ENGINE_HEADER_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/AABB.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Color.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
@@ -139,7 +135,6 @@ set(ENGINE_HEADER_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SparseArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
@@ -150,6 +145,7 @@ set(ENGINE_SOURCE_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/ImguiIntegration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
@@ -163,6 +159,7 @@ set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/ImguiIntegration.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.hpp
@@ -182,11 +179,13 @@ set(ENGINE_HEADER_FILES_RENDERER
 set(ENGINE_SOURCE_FILES_VULKAN
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.cpp)
 
 set(ENGINE_HEADER_FILES_VULKAN
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.hpp)
 
 # ---------- Compile Shaders ----------
 file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
@@ -246,7 +245,9 @@ add_library(engine
     ${ENGINE_FILES}
     ${SHADER_DEPENDENCIES} ${SHADER_INPUTS} ${SHADER_HEADERS}
     ${CITRUS_REFLECT_OUTPUTS}
-    ${TRACY_FILES} ${NATIVE_SOURCE_FILES})
+    ${TRACY_FILES}
+    ${IMGUI_FILES}
+    ${NATIVE_SOURCE_FILES})
 
 # ---------- Setup Folders ----------
 #source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
@@ -255,7 +256,7 @@ target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
 target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(engine PUBLIC ${TRACY_INCLUDE})
+target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
 
 
 target_link_libraries(engine ${SDL2_LIBRARIES})

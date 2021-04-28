@@ -25,6 +25,7 @@
 #include "WindowManager.hpp"
 #include "OSEvents.hpp"
 #include "Translation.hpp"
+#include "ImguiIntegration.hpp"
 
 #include "renderer/KeyLime.hpp"
 
@@ -50,6 +51,7 @@ public:
     ctSettings* Settings;
     ctDebugSystem* Debug;
     ctWindowManager* WindowManager;
+    ctImguiIntegration* ImguiIntegration;
     ctKeyLimeRenderer* Renderer;
 private:
     bool _isRunning = true;
