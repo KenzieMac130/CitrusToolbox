@@ -16,12 +16,15 @@
 
 #include "core/Application.hpp"
 
+#include "imgui/imgui.h"
+
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
    virtual const char* GetAppPublisher();
    virtual ctAppVersion GetAppVersion();
    virtual ctResults OnStartup();
    virtual ctResults OnTick(const float deltatime);
+   virtual ctResults OnUIUpdate();
    virtual ctResults OnShutdown();
 };
 
@@ -47,10 +50,13 @@ ctResults TestApp::OnTick(const float deltatime) {
    if (loopvar <= 5000) {
       Engine->Debug->Log("This Message %d", loopvar);
       loopvar++;
-      if (loopvar == 5001) { 
-          ctDebugLog("Finished");
-      }
+      if (loopvar == 5001) { ctDebugLog("Finished"); }
    }
+   return CT_SUCCESS;
+}
+
+ctResults TestApp::OnUIUpdate() {
+   ImGui::ShowDemoWindow();
    return CT_SUCCESS;
 }
 
