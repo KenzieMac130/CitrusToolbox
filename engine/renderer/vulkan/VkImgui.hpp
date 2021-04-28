@@ -18,23 +18,12 @@
 
 #include "utilities/Common.h"
 #include "VkBackend.hpp"
-#include "VkImgui.hpp"
 
-class ctVkKeyLimeCore : public ctModuleBase {
+class ctVkImgui {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass);
+   ctResults Shutdown(ctVkBackend* pBackend);
 
-    ctResults Render();
-
-    VkFormat compositeFormat;
-    VkFormat depthFormat;
-    ctVkCompleteImage compositeBuffer;
-    ctVkCompleteImage depthBuffer;
-
-
-    ctVkBackend vkBackend;
-    VkRenderPass guiRenderPass;
-
-    ctVkImgui vkImgui;
+private:
+   VkDescriptorPool vkDescriptorPool;
 };

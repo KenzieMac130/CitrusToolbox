@@ -22,7 +22,7 @@
 #include "vma/vk_mem_alloc.h"
 
 #if CITRUS_TRACY
-#include "TracyVulkan.hpp"
+#include "tracy/TracyVulkan.hpp"
 #endif
 
 #include "core/EngineCore.hpp"
@@ -48,6 +48,11 @@ public:
    void GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface);
 };
 
+struct ctVkScreenResizeCallback {
+   void (*callback)(uint32_t width, uint32_t height, void*);
+   void* userData;
+};
+
 class ctVkScreenResources {
 public:
    SDL_Window* window;
@@ -56,13 +61,14 @@ public:
    VkSurfaceFormatKHR surfaceFormat;
    VkPresentModeKHR presentMode;
 
+   ctVkSwapchainSupport swapChainSupport;
+
    VkExtent2D extent;
    uint32_t imageCount;
    ctDynamicArray<VkImage> swapImages;
    ctDynamicArray<VkImageView> swapImageViews;
 
    bool resizeTriggered;
-
 
    ctResults CreateSurface(class ctVkBackend* pBackend, SDL_Window* pWindow);
    ctResults CreateSwapchain(class ctVkBackend* pBackend,
@@ -71,6 +77,8 @@ public:
                              VkSwapchainKHR oldSwapchain);
    ctResults DestroySurface(class ctVkBackend* pBackend);
    ctResults DestroySwapchain(class ctVkBackend* pBackend);
+
+   ctDynamicArray<ctVkScreenResizeCallback> screenResizeCallbacks;
 };
 
 class ctVkDescriptorManager {
@@ -109,6 +117,17 @@ private:
    uint32_t activeBufferCount;
 };
 
+struct ctVkCompleteImage {
+   VkImage image;
+   VkImageView view;
+   VmaAllocation alloc;
+};
+
+struct ctVkCompleteBuffer {
+   VkBuffer buffer;
+   VmaAllocation alloc;
+};
+
 class ctVkBackend : public ctModuleBase {
 public:
    ctResults Startup() final;
@@ -118,6 +137,39 @@ public:
    VkPhysicalDevice
    PickBestDevice(VkPhysicalDevice* pGpus, uint32_t count, VkSurfaceKHR surface);
    ctVkQueueFamilyIndices FindQueueFamilyIndices(VkPhysicalDevice gpu);
+
+   VkResult CreateCompleteImage(ctVkCompleteImage& fullImage,
+                                VkFormat format,
+                                VkImageUsageFlags usage,
+                                VmaAllocationCreateFlags allocFlags,
+                                VkImageAspectFlags aspect,
+                                uint32_t width,
+                                uint32_t height,
+                                uint32_t depth = 1,
+                                uint32_t mip = 1,
+                                uint32_t layers = 1,
+                                VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
+                                VkImageType imageType = VK_IMAGE_TYPE_2D,
+                                VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+                                VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY,
+                                int32_t imageFlags = 0,
+                                VkSharingMode sharing = VK_SHARING_MODE_EXCLUSIVE,
+                                uint32_t queueFamilyIndexCount = 0,
+                                uint32_t* pQueueFamilyIndices = NULL);
+   VkResult CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
+                                 VkImageUsageFlags usage,
+                                 VmaAllocationCreateFlags allocFlags,
+                                 size_t size,
+                                 VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY,
+                                 int32_t bufferFlags = 0,
+                                 VkSharingMode sharing = VK_SHARING_MODE_EXCLUSIVE,
+                                 uint32_t queueFamilyIndexCount = 0,
+                                 uint32_t* pQueueFamilyIndices = NULL);
+
+   void TryDestroyCompleteImage(ctVkCompleteImage& fullImage);
+   void TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer);
 
    /* Vulkan Objects */
    VkAllocationCallbacks vkAllocCallback;
@@ -136,12 +188,12 @@ public:
    VkQueue computeQueue;
    VkQueue transferQueue;
 
+   int32_t currentFrame;
    ctVkCommandBufferManager graphicsCommands[CT_MAX_INFLIGHT_FRAMES];
    ctVkCommandBufferManager computeCommands[CT_MAX_INFLIGHT_FRAMES];
    ctVkCommandBufferManager transferCommands[CT_MAX_INFLIGHT_FRAMES];
 
    VkPipelineCache vkPipelineCache;
-   ctHashTable<VkPipeline, uint64_t> pipelineHashTable;
 
    VkDescriptorSetLayout vkDescriptorSetLayout;
    VkDescriptorPool vkDescriptorPool;
@@ -152,7 +204,6 @@ public:
    ctVkDescriptorManager descriptorsStorageBuffer;
 
    ctVkScreenResources mainScreenResources;
-   ctResults WindowReset(SDL_Window* pWindow);
 
    /* Settings */
    int32_t preferredDevice;

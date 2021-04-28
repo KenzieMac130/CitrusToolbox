@@ -1,4 +1,3 @@
-#include "VkKeyLimeCore.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -14,6 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "VkKeyLimeCore.hpp"
+#include "core/EngineCore.hpp"
 
 void sendResizeSignal(SDL_Event* event, void* pData) {
    ctVkKeyLimeCore* pCore = (ctVkKeyLimeCore*)pData;
@@ -106,11 +108,82 @@ ctResults ctVkKeyLimeCore::Startup() {
    ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
-   return vkBackend.ModuleStartup(Engine);
+   vkBackend.ModuleStartup(Engine);
+   /* Depth/Composite buffers */
+   {
+      compositeFormat = VK_FORMAT_R8G8B8A8_UNORM;
+      depthFormat = VK_FORMAT_D32_SFLOAT;
+      vkBackend.CreateCompleteImage(compositeBuffer,
+                                    compositeFormat,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                    VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1920,
+                                    1080);
+      vkBackend.CreateCompleteImage(depthBuffer,
+                                    depthFormat,
+                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                    VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+                                    VK_IMAGE_ASPECT_DEPTH_BIT,
+                                    1920,
+                                    1080);
+   }
+   /* GUI Renderpass */
+   {
+      VkAttachmentDescription attachments[2] {};
+      attachments[0].format = compositeFormat;
+      attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      attachments[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+
+      attachments[1].format = depthFormat;
+      attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+      attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+
+      VkAttachmentReference colorAttachmentRef {};
+      colorAttachmentRef.attachment = 0;
+      colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+      VkAttachmentReference depthAttachmentRef {};
+      depthAttachmentRef.attachment = 1;
+      depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+      VkSubpassDescription subpasses[1] {};
+      subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+      subpasses[0].pColorAttachments = &colorAttachmentRef;
+      subpasses[0].colorAttachmentCount = 1;
+      subpasses[0].pDepthStencilAttachment = &depthAttachmentRef;
+
+      VkRenderPassCreateInfo createInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+      createInfo.attachmentCount = ctCStaticArrayLen(attachments);
+      createInfo.pAttachments = attachments;
+      createInfo.subpassCount = ctCStaticArrayLen(subpasses);
+      createInfo.pSubpasses = subpasses;
+      CT_VK_CHECK(
+        vkCreateRenderPass(
+          vkBackend.vkDevice, &createInfo, &vkBackend.vkAllocCallback, &guiRenderPass),
+        CT_NC("vkCreateRenderPass() failed to create gui renderpass"));
+   }
+
+   vkImgui.Startup(&vkBackend, guiRenderPass, 0);
+   return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Shutdown() {
-   return vkBackend.ModuleShutdown();
+   vkImgui.Shutdown(&vkBackend);
+   vkBackend.TryDestroyCompleteImage(depthBuffer);
+   vkBackend.TryDestroyCompleteImage(compositeBuffer);
+   vkBackend.ModuleShutdown();
+   return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Render() {
