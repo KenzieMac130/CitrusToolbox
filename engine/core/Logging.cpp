@@ -191,7 +191,7 @@ void ctDebugSystem::_flushMessageQueue() {
         "[WARNING] %.*s\n",
         "[ERROR] %.*s\n",
       };
-      _logFile.Printf(levelStr[msg.level], 512, msg.msg);
+      _logFile.Printf(levelStr[msg.level], CT_MAX_LOG_LENGTH + 16, msg.msg);
    }
    fflush(_logFile.CFile());
 }

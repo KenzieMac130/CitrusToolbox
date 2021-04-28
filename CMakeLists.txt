@@ -36,7 +36,7 @@ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 # ---------- Limits ----------
 set(CT_MAX_SMALL_STRING 40)
 set(CT_MAX_FILE_PATH_LENGTH 4096)
-set(CT_MAX_LOG_LENGTH 512)
+set(CT_MAX_LOG_LENGTH 4096)
 set(CT_MAX_SETTINGS_SECTIONS 64)
 set(CT_MAX_GFX_SAMPLERS 8)
 set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
@@ -74,6 +74,7 @@ if(WIN32)
 else()
    message(FATAL_ERROR "Currently unsupported platform!")
 endif()
+set(TOOLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 
 # ---------- Find ISPC ----------
 set(ISPC_COMPILER_PATH ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc)
@@ -108,7 +109,17 @@ else()
    set(TRACY_FILES "")
    set(CITRUS_TRACY 0)
 endif()
-set(TRACY_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools/tracy)
+
+# ---------- Dear ImGUI ---------- 
+set(IMGUI_FILES 
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_demo.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_tables.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_widgets.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_sdl.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_vulkan.cpp
+)
 
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
