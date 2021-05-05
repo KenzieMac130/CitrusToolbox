@@ -76,7 +76,6 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    App->OnUIUpdate();
    /*Update modules*/
    OSEventManager->PollOSEvents();
-
    Renderer->RenderFrame();
    ImguiIntegration->NextFrame();
    FrameMark;
