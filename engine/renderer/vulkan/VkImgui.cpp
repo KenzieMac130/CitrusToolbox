@@ -25,6 +25,7 @@ void checkVkResult(VkResult err) {
 ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
                              VkRenderPass guiRenderpass,
                              uint32_t subpass) {
+   _pBackend = pBackend;
    /* Create descriptor pool for Imgui */
    VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}};
    VkDescriptorPoolCreateInfo poolInfo = {};
@@ -35,7 +36,7 @@ ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
    poolInfo.pPoolSizes = poolSizes;
    CT_VK_CHECK(
      vkCreateDescriptorPool(
-       pBackend->vkDevice, &poolInfo, &pBackend->vkAllocCallback, &vkDescriptorPool),
+       pBackend->vkDevice, &poolInfo, &pBackend->vkAllocCallback, &_vkDescriptorPool),
      CT_NC("vkCreateDescriptorPool() could not create descriptor set for DearImgui."));
 
    ImGui_ImplVulkan_InitInfo initInfo = {};
@@ -44,7 +45,7 @@ ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
    initInfo.Device = pBackend->vkDevice;
    initInfo.QueueFamily = pBackend->queueFamilyIndices.graphicsIdx;
    initInfo.Queue = pBackend->graphicsQueue;
-   initInfo.DescriptorPool = vkDescriptorPool;
+   initInfo.DescriptorPool = _vkDescriptorPool;
    initInfo.Subpass = subpass;
    initInfo.MinImageCount =
      pBackend->mainScreenResources.swapChainSupport.surfaceCapabilities.minImageCount;
@@ -57,14 +58,30 @@ ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
    VkCommandBuffer cmdBuff =
      pBackend->transferCommands[pBackend->currentFrame].GetNextCommandBuffer();
    VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-   beginInfo.flags = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    vkBeginCommandBuffer(cmdBuff, &beginInfo);
    ImGui_ImplVulkan_CreateFontsTexture(cmdBuff);
    vkEndCommandBuffer(cmdBuff);
+   pBackend->transferCommands[pBackend->currentFrame].SubmitCommands(
+     pBackend->transferQueue, 0, NULL, 0, NULL);
+
+   ImGui::GetIO().DisplaySize.x = (float)pBackend->mainScreenResources.extent.width;
+   ImGui::GetIO().DisplaySize.y = (float)pBackend->mainScreenResources.extent.height;
+   ImGui::NewFrame();
+
    return CT_SUCCESS;
 }
 
-ctResults ctVkImgui::Shutdown(ctVkBackend* pBackend) {
+ctResults ctVkImgui::Shutdown() {
    ImGui_ImplVulkan_Shutdown();
+   vkDestroyDescriptorPool(
+     _pBackend->vkDevice, _vkDescriptorPool, &_pBackend->vkAllocCallback);
    return CT_SUCCESS;
+}
+
+void ctVkImgui::BuildDrawLists() {
+   ImGui::Render();
+}
+
+void ctVkImgui::RenderCommands(VkCommandBuffer cmd) {
+   ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd, 0);
 }

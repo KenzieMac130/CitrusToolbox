@@ -48,6 +48,9 @@ ctResults ctVkKeyLimeCore::Startup() {
    vkBackend.maxComputeCommandBuffers = CT_MAX_GFX_COMPUTE_COMMAND_BUFFERS;
    vkBackend.maxTransferCommandBuffers = CT_MAX_GFX_TRANSFER_COMMAND_BUFFERS;
 
+   internalResolutionWidth = 640;
+   internalResolutionHeight = 480;
+
    ctSettingsSection* vkSettings = Engine->Settings->CreateSection("VulkanBackend", 32);
    vkSettings->BindInteger(&vkBackend.preferredDevice,
                            false,
@@ -109,28 +112,10 @@ ctResults ctVkKeyLimeCore::Startup() {
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
    vkBackend.ModuleStartup(Engine);
-   /* Depth/Composite buffers */
+   /* GUI Renderpass and Framebuffer */
    {
       compositeFormat = VK_FORMAT_R8G8B8A8_UNORM;
       depthFormat = VK_FORMAT_D32_SFLOAT;
-      vkBackend.CreateCompleteImage(compositeBuffer,
-                                    compositeFormat,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                                    VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1920,
-                                    1080);
-      vkBackend.CreateCompleteImage(depthBuffer,
-                                    depthFormat,
-                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                                    VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-                                    VK_IMAGE_ASPECT_DEPTH_BIT,
-                                    1920,
-                                    1080);
-   }
-   /* GUI Renderpass */
-   {
       VkAttachmentDescription attachments[2] {};
       attachments[0].format = compositeFormat;
       attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -173,13 +158,53 @@ ctResults ctVkKeyLimeCore::Startup() {
           vkBackend.vkDevice, &createInfo, &vkBackend.vkAllocCallback, &guiRenderPass),
         CT_NC("vkCreateRenderPass() failed to create gui renderpass"));
    }
+   /* Depth/Composite and Framebuffers */
+   {
+      CT_VK_CHECK(vkBackend.CreateCompleteImage(
+                    compositeBuffer,
+                    compositeFormat,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                    VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+                    VK_IMAGE_ASPECT_COLOR_BIT,
+                    internalResolutionWidth,
+                    internalResolutionHeight),
+                  CT_NC("Failed to create composite buffer."));
+      CT_VK_CHECK(
+        vkBackend.CreateCompleteImage(depthBuffer,
+                                      depthFormat,
+                                      VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                      VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+                                      VK_IMAGE_ASPECT_DEPTH_BIT,
+                                      internalResolutionWidth,
+                                      internalResolutionHeight),
+        CT_NC("Failed to create depth buffer."));
+   }
+   /* GUI Framebuffer */
+   {
+      VkImageView fbAttachments[] {compositeBuffer.view, depthBuffer.view};
+      VkFramebufferCreateInfo framebufferInfo {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+      framebufferInfo.attachmentCount = ctCStaticArrayLen(fbAttachments);
+      framebufferInfo.pAttachments = fbAttachments;
+      framebufferInfo.width = internalResolutionWidth;
+      framebufferInfo.height = internalResolutionHeight;
+      framebufferInfo.layers = 1;
+      framebufferInfo.renderPass = guiRenderPass;
+      CT_VK_CHECK(vkCreateFramebuffer(vkBackend.vkDevice,
+                                      &framebufferInfo,
+                                      &vkBackend.vkAllocCallback,
+                                      &guiFramebuffer),
+                  CT_NC("vkCreateFramebuffer() failed to create gui framebuffer."));
+   }
 
    vkImgui.Startup(&vkBackend, guiRenderPass, 0);
    return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Shutdown() {
-   vkImgui.Shutdown(&vkBackend);
+   vkDeviceWaitIdle(vkBackend.vkDevice);
+   vkImgui.Shutdown();
+   vkDestroyRenderPass(vkBackend.vkDevice, guiRenderPass, &vkBackend.vkAllocCallback);
+   vkDestroyFramebuffer(vkBackend.vkDevice, guiFramebuffer, &vkBackend.vkAllocCallback);
    vkBackend.TryDestroyCompleteImage(depthBuffer);
    vkBackend.TryDestroyCompleteImage(compositeBuffer);
    vkBackend.ModuleShutdown();
@@ -187,5 +212,44 @@ ctResults ctVkKeyLimeCore::Shutdown() {
 }
 
 ctResults ctVkKeyLimeCore::Render() {
+   vkBackend.WaitForFrameAvailible();
+   vkImgui.BuildDrawLists(); /* Future optimization: do in job system */
+   VkCommandBuffer gfxCommands =
+     vkBackend.graphicsCommands[vkBackend.currentFrame].GetNextCommandBuffer();
+
+   VkCommandBufferBeginInfo gfxBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+   vkBeginCommandBuffer(gfxCommands, &gfxBeginInfo);
+
+   /* Render GUI */
+   {
+      VkClearValue clearValues[2];
+      clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+      clearValues[1].depthStencil = {0.0f, 0};
+      VkRenderPassBeginInfo passBeginInfo {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+      passBeginInfo.clearValueCount = ctCStaticArrayLen(clearValues);
+      passBeginInfo.pClearValues = clearValues;
+      passBeginInfo.renderPass = guiRenderPass;
+      passBeginInfo.framebuffer = guiFramebuffer;
+      passBeginInfo.renderArea =
+        VkRect2D {{0, 0}, {internalResolutionWidth, internalResolutionHeight}};
+      vkCmdBeginRenderPass(gfxCommands, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+      vkImgui.RenderCommands(gfxCommands);
+      vkCmdEndRenderPass(gfxCommands);
+   }
+   /* Submit commands */
+   {
+      vkEndCommandBuffer(gfxCommands);
+      vkBackend.graphicsCommands[vkBackend.currentFrame].SubmitCommands(
+        vkBackend.graphicsQueue,
+        0,
+        NULL,
+        0,
+        NULL,
+        vkBackend.frameAvailibleFences[vkBackend.currentFrame]);
+      vkBackend.mainScreenResources.BlitAndPresent(
+        &vkBackend, 1, &renderFinished[0], compositeBuffer.view, VkImageBlit());
+   }
+   /* Todo: Present!!! */
+   vkBackend.AdvanceNextFrame();
    return CT_SUCCESS;
 }

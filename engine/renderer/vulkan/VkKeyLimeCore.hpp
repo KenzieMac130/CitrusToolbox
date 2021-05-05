@@ -32,9 +32,14 @@ public:
     ctVkCompleteImage compositeBuffer;
     ctVkCompleteImage depthBuffer;
 
+    uint32_t internalResolutionWidth;
+    uint32_t internalResolutionHeight;
 
     ctVkBackend vkBackend;
-    VkRenderPass guiRenderPass;
-
     ctVkImgui vkImgui;
+
+    VkSemaphore renderFinished[CT_MAX_INFLIGHT_FRAMES];
+
+    VkRenderPass guiRenderPass;
+    VkFramebuffer guiFramebuffer;
 };

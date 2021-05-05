@@ -191,8 +191,17 @@ void ctVkBackend::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
 }
 
 void ctVkBackend::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
-    if (fullBuffer.buffer == VK_NULL_HANDLE || fullBuffer.alloc == VK_NULL_HANDLE) { return; }
-    vmaDestroyBuffer(vmaAllocator, fullBuffer.buffer, fullBuffer.alloc);
+   if (fullBuffer.buffer == VK_NULL_HANDLE || fullBuffer.alloc == VK_NULL_HANDLE) {
+      return;
+   }
+   vmaDestroyBuffer(vmaAllocator, fullBuffer.buffer, fullBuffer.alloc);
+}
+
+VkResult ctVkBackend::WaitForFrameAvailible() {
+   VkResult result = vkWaitForFences(
+     vkDevice, 1, &frameAvailibleFences[currentFrame], VK_TRUE, UINT64_MAX);
+   if (result != VK_SUCCESS) { return result; }
+   return vkResetFences(vkDevice, 1, &frameAvailibleFences[currentFrame]);
 }
 
 void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
@@ -435,7 +444,9 @@ ctResults ctVkBackend::Startup() {
       CT_VK_CHECK(vkEnumeratePhysicalDevices(vkInstance, &gpuCount, NULL),
                   CT_NC("Failed to find devices with vkEnumeratePhysicalDevices()."));
       if (!gpuCount) {
-         ctFatalError(-1, CT_NC("No supported Vulkan compatible GPU found."));
+         ctFatalError(-1,
+                      CT_NC("No supported Vulkan compatible rendering device found.\n"
+                            "Please upgrade the hardware."));
       }
       ctDynamicArray<VkPhysicalDevice> gpus;
       gpus.Resize(gpuCount);
@@ -456,13 +467,19 @@ ctResults ctVkBackend::Startup() {
          if (!vDeviceHasRequiredFeatures(deviceFeatures, descriptorIndexingFeatures) ||
              !vDeviceHasRequiredExtensions(vkPhysicalDevice) ||
              !vDeviceHasSwapChainSupport(vkPhysicalDevice, mainScreenResources.surface)) {
-            ctFatalError(-1, CT_NC("Graphics card doesn't meet requirements."));
+            ctFatalError(-1, CT_NC("Rendering device does not meet requirements."));
          }
       } else {
          vkPhysicalDevice =
            PickBestDevice(gpus.Data(), gpuCount, mainScreenResources.surface);
          if (vkPhysicalDevice == VK_NULL_HANDLE) {
-            ctFatalError(-1, CT_NC("Could not find suitable graphics card."));
+            ctFatalError(
+              -1,
+              CT_NC(
+                "Could not find suitable rendering device.\n"
+                "Please update the graphics drivers to the latest version available.\n"
+                "If this or other issues persist then upgrade the hardware or contact "
+                "support."));
          }
       }
    }
@@ -590,7 +607,15 @@ ctResults ctVkBackend::Startup() {
       CT_VK_CHECK(vmaCreateAllocator(&allocatorInfo, &vmaAllocator),
                   CT_NC("vmaCreateAllocator() failed to create allocator."));
    }
-   /* Pipeline Factory */
+   /* Frame Sync */
+   {
+      VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+      fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+         vkCreateFence(vkDevice, &fenceInfo, &vkAllocCallback, &frameAvailibleFences[i]);
+      }
+   }
+   /* Pipeline Cache */
    {
       ctDebugLog("Loading Pipeline Cache...");
       ctFile cacheFile;
@@ -744,6 +769,7 @@ ctResults ctVkBackend::Shutdown() {
       graphicsCommands[i].Destroy(this);
       computeCommands[i].Destroy(this);
       transferCommands[i].Destroy(this);
+      vkDestroyFence(vkDevice, frameAvailibleFences[i], &vkAllocCallback);
    }
 
    vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, &vkAllocCallback);
@@ -912,6 +938,16 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
           pBackend->vkDevice, &viewInfo, &pBackend->vkAllocCallback, &swapImageViews[i]),
         CT_NC("vkCreateImageView() failed to create swapchain image view."));
    }
+
+   /* Create image availible semaphore */
+   VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkCreateSemaphore(pBackend->vkDevice,
+                        &semaphoreInfo,
+                        &pBackend->vkAllocCallback,
+                        &imageAvailible[i]);
+   }
+
    return CT_SUCCESS;
 }
 
@@ -920,6 +956,10 @@ ctResults ctVkScreenResources::DestroySwapchain(ctVkBackend* pBackend) {
       vkDestroyImageView(
         pBackend->vkDevice, swapImageViews[i], &pBackend->vkAllocCallback);
    }
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkDestroySemaphore(
+        pBackend->vkDevice, imageAvailible[i], &pBackend->vkAllocCallback);
+   }
    vkDestroySwapchainKHR(pBackend->vkDevice, swapchain, &pBackend->vkAllocCallback);
    return CT_SUCCESS;
 }
@@ -927,6 +967,58 @@ ctResults ctVkScreenResources::DestroySwapchain(ctVkBackend* pBackend) {
 ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
    vkDestroySurfaceKHR(pBackend->vkInstance, surface, NULL);
    return CT_SUCCESS;
+}
+
+VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
+                                             uint32_t semaphoreCount,
+                                             VkSemaphore* pWaitSemaphores,
+                                             VkImageView view,
+                                             VkImageBlit blit) {
+   uint32_t imageIndex = 0;
+   vkAcquireNextImageKHR(pBackend->vkDevice,
+                         swapchain,
+                         UINT64_MAX,
+                         imageAvailible[pBackend->currentFrame],
+                         VK_NULL_HANDLE,
+                         &imageIndex);
+   /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
+    * VUID-vkAcquireNextImageKHR-swapchain-01802 ] Object 0: handle = 0x983e60000000003,
+    * type = VK_OBJECT_TYPE_SWAPCHAIN_KHR; | MessageID = 0x3e97a888 |
+    * vkAcquireNextImageKHR: Application has already previously acquired 2 images from
+    * swapchain. Only 2 are available to be acquired using a timeout of UINT64_MAX (given
+    * the swapchain has 3, and VkSurfaceCapabilitiesKHR::minImageCount is 2). The Vulkan
+    * spec states: If the number of currently acquired images is greater than the
+    * difference between the number of images in swapchain and the value of
+    * VkSurfaceCapabilitiesKHR::minImageCount as returned by a call to
+    * vkGetPhysicalDeviceSurfaceCapabilities2KHR with the surface used to create
+    * swapchain, timeout must not be UINT64_MAX
+    * (https://vulkan.lunarg.com/doc/view/1.2.148.0/windows/1.2-extensions/vkspec.html#VUID-vkAcquireNextImageKHR-swapchain-01802)*/
+   /* After first inflight loop */
+   /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
+    * VUID-vkAcquireNextImageKHR-semaphore-01286 ] Object 0: handle = 0x731f0f000000000a,
+    * type = VK_OBJECT_TYPE_SEMAPHORE; | MessageID = 0xe9e4b2a9 | vkAcquireNextImageKHR:
+    * Semaphore must not be currently signaled or in a wait state. The Vulkan spec states:
+    * If semaphore is not VK_NULL_HANDLE it must be unsignaled
+    * (https://vulkan.lunarg.com/doc/view/1.2.148.0/windows/1.2-extensions/vkspec.html#VUID-vkAcquireNextImageKHR-semaphore-01286)*/
+   VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+   presentInfo.waitSemaphoreCount = 0;
+   presentInfo.pWaitSemaphores = pWaitSemaphores;
+   presentInfo.swapchainCount = 1;
+   presentInfo.pSwapchains = &swapchain;
+   presentInfo.pImageIndices = &imageIndex;
+   /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
+    * VUID-VkPresentInfoKHR-pImageIndices-01296 ] Object 0: handle = 0x2097d2bb350, type =
+    * VK_OBJECT_TYPE_QUEUE; | MessageID = 0xc7aabc16 | vkQueuePresentKHR(): Images passed
+    * to present must be in layout VK_IMAGE_LAYOUT_PRESENT_SRC_KHR or
+    * VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR but is in VK_IMAGE_LAYOUT_UNDEFINED. The Vulkan
+    * spec states: Each element of pImageIndices must be the index of a presentable image
+    * acquired from the swapchain specified by the corresponding element of the
+    * pSwapchains array, and the presented image subresource must be in the
+    * VK_IMAGE_LAYOUT_PRESENT_SRC_KHR layout at the time the operation is executed on a
+    * VkDevice
+    * (https://github.com/KhronosGroup/Vulkan-Docs/search?q=VUID-VkPresentInfoKHR-pImageIndices-01296)*/
+   vkQueuePresentKHR(pBackend->presentQueue, &presentInfo);
+   return VK_SUCCESS;
 }
 
 /* ------------- Descriptor Manager ------------- */
@@ -962,6 +1054,7 @@ ctResults ctVkCommandBufferManager::Create(ctVkBackend* pBackend,
    cmdBuffers.Resize(max);
    VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
    createInfo.queueFamilyIndex = familyIdx;
+   createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
    CT_VK_CHECK(vkCreateCommandPool(
                  pBackend->vkDevice, &createInfo, &pBackend->vkAllocCallback, &pool),
                CT_NC("vkCreateCommandPool() failed to create command pool."));

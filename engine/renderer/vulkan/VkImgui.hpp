@@ -22,8 +22,11 @@
 class ctVkImgui {
 public:
    ctResults Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass);
-   ctResults Shutdown(ctVkBackend* pBackend);
+   ctResults Shutdown();
+   void BuildDrawLists();
+   void RenderCommands(VkCommandBuffer cmd);
 
 private:
-   VkDescriptorPool vkDescriptorPool;
+   ctVkBackend* _pBackend;
+   VkDescriptorPool _vkDescriptorPool;
 };

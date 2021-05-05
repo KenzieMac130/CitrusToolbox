@@ -69,6 +69,7 @@ public:
    ctDynamicArray<VkImageView> swapImageViews;
 
    bool resizeTriggered;
+   VkSemaphore imageAvailible[CT_MAX_INFLIGHT_FRAMES];
 
    ctResults CreateSurface(class ctVkBackend* pBackend, SDL_Window* pWindow);
    ctResults CreateSwapchain(class ctVkBackend* pBackend,
@@ -77,6 +78,12 @@ public:
                              VkSwapchainKHR oldSwapchain);
    ctResults DestroySurface(class ctVkBackend* pBackend);
    ctResults DestroySwapchain(class ctVkBackend* pBackend);
+
+   VkResult BlitAndPresent(class ctVkBackend* pBackend,
+                           uint32_t semaphoreCount,
+                           VkSemaphore* pWaitSemaphores,
+                           VkImageView view,
+                           VkImageBlit blit);
 
    ctDynamicArray<ctVkScreenResizeCallback> screenResizeCallbacks;
 };
@@ -189,6 +196,12 @@ public:
    VkQueue transferQueue;
 
    int32_t currentFrame;
+   inline void AdvanceNextFrame() {
+      currentFrame = (currentFrame + 1) % CT_MAX_INFLIGHT_FRAMES;
+   };
+   VkFence frameAvailibleFences[CT_MAX_INFLIGHT_FRAMES];
+   VkResult WaitForFrameAvailible();
+
    ctVkCommandBufferManager graphicsCommands[CT_MAX_INFLIGHT_FRAMES];
    ctVkCommandBufferManager computeCommands[CT_MAX_INFLIGHT_FRAMES];
    ctVkCommandBufferManager transferCommands[CT_MAX_INFLIGHT_FRAMES];
