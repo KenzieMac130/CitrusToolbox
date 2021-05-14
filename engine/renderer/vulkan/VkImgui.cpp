@@ -23,8 +23,6 @@ void checkVkResult(VkResult err) {
   CT_VK_CHECK(err, CT_NC("DearImgui Vulkan backend encountered an error."))}
 
 ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
-                             uint32_t width,
-                             uint32_t height,
                              VkCommandBuffer textureUploadCmd,
                              VkRenderPass guiRenderpass,
                              uint32_t subpass) {
@@ -56,12 +54,10 @@ ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
    initInfo.Allocator = &pBackend->vkAllocCallback;
    initInfo.CheckVkResultFn = checkVkResult;
+   initInfo.PipelineCache = pBackend->vkPipelineCache;
    ImGui_ImplVulkan_Init(&initInfo, guiRenderpass);
 
    ImGui_ImplVulkan_CreateFontsTexture(textureUploadCmd);
-
-   ImGui::GetIO().DisplaySize.x = (float)width;
-   ImGui::GetIO().DisplaySize.y = (float)height;
    ImGui::NewFrame();
 
    return CT_SUCCESS;
@@ -75,7 +71,21 @@ ctResults ctVkImgui::Shutdown() {
 }
 
 void ctVkImgui::BuildDrawLists() {
+   int width, height;
+   SDL_Vulkan_GetDrawableSize(_pBackend->mainScreenResources.window, &width, &height);
+   ImGui::GetIO().DisplaySize.x = (float)width;
+   ImGui::GetIO().DisplaySize.y = (float)height;
    ImGui::Render();
+}
+
+void ctVkImgui::SetDisplaySize(int32_t windowWidth,
+                               int32_t windowHeight,
+                               int32_t internalWidth,
+                               int32_t internalHeight) {
+   ImGui::GetIO().DisplaySize.x = (float)windowWidth;
+   ImGui::GetIO().DisplaySize.y = (float)windowHeight;
+   ImGui::GetIO().DisplayFramebufferScale =
+     ImVec2((float)internalWidth / windowWidth, (float)internalHeight / windowHeight);
 }
 
 void ctVkImgui::RenderCommands(VkCommandBuffer cmd) {

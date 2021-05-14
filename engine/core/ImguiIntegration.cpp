@@ -31,6 +31,7 @@ ctResults ctImguiIntegration::Startup() {
    ImGui_ImplSDL2_InitForVulkan(Engine->WindowManager->mainWindow.pSDLWindow);
 #endif
    Engine->OSEventManager->MiscEventHandlers.Append({processImguiEvent, this});
+   Engine->OSEventManager->WindowEventHandlers.Append({processImguiEvent, this});
    return CT_SUCCESS;
 }
 
@@ -41,6 +42,7 @@ ctResults ctImguiIntegration::Shutdown() {
 }
 
 ctResults ctImguiIntegration::NextFrame() {
+   ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow.pSDLWindow);
    ImGui::NewFrame();
    return CT_SUCCESS;
 }

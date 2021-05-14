@@ -353,7 +353,8 @@ void ImGui_ImplSDL2_NewFrame(SDL_Window* window)
     IM_ASSERT(io.Fonts->IsBuilt() && "Font atlas not built! It is generally built by the renderer backend. Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
 
     // Setup display size (every frame to accommodate for window resizing)
-    int w, h;
+    // Do this in-engine for dynamic resolution scaling
+    /*int w, h;
     int display_w, display_h;
     SDL_GetWindowSize(window, &w, &h);
     if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
@@ -361,7 +362,7 @@ void ImGui_ImplSDL2_NewFrame(SDL_Window* window)
     SDL_GL_GetDrawableSize(window, &display_w, &display_h);
     io.DisplaySize = ImVec2((float)w, (float)h);
     if (w > 0 && h > 0)
-        io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
+        io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);*/
 
     // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
     static Uint64 frequency = SDL_GetPerformanceFrequency();

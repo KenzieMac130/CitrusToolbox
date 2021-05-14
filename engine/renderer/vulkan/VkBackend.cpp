@@ -966,11 +966,13 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
                                            imageAvailible[pBackend->currentFrame],
                                            VK_NULL_HANDLE,
                                            &imageIndex);
-   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-       resizeTriggered = true;
-       return VK_ERROR_OUT_OF_DATE_KHR;
+   if (resizeTriggered || result == VK_ERROR_OUT_OF_DATE_KHR) {
+      resizeTriggered = true;
+      vkDeviceWaitIdle(pBackend->vkDevice);
+      ctFatalError(-1, "Resize Not Supported Yet");
+   } else if (result != VK_SUCCESS) {
+      return result;
    }
-   if (result != VK_SUCCESS) { return result; }
 
    /* Blit */
    {
@@ -1071,7 +1073,10 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       submitInfo.waitSemaphoreCount = semaphoreCount;
       submitInfo.pWaitSemaphores = pWaitSemaphores;
       submitInfo.pWaitDstStageMask = &waitForStage;
-      vkQueueSubmit(pBackend->transferQueue, 1, &submitInfo, NULL);
+      vkQueueSubmit(pBackend->transferQueue,
+                    1,
+                    &submitInfo,
+                    pBackend->frameAvailibleFences[pBackend->currentFrame]);
    }
 
    VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};

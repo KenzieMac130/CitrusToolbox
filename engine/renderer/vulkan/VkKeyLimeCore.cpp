@@ -221,12 +221,11 @@ ctResults ctVkKeyLimeCore::Startup() {
       VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
       beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
       vkBeginCommandBuffer(startupTransferCommands, &beginInfo);
-      vkImgui.Startup(&vkBackend,
-                      internalResolutionWidth,
-                      internalResolutionHeight,
-                      frameInitialUploadCommandBuffers[0],
-                      guiRenderPass,
-                      0);
+      vkImgui.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
+                             vkBackend.mainScreenResources.extent.height,
+                             internalResolutionWidth,
+                             internalResolutionHeight);
+      vkImgui.Startup(&vkBackend, frameInitialUploadCommandBuffers[0], guiRenderPass, 0);
       vkEndCommandBuffer(startupTransferCommands);
       VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
       submitInfo.commandBufferCount = 1;
@@ -288,10 +287,7 @@ ctResults ctVkKeyLimeCore::Render() {
       submitInfo.pCommandBuffers = &gfxCommands;
       submitInfo.signalSemaphoreCount = 1;
       submitInfo.pSignalSemaphores = &renderFinished[vkBackend.currentFrame];
-      vkQueueSubmit(vkBackend.graphicsQueue,
-                    1,
-                    &submitInfo,
-                    vkBackend.frameAvailibleFences[vkBackend.currentFrame]);
+      vkQueueSubmit(vkBackend.graphicsQueue, 1, &submitInfo, NULL);
 
       VkImageBlit blitInfo;
       blitInfo.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

@@ -38,6 +38,7 @@ ctWindowManager::ctWindowManager() {
    mainWindowWidth = 640;
    mainWindowHeight = 480;
    mainWindowMonitorIdx = 0;
+   mainWindowVSync = 1;
 #ifdef NDEBUG
    mainWindowMode = "Borderless";
 #else

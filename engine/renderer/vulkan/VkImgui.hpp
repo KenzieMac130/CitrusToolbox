@@ -22,13 +22,15 @@
 class ctVkImgui {
 public:
    ctResults Startup(ctVkBackend* pBackend,
-                     uint32_t width,
-                     uint32_t height,
                      VkCommandBuffer textureUploadCmd,
                      VkRenderPass guiRenderpass,
                      uint32_t subpass);
    ctResults Shutdown();
    void BuildDrawLists();
+   void SetDisplaySize(int32_t windowWidth,
+                       int32_t windowHeight,
+                       int32_t internalWidth,
+                       int32_t internalHeight);
    void RenderCommands(VkCommandBuffer cmd);
 
 private:
