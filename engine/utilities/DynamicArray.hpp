@@ -18,10 +18,6 @@
 
 #include "Common.h"
 
-#ifdef CT_TMP_USE_STD
-#include <vector>
-#endif
-
 template<class T>
 class ctDynamicArray {
 public:
@@ -84,17 +80,12 @@ public:
    uint64_t xxHash64() const;
 
 private:
-#ifdef CT_TMP_USE_STD
-   std::vector<T> _dirtysecret;
-#else
    ctResults _expand_size(size_t amount);
    T* _pData;
    size_t _capacity;
    size_t _count;
-#endif
 };
 
-#ifndef CT_TMP_USE_STD
 template<class T>
 inline ctResults ctDynamicArray<T>::_expand_size(size_t amount) {
    const size_t neededamount = Count() + amount;
@@ -109,116 +100,80 @@ inline ctResults ctDynamicArray<T>::_expand_size(size_t amount) {
    }
    return CT_SUCCESS;
 }
-#endif
 
 template<class T>
 inline ctDynamicArray<T>::ctDynamicArray() {
-#ifndef CT_TMP_USE_STD
    _pData = NULL;
    _capacity = 0;
    _count = 0;
-#endif
 }
 
 template<class T>
 inline ctDynamicArray<T>::ctDynamicArray(const ctDynamicArray<T>& arr) {
-#ifndef CT_TMP_USE_STD
    const size_t inputcount = arr.Count();
    Resize(inputcount);
    for (size_t i = 0; i < inputcount; i++) {
       _pData[i] = arr[i];
    }
-#endif
 }
 
 template<class T>
 inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) {
-#ifndef CT_TMP_USE_STD
    const size_t inputcount = arr.Count();
    Resize(inputcount);
    for (size_t i = 0; i < inputcount; i++) {
       _pData[i] = arr[i];
    }
-#endif
 }
 
 template<class T>
 inline ctDynamicArray<T>::~ctDynamicArray() {
-#ifndef CT_TMP_USE_STD
    if (_pData) { delete[] _pData; }
    _pData = NULL;
    _capacity = 0;
    _count = 0;
-#endif
 }
 
 template<class T>
 inline T& ctDynamicArray<T>::operator[](const size_t index) {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret[index];
-#else
    ctAssert(index <= Count());
    return _pData[index];
-#endif
 }
 
 template<class T>
 inline T ctDynamicArray<T>::operator[](const size_t index) const {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret[index];
-#else
    ctAssert(index <= Count());
    return _pData[index];
-#endif
 }
 
 template<class T>
 inline T& ctDynamicArray<T>::First() {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret[0];
-#else
    ctAssert(Count() > 0);
    return _pData[0];
-#endif
 }
 
 template<class T>
 inline T ctDynamicArray<T>::First() const {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret[0];
-#else
    ctAssert(Count() > 0);
    return _pData[0];
-#endif
 }
 
 template<class T>
 inline T& ctDynamicArray<T>::Last() {
    size_t idx = Count() - 1 > 0 ? Count() - 1 : 0;
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret[idx];
-#else
    ctAssert(Count() > 0);
    return _pData[idx];
-#endif
 }
 
 template<class T>
 inline T ctDynamicArray<T>::Last() const {
    size_t idx = Count() - 1 > 0 ? Count() - 1 : 0;
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret[idx];
-#else
    ctAssert(Count() > 0);
    return _pData[idx];
-#endif
 }
 
 template<class T>
 inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.resize(amount);
-#else
    if (amount == Count()) {
       return CT_SUCCESS;
    } else if (amount <= 0) {
@@ -237,15 +192,11 @@ inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
    }
    _count = amount;
    _capacity = amount;
-#endif
    return CT_SUCCESS;
 }
 
 template<class T>
 inline ctResults ctDynamicArray<T>::Reserve(const size_t amount) {
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.reserve(amount);
-#else
    if (amount > Capacity()) {
       T* pOldData = _pData;
       _pData = new T[amount];
@@ -258,35 +209,22 @@ inline ctResults ctDynamicArray<T>::Reserve(const size_t amount) {
       }
       _capacity = amount;
    }
-#endif
    return CT_SUCCESS;
 }
 
 template<class T>
 inline T* ctDynamicArray<T>::Data() const {
-#ifdef CT_TMP_USE_STD
-   return (T*)_dirtysecret.data();
-#else
    return _pData;
-#endif
 }
 
 template<class T>
 inline size_t ctDynamicArray<T>::Count() const {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret.size();
-#else
    return _count;
-#endif
 }
 
 template<class T>
 inline size_t ctDynamicArray<T>::Capacity() const {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret.capacity();
-#else
    return _capacity;
-#endif
 }
 
 template<class T>
@@ -301,16 +239,11 @@ inline ctDynamicArray<T>& ctDynamicArray<T>::operator=(const ctDynamicArray<T>& 
 
 template<class T>
 inline ctResults ctDynamicArray<T>::Append(const T& val) {
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.push_back(val);
-   return CT_SUCCESS;
-#else
    const ctResults result = _expand_size(1);
    if (result != CT_SUCCESS) { return result; }
    if (_pData) { _pData[Count()] = val; }
    _count++;
    return result;
-#endif
 }
 
 template<class T>
@@ -346,10 +279,6 @@ inline ctResults ctDynamicArray<T>::Append(const T& val, const size_t amount) {
 template<class T>
 inline ctResults ctDynamicArray<T>::Insert(const T& val, const int64_t position) {
    int64_t finalposition = position < 0 ? Count() + position + 1 : position;
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.insert(_dirtysecret.begin() + finalposition, val);
-   return CT_SUCCESS;
-#else
    const ctResults result = _expand_size(1);
    if (result != CT_SUCCESS) { return result; }
    if (finalposition < 0) { finalposition = 0; }
@@ -360,22 +289,17 @@ inline ctResults ctDynamicArray<T>::Insert(const T& val, const int64_t position)
    _count++;
    _pData[finalposition] = val;
    return result;
-#endif
 }
 
 template<class T>
 inline void ctDynamicArray<T>::RemoveAt(const int64_t position) {
    if (isEmpty()) { return; }
    const int64_t finalposition = position < 0 ? Count() + position : position;
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.erase(_dirtysecret.begin() + finalposition);
-#else
    if (finalposition < 0 || finalposition >= (int64_t)Count()) { return; }
    _count--;
    for (int64_t i = finalposition; i < (int64_t)Count(); i++) {
       _pData[i] = _pData[i + 1];
    }
-#endif
 }
 
 template<class T>
@@ -391,20 +315,12 @@ inline ctResults ctDynamicArray<T>::Remove(const T& val, const int64_t position)
 
 template<class T>
 inline void ctDynamicArray<T>::RemoveLast() {
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.pop_back();
-#else
    RemoveAt(-1);
-#endif
 }
 
 template<class T>
 inline void ctDynamicArray<T>::Clear() {
-#ifdef CT_TMP_USE_STD
-   _dirtysecret.clear();
-#else
    _count = 0;
-#endif
 }
 
 template<class T>
@@ -415,11 +331,7 @@ inline void ctDynamicArray<T>::Memset(int val) {
 
 template<class T>
 inline bool ctDynamicArray<T>::isEmpty() const {
-#ifdef CT_TMP_USE_STD
-   return _dirtysecret.empty();
-#else
    return _count == 0 || !_pData;
-#endif
 }
 
 template<class T>
