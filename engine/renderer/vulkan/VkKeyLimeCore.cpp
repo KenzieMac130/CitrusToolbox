@@ -44,12 +44,9 @@ ctResults ctVkKeyLimeCore::Startup() {
    vkBackend.maxSampledImages = CT_MAX_GFX_SAMPLED_IMAGES;
    vkBackend.maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
    vkBackend.maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
-   vkBackend.maxGraphicsCommandBuffers = CT_MAX_GFX_GRAPHICS_COMMAND_BUFFERS;
-   vkBackend.maxComputeCommandBuffers = CT_MAX_GFX_COMPUTE_COMMAND_BUFFERS;
-   vkBackend.maxTransferCommandBuffers = CT_MAX_GFX_TRANSFER_COMMAND_BUFFERS;
 
-   internalResolutionWidth = 640;
-   internalResolutionHeight = 480;
+   internalResolutionWidth = 1920;
+   internalResolutionHeight = 1080;
 
    ctSettingsSection* vkSettings = Engine->Settings->CreateSection("VulkanBackend", 32);
    vkSettings->BindInteger(&vkBackend.preferredDevice,
@@ -89,29 +86,52 @@ ctResults ctVkKeyLimeCore::Startup() {
                            "Max number of storage buffers.",
                            CT_SETTINGS_BOUNDS_UINT);
 
-   vkSettings->BindInteger(&vkBackend.maxGraphicsCommandBuffers,
-                           false,
-                           true,
-                           "MaxGraphicsCommandBuffers",
-                           "Max number of graphics command buffers per-frame.",
-                           CT_SETTINGS_BOUNDS_UINT);
-   vkSettings->BindInteger(&vkBackend.maxComputeCommandBuffers,
-                           false,
-                           true,
-                           "MaxComputeCommandBuffers",
-                           "Max number of compute command buffers per-frame.",
-                           CT_SETTINGS_BOUNDS_UINT);
-   vkSettings->BindInteger(&vkBackend.maxTransferCommandBuffers,
-                           false,
-                           true,
-                           "MaxTransferCommandBuffers",
-                           "Max number of transfer command buffers per-frame.",
-                           CT_SETTINGS_BOUNDS_UINT);
-
    ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
    vkBackend.ModuleStartup(Engine);
+   /* Commands and Sync */
+   {
+      /* Graphics Commands */
+      {
+         VkCommandPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+         poolInfo.queueFamilyIndex = vkBackend.queueFamilyIndices.graphicsIdx;
+         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+         vkCreateCommandPool(
+           vkBackend.vkDevice, &poolInfo, &vkBackend.vkAllocCallback, &gfxCommandPool);
+         VkCommandBufferAllocateInfo allocInfo {
+           VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+         allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
+         allocInfo.commandPool = gfxCommandPool;
+         vkAllocateCommandBuffers(vkBackend.vkDevice, &allocInfo, gfxCommandBuffers);
+      }
+      /* Transfer Commands */
+      {
+         VkCommandPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+         poolInfo.queueFamilyIndex = vkBackend.queueFamilyIndices.transferIdx;
+         poolInfo.flags = 0;
+         vkCreateCommandPool(vkBackend.vkDevice,
+                             &poolInfo,
+                             &vkBackend.vkAllocCallback,
+                             &transferCommandPool);
+         VkCommandBufferAllocateInfo allocInfo {
+           VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+         allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
+         allocInfo.commandPool = transferCommandPool;
+         vkAllocateCommandBuffers(
+           vkBackend.vkDevice, &allocInfo, frameInitialUploadCommandBuffers);
+      }
+
+      VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+         vkCreateSemaphore(vkBackend.vkDevice,
+                           &semaphoreInfo,
+                           &vkBackend.vkAllocCallback,
+                           &renderFinished[i]);
+      }
+   }
    /* GUI Renderpass and Framebuffer */
    {
       compositeFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -119,7 +139,7 @@ ctResults ctVkKeyLimeCore::Startup() {
       VkAttachmentDescription attachments[2] {};
       attachments[0].format = compositeFormat;
       attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-      attachments[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
       attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
       attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
       attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -195,29 +215,53 @@ ctResults ctVkKeyLimeCore::Startup() {
                                       &guiFramebuffer),
                   CT_NC("vkCreateFramebuffer() failed to create gui framebuffer."));
    }
-
-   vkImgui.Startup(&vkBackend, guiRenderPass, 0);
+   /* Setup ImGUI */
+   {
+      VkCommandBuffer startupTransferCommands = frameInitialUploadCommandBuffers[0];
+      VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+      beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      vkBeginCommandBuffer(startupTransferCommands, &beginInfo);
+      vkImgui.Startup(&vkBackend,
+                      internalResolutionWidth,
+                      internalResolutionHeight,
+                      frameInitialUploadCommandBuffers[0],
+                      guiRenderPass,
+                      0);
+      vkEndCommandBuffer(startupTransferCommands);
+      VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+      submitInfo.commandBufferCount = 1;
+      submitInfo.pCommandBuffers = &startupTransferCommands;
+      vkQueueSubmit(vkBackend.transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+      vkQueueWaitIdle(vkBackend.transferQueue);
+   }
    return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Shutdown() {
    vkDeviceWaitIdle(vkBackend.vkDevice);
+   vkDestroyCommandPool(vkBackend.vkDevice, gfxCommandPool, &vkBackend.vkAllocCallback);
+   vkDestroyCommandPool(
+     vkBackend.vkDevice, transferCommandPool, &vkBackend.vkAllocCallback);
    vkImgui.Shutdown();
    vkDestroyRenderPass(vkBackend.vkDevice, guiRenderPass, &vkBackend.vkAllocCallback);
    vkDestroyFramebuffer(vkBackend.vkDevice, guiFramebuffer, &vkBackend.vkAllocCallback);
    vkBackend.TryDestroyCompleteImage(depthBuffer);
    vkBackend.TryDestroyCompleteImage(compositeBuffer);
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkDestroySemaphore(
+        vkBackend.vkDevice, renderFinished[i], &vkBackend.vkAllocCallback);
+   }
    vkBackend.ModuleShutdown();
    return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Render() {
    vkBackend.WaitForFrameAvailible();
-   vkImgui.BuildDrawLists(); /* Future optimization: do in job system */
-   VkCommandBuffer gfxCommands =
-     vkBackend.graphicsCommands[vkBackend.currentFrame].GetNextCommandBuffer();
+   vkImgui.BuildDrawLists();
 
+   VkCommandBuffer gfxCommands = gfxCommandBuffers[vkBackend.currentFrame];
    VkCommandBufferBeginInfo gfxBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+   vkResetCommandBuffer(gfxCommands, 0);
    vkBeginCommandBuffer(gfxCommands, &gfxBeginInfo);
 
    /* Render GUI */
@@ -239,17 +283,43 @@ ctResults ctVkKeyLimeCore::Render() {
    /* Submit commands */
    {
       vkEndCommandBuffer(gfxCommands);
-      vkBackend.graphicsCommands[vkBackend.currentFrame].SubmitCommands(
-        vkBackend.graphicsQueue,
-        0,
-        NULL,
-        0,
-        NULL,
-        vkBackend.frameAvailibleFences[vkBackend.currentFrame]);
+      VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+      submitInfo.commandBufferCount = 1;
+      submitInfo.pCommandBuffers = &gfxCommands;
+      submitInfo.signalSemaphoreCount = 1;
+      submitInfo.pSignalSemaphores = &renderFinished[vkBackend.currentFrame];
+      vkQueueSubmit(vkBackend.graphicsQueue,
+                    1,
+                    &submitInfo,
+                    vkBackend.frameAvailibleFences[vkBackend.currentFrame]);
+
+      VkImageBlit blitInfo;
+      blitInfo.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blitInfo.dstSubresource.baseArrayLayer = 0;
+      blitInfo.dstSubresource.mipLevel = 0;
+      blitInfo.dstSubresource.layerCount = 1;
+      blitInfo.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blitInfo.srcSubresource.baseArrayLayer = 0;
+      blitInfo.srcSubresource.mipLevel = 0;
+      blitInfo.srcSubresource.layerCount = 1;
+      blitInfo.srcOffsets[0] = {0};
+      blitInfo.srcOffsets[1] = {
+        (int32_t)internalResolutionWidth, (int32_t)internalResolutionHeight, 1};
+      blitInfo.dstOffsets[0] = {0};
+      blitInfo.dstOffsets[1] = {(int32_t)vkBackend.mainScreenResources.extent.width,
+                                (int32_t)vkBackend.mainScreenResources.extent.height,
+                                1};
       vkBackend.mainScreenResources.BlitAndPresent(
-        &vkBackend, 1, &renderFinished[0], compositeBuffer.view, VkImageBlit());
+        &vkBackend,
+        1,
+        &renderFinished[vkBackend.currentFrame],
+        compositeBuffer.image,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        vkBackend.queueFamilyIndices.graphicsIdx,
+        blitInfo);
    }
-   /* Todo: Present!!! */
    vkBackend.AdvanceNextFrame();
    return CT_SUCCESS;
 }

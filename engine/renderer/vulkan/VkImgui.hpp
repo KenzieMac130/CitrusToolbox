@@ -21,7 +21,12 @@
 
 class ctVkImgui {
 public:
-   ctResults Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass);
+   ctResults Startup(ctVkBackend* pBackend,
+                     uint32_t width,
+                     uint32_t height,
+                     VkCommandBuffer textureUploadCmd,
+                     VkRenderPass guiRenderpass,
+                     uint32_t subpass);
    ctResults Shutdown();
    void BuildDrawLists();
    void RenderCommands(VkCommandBuffer cmd);

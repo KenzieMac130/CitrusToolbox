@@ -23,6 +23,9 @@ void checkVkResult(VkResult err) {
   CT_VK_CHECK(err, CT_NC("DearImgui Vulkan backend encountered an error."))}
 
 ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
+                             uint32_t width,
+                             uint32_t height,
+                             VkCommandBuffer textureUploadCmd,
                              VkRenderPass guiRenderpass,
                              uint32_t subpass) {
    _pBackend = pBackend;
@@ -55,17 +58,10 @@ ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
    initInfo.CheckVkResultFn = checkVkResult;
    ImGui_ImplVulkan_Init(&initInfo, guiRenderpass);
 
-   VkCommandBuffer cmdBuff =
-     pBackend->transferCommands[pBackend->currentFrame].GetNextCommandBuffer();
-   VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-   vkBeginCommandBuffer(cmdBuff, &beginInfo);
-   ImGui_ImplVulkan_CreateFontsTexture(cmdBuff);
-   vkEndCommandBuffer(cmdBuff);
-   pBackend->transferCommands[pBackend->currentFrame].SubmitCommands(
-     pBackend->transferQueue, 0, NULL, 0, NULL);
+   ImGui_ImplVulkan_CreateFontsTexture(textureUploadCmd);
 
-   ImGui::GetIO().DisplaySize.x = (float)pBackend->mainScreenResources.extent.width;
-   ImGui::GetIO().DisplaySize.y = (float)pBackend->mainScreenResources.extent.height;
+   ImGui::GetIO().DisplaySize.x = (float)width;
+   ImGui::GetIO().DisplaySize.y = (float)height;
    ImGui::NewFrame();
 
    return CT_SUCCESS;

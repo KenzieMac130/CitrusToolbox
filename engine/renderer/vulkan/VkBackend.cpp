@@ -578,21 +578,11 @@ ctResults ctVkBackend::Startup() {
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.computeIdx, 0, &computeQueue);
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.transferIdx, 0, &transferQueue);
    }
-   /* Swapchain */
+   /* Swapchain and Present Resources */
    {
+      mainScreenResources.CreatePresentResources(this);
       mainScreenResources.CreateSwapchain(
         this, queueFamilyIndices, vsync, VK_NULL_HANDLE);
-   }
-   /* Command Buffer Manager */
-   {
-      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-         graphicsCommands[i].Create(
-           this, maxGraphicsCommandBuffers, queueFamilyIndices.graphicsIdx);
-         computeCommands[i].Create(
-           this, maxComputeCommandBuffers, queueFamilyIndices.computeIdx);
-         transferCommands[i].Create(
-           this, maxTransferCommandBuffers, queueFamilyIndices.transferIdx);
-      }
    }
    /* Memory Allocator */
    {
@@ -726,10 +716,10 @@ ctResults ctVkBackend::Startup() {
         vkAllocateDescriptorSets(vkDevice, &allocInfo, &vkGlobalDescriptorSet),
         CT_NC("vkAllocateDescriptorSets() failed to allocate global descriptor set."));
 
-      // https://ourmachinery.com/post/moving-the-machinery-to-bindless/
-      // https://roar11.com/2019/06/vulkan-textures-unbound/
-      // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_descriptor_indexing.html
-      // https://gpuopen.com/performance/#descriptors
+      /* https://ourmachinery.com/post/moving-the-machinery-to-bindless/
+       * https://roar11.com/2019/06/vulkan-textures-unbound/
+       * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_descriptor_indexing.html
+       * https://gpuopen.com/performance/#descriptors */
    }
    /* Make Window Visible */
    {
@@ -766,9 +756,6 @@ ctResults ctVkBackend::Shutdown() {
    }
 
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      graphicsCommands[i].Destroy(this);
-      computeCommands[i].Destroy(this);
-      transferCommands[i].Destroy(this);
       vkDestroyFence(vkDevice, frameAvailibleFences[i], &vkAllocCallback);
    }
 
@@ -776,6 +763,7 @@ ctResults ctVkBackend::Shutdown() {
    vkDestroyDescriptorSetLayout(vkDevice, vkDescriptorSetLayout, &vkAllocCallback);
    mainScreenResources.DestroySwapchain(this);
    mainScreenResources.DestroySurface(this);
+   mainScreenResources.DestroyPresentResources(this);
    vmaDestroyAllocator(vmaAllocator);
    vkDestroyDevice(vkDevice, &vkAllocCallback);
 
@@ -893,7 +881,7 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
    swapChainInfo.imageExtent = extent;
    swapChainInfo.imageArrayLayers = 1;
    swapChainInfo.minImageCount = imageCount;
-   swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+   swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    swapChainInfo.preTransform = swapChainSupport.surfaceCapabilities.currentTransform;
    swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    swapChainInfo.clipped = VK_TRUE;
@@ -915,30 +903,12 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
    /* Get images */
    vkGetSwapchainImagesKHR(pBackend->vkDevice, swapchain, &imageCount, NULL);
    swapImages.Resize(imageCount);
-   swapImageViews.Resize(imageCount);
    vkGetSwapchainImagesKHR(pBackend->vkDevice, swapchain, &imageCount, swapImages.Data());
 
-   /* Create image views */
-   for (uint32_t i = 0; i < imageCount; i++) {
-      VkImageViewCreateInfo viewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-      viewInfo.image = swapImages[i];
-      viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-      viewInfo.format = surfaceFormat.format;
-      viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      viewInfo.subresourceRange.baseMipLevel = 0;
-      viewInfo.subresourceRange.levelCount = 1;
-      viewInfo.subresourceRange.baseArrayLayer = 0;
-      viewInfo.subresourceRange.layerCount = 1;
-      CT_VK_CHECK(
-        vkCreateImageView(
-          pBackend->vkDevice, &viewInfo, &pBackend->vkAllocCallback, &swapImageViews[i]),
-        CT_NC("vkCreateImageView() failed to create swapchain image view."));
-   }
+   return CT_SUCCESS;
+}
 
+ctResults ctVkScreenResources::CreatePresentResources(ctVkBackend* pBackend) {
    /* Create image availible semaphore */
    VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
@@ -947,20 +917,31 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
                         &pBackend->vkAllocCallback,
                         &imageAvailible[i]);
    }
-
+   /* Blitting command buffer */
+   VkCommandPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+   poolInfo.queueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+   vkCreateCommandPool(
+     pBackend->vkDevice, &poolInfo, &pBackend->vkAllocCallback, &blitCommandPool);
+   VkCommandBufferAllocateInfo allocInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
+   allocInfo.commandPool = blitCommandPool;
+   vkAllocateCommandBuffers(pBackend->vkDevice, &allocInfo, blitCommands);
    return CT_SUCCESS;
 }
 
 ctResults ctVkScreenResources::DestroySwapchain(ctVkBackend* pBackend) {
-   for (uint32_t i = 0; i < imageCount; i++) {
-      vkDestroyImageView(
-        pBackend->vkDevice, swapImageViews[i], &pBackend->vkAllocCallback);
-   }
+   vkDestroySwapchainKHR(pBackend->vkDevice, swapchain, &pBackend->vkAllocCallback);
+   return CT_SUCCESS;
+}
+
+ctResults ctVkScreenResources::DestroyPresentResources(ctVkBackend* pBackend) {
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkDestroySemaphore(
         pBackend->vkDevice, imageAvailible[i], &pBackend->vkAllocCallback);
    }
-   vkDestroySwapchainKHR(pBackend->vkDevice, swapchain, &pBackend->vkAllocCallback);
+   vkDestroyCommandPool(pBackend->vkDevice, blitCommandPool, &pBackend->vkAllocCallback);
    return CT_SUCCESS;
 }
 
@@ -972,53 +953,134 @@ ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
 VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
                                              uint32_t semaphoreCount,
                                              VkSemaphore* pWaitSemaphores,
-                                             VkImageView view,
+                                             VkImage srcImage,
+                                             VkImageLayout srcLayout,
+                                             VkPipelineStageFlags srcStageMask,
+                                             VkAccessFlags srcAccess,
+                                             uint32_t srcQueueFamily,
                                              VkImageBlit blit) {
    uint32_t imageIndex = 0;
-   vkAcquireNextImageKHR(pBackend->vkDevice,
-                         swapchain,
-                         UINT64_MAX,
-                         imageAvailible[pBackend->currentFrame],
-                         VK_NULL_HANDLE,
-                         &imageIndex);
-   /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
-    * VUID-vkAcquireNextImageKHR-swapchain-01802 ] Object 0: handle = 0x983e60000000003,
-    * type = VK_OBJECT_TYPE_SWAPCHAIN_KHR; | MessageID = 0x3e97a888 |
-    * vkAcquireNextImageKHR: Application has already previously acquired 2 images from
-    * swapchain. Only 2 are available to be acquired using a timeout of UINT64_MAX (given
-    * the swapchain has 3, and VkSurfaceCapabilitiesKHR::minImageCount is 2). The Vulkan
-    * spec states: If the number of currently acquired images is greater than the
-    * difference between the number of images in swapchain and the value of
-    * VkSurfaceCapabilitiesKHR::minImageCount as returned by a call to
-    * vkGetPhysicalDeviceSurfaceCapabilities2KHR with the surface used to create
-    * swapchain, timeout must not be UINT64_MAX
-    * (https://vulkan.lunarg.com/doc/view/1.2.148.0/windows/1.2-extensions/vkspec.html#VUID-vkAcquireNextImageKHR-swapchain-01802)*/
-   /* After first inflight loop */
-   /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
-    * VUID-vkAcquireNextImageKHR-semaphore-01286 ] Object 0: handle = 0x731f0f000000000a,
-    * type = VK_OBJECT_TYPE_SEMAPHORE; | MessageID = 0xe9e4b2a9 | vkAcquireNextImageKHR:
-    * Semaphore must not be currently signaled or in a wait state. The Vulkan spec states:
-    * If semaphore is not VK_NULL_HANDLE it must be unsignaled
-    * (https://vulkan.lunarg.com/doc/view/1.2.148.0/windows/1.2-extensions/vkspec.html#VUID-vkAcquireNextImageKHR-semaphore-01286)*/
+   VkResult result = vkAcquireNextImageKHR(pBackend->vkDevice,
+                                           swapchain,
+                                           UINT64_MAX,
+                                           imageAvailible[pBackend->currentFrame],
+                                           VK_NULL_HANDLE,
+                                           &imageIndex);
+   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+       resizeTriggered = true;
+       return VK_ERROR_OUT_OF_DATE_KHR;
+   }
+   if (result != VK_SUCCESS) { return result; }
+
+   /* Blit */
+   {
+      VkCommandBuffer cmd = blitCommands[pBackend->currentFrame];
+      VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+      /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
+       * VUID-vkResetCommandBuffer-commandBuffer-00045 ] Object 0: handle = 0x2a5679cc080,
+       * type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x1e7883ea | Attempt to reset
+       * VkCommandBuffer 0x2a5679cc080[] which is in use. The Vulkan spec states:
+       * commandBuffer must not be in the pending state
+       * (https://vulkan.lunarg.com/doc/view/1.2.148.0/windows/1.2-extensions/vkspec.html#VUID-vkResetCommandBuffer-commandBuffer-00045)*/
+      vkResetCommandBuffer(cmd, 0);
+      vkBeginCommandBuffer(cmd, &beginInfo);
+
+      VkImageMemoryBarrier srcToTransfer {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+      srcToTransfer.image = srcImage;
+      srcToTransfer.srcQueueFamilyIndex = srcQueueFamily;
+      srcToTransfer.dstQueueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+      srcToTransfer.oldLayout = srcLayout;
+      srcToTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      srcToTransfer.srcAccessMask = srcAccess;
+      srcToTransfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+      srcToTransfer.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      srcToTransfer.subresourceRange.baseArrayLayer = 0;
+      srcToTransfer.subresourceRange.baseMipLevel = 0;
+      srcToTransfer.subresourceRange.levelCount = 1;
+      srcToTransfer.subresourceRange.layerCount = 1;
+      vkCmdPipelineBarrier(cmd,
+                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                           0,
+                           NULL,
+                           0,
+                           NULL,
+                           1,
+                           &srcToTransfer);
+
+      VkImageMemoryBarrier dstToTransfer {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+      dstToTransfer.image = swapImages[imageIndex];
+      dstToTransfer.srcQueueFamilyIndex = pBackend->queueFamilyIndices.presentIdx;
+      dstToTransfer.dstQueueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+      dstToTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; /* Don't care about previous */
+      dstToTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      dstToTransfer.srcAccessMask = 0;
+      dstToTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      dstToTransfer.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      dstToTransfer.subresourceRange.baseArrayLayer = 0;
+      dstToTransfer.subresourceRange.baseMipLevel = 0;
+      dstToTransfer.subresourceRange.levelCount = 1;
+      dstToTransfer.subresourceRange.layerCount = 1;
+      vkCmdPipelineBarrier(cmd,
+                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                           0,
+                           NULL,
+                           0,
+                           NULL,
+                           1,
+                           &dstToTransfer);
+      vkCmdBlitImage(cmd,
+                     srcImage,
+                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                     swapImages[imageIndex],
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     1,
+                     &blit,
+                     VK_FILTER_LINEAR);
+      VkImageMemoryBarrier dstToPresent {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+      dstToPresent.image = swapImages[imageIndex];
+      dstToPresent.srcQueueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+      dstToPresent.dstQueueFamilyIndex = pBackend->queueFamilyIndices.presentIdx;
+      dstToPresent.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      dstToPresent.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+      dstToPresent.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      dstToPresent.dstAccessMask = 0; /* Won't touch it */
+      dstToPresent.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      dstToPresent.subresourceRange.baseArrayLayer = 0;
+      dstToPresent.subresourceRange.baseMipLevel = 0;
+      dstToPresent.subresourceRange.levelCount = 1;
+      dstToPresent.subresourceRange.layerCount = 1;
+      vkCmdPipelineBarrier(cmd,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                           VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                           0,
+                           NULL,
+                           0,
+                           NULL,
+                           1,
+                           &dstToPresent);
+      vkEndCommandBuffer(cmd);
+      VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+      VkPipelineStageFlags waitForStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+      submitInfo.commandBufferCount = 1;
+      submitInfo.pCommandBuffers = &cmd;
+      submitInfo.waitSemaphoreCount = semaphoreCount;
+      submitInfo.pWaitSemaphores = pWaitSemaphores;
+      submitInfo.pWaitDstStageMask = &waitForStage;
+      vkQueueSubmit(pBackend->transferQueue, 1, &submitInfo, NULL);
+   }
+
    VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
-   presentInfo.waitSemaphoreCount = 0;
-   presentInfo.pWaitSemaphores = pWaitSemaphores;
+   presentInfo.waitSemaphoreCount = 1;
+   presentInfo.pWaitSemaphores = &imageAvailible[pBackend->currentFrame];
    presentInfo.swapchainCount = 1;
    presentInfo.pSwapchains = &swapchain;
    presentInfo.pImageIndices = &imageIndex;
-   /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
-    * VUID-VkPresentInfoKHR-pImageIndices-01296 ] Object 0: handle = 0x2097d2bb350, type =
-    * VK_OBJECT_TYPE_QUEUE; | MessageID = 0xc7aabc16 | vkQueuePresentKHR(): Images passed
-    * to present must be in layout VK_IMAGE_LAYOUT_PRESENT_SRC_KHR or
-    * VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR but is in VK_IMAGE_LAYOUT_UNDEFINED. The Vulkan
-    * spec states: Each element of pImageIndices must be the index of a presentable image
-    * acquired from the swapchain specified by the corresponding element of the
-    * pSwapchains array, and the presented image subresource must be in the
-    * VK_IMAGE_LAYOUT_PRESENT_SRC_KHR layout at the time the operation is executed on a
-    * VkDevice
-    * (https://github.com/KhronosGroup/Vulkan-Docs/search?q=VUID-VkPresentInfoKHR-pImageIndices-01296)*/
-   vkQueuePresentKHR(pBackend->presentQueue, &presentInfo);
-   return VK_SUCCESS;
+   return vkQueuePresentKHR(pBackend->presentQueue, &presentInfo);
 }
 
 /* ------------- Descriptor Manager ------------- */
@@ -1044,67 +1106,4 @@ int32_t ctVkDescriptorManager::AllocateSlot() {
 
 void ctVkDescriptorManager::ReleaseSlot(const int32_t idx) {
    freedIdx.Append(idx);
-}
-
-/* ------------- Command Buffer Manager ------------- */
-
-ctResults ctVkCommandBufferManager::Create(ctVkBackend* pBackend,
-                                           uint32_t max,
-                                           uint32_t familyIdx) {
-   cmdBuffers.Resize(max);
-   VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-   createInfo.queueFamilyIndex = familyIdx;
-   createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   CT_VK_CHECK(vkCreateCommandPool(
-                 pBackend->vkDevice, &createInfo, &pBackend->vkAllocCallback, &pool),
-               CT_NC("vkCreateCommandPool() failed to create command pool."));
-
-   VkCommandBufferAllocateInfo allocInfo = {
-     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-   allocInfo.commandBufferCount = max;
-   allocInfo.commandPool = pool;
-   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   CT_VK_CHECK(
-     vkAllocateCommandBuffers(pBackend->vkDevice, &allocInfo, cmdBuffers.Data()),
-     CT_NC("vkAllocateCommandBuffers() failed to allocate command buffers."));
-   return CT_SUCCESS;
-}
-
-ctResults ctVkCommandBufferManager::Destroy(ctVkBackend* pBackend) {
-   vkFreeCommandBuffers(
-     pBackend->vkDevice, pool, (uint32_t)cmdBuffers.Count(), cmdBuffers.Data());
-   vkDestroyCommandPool(pBackend->vkDevice, pool, &pBackend->vkAllocCallback);
-   return CT_SUCCESS;
-}
-
-VkCommandBuffer ctVkCommandBufferManager::GetNextCommandBuffer() {
-   if (cmdBuffers.Count() <= activeBufferCount) {
-      return VK_NULL_HANDLE;
-   } else {
-      const VkCommandBuffer result = cmdBuffers[activeBufferCount];
-      activeBufferCount++;
-      return result;
-   }
-}
-
-VkResult
-ctVkCommandBufferManager::SubmitCommands(VkQueue queue,
-                                         uint32_t signalSemaphoreCount,
-                                         VkSemaphore* pSignalSemaphores,
-                                         uint32_t waitSemaphoreCount,
-                                         VkSemaphore* pWaitSemaphores,
-                                         VkFence fence,
-                                         VkPipelineStageFlags* pCustomWaitStages) {
-   VkPipelineStageFlags defaultWaitStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-   VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-   submitInfo.commandBufferCount = activeBufferCount;
-   submitInfo.pCommandBuffers = cmdBuffers.Data();
-   submitInfo.signalSemaphoreCount = signalSemaphoreCount;
-   submitInfo.pSignalSemaphores = pSignalSemaphores;
-   submitInfo.waitSemaphoreCount = waitSemaphoreCount;
-   submitInfo.pWaitSemaphores = pWaitSemaphores;
-   submitInfo.pWaitDstStageMask =
-     pCustomWaitStages ? pCustomWaitStages : &defaultWaitStage;
-   activeBufferCount = 0;
-   return vkQueueSubmit(queue, 1, &submitInfo, fence);
 }

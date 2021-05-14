@@ -38,6 +38,10 @@ public:
     ctVkBackend vkBackend;
     ctVkImgui vkImgui;
 
+    VkCommandPool gfxCommandPool;
+    VkCommandPool transferCommandPool;
+    VkCommandBuffer gfxCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
+    VkCommandBuffer frameInitialUploadCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
     VkSemaphore renderFinished[CT_MAX_INFLIGHT_FRAMES];
 
     VkRenderPass guiRenderPass;

@@ -66,7 +66,6 @@ public:
    VkExtent2D extent;
    uint32_t imageCount;
    ctDynamicArray<VkImage> swapImages;
-   ctDynamicArray<VkImageView> swapImageViews;
 
    bool resizeTriggered;
    VkSemaphore imageAvailible[CT_MAX_INFLIGHT_FRAMES];
@@ -76,16 +75,27 @@ public:
                              ctVkQueueFamilyIndices indices,
                              int32_t vsyncLevel,
                              VkSwapchainKHR oldSwapchain);
+   ctResults CreatePresentResources(class ctVkBackend* pBackend);
    ctResults DestroySurface(class ctVkBackend* pBackend);
    ctResults DestroySwapchain(class ctVkBackend* pBackend);
+   ctResults DestroyPresentResources(class ctVkBackend* pBackend);
 
    VkResult BlitAndPresent(class ctVkBackend* pBackend,
                            uint32_t semaphoreCount,
                            VkSemaphore* pWaitSemaphores,
-                           VkImageView view,
+                           VkImage srcImage,
+                           VkImageLayout srcLayout,
+                           VkPipelineStageFlags srcStageMask,
+                           VkAccessFlags srcAccess,
+                           uint32_t srcQueueFamily,
                            VkImageBlit blit);
 
    ctDynamicArray<ctVkScreenResizeCallback> screenResizeCallbacks;
+
+private:
+    VkCommandPool blitCommandPool;
+    VkCommandBuffer blitCommands[CT_MAX_INFLIGHT_FRAMES];
+    uint32_t frameIdx;
 };
 
 class ctVkDescriptorManager {
@@ -102,26 +112,6 @@ private:
    int32_t _max;
    ctDynamicArray<int32_t> freedIdx;
    int32_t nextNewIdx;
-};
-
-class ctVkCommandBufferManager {
-public:
-   ctResults Create(class ctVkBackend* pBackend, uint32_t max, uint32_t familyIdx);
-   ctResults Destroy(class ctVkBackend* pBackend);
-
-   VkCommandBuffer GetNextCommandBuffer();
-   VkResult SubmitCommands(VkQueue queue,
-                           uint32_t signalSemaphoreCount,
-                           VkSemaphore* pSignalSemaphores,
-                           uint32_t waitSemaphoreCount,
-                           VkSemaphore* pWaitSemaphores,
-                           VkFence fence = VK_NULL_HANDLE,
-                           VkPipelineStageFlags* pCustomWaitStages = NULL);
-
-private:
-   VkCommandPool pool;
-   ctDynamicArray<VkCommandBuffer> cmdBuffers;
-   uint32_t activeBufferCount;
 };
 
 struct ctVkCompleteImage {
@@ -202,10 +192,6 @@ public:
    VkFence frameAvailibleFences[CT_MAX_INFLIGHT_FRAMES];
    VkResult WaitForFrameAvailible();
 
-   ctVkCommandBufferManager graphicsCommands[CT_MAX_INFLIGHT_FRAMES];
-   ctVkCommandBufferManager computeCommands[CT_MAX_INFLIGHT_FRAMES];
-   ctVkCommandBufferManager transferCommands[CT_MAX_INFLIGHT_FRAMES];
-
    VkPipelineCache vkPipelineCache;
 
    VkDescriptorSetLayout vkDescriptorSetLayout;
@@ -226,10 +212,6 @@ public:
    int32_t maxSampledImages;
    int32_t maxStorageImages;
    int32_t maxStorageBuffers;
-
-   int32_t maxGraphicsCommandBuffers;
-   int32_t maxComputeCommandBuffers;
-   int32_t maxTransferCommandBuffers;
 
    int32_t vsync;
 };
