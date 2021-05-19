@@ -69,6 +69,7 @@ public:
 
    ctStringUtf8& FilePathUnify();
    ctStringUtf8& FilePathLocalize();
+   ctStringUtf8& FilePathRemoveTrailingSlash();
 
    uint32_t xxHash32(const int seed) const;
    uint32_t xxHash32() const;

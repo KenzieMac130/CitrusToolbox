@@ -42,13 +42,12 @@ ctStringUtf8::ctStringUtf8(const char* input) {
    Append(input, count);
 }
 
-ctStringUtf8::ctStringUtf8(const wchar_t* input)
-{
-    const wchar_t* next = input;
-    while (*next != 0) {
-        *this += (int)*next;
-        next++;
-    }
+ctStringUtf8::ctStringUtf8(const wchar_t* input) {
+   const wchar_t* next = input;
+   while (*next != 0) {
+      *this += (int)*next;
+      next++;
+   }
 }
 
 const char* ctStringUtf8::CStr() const {
@@ -160,9 +159,7 @@ ctStringUtf8& ctStringUtf8::ToLower() {
 bool ctStringUtf8::isNumber() const {
    if (isEmpty()) { return false; }
    for (int i = 0; i < ByteLength(); i++) {
-      if (!(_data[i] == '.' || _data[i] == '-' || isdigit(_data[i]))) {
-         return false;
-      }
+      if (!(_data[i] == '.' || _data[i] == '-' || isdigit(_data[i]))) { return false; }
    }
    return true;
 }
@@ -184,12 +181,21 @@ ctStringUtf8& ctStringUtf8::FilePathUnify() {
 
 ctStringUtf8& ctStringUtf8::FilePathLocalize() {
    for (int i = 0; i < ByteLength(); i++) {
-#if defined(WIN32) || defined(_WIN32) ||                                       \
-  defined(__WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
       if (_data[i] == '/') { _data[i] = '\\'; }
 #else
       if (_data[i] == '\\') { _data[i] = '/'; }
 #endif
+   }
+   return *this;
+}
+
+ctStringUtf8& ctStringUtf8::FilePathRemoveTrailingSlash() {
+   const size_t length = ByteLength();
+   if (length < 1) { return *this; }
+   if (_data[length - 1] == '/' || _data[length - 1] == '\\') {
+      _data[length - 1] = '\0';
+      _data.RemoveLast();
    }
    return *this;
 }
@@ -238,13 +244,13 @@ bool operator==(const ctStringUtf8& a, const char* b) {
 }
 
 bool operator==(const ctStringUtf8& a, const ctStringUtf8& b) {
-    if (a.isEmpty() && b.isEmpty()) { return true; }
-    if (!a.isEmpty() && !b.isEmpty()) { return utf8cmp(a.CStr(), b.CStr()) == 0; }
-    return false;
+   if (a.isEmpty() && b.isEmpty()) { return true; }
+   if (!a.isEmpty() && !b.isEmpty()) { return utf8cmp(a.CStr(), b.CStr()) == 0; }
+   return false;
 }
 
 bool operator==(const char* a, const ctStringUtf8& b) {
-    if (a == NULL && b.isEmpty()) { return true; }
-    if (a != NULL && !b.isEmpty()) { return utf8cmp(a, b.CStr()) == 0; }
-    return false;
+   if (a == NULL && b.isEmpty()) { return true; }
+   if (a != NULL && !b.isEmpty()) { return utf8cmp(a, b.CStr()) == 0; }
+   return false;
 }
