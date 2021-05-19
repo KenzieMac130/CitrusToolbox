@@ -1,4 +1,3 @@
-#include "VkBackend.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -123,6 +122,7 @@ VkResult ctVkBackend::CreateCompleteImage(ctVkCompleteImage& fullImage,
                                           VkSharingMode sharing,
                                           uint32_t queueFamilyIndexCount,
                                           uint32_t* pQueueFamilyIndices) {
+   ZoneScoped;
    VkImageCreateInfo imageInfo {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
    imageInfo.format = format;
    imageInfo.usage = usage;
@@ -169,6 +169,7 @@ VkResult ctVkBackend::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
                                            VkSharingMode sharing,
                                            uint32_t queueFamilyIndexCount,
                                            uint32_t* pQueueFamilyIndices) {
+   ZoneScoped;
    VkBufferCreateInfo bufferInfo {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
    bufferInfo.usage = usage;
    bufferInfo.size = size;
@@ -184,6 +185,7 @@ VkResult ctVkBackend::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
 }
 
 void ctVkBackend::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
+   ZoneScoped;
    if (fullImage.view == VK_NULL_HANDLE) { return; }
    vkDestroyImageView(vkDevice, fullImage.view, &vkAllocCallback);
    if (fullImage.image == VK_NULL_HANDLE || fullImage.alloc == VK_NULL_HANDLE) { return; }
@@ -191,6 +193,7 @@ void ctVkBackend::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
 }
 
 void ctVkBackend::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
+   ZoneScoped;
    if (fullBuffer.buffer == VK_NULL_HANDLE || fullBuffer.alloc == VK_NULL_HANDLE) {
       return;
    }
@@ -198,6 +201,7 @@ void ctVkBackend::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
 }
 
 VkResult ctVkBackend::WaitForFrameAvailible() {
+   ZoneScoped;
    VkResult result = vkWaitForFences(
      vkDevice, 1, &frameAvailibleFences[currentFrame], VK_TRUE, UINT64_MAX);
    if (result != VK_SUCCESS) { return result; }
@@ -330,6 +334,7 @@ void* vAllocFunction(void* pUserData,
                      size_t size,
                      size_t alignment,
                      VkSystemAllocationScope allocationScope) {
+   ZoneScoped;
    return ctAlignedMalloc(size, alignment);
 }
 
@@ -338,10 +343,12 @@ void* vReallocFunction(void* pUserData,
                        size_t size,
                        size_t alignment,
                        VkSystemAllocationScope allocationScope) {
+   ZoneScoped;
    return ctAlignedRealloc(pOriginal, size, alignment);
 }
 
 void vFreeFunction(void* pUserData, void* pMemory) {
+   ZoneScoped;
    ctAlignedFree(pMemory);
 }
 
@@ -959,6 +966,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
                                              VkAccessFlags srcAccess,
                                              uint32_t srcQueueFamily,
                                              VkImageBlit blit) {
+   ZoneScoped;
    uint32_t imageIndex = 0;
    VkResult result = vkAcquireNextImageKHR(pBackend->vkDevice,
                                            swapchain,

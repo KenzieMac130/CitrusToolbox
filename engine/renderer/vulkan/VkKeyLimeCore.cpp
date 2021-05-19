@@ -240,6 +240,7 @@ ctResults ctVkKeyLimeCore::Startup() {
 }
 
 ctResults ctVkKeyLimeCore::Shutdown() {
+   ZoneScoped;
    vkDeviceWaitIdle(vkBackend.vkDevice);
    vkDestroyCommandPool(vkBackend.vkDevice, gfxCommandPool, &vkBackend.vkAllocCallback);
    vkDestroyCommandPool(
@@ -258,6 +259,7 @@ ctResults ctVkKeyLimeCore::Shutdown() {
 }
 
 ctResults ctVkKeyLimeCore::Render() {
+   ZoneScoped;
    vkBackend.WaitForFrameAvailible();
    vkImgui.BuildDrawLists();
 

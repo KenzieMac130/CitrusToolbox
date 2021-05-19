@@ -71,6 +71,7 @@ ctResults ctHotReloadDetection::RegisterAssetCategory(ctHotReloadCategory* pCate
 }
 
 void ctHotReloadDetection::_PushPathUpdate(const char* path) {
+   ZoneScoped;
    ctDebugLog("Hot Reload: Modified %s", path);
    for (int i = 0; i < hotReloads.Count(); i++) {
       hotReloads[i]->_AddFileUpdate(path);
@@ -78,11 +79,13 @@ void ctHotReloadDetection::_PushPathUpdate(const char* path) {
 }
 
 void ctHotReloadCategory::RegisterPath(const char* relativePath) {
+   ZoneScoped;
    uint64_t hash = XXH64(relativePath, strlen(relativePath), 0);
    watchedPathHashes.Append(hash);
 }
 
 void ctHotReloadCategory::UnregisterPath(const char* relativePath) {
+   ZoneScoped;
    uint64_t hash = XXH64(relativePath, strlen(relativePath), 0);
    watchedPathHashes.Remove(hash);
 }
@@ -92,6 +95,7 @@ bool ctHotReloadCategory::isContentUpdated() {
 }
 
 void ctHotReloadCategory::BeginReadingChanges() {
+   ZoneScoped;
    SDL_LockMutex(_pOwner->_callbackLock);
 }
 
@@ -100,6 +104,7 @@ const ctDynamicArray<ctStringUtf8>& ctHotReloadCategory::GetUpdatedPaths() const
 }
 
 void ctHotReloadCategory::EndReadingChanges() {
+   ZoneScoped;
    updatedPaths.Clear();
    SDL_UnlockMutex(_pOwner->_callbackLock);
 }
@@ -110,6 +115,7 @@ void ctHotReloadCategory::ClearChanges() {
 }
 
 void ctHotReloadCategory::_AddFileUpdate(const char* path) {
+   ZoneScoped;
    uint64_t hash = XXH64(path, strlen(path), 0);
    if (watchedPathHashes.Exists(hash)) { updatedPaths.Append(path); }
 }
