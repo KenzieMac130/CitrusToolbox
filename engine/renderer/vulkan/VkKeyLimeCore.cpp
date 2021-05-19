@@ -317,6 +317,8 @@ ctResults ctVkKeyLimeCore::Render() {
                                 1};
       vkBackend.mainScreenResources.BlitAndPresent(
         &vkBackend,
+        vkBackend.queueFamilyIndices.graphicsIdx,
+        vkBackend.graphicsQueue,
         1,
         &renderFinished[vkBackend.currentFrame],
         compositeBuffer.image,

@@ -81,6 +81,8 @@ public:
    ctResults DestroyPresentResources(class ctVkBackend* pBackend);
 
    VkResult BlitAndPresent(class ctVkBackend* pBackend,
+                           uint32_t blitQueueIdx,
+                           VkQueue blitQueue,
                            uint32_t semaphoreCount,
                            VkSemaphore* pWaitSemaphores,
                            VkImage srcImage,

@@ -958,6 +958,8 @@ ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
 }
 
 VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
+                                             uint32_t blitQueueIdx,
+                                             VkQueue blitQueue,
                                              uint32_t semaphoreCount,
                                              VkSemaphore* pWaitSemaphores,
                                              VkImage srcImage,
@@ -998,7 +1000,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       VkImageMemoryBarrier srcToTransfer {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
       srcToTransfer.image = srcImage;
       srcToTransfer.srcQueueFamilyIndex = srcQueueFamily;
-      srcToTransfer.dstQueueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+      srcToTransfer.dstQueueFamilyIndex = blitQueueIdx;
       srcToTransfer.oldLayout = srcLayout;
       srcToTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
       srcToTransfer.srcAccessMask = srcAccess;
@@ -1022,7 +1024,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       VkImageMemoryBarrier dstToTransfer {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
       dstToTransfer.image = swapImages[imageIndex];
       dstToTransfer.srcQueueFamilyIndex = pBackend->queueFamilyIndices.presentIdx;
-      dstToTransfer.dstQueueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+      dstToTransfer.dstQueueFamilyIndex = blitQueueIdx;
       dstToTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; /* Don't care about previous */
       dstToTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       dstToTransfer.srcAccessMask = 0;
@@ -1052,7 +1054,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
                      VK_FILTER_LINEAR);
       VkImageMemoryBarrier dstToPresent {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
       dstToPresent.image = swapImages[imageIndex];
-      dstToPresent.srcQueueFamilyIndex = pBackend->queueFamilyIndices.transferIdx;
+      dstToPresent.srcQueueFamilyIndex = blitQueueIdx;
       dstToPresent.dstQueueFamilyIndex = pBackend->queueFamilyIndices.presentIdx;
       dstToPresent.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       dstToPresent.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -1081,7 +1083,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       submitInfo.waitSemaphoreCount = semaphoreCount;
       submitInfo.pWaitSemaphores = pWaitSemaphores;
       submitInfo.pWaitDstStageMask = &waitForStage;
-      vkQueueSubmit(pBackend->transferQueue,
+      vkQueueSubmit(blitQueue,
                     1,
                     &submitInfo,
                     pBackend->frameAvailibleFences[pBackend->currentFrame]);
