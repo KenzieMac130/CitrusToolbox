@@ -26,6 +26,7 @@
 #include "OSEvents.hpp"
 #include "Translation.hpp"
 #include "ImguiIntegration.hpp"
+#include "HotReloadDetection.hpp"
 
 #include "renderer/KeyLime.hpp"
 
@@ -49,6 +50,7 @@ public:
     ctTranslation* Translation;
     ctFileSystem* FileSystem;
     ctSettings* Settings;
+    ctHotReloadDetection* HotReload;
     ctDebugSystem* Debug;
     ctWindowManager* WindowManager;
     ctImguiIntegration* ImguiIntegration;

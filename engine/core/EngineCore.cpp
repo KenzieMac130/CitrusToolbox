@@ -27,6 +27,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
    Settings = new ctSettings();
    Debug = new ctDebugSystem(32, true);
+   HotReload = new ctHotReloadDetection();
    Translation = new ctTranslation(true);
    JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
@@ -38,6 +39,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    Settings->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
    Debug->ModuleStartup(this);
+   HotReload->ModuleStartup(this);
    FileSystem->LogPaths();
    Translation->ModuleStartup(this);
    JobSystem->ModuleStartup(this);
@@ -72,6 +74,7 @@ bool ctEngineCore::isExitRequested() {
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
+   //HotReload->CheckIn();
    App->OnTick(deltatime);
    App->OnUIUpdate();
    /*Update modules*/
@@ -96,6 +99,7 @@ ctResults ctEngineCore::Shutdown() {
    OSEventManager->ModuleShutdown();
    JobSystem->ModuleShutdown();
    Translation->ModuleShutdown();
+   HotReload->ModuleShutdown();
    Debug->ModuleShutdown();
    Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();

@@ -45,8 +45,8 @@ ctResults ctVkKeyLimeCore::Startup() {
    vkBackend.maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
    vkBackend.maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
 
-   internalResolutionWidth = 1920;
-   internalResolutionHeight = 1080;
+   internalResolutionWidth = 2560;
+   internalResolutionHeight = 1440;
 
    ctSettingsSection* vkSettings = Engine->Settings->CreateSection("VulkanBackend", 32);
    vkSettings->BindInteger(&vkBackend.preferredDevice,
@@ -88,6 +88,9 @@ ctResults ctVkKeyLimeCore::Startup() {
 
    ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
+
+   ShaderHotReload.RegisterPath("core/shaders");
+   Engine->HotReload->RegisterAssetCategory(&ShaderHotReload);
 
    vkBackend.ModuleStartup(Engine);
    /* Commands and Sync */
@@ -257,6 +260,11 @@ ctResults ctVkKeyLimeCore::Shutdown() {
 ctResults ctVkKeyLimeCore::Render() {
    vkBackend.WaitForFrameAvailible();
    vkImgui.BuildDrawLists();
+
+   if (ShaderHotReload.isContentUpdated()) {
+      ctDebugLog("Shaders Updated...");
+      ShaderHotReload.ClearChanges();
+   }
 
    VkCommandBuffer gfxCommands = gfxCommandBuffers[vkBackend.currentFrame];
    VkCommandBufferBeginInfo gfxBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};

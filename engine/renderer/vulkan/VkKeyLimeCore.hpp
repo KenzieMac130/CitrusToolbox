@@ -38,6 +38,8 @@ public:
     ctVkBackend vkBackend;
     ctVkImgui vkImgui;
 
+    ctHotReloadCategory ShaderHotReload;
+
     VkCommandPool gfxCommandPool;
     VkCommandPool transferCommandPool;
     VkCommandBuffer gfxCommandBuffers[CT_MAX_INFLIGHT_FRAMES];

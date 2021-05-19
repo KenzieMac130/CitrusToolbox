@@ -145,6 +145,7 @@ set(ENGINE_SOURCE_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/HotReloadDetection.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ImguiIntegration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
@@ -159,6 +160,7 @@ set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/HotReloadDetection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ImguiIntegration.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
