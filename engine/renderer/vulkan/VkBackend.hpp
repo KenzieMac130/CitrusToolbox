@@ -30,7 +30,7 @@
 #define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \
       const VkResult _tmpvresult = _func;                                                \
-      if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, #_msg); }          \
+      if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, _msg); }          \
    }
 
 struct ctVkQueueFamilyIndices {
@@ -136,6 +136,7 @@ public:
    VkPhysicalDevice
    PickBestDevice(VkPhysicalDevice* pGpus, uint32_t count, VkSurfaceKHR surface);
    ctVkQueueFamilyIndices FindQueueFamilyIndices(VkPhysicalDevice gpu);
+   bool DeviceHasRequiredExtensions(VkPhysicalDevice gpu);
 
    VkResult CreateCompleteImage(ctVkCompleteImage& fullImage,
                                 VkFormat format,
@@ -175,6 +176,7 @@ public:
    VkDebugReportCallbackEXT vkDebugCallback;
    ctDynamicArray<const char*> validationLayers;
    ctDynamicArray<const char*> instanceExtensions;
+   ctDynamicArray<const char*> deviceExtensions;
    VkApplicationInfo vkAppInfo;
    VkInstance vkInstance;
    VkPhysicalDevice vkPhysicalDevice;

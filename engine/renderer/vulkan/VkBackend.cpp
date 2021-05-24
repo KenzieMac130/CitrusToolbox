@@ -27,9 +27,6 @@
 
 #define PIPELINE_CACHE_FILE_PATH "VK_PIPELINE_CACHE"
 
-const char* deviceReqExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                                     "VK_EXT_descriptor_indexing"};
-
 /* ------------- Debug Callback ------------- */
 
 VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
@@ -40,7 +37,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
                                               const char* pLayerPrefix,
                                               const char* pMsg,
                                               void* pUserData) {
-   ctDebugError("VK Validation Layer: [%s] Code %u : %s", pLayerPrefix, msgCode, pMsg);
+   if ((flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) != 0) {
+      ctDebugLog("VK Information: %s", pLayerPrefix, pMsg);
+   } else {
+      ctDebugError("VK Validation Layer: [%s] Code %u : %s", pLayerPrefix, msgCode, pMsg);
+   }
    return VK_FALSE;
 }
 
@@ -228,7 +229,7 @@ void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface
    }
 }
 
-bool vDeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
+bool ctVkBackend::DeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
    uint32_t extCount;
    vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, NULL);
    VkExtensionProperties* availible =
@@ -237,10 +238,10 @@ bool vDeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
 
    bool foundAll = true;
    bool foundThis;
-   for (uint32_t i = 0; i < ctCStaticArrayLen(deviceReqExtensions); i++) {
+   for (uint32_t i = 0; i < deviceExtensions.Count(); i++) {
       foundThis = false;
       for (uint32_t ii = 0; ii < extCount; ii++) {
-         if (strcmp(deviceReqExtensions[i], availible[ii].extensionName) == 0) {
+         if (strcmp(deviceExtensions[i], availible[ii].extensionName) == 0) {
             foundThis = true;
             break;
          }
@@ -304,7 +305,7 @@ VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus,
          continue; /*Device doesn't meet the minimum features spec*/
       if (!vIsQueueFamilyComplete(FindQueueFamilyIndices(pGpus[i])))
          continue; /*Queue families are incomplete*/
-      if (!vDeviceHasRequiredExtensions(pGpus[i]))
+      if (!DeviceHasRequiredExtensions(pGpus[i]))
          continue; /*Doesn't have the required extensions*/
       if (!vDeviceHasSwapChainSupport(pGpus[i], surface))
          continue; /*Doesn't have swap chain support*/
@@ -390,19 +391,30 @@ ctResults ctVkBackend::Startup() {
       }
 
       unsigned int sdlExtCount;
-      unsigned int extraExtCount = 1;
       if (!SDL_Vulkan_GetInstanceExtensions(
             Engine->WindowManager->mainWindow.pSDLWindow, &sdlExtCount, NULL)) {
          ctFatalError(-1,
                       CT_NC("SDL_Vulkan_GetInstanceExtensions() Failed to get "
                             "instance extensions."));
       }
-      instanceExtensions.Resize(sdlExtCount + extraExtCount);
-      instanceExtensions[0] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
-      SDL_Vulkan_GetInstanceExtensions(
-        NULL, &sdlExtCount, &instanceExtensions[extraExtCount]);
-      for (uint32_t i = 0; i < sdlExtCount + extraExtCount; i++) {
-         ctDebugLog("VK Extension: \"%s\" found", instanceExtensions[i]);
+      instanceExtensions.Resize(sdlExtCount);
+      SDL_Vulkan_GetInstanceExtensions(NULL, &sdlExtCount, instanceExtensions.Data());
+
+      if (validationEnabled) {
+         instanceExtensions.Append(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+      }
+
+      deviceExtensions.Append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+      deviceExtensions.Append("VK_EXT_descriptor_indexing");
+      if (validationEnabled) {
+          deviceExtensions.Append(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
+      }
+
+      for (uint32_t i = 0; i < instanceExtensions.Count(); i++) {
+         ctDebugLog("VK Instance Extension Requested: \"%s\"", instanceExtensions[i]);
+      }
+      for (uint32_t i = 0; i < deviceExtensions.Count(); i++) {
+          ctDebugLog("VK Device Extension Requested: \"%s\"", deviceExtensions[i]);
       }
 
       VkInstanceCreateInfo instanceInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
@@ -472,7 +484,7 @@ ctResults ctVkBackend::Startup() {
          vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &deviceFeatures2);
 
          if (!vDeviceHasRequiredFeatures(deviceFeatures, descriptorIndexingFeatures) ||
-             !vDeviceHasRequiredExtensions(vkPhysicalDevice) ||
+             !DeviceHasRequiredExtensions(vkPhysicalDevice) ||
              !vDeviceHasSwapChainSupport(vkPhysicalDevice, mainScreenResources.surface)) {
             ctFatalError(-1, CT_NC("Rendering device does not meet requirements."));
          }
@@ -571,8 +583,8 @@ ctResults ctVkBackend::Startup() {
       indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
       deviceInfo.pNext = &indexingFeatures;
 
-      deviceInfo.enabledExtensionCount = ctCStaticArrayLen(deviceReqExtensions);
-      deviceInfo.ppEnabledExtensionNames = deviceReqExtensions;
+      deviceInfo.enabledExtensionCount = deviceExtensions.Count();
+      deviceInfo.ppEnabledExtensionNames = deviceExtensions.Data();
       ctDebugLog("Creating Device...");
       CT_VK_CHECK(
         vkCreateDevice(vkPhysicalDevice, &deviceInfo, &vkAllocCallback, &vkDevice),

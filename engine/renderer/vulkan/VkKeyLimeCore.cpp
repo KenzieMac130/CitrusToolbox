@@ -89,7 +89,8 @@ ctResults ctVkKeyLimeCore::Startup() {
    ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
-   ShaderHotReload.RegisterPath("core/shaders");
+   ShaderHotReload.RegisterPath("core/shaders/im3d_vert.spv");
+   ShaderHotReload.RegisterPath("core/shaders/im3d_frag.spv");
    Engine->HotReload->RegisterAssetCategory(&ShaderHotReload);
 
    vkBackend.ModuleStartup(Engine);
@@ -261,12 +262,15 @@ ctResults ctVkKeyLimeCore::Shutdown() {
 ctResults ctVkKeyLimeCore::Render() {
    ZoneScoped;
    vkBackend.WaitForFrameAvailible();
-   vkImgui.BuildDrawLists();
 
+   /* Check if shaders have been updated */
    if (ShaderHotReload.isContentUpdated()) {
-      ctDebugLog("Shaders Updated...");
-      ShaderHotReload.ClearChanges();
+       ctDebugLog("Shaders Updated...");
+       ShaderHotReload.ClearChanges();
    }
+
+   /* Build Debug Internals */
+   vkImgui.BuildDrawLists();
 
    VkCommandBuffer gfxCommands = gfxCommandBuffers[vkBackend.currentFrame];
    VkCommandBufferBeginInfo gfxBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};

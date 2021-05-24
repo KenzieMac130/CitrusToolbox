@@ -28,9 +28,11 @@ static void watch_callback(dmon_watch_id watch_id,
                            const char* oldfilepath,
                            void* user) {
    ctHotReloadDetection* pDetector = (ctHotReloadDetection*)user;
-   SDL_LockMutex(pDetector->_callbackLock);
-   pDetector->_PushPathUpdate(filepath);
-   SDL_UnlockMutex(pDetector->_callbackLock);
+   if (action == DMON_ACTION_MODIFY) {
+       SDL_LockMutex(pDetector->_callbackLock);
+       pDetector->_PushPathUpdate(filepath);
+       SDL_UnlockMutex(pDetector->_callbackLock);
+   }
 }
 
 ctResults ctHotReloadDetection::Startup() {

@@ -19,6 +19,7 @@
 #include "utilities/Common.h"
 #include "VkBackend.hpp"
 #include "VkImgui.hpp"
+#include "VkIm3d.hpp"
 
 class ctVkKeyLimeCore : public ctModuleBase {
 public:
@@ -37,6 +38,7 @@ public:
 
     ctVkBackend vkBackend;
     ctVkImgui vkImgui;
+    ctVkIm3d vkIm3d;
 
     ctHotReloadCategory ShaderHotReload;
 
