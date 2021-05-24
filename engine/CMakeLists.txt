@@ -167,12 +167,23 @@ set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.hpp
 )
 
+# ---------- Renderer Frontend ---------- 
 set(ENGINE_SOURCE_FILES_RENDERER)
 
 set(ENGINE_HEADER_FILES_RENDERER
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
+)
+
+# ---------- Scene Engine ---------- 
+set(ENGINE_SOURCE_FILES_SCENE
+	#${CMAKE_CURRENT_SOURCE_DIR}/honeybell/HoneybellScene.cpp
+)
+
+set(ENGINE_HEADER_FILES_SCENE
+	#${CMAKE_CURRENT_SOURCE_DIR}/honeybell/HoneybellScene.hpp
 )
 
 # ---------- Third Party Implementation ---------- 
@@ -199,69 +210,28 @@ set(ENGINE_HEADER_FILES_MIDDLEWARE
 )
 
 # ---------- Graphics Backend Files ----------
-set(ENGINE_SOURCE_FILES_VULKAN
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.cpp)
-
-set(ENGINE_HEADER_FILES_VULKAN
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.hpp)
-
-# ---------- Compile Shaders ----------
-file(MAKE_DIRECTORY ${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk)
-
-set(SHADER_DEPENDENCIES
-)
-
-set(SHADER_INPUTS
-    #${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/XXX.glsl
-    #${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/test.glsl
-)
-
-set(SHADER_OUTPUTS
-    #${CITRUS_CODEGEN_DIR}/shaders/vk/XXX.spv
-    #${CITRUS_CODEGEN_DIR}/shaders/vk/test.spv
-)
-
-set(SHADER_HEADERS
-    #${CITRUS_ASSET_BUILD_DIR}/core/shaders/vk/XXX.spv.h
-    #${CITRUS_CODEGEN_DIR}/shaders/vk/test.spv.h
-)
-
-set(SHADER_OPTIONS
-    #"-fshader-stage"
-)
-
-# Add build command for each file
-foreach(SHADER_IN SHADER_OUT SHADER_OPTIONS SHADER_HEADER
-IN ZIP_LISTS 
-SHADER_INPUTS
-SHADER_OUTPUTS
-SHADER_OPTIONS
-SHADER_HEADERS)
-add_custom_command(OUTPUT ${SHADER_OUTPUTS}
-                   COMMAND
-                   ${Vulkan_GLSLC_EXECUTABLE} 
-                   ${SHADER_IN} 
-                   -o ${SHADER_OUT} 
-                   ${SHADER_OPTIONS}
-                   DEPENDS
-                   ${SHADER_IN} 
-                   ${SHADER_DEPENDENCIES} 
-				   ${LIBRARY_INSTALL_DEPENDENCY})
-endforeach()
+if(CITRUS_GFX_VULKAN)
+    set(ENGINE_SOURCE_FILES_GFX_BACKEND
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.cpp)
+    
+    set(ENGINE_HEADER_FILES_GFX_BACKEND
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.hpp)
+endif()
 
 set(ENGINE_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
     ${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
     ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
     ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
-    ${ENGINE_SOURCE_FILES_VULKAN} ${ENGINE_HEADER_FILES_VULKAN}
+	${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
+    ${ENGINE_SOURCE_FILES_GFX_BACKEND} ${ENGINE_HEADER_FILES_GFX_BACKEND}
 	${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
     ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS})
 
@@ -269,7 +239,6 @@ set(ENGINE_FILES
 add_library(engine 
     ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
     ${ENGINE_FILES}
-    ${SHADER_DEPENDENCIES} ${SHADER_INPUTS} ${SHADER_HEADERS}
     ${CITRUS_REFLECT_OUTPUTS}
     ${TRACY_FILES}
     ${THIRD_PARTY_IMPL_FILES}
