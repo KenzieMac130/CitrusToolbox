@@ -33,6 +33,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
    ImguiIntegration = new ctImguiIntegration();
+   Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
 
    /* Startup Modules */
@@ -46,6 +47,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    OSEventManager->ModuleStartup(this);
    WindowManager->ModuleStartup(this);
    ImguiIntegration->ModuleStartup(this);
+   Im3dIntegration->ModuleStartup(this);
    Renderer->ModuleStartup(this);
    ctDebugLog("Citrus Toolbox has Started!");
 
@@ -80,6 +82,7 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    /*Update modules*/
    OSEventManager->PollOSEvents();
    Renderer->RenderFrame();
+   Im3dIntegration->NextFrame();
    ImguiIntegration->NextFrame();
    FrameMark;
    return CT_SUCCESS;
@@ -94,6 +97,7 @@ ctResults ctEngineCore::Shutdown() {
    /*Shutdown modules*/
    ctDebugLog("Citrus Toolbox is Shutting Down...");
    Renderer->ModuleShutdown();
+   Im3dIntegration->ModuleShutdown();
    ImguiIntegration->ModuleShutdown();
    WindowManager->ModuleShutdown();
    OSEventManager->ModuleShutdown();

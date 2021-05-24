@@ -146,7 +146,6 @@ set(ENGINE_SOURCE_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/HotReloadDetection.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/ImguiIntegration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
@@ -161,7 +160,6 @@ set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/HotReloadDetection.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/ImguiIntegration.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.hpp
@@ -177,16 +175,41 @@ set(ENGINE_HEADER_FILES_RENDERER
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
 )
 
+# ---------- Third Party Implementation ---------- 
+set(THIRD_PARTY_IMPL_FILES
+   ${THIRD_PARTY_DIRECTORY}/imgui/imgui_demo.cpp
+   ${THIRD_PARTY_DIRECTORY}/imgui/imgui_draw.cpp
+   ${THIRD_PARTY_DIRECTORY}/imgui/imgui_tables.cpp
+   ${THIRD_PARTY_DIRECTORY}/imgui/imgui_widgets.cpp
+   ${THIRD_PARTY_DIRECTORY}/imgui/imgui.cpp
+   ${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_sdl.cpp
+   ${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp
+   ${THIRD_PARTY_DIRECTORY}/im3d/im3d.cpp
+)
+
+# ---------- Middleware Integration ---------- 
+set(ENGINE_SOURCE_FILES_MIDDLEWARE
+   ${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.cpp
+)
+
+set(ENGINE_HEADER_FILES_MIDDLEWARE
+   ${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.hpp
+)
+
 # ---------- Graphics Backend Files ----------
 set(ENGINE_SOURCE_FILES_VULKAN
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.cpp)
 
 set(ENGINE_HEADER_FILES_VULKAN
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.hpp)
 
 # ---------- Compile Shaders ----------
@@ -239,6 +262,7 @@ set(ENGINE_FILES
     ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
     ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
     ${ENGINE_SOURCE_FILES_VULKAN} ${ENGINE_HEADER_FILES_VULKAN}
+	${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
     ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS})
 
 # ---------- Create Engine Library ----------
@@ -248,7 +272,7 @@ add_library(engine
     ${SHADER_DEPENDENCIES} ${SHADER_INPUTS} ${SHADER_HEADERS}
     ${CITRUS_REFLECT_OUTPUTS}
     ${TRACY_FILES}
-    ${IMGUI_FILES}
+    ${THIRD_PARTY_IMPL_FILES}
     ${NATIVE_SOURCE_FILES})
 
 # ---------- Setup Folders ----------

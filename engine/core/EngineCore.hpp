@@ -25,8 +25,10 @@
 #include "WindowManager.hpp"
 #include "OSEvents.hpp"
 #include "Translation.hpp"
-#include "ImguiIntegration.hpp"
 #include "HotReloadDetection.hpp"
+
+#include "../middleware/ImguiIntegration.hpp"
+#include "../middleware/Im3dIntegration.hpp"
 
 #include "renderer/KeyLime.hpp"
 
@@ -54,6 +56,7 @@ public:
     ctDebugSystem* Debug;
     ctWindowManager* WindowManager;
     ctImguiIntegration* ImguiIntegration;
+    ctIm3dIntegration* Im3dIntegration;
     ctKeyLimeRenderer* Renderer;
 private:
     bool _isRunning = true;

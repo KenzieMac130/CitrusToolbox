@@ -72,6 +72,7 @@ else()
    message(FATAL_ERROR "Currently unsupported platform!")
 endif()
 set(TOOLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools)
+set(THIRD_PARTY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
 # ---------- Find ISPC ----------
 set(ISPC_COMPILER_PATH ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc)
@@ -107,19 +108,9 @@ else()
    set(CITRUS_TRACY 0)
 endif()
 
-# ---------- Dear ImGUI ---------- 
-set(IMGUI_FILES 
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_demo.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_tables.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui_widgets.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_sdl.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_vulkan.cpp
-)
-
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools)

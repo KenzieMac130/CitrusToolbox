@@ -17,7 +17,7 @@
 #include "ImguiIntegration.hpp"
 
 #include "imgui/backends/imgui_impl_sdl.h"
-#include "EngineCore.hpp"
+#include "../core/EngineCore.hpp"
 
 void processImguiEvent(SDL_Event* event, void* pData) {
    ctImguiIntegration* pIntegration = (ctImguiIntegration*)pData;

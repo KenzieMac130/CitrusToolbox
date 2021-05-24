@@ -14,17 +14,5 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include "utilities/Common.h"
-#include "ModuleBase.hpp"
-
-#include "imgui/imgui.h"
-
-class ctImguiIntegration : public ctModuleBase {
-public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
-
-    ctResults NextFrame();
-};
+#include "VkBackend.hpp"
+#include "VkIm3d.hpp"

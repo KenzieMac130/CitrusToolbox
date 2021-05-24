@@ -1,4 +1,3 @@
-#include "VkKeyLimeCore.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,6 +14,7 @@
    limitations under the License.
 */
 
+#include "VkBackend.hpp"
 #include "VkImgui.hpp"
 
 #include "imgui/backends/imgui_impl_vulkan.h"
