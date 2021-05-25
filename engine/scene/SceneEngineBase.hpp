@@ -17,3 +17,23 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "core/ModuleBase.hpp"
+
+struct ctCameraInfo {
+   ctVec3 position;
+   ctQuat rotation;
+   float fov;
+   ctVec3 cursorPosition;
+   ctVec3 cursorDirection;
+};
+
+class CT_API ctSceneEngineBase : public ctModuleBase {
+public:
+   /* Called at the end of a frame */
+   virtual ctResults NextFrame() = 0;
+
+   /* Get ctCameraInfo for a camera (NULL must return the "main camera")*/
+   virtual ctCameraInfo GetCameraInfo(const char* cameraId) = 0;
+   /* Get ctCameraInfo from the previous frame (NULL must return the "main camera")*/
+   virtual ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) = 0;
+};

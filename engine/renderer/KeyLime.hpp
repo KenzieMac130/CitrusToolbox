@@ -115,7 +115,7 @@ struct ctKeyLimeRenderableDesc {
    ctKeyLimeMaterialDesc* pMatDesc;
 };
 
-class ctKeyLimeRenderer : public ctModuleBase {
+class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;

@@ -25,7 +25,9 @@
 
 class ctStringUtf8;
 
-class ctJSONWriter {
+//Todo: Cleanup and inline
+
+class CT_API ctJSONWriter {
 public:
    ctJSONWriter();
    void SetStringPtr(ctStringUtf8* pString);
@@ -58,7 +60,7 @@ private:
    ctStaticArray<_json_stack, 32> _jsonStack;
 };
 
-class ctJSONReader {
+class CT_API ctJSONReader {
 public:
    ctResults BuildJsonForPtr(const char* pData, size_t length);
 

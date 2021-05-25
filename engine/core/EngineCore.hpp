@@ -36,7 +36,7 @@
 #include "renderer/KeyLime.hpp"
 #include "scene/SceneEngineBase.hpp"
 
-class ctEngineCore {
+class CT_API ctEngineCore {
 public:
    /* Initialize the engine and all subsystems */
    ctResults Ignite(class ctApplication* pApp);

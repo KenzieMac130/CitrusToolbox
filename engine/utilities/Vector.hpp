@@ -18,7 +18,17 @@
 
 #include "Common.h"
 
-struct ctVec2 {
+/* Hard-coded coordinate spaces (based on glTF) */
+// clang-format off
+#define CT_UP        {  0.0f,  1.0f,  0.0f  } 
+#define CT_DOWN      {  0.0f, -1.0f,  0.0f  }
+#define CT_FORWARD   {  0.0f,  0.0f,  1.0f  }
+#define CT_BACK      {  0.0f,  0.0f, -1.0f  } 
+#define CT_RIGHT     {  1.0f,  0.0f,  0.0f  }
+#define CT_LEFT      { -1.0f,  0.0f,  0.0f  }
+// clang-format on
+
+struct CT_API ctVec2 {
    union {
       struct {
          float x;
@@ -28,7 +38,7 @@ struct ctVec2 {
    };
 };
 
-struct ctVec3 {
+struct CT_API ctVec3 {
    union {
       struct {
          float x;
@@ -39,14 +49,16 @@ struct ctVec3 {
    };
 };
 
-struct ctVec4 {
-    union {
-        struct {
-            float x;
-            float y;
-            float z;
-            float w;
-        };
-        float data[4];
-    };
+struct CT_API ctVec4 {
+   union {
+      struct {
+         float x;
+         float y;
+         float z;
+         float w;
+      };
+      float data[4];
+   };
 };
+
+typedef ctVec4 ctQuat;

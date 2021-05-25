@@ -32,7 +32,7 @@ enum ctTranslationCatagory {
 /* Get a translated string
 WARNING! NOT GUARANTEED TO BE LONG TERM STORAGE! ONLY TRUST FOR ONE FRAME!
 String maps can change when language is set. DO NOT CACHE POINTER! */
-const char* ctGetLocalString(ctTranslationCatagory category,
+CT_API const char* ctGetLocalString(ctTranslationCatagory category,
                              const char* nativeText);
 
 /* Translate core string */
@@ -48,7 +48,7 @@ const char* ctGetLocalString(ctTranslationCatagory category,
 /* Translate string from bank 2 (tip: make the native string a generic identifier) */
 #define CT_NB2(_text_) ctGetLocalString(CT_TRANSLATION_CATAGORY_BANK2, _text_)
 
-class ctTranslation : public ctModuleBase {
+class CT_API ctTranslation : public ctModuleBase {
 public:
    ctTranslation(bool shared);
 

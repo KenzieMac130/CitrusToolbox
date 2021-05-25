@@ -21,7 +21,7 @@
 
 #include "ModuleBase.hpp"
 
-class ctDebugSystem : public ctModuleBase {
+class CT_API ctDebugSystem : public ctModuleBase {
 public:
    ctDebugSystem(uint32_t flushafter, bool shared_log);
    ~ctDebugSystem();

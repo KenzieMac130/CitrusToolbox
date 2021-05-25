@@ -32,7 +32,7 @@ enum ctFileOpenMode {
    CT_FILE_OPEN_WRITE_TEXT = 3
 };
 
-class ctFile {
+class CT_API ctFile {
 public:
    ctFile();
    void FromCStream(FILE* fp);
@@ -60,7 +60,7 @@ private:
    FILE* _fp;
 };
 
-class ctFileSystem : public ctModuleBase {
+class CT_API ctFileSystem : public ctModuleBase {
 public:
    ctFileSystem(const ctStringUtf8& appName,
                 const ctStringUtf8& organizationName);

@@ -24,7 +24,7 @@
 #define CT_SETTINGS_BOUNDS_BOOL 0,1
 #define CT_SETTINGS_BOUNDS_UINT 0,UINT32_MAX
 
-class ctSettingsSection {
+class CT_API ctSettingsSection {
 public:
    ctSettingsSection();
    ctSettingsSection(int max, ctTranslationCatagory translationCatagory);
@@ -101,7 +101,7 @@ private:
    ctHashTable<_setting, uint32_t> _settings;
 };
 
-class ctSettings : public ctModuleBase {
+class CT_API ctSettings : public ctModuleBase {
 public:
    ctSettingsSection* CreateSection(
      const char* name,

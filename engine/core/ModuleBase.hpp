@@ -18,7 +18,7 @@
 
 #include "utilities/Common.h"
 
-class ctModuleBase {
+class CT_API ctModuleBase {
 public:
     virtual ctResults Startup() = 0;
     virtual ctResults Shutdown() = 0;

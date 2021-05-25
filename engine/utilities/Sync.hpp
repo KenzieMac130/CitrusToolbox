@@ -20,9 +20,9 @@
 
 typedef SDL_mutex* ctMutex;
 
-ctMutex ctMutexCreate();
-void ctMutexDestroy(ctMutex mutex);
+CT_API ctMutex ctMutexCreate();
+CT_API void ctMutexDestroy(ctMutex mutex);
 
-bool ctMutexLock(ctMutex mutex);
-bool ctMutexTryLock(ctMutex mutex);
-bool ctMutexUnlock(ctMutex mutex);
+CT_API bool ctMutexLock(ctMutex mutex);
+CT_API bool ctMutexTryLock(ctMutex mutex);
+CT_API bool ctMutexUnlock(ctMutex mutex);

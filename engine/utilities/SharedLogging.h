@@ -22,10 +22,10 @@
 extern "C" {
 #endif
 
-void _ctDebugLogSetCallback(void (*callback)(int level,
+CT_API void _ctDebugLogSetCallback(void (*callback)(int level,
                                              const char* format,
                                              va_list args));
-void _ctDebugLogCallLogger(int level, const char* format, ...);
+CT_API void _ctDebugLogCallLogger(int level, const char* format, ...);
 
 /**
  * @brief debug logging

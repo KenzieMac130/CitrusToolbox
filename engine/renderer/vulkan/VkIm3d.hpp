@@ -19,7 +19,7 @@
 #include "utilities/Common.h"
 #include "VkBackend.hpp"
 
-class ctVkIm3d {
+class CT_API ctVkIm3d {
 public:
    ctResults Startup(ctVkBackend* pBackend,
                      VkCommandBuffer textureUploadCmd,

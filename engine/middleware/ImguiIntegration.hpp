@@ -21,7 +21,7 @@
 
 #include "imgui/imgui.h"
 
-class ctImguiIntegration : public ctModuleBase {
+class CT_API ctImguiIntegration : public ctModuleBase {
 public:
     ctResults Startup() final;
     ctResults Shutdown() final;

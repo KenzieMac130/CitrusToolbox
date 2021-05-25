@@ -21,7 +21,7 @@
 
 struct ctAppVersion { int32_t major; int32_t minor; int32_t patch; };
 
-class ctApplication {
+class CT_API ctApplication {
 public:
    virtual int Execute(int argc, char* argv[]);
 

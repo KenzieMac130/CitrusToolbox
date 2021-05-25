@@ -44,7 +44,7 @@ extern "C" {
 #include "SDL.h"
 
 /*Exportable*/
-#define CT_EXPORT __declspec(dllexport)
+#define CT_API __declspec(dllexport)
 
 /*Errors*/
 enum ctResults {
@@ -81,23 +81,23 @@ enum ctResults {
 /**
  * @brief should behave just like malloc but with messages to track leaks
  */
-void* ctMalloc(size_t size);
+CT_API void* ctMalloc(size_t size);
 /**
  * @brief should behave just like free
  */
-void ctFree(void* block);
+CT_API void ctFree(void* block);
 /**
  * @brief should behave similarly to malloc with alignment but with messages to track leaks
  */
-void* ctAlignedMalloc(size_t size, size_t alignment);
+CT_API void* ctAlignedMalloc(size_t size, size_t alignment);
 /**
  * @brief should behave similarly to realloc with alignment but with messages to track leaks
  */
-void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
+CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
 /**
  * @brief should behave similarly to free with alignment
  */
-void ctAlignedFree(void* block);
+CT_API void ctAlignedFree(void* block);
 
 #ifdef __cplusplus
 }

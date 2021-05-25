@@ -19,7 +19,7 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
-class ctHotReloadCategory {
+class CT_API ctHotReloadCategory {
 public:
    void RegisterPath(const char* relativePath);
    void UnregisterPath(const char* relativePath);
@@ -39,7 +39,7 @@ private:
    ctDynamicArray<ctStringUtf8> updatedPaths;
 };
 
-class ctHotReloadDetection : public ctModuleBase {
+class CT_API ctHotReloadDetection : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;

@@ -21,7 +21,7 @@
 #include "VkImgui.hpp"
 #include "VkIm3d.hpp"
 
-class ctVkKeyLimeCore : public ctModuleBase {
+class CT_API ctVkKeyLimeCore : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;

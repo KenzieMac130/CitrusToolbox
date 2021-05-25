@@ -19,7 +19,7 @@
 #include "utilities/Common.h"
 #include "ModuleBase.hpp"
 
-class ctJobSystem : public ctModuleBase {
+class CT_API ctJobSystem : public ctModuleBase {
 public:
    ctJobSystem(int32_t threadReserve);
    ctResults Startup() final;

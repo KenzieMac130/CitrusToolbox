@@ -40,7 +40,7 @@ struct ctVkQueueFamilyIndices {
    uint32_t transferIdx;
 };
 
-class ctVkSwapchainSupport {
+class CT_API ctVkSwapchainSupport {
 public:
    VkSurfaceCapabilitiesKHR surfaceCapabilities;
    ctDynamicArray<VkSurfaceFormatKHR> surfaceFormats;
@@ -48,12 +48,12 @@ public:
    void GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface);
 };
 
-struct ctVkScreenResizeCallback {
+struct CT_API ctVkScreenResizeCallback {
    void (*callback)(uint32_t width, uint32_t height, void*);
    void* userData;
 };
 
-class ctVkScreenResources {
+class CT_API ctVkScreenResources {
 public:
    SDL_Window* window;
    VkSurfaceKHR surface;
@@ -100,7 +100,7 @@ private:
     uint32_t frameIdx;
 };
 
-class ctVkDescriptorManager {
+class CT_API ctVkDescriptorManager {
 public:
    ctVkDescriptorManager();
    ctVkDescriptorManager(int32_t max);
@@ -127,7 +127,7 @@ struct ctVkCompleteBuffer {
    VmaAllocation alloc;
 };
 
-class ctVkBackend : public ctModuleBase {
+class CT_API ctVkBackend : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;

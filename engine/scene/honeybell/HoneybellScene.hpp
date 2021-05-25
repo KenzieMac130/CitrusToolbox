@@ -17,30 +17,23 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "ModuleBase.hpp"
 
-#include "SDL_video.h"
+#include "scene/SceneEngineBase.hpp"
 
-class CT_API ctWindow {
+#define CITRUS_SCENE_ENGINE_CLASS ctHoneybellSceneEngine
+
+class CT_API ctHoneybellSceneEngine : public ctSceneEngineBase {
 public:
-    SDL_Window* pSDLWindow;
-};
+    ctResults Startup();
+    ctResults Shutdown();
 
-class CT_API ctWindowManager : public ctModuleBase {
-public:
-    ctWindowManager();
+    ctResults NextFrame();
 
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+    void SetCameraInfo(ctCameraInfo camera, const char* cameraId = NULL);
+    ctCameraInfo GetCameraInfo(const char* cameraId) final;
+    ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
 
-    ctResults ShowErrorMessage(const char* title, const char* msg);
-    ctResults ShowMainWindow();
-
-    ctWindow mainWindow;
-
-    int32_t mainWindowWidth;
-    int32_t mainWindowHeight;
-    int32_t mainWindowMonitorIdx;
-    int32_t mainWindowVSync;
-    ctStringUtf8 mainWindowMode;
+private:
+    ctCameraInfo LastCamera;
+    ctCameraInfo CurrentCamera;
 };

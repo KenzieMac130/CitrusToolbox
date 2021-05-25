@@ -26,7 +26,7 @@ struct ctOSEventHandler {
     void* data;
 };
 
-class ctOSEventManager : public ctModuleBase {
+class CT_API ctOSEventManager : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;

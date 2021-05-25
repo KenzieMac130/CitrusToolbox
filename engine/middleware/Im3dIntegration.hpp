@@ -21,7 +21,7 @@
 
 #include "im3d/im3d.h"
 
-class ctIm3dIntegration : public ctModuleBase {
+class CT_API ctIm3dIntegration : public ctModuleBase {
 public:
     ctResults Startup() final;
     ctResults Shutdown() final;

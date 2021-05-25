@@ -24,7 +24,7 @@
  Collisions are expected to be resolved offline or by the key being a mask.
  A key value of 0 is reserved for empty items, make sure keys are never 0! */
 template<class T, class K>
-class ctHashTable {
+class CT_API ctHashTable {
 public:
    ctHashTable();
    ctHashTable(const size_t baseSize);
