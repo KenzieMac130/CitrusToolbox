@@ -46,7 +46,7 @@ public:
 
    ctResults RegisterAssetCategory(ctHotReloadCategory* pCategory);
 
-   SDL_mutex* _callbackLock;
+   ctMutex _callbackLock;
    void _PushPathUpdate(const char* path);
 
 private:

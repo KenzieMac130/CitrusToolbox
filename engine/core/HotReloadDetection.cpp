@@ -29,9 +29,9 @@ static void watch_callback(dmon_watch_id watch_id,
                            void* user) {
    ctHotReloadDetection* pDetector = (ctHotReloadDetection*)user;
    if (action == DMON_ACTION_MODIFY) {
-       SDL_LockMutex(pDetector->_callbackLock);
+       ctMutexLock(pDetector->_callbackLock);
        pDetector->_PushPathUpdate(filepath);
-       SDL_UnlockMutex(pDetector->_callbackLock);
+       ctMutexUnlock(pDetector->_callbackLock);
    }
 }
 
@@ -48,7 +48,7 @@ ctResults ctHotReloadDetection::Startup() {
    watchIsRunning = watchEnable;
    if (watchIsRunning) {
       ctDebugLog("Hot Reload Watch Enabled...");
-      _callbackLock = SDL_CreateMutex();
+      _callbackLock = ctMutexCreate();
       ctStringUtf8 assetPath = Engine->FileSystem->GetAssetPath();
       dmon_init();
       dmon_watch(assetPath.CStr(), watch_callback, DMON_WATCHFLAGS_RECURSIVE, this);
@@ -60,8 +60,8 @@ ctResults ctHotReloadDetection::Shutdown() {
    ZoneScoped;
    if (watchIsRunning) {
       ctDebugLog("Hot Reload Watch is Shutting Down...");
-      SDL_LockMutex(_callbackLock);
-      SDL_DestroyMutex(_callbackLock);
+      ctMutexLock(_callbackLock);
+      ctMutexDestroy(_callbackLock);
       dmon_deinit();
    }
    return CT_SUCCESS;
@@ -98,7 +98,7 @@ bool ctHotReloadCategory::isContentUpdated() {
 
 void ctHotReloadCategory::BeginReadingChanges() {
    ZoneScoped;
-   SDL_LockMutex(_pOwner->_callbackLock);
+   ctMutexLock(_pOwner->_callbackLock);
 }
 
 const ctDynamicArray<ctStringUtf8>& ctHotReloadCategory::GetUpdatedPaths() const {
@@ -108,7 +108,7 @@ const ctDynamicArray<ctStringUtf8>& ctHotReloadCategory::GetUpdatedPaths() const
 void ctHotReloadCategory::EndReadingChanges() {
    ZoneScoped;
    updatedPaths.Clear();
-   SDL_UnlockMutex(_pOwner->_callbackLock);
+   ctMutexUnlock(_pOwner->_callbackLock);
 }
 
 void ctHotReloadCategory::ClearChanges() {
