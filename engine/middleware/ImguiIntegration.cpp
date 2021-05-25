@@ -27,22 +27,39 @@ void processImguiEvent(SDL_Event* event, void* pData) {
 ctResults ctImguiIntegration::Startup() {
    ctDebugLog("Starting DearImgui...");
    ImGui::CreateContext();
+#if !CITRUS_HEADLESS
 #ifdef CITRUS_GFX_VULKAN
    ImGui_ImplSDL2_InitForVulkan(Engine->WindowManager->mainWindow.pSDLWindow);
 #endif
    Engine->OSEventManager->MiscEventHandlers.Append({processImguiEvent, this});
    Engine->OSEventManager->WindowEventHandlers.Append({processImguiEvent, this});
+#else
+   ImGui::GetIO().Fonts->AddFontDefault();
+   ImGui::GetIO().Fonts->Build();
+   ImGui::GetIO().DisplaySize.x = 640.0f;
+   ImGui::GetIO().DisplaySize.y = 480.0f;
+   ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
+   ImGui::NewFrame();
+#endif
+
    return CT_SUCCESS;
 }
 
 ctResults ctImguiIntegration::Shutdown() {
+#if !CITRUS_HEADLESS
    ImGui_ImplSDL2_Shutdown();
+#endif
    ImGui::DestroyContext();
    return CT_SUCCESS;
 }
 
 ctResults ctImguiIntegration::NextFrame() {
+#if CITRUS_HEADLESS
+   ImGui::Render();
+   ImGui::NewFrame();
+#else
    ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow.pSDLWindow);
    ImGui::NewFrame();
+#endif
    return CT_SUCCESS;
 }

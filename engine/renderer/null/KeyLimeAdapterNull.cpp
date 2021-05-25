@@ -14,19 +14,17 @@
    limitations under the License.
 */
 
-#pragma once
-
 #include "utilities/Common.h"
+#include "renderer/KeyLime.hpp"
+#include "core/EngineCore.hpp"
 
-class ctModuleBase {
-public:
-    virtual ctResults Startup() = 0;
-    virtual ctResults Shutdown() = 0;
-    ctResults ModuleStartup(class ctEngineCore* pEngine);
-    ctResults ModuleShutdown();
-    bool isStarted() const;
-protected:
-    class ctEngineCore* Engine = NULL;
-private:
-    bool _started = false;
+ctResults ctKeyLimeRenderer::Startup() {
+   return CT_SUCCESS;
+};
+
+ctResults ctKeyLimeRenderer::Shutdown() {
+   return CT_SUCCESS;
+}
+ctResults ctKeyLimeRenderer::RenderFrame() {
+   return CT_SUCCESS;
 };

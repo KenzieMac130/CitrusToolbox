@@ -25,39 +25,47 @@
 #include "WindowManager.hpp"
 #include "OSEvents.hpp"
 #include "Translation.hpp"
-#include "HotReloadDetection.hpp"
 
-#include "../middleware/ImguiIntegration.hpp"
-#include "../middleware/Im3dIntegration.hpp"
+#include "middleware/ImguiIntegration.hpp"
+#include "middleware/Im3dIntegration.hpp"
+
+#if CITRUS_INCLUDE_AUDITION
+#include "audition/HotReloadDetection.hpp"
+#endif
 
 #include "renderer/KeyLime.hpp"
+#include "scene/SceneEngineBase.hpp"
 
 class ctEngineCore {
 public:
-    /* Initialize the engine and all subsystems */
-    ctResults Ignite(class ctApplication* pApp);
-    /* Enter the game loop (returns on shutdown) */
-    ctResults EnterLoop();
-    /* Exit */
-    void Exit();
-    /* Is Running */
-    bool isExitRequested();
-    /* Single shot the game loop (returns after frame) */
-    ctResults LoopSingleShot(const float deltatime);
-    ctResults Shutdown();
+   /* Initialize the engine and all subsystems */
+   ctResults Ignite(class ctApplication* pApp);
+   /* Enter the game loop (returns on shutdown) */
+   ctResults EnterLoop();
+   /* Exit */
+   void Exit();
+   /* Is Running */
+   bool isExitRequested();
+   /* Single shot the game loop (returns after frame) */
+   ctResults LoopSingleShot(const float deltatime);
+   ctResults Shutdown();
 
-    class ctApplication* App;
-    ctJobSystem* JobSystem;
-    ctOSEventManager* OSEventManager;
-    ctTranslation* Translation;
-    ctFileSystem* FileSystem;
-    ctSettings* Settings;
-    ctHotReloadDetection* HotReload;
-    ctDebugSystem* Debug;
-    ctWindowManager* WindowManager;
-    ctImguiIntegration* ImguiIntegration;
-    ctIm3dIntegration* Im3dIntegration;
-    ctKeyLimeRenderer* Renderer;
+   class ctApplication* App;
+   ctJobSystem* JobSystem;
+   ctOSEventManager* OSEventManager;
+   ctTranslation* Translation;
+   ctFileSystem* FileSystem;
+   ctSettings* Settings;
+#if CITRUS_INCLUDE_AUDITION
+   ctHotReloadDetection* HotReload;
+#endif
+   ctDebugSystem* Debug;
+   ctWindowManager* WindowManager;
+   ctImguiIntegration* ImguiIntegration;
+   ctIm3dIntegration* Im3dIntegration;
+   ctKeyLimeRenderer* Renderer;
+   ctSceneEngineBase* SceneEngine;
+
 private:
-    bool _isRunning = true;
+   bool _isRunning = true;
 };

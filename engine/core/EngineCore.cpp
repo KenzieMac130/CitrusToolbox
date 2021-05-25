@@ -17,17 +17,26 @@
 #include "EngineCore.hpp"
 #include "Application.hpp"
 
+#include CITRUS_SCENE_ENGINE_HEADER
+
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    ZoneScoped;
    App = pApp;
+
    /*SDL*/
+#if !CITRUS_HEADLESS
    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER | SDL_INIT_HAPTIC);
+#else
+   SDL_Init(SDL_INIT_TIMER);
+#endif
 
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
    Settings = new ctSettings();
    Debug = new ctDebugSystem(32, true);
+#if CITRUS_INCLUDE_AUDITION
    HotReload = new ctHotReloadDetection();
+#endif
    Translation = new ctTranslation(true);
    JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
@@ -35,20 +44,28 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
+   SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
    Debug->ModuleStartup(this);
+#if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleStartup(this);
+#endif
    FileSystem->LogPaths();
    Translation->ModuleStartup(this);
    JobSystem->ModuleStartup(this);
    OSEventManager->ModuleStartup(this);
+#if !CITRUS_HEADLESS
    WindowManager->ModuleStartup(this);
+#endif
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
+#if !CITRUS_HEADLESS
    Renderer->ModuleStartup(this);
+#endif
+   SceneEngine->Startup();
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
@@ -63,6 +80,7 @@ ctResults ctEngineCore::EnterLoop() {
       LoopSingleShot(1.0f / 60.0f);
    }
    Shutdown();
+
    return CT_SUCCESS;
 }
 
@@ -76,12 +94,15 @@ bool ctEngineCore::isExitRequested() {
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
-   //HotReload->CheckIn();
+   // HotReload->CheckIn();
    App->OnTick(deltatime);
    App->OnUIUpdate();
    /*Update modules*/
    OSEventManager->PollOSEvents();
+#if !CITRUS_HEADLESS
    Renderer->RenderFrame();
+#endif
+   SceneEngine->NextFrame();
    Im3dIntegration->NextFrame();
    ImguiIntegration->NextFrame();
    FrameMark;
@@ -96,14 +117,21 @@ ctResults ctEngineCore::Shutdown() {
 
    /*Shutdown modules*/
    ctDebugLog("Citrus Toolbox is Shutting Down...");
+   SceneEngine->Shutdown();
+#if !CITRUS_HEADLESS
    Renderer->ModuleShutdown();
+#endif
    Im3dIntegration->ModuleShutdown();
    ImguiIntegration->ModuleShutdown();
+#if !CITRUS_HEADLESS
    WindowManager->ModuleShutdown();
+#endif
    OSEventManager->ModuleShutdown();
    JobSystem->ModuleShutdown();
    Translation->ModuleShutdown();
+#if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleShutdown();
+#endif
    Debug->ModuleShutdown();
    Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();

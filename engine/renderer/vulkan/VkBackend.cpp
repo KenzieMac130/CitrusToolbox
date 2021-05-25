@@ -262,8 +262,7 @@ bool vDeviceHasSwapChainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
 bool vDeviceHasRequiredFeatures(
   const VkPhysicalDeviceFeatures& features,
   const VkPhysicalDeviceDescriptorIndexingFeatures& descriptorIndexing) {
-   if (!features.shaderFloat64 || !features.fillModeNonSolid || !features.depthClamp ||
-       !features.depthBounds || !features.wideLines ||
+   if (!features.shaderFloat64 || !features.depthClamp || !features.depthBounds ||
        !features.shaderSampledImageArrayDynamicIndexing ||
        !features.shaderStorageBufferArrayDynamicIndexing ||
        !descriptorIndexing.descriptorBindingPartiallyBound ||
@@ -407,14 +406,14 @@ ctResults ctVkBackend::Startup() {
       deviceExtensions.Append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
       deviceExtensions.Append("VK_EXT_descriptor_indexing");
       if (validationEnabled) {
-          deviceExtensions.Append(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
+         deviceExtensions.Append(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
       }
 
       for (uint32_t i = 0; i < instanceExtensions.Count(); i++) {
          ctDebugLog("VK Instance Extension Requested: \"%s\"", instanceExtensions[i]);
       }
       for (uint32_t i = 0; i < deviceExtensions.Count(); i++) {
-          ctDebugLog("VK Device Extension Requested: \"%s\"", deviceExtensions[i]);
+         ctDebugLog("VK Device Extension Requested: \"%s\"", deviceExtensions[i]);
       }
 
       VkInstanceCreateInfo instanceInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
@@ -564,10 +563,8 @@ ctResults ctVkBackend::Startup() {
       VkPhysicalDeviceFeatures features = VkPhysicalDeviceFeatures();
       features.imageCubeArray = VK_TRUE;
       features.shaderFloat64 = VK_TRUE;
-      features.fillModeNonSolid = VK_TRUE;
       features.depthBounds = VK_TRUE;
       features.depthClamp = VK_TRUE;
-      features.wideLines = VK_TRUE;
       features.samplerAnisotropy = VK_TRUE;
       deviceInfo.pEnabledFeatures = &features;
 
@@ -583,7 +580,7 @@ ctResults ctVkBackend::Startup() {
       indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
       deviceInfo.pNext = &indexingFeatures;
 
-      deviceInfo.enabledExtensionCount = deviceExtensions.Count();
+      deviceInfo.enabledExtensionCount = (uint32_t)deviceExtensions.Count();
       deviceInfo.ppEnabledExtensionNames = deviceExtensions.Data();
       ctDebugLog("Creating Device...");
       CT_VK_CHECK(

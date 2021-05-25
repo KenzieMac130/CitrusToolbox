@@ -15,6 +15,7 @@
 */
 
 #include "Im3dIntegration.hpp"
+#include "core/EngineCore.hpp"
 
 ctResults ctIm3dIntegration::Startup() {
    return CT_SUCCESS;
@@ -25,7 +26,19 @@ ctResults ctIm3dIntegration::Shutdown() {
 }
 
 ctResults ctIm3dIntegration::NextFrame() {
+   if (!Engine->SceneEngine || !Engine->SceneEngine->isStarted()) {
+      Im3d::NewFrame();
+      return CT_FAILURE_MODULE_NOT_INITIALIZED;
+   }
+   const ctCameraInfo cameraInfo = Engine->SceneEngine->GetCameraInfo(NULL);
    Im3d::AppData& appData = Im3d::GetAppData();
+   appData.m_cursorRayOrigin = {cameraInfo.cursorPosition.x,
+                                cameraInfo.cursorPosition.y,
+                                cameraInfo.cursorPosition.z};
+   appData.m_cursorRayDirection = {cameraInfo.cursorDirection.x,
+                                   cameraInfo.cursorDirection.y,
+                                   cameraInfo.cursorDirection.z};
+   appData.m_worldUp = CT_UP;
    /* Todo: Feed me seymour */
    Im3d::NewFrame();
    return CT_SUCCESS;

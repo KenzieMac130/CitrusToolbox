@@ -27,11 +27,6 @@ if(IS_BIG_ENDIAN)
 else()
     set (CITRUS_ENDIAN 0x00)
 endif()
-
-# ----------Generate Config Files ----------
-configure_file (
-    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-    ${CITRUS_CODEGEN_DIR}/Config.h)
     
 #---------- Compile ISPC Kernels ----------
 file(MAKE_DIRECTORY ${CITRUS_CODEGEN_DIR}/ispc)
@@ -107,7 +102,7 @@ add_custom_command(OUTPUT ${REFLECT_OUT}
 list(APPEND CITRUS_REFLECT_OUTPUTS ${REFLECT_OUT})
 endforeach()
 
-# ---------- Source Files ----------
+# ---------- Engine Source Files ----------
 set(ENGINE_SOURCE_FILES_UTILITIES
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
@@ -145,7 +140,6 @@ set(ENGINE_SOURCE_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/HotReloadDetection.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
@@ -159,7 +153,6 @@ set(ENGINE_HEADER_FILES_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/EngineCore.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileSystem.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/HotReloadDetection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/JobSystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.hpp
@@ -170,6 +163,17 @@ set(ENGINE_HEADER_FILES_CORE
 	${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.hpp
 )
 
+# ---------- Audition  ---------- 
+if(CITRUS_INCLUDE_AUDITION)
+set(ENGINE_SOURCE_FILES_AUDITION
+    ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.cpp
+)
+
+set(ENGINE_HEADER_FILES_AUDITION
+    ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.hpp
+)
+endif()
+
 # ---------- Renderer Frontend ---------- 
 set(ENGINE_SOURCE_FILES_RENDERER)
 
@@ -178,12 +182,17 @@ set(ENGINE_HEADER_FILES_RENDERER
 )
 
 # ---------- Scene Engine ---------- 
+
+set(CITRUS_SCENE_ENGINE_HEADER
+   ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.hpp
+)
+
 set(ENGINE_SOURCE_FILES_SCENE
-	#${CMAKE_CURRENT_SOURCE_DIR}/honeybell/HoneybellScene.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
-	#${CMAKE_CURRENT_SOURCE_DIR}/honeybell/HoneybellScene.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.hpp
 )
 
 # ---------- Third Party Implementation ---------- 
@@ -210,6 +219,13 @@ set(ENGINE_HEADER_FILES_MIDDLEWARE
 )
 
 # ---------- Graphics Backend Files ----------
+if(CITRUS_GFX_NULL)
+    set(ENGINE_SOURCE_FILES_GFX_BACKEND
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer/null/KeyLimeAdapterNull.cpp)
+    
+    set(ENGINE_HEADER_FILES_GFX_BACKEND)
+endif()
+
 if(CITRUS_GFX_VULKAN)
     set(ENGINE_SOURCE_FILES_GFX_BACKEND
         ${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
@@ -229,11 +245,17 @@ set(ENGINE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
     ${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
     ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
+	${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
     ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
 	${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
     ${ENGINE_SOURCE_FILES_GFX_BACKEND} ${ENGINE_HEADER_FILES_GFX_BACKEND}
 	${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
     ${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS})
+
+# ----------Generate Config Files ----------
+configure_file (
+    ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
+    ${CITRUS_CODEGEN_DIR}/Config.h)
 
 # ---------- Create Engine Library ----------
 add_library(engine 

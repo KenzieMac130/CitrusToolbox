@@ -16,7 +16,7 @@
 */
 
 #include "HotReloadDetection.hpp"
-#include "EngineCore.hpp"
+#include "core/EngineCore.hpp"
 
 #define DMON_IMPL
 #include "dmon/dmon.h"
@@ -37,7 +37,7 @@ static void watch_callback(dmon_watch_id watch_id,
 
 ctResults ctHotReloadDetection::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings = Engine->Settings->CreateSection("HotReload", 32);
+   ctSettingsSection* settings = Engine->Settings->CreateSection("HotReload", 1);
    watchEnable = 1;
    settings->BindInteger(&watchEnable,
                          false,

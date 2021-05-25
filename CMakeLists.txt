@@ -108,6 +108,25 @@ else()
    set(CITRUS_TRACY 0)
 endif()
 
+# ---------- Audition Live Development ----------
+option(USE_AUDITION "Enable Audition Live Development" ON)
+if(USE_AUDITION)
+   set(CITRUS_INCLUDE_AUDITION 1)
+else()
+   set(CITRUS_INCLUDE_AUDITION 0)
+endif()
+
+# ---------- Headlesss Mode ----------
+option(IS_HEADLESS "Command line only" OFF)
+if(IS_HEADLESS)
+   set(CITRUS_HEADLESS 1)
+   set(CITRUS_GFX_VULKAN 0)
+   set(CITRUS_GFX_NULL 1)
+else()
+   set(CITRUS_HEADLESS 0)
+endif()
+
+
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)

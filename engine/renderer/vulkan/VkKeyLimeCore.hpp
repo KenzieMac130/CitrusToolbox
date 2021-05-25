@@ -23,31 +23,33 @@
 
 class ctVkKeyLimeCore : public ctModuleBase {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
-    ctResults Render();
+   ctResults Render();
 
-    VkFormat compositeFormat;
-    VkFormat depthFormat;
-    ctVkCompleteImage compositeBuffer;
-    ctVkCompleteImage depthBuffer;
+   VkFormat compositeFormat;
+   VkFormat depthFormat;
+   ctVkCompleteImage compositeBuffer;
+   ctVkCompleteImage depthBuffer;
 
-    uint32_t internalResolutionWidth;
-    uint32_t internalResolutionHeight;
+   uint32_t internalResolutionWidth;
+   uint32_t internalResolutionHeight;
 
-    ctVkBackend vkBackend;
-    ctVkImgui vkImgui;
-    ctVkIm3d vkIm3d;
+   ctVkBackend vkBackend;
+   ctVkImgui vkImgui;
+   ctVkIm3d vkIm3d;
 
-    ctHotReloadCategory ShaderHotReload;
+#if CITRUS_INCLUDE_AUDITION
+   ctHotReloadCategory ShaderHotReload;
+#endif
 
-    VkCommandPool gfxCommandPool;
-    VkCommandPool transferCommandPool;
-    VkCommandBuffer gfxCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
-    VkCommandBuffer frameInitialUploadCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
-    VkSemaphore renderFinished[CT_MAX_INFLIGHT_FRAMES];
+   VkCommandPool gfxCommandPool;
+   VkCommandPool transferCommandPool;
+   VkCommandBuffer gfxCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
+   VkCommandBuffer frameInitialUploadCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
+   VkSemaphore renderFinished[CT_MAX_INFLIGHT_FRAMES];
 
-    VkRenderPass guiRenderPass;
-    VkFramebuffer guiFramebuffer;
+   VkRenderPass guiRenderPass;
+   VkFramebuffer guiFramebuffer;
 };

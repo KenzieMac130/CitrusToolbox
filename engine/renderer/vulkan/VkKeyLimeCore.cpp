@@ -89,9 +89,11 @@ ctResults ctVkKeyLimeCore::Startup() {
    ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
+#if CITRUS_INCLUDE_AUDITION
    ShaderHotReload.RegisterPath("core/shaders/im3d_vert.spv");
    ShaderHotReload.RegisterPath("core/shaders/im3d_frag.spv");
    Engine->HotReload->RegisterAssetCategory(&ShaderHotReload);
+#endif
 
    vkBackend.ModuleStartup(Engine);
    /* Commands and Sync */
@@ -263,11 +265,13 @@ ctResults ctVkKeyLimeCore::Render() {
    ZoneScoped;
    vkBackend.WaitForFrameAvailible();
 
+#if CITRUS_INCLUDE_AUDITION
    /* Check if shaders have been updated */
    if (ShaderHotReload.isContentUpdated()) {
-       ctDebugLog("Shaders Updated...");
-       ShaderHotReload.ClearChanges();
+      ctDebugLog("Shaders Updated...");
+      ShaderHotReload.ClearChanges();
    }
+#endif
 
    /* Build Debug Internals */
    vkImgui.BuildDrawLists();

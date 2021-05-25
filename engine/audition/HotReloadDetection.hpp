@@ -17,7 +17,7 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "ModuleBase.hpp"
+#include "core/ModuleBase.hpp"
 
 class ctHotReloadCategory {
 public:
