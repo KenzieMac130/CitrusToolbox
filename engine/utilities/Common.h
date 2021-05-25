@@ -44,7 +44,23 @@ extern "C" {
 #include "SDL.h"
 
 /*Exportable*/
-#define CT_API __declspec(dllexport)
+// clang-format off
+#if defined(_MSC_VER)
+    #if CITRUS_IMPORT
+        #define CT_API __declspec(dllimport)
+    #else
+        #define CT_API __declspec(dllexport)
+    #endif
+#elif defined(__GNUC__)
+    #if CITRUS_IMPORT
+        #define CT_API __attribute__((visibility("default")))
+    #else
+        #define CT_API
+    #endif
+#else
+    #define CT_API
+#endif
+// clang-format on
 
 /*Errors*/
 enum ctResults {
@@ -70,8 +86,8 @@ enum ctResults {
 
 /*C Helpers*/
 #define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
-#define ctCStrEql(a,b) strcmp(a,b) == 0
-#define ctCStrNEql(a,b,n) strncmp(a,b,n) == 0
+#define ctCStrEql(a, b)         strcmp(a, b) == 0
+#define ctCStrNEql(a, b, n)     strncmp(a, b, n) == 0
 
 /*Assert*/
 #define ctAssert(e) assert(e)
@@ -87,11 +103,13 @@ CT_API void* ctMalloc(size_t size);
  */
 CT_API void ctFree(void* block);
 /**
- * @brief should behave similarly to malloc with alignment but with messages to track leaks
+ * @brief should behave similarly to malloc with alignment but with messages to track
+ * leaks
  */
 CT_API void* ctAlignedMalloc(size_t size, size_t alignment);
 /**
- * @brief should behave similarly to realloc with alignment but with messages to track leaks
+ * @brief should behave similarly to realloc with alignment but with messages to track
+ * leaks
  */
 CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
 /**
