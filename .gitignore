@@ -31,6 +31,15 @@
 *.out
 *.app
 
+# Dot-hidden on Unix-like systems
+.waf-*-*/
+.waf3-*-*/
+# Hidden directory on Windows (no dot)
+waf-*-*/
+waf3-*-*/
+# Lockfile
+.lock-waf_*_build
+
 # Games Assets (Needs to be handled by binary source control)
 assets/game/
 
