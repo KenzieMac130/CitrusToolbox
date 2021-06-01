@@ -1,6 +1,6 @@
 {
-	"$schema": "https://github.com/KenzieMac130/CitrusToolbox/blob/main/docs/InteractNotes.md",
-	"$id": "https://github.com/KenzieMac130/CitrusToolbox/tree/main/docs/schemas/interact/binding.json",
+	"$schema": "https://github.com/KenzieMac130/CitrusToolbox/blob/main/docs/schemas/interact/binding.json",
+	"$id": "https://github.com/KenzieMac130/CitrusToolbox/blob/main/docs/schemas/interact/binding.json",
 	"deviceName": "Keyboard",
 	"devicePath": "/devices/keyboard/default",
 	"profiles":
