@@ -74,6 +74,11 @@ endif()
 set(TOOLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 set(THIRD_PARTY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
+# ---------- Install Libraries ----------
+if(NOT EXISTS ${BASE_LIBRARY_DIRECTORY})
+	add_subdirectory(${TOOLS_INCLUDE}/installdeps)
+endif()
+
 # ---------- Find ISPC ----------
 set(ISPC_COMPILER_PATH ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc)
 
@@ -116,12 +121,17 @@ else()
    set(CITRUS_INCLUDE_AUDITION 0)
 endif()
 
+# ---------- Interaction Backends ----------
+set(CITRUS_INTERACT_INPUT_SDL 1)
+
 # ---------- Headlesss Mode ----------
 option(IS_HEADLESS "Command line only" OFF)
 if(IS_HEADLESS)
    set(CITRUS_HEADLESS 1)
    set(CITRUS_GFX_VULKAN 0)
    set(CITRUS_GFX_NULL 1)
+   set(CITRUS_INTERACT_INPUT_SDL 0)
+   set(CITRUS_INTERACT_INPUT_NULL 1)
 else()
    set(CITRUS_HEADLESS 0)
 endif()
