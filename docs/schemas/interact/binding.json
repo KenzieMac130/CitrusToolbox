@@ -1,0 +1,65 @@
+{
+	"$schema": "https://github.com/KenzieMac130/CitrusToolbox/blob/main/docs/InteractNotes.md",
+	"$id": "https://github.com/KenzieMac130/CitrusToolbox/tree/main/docs/schemas/interact/binding.json",
+	"deviceName": "Keyboard",
+	"devicePath": "/devices/keyboard/default",
+	"profiles":
+	[
+		{
+			"profileName": "WASD",
+			"profileDesc": "Wasd Movement",
+			"options": {
+				"useGyro": false
+			},
+			"actionSets": 
+			[
+				{
+					"setName": "walk",
+					"actions":
+					[
+						{
+							"actionName": "moveForward",
+							"bindings": 
+							[
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": 1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/w"
+								},
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": -1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/s"
+								}
+							]
+						},
+						{
+							"actionName": "moveLeft",
+							"bindings": 
+							[
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": 1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/d"
+								},
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": -1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/a"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -162,7 +162,7 @@ Devices are provided to specify bindings depending on known device
 * /devices/gamepad/types/sony/dualsense
 * /devices/gamepad/types/valve/steam
 * /devices/xr/[path/..] **( See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#semantic-path-interaction-profiles )**
-* /devices/sdl/joystick/by-id/[GUID] **( this will need to be manually tested for )**
+* /devices/sdl-joystick/by-id/[GUID] **( this will need to be manually tested for )**
 
 ### Keyboards
 	
@@ -234,15 +234,15 @@ Action types will all be mapped/split to 1D, pose is not supported here and will
 
 Joysticks are an all-encompassing term for unknown inputs and are a bit more of a mess in terms of ecosystem. This will likely need manual bindings and community contribution for each device.
 
-* /binding/sdl/joystick/axis/[#]
-* /binding/sdl/joystick/ball/[#]/x
-* /binding/sdl/joystick/ball/[#]/y
-* /binding/sdl/joystick/button/[#]
-* /binding/sdl/joystick/hat/[#]/north
-* /binding/sdl/joystick/hat/[#]/south
-* /binding/sdl/joystick/hat/[#]/east
-* /binding/sdl/joystick/hat/[#]/west
-* /binding/sdl/joystick/hat/[#]/northeast
-* /binding/sdl/joystick/hat/[#]/southeast
-* /binding/sdl/joystick/hat/[#]/southwest
-* /binding/sdl/joystick/hat/[#]/northwest
+* /binding/sdl-joystick/axis/[#]
+* /binding/sdl-joystick/ball/[#]/x
+* /binding/sdl-joystick/ball/[#]/y
+* /binding/sdl-joystick/button/[#]
+* /binding/sdl-joystick/hat/[#]/north
+* /binding/sdl-joystick/hat/[#]/south
+* /binding/sdl-joystick/hat/[#]/east
+* /binding/sdl-joystick/hat/[#]/west
+* /binding/sdl-joystick/hat/[#]/northeast
+* /binding/sdl-joystick/hat/[#]/southeast
+* /binding/sdl-joystick/hat/[#]/southwest
+* /binding/sdl-joystick/hat/[#]/northwest
