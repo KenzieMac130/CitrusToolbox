@@ -68,39 +68,125 @@ Keep in mind that on many platforms buttons can be remapped regardless, so this 
 
 ## Interact's Internal Actions are not King
 
-The responsibility of mapping action state and bindings to devices and buttons are per-backend. This is done because some backends already handle bindings at a deeper level, in which case the binding settings will have no affect to avoid creating a mess. If this is the case a capability flag is raised. The primary goal of the action API is to be compatible to be translated to OpenXR/Steam Input. Interact's action system will therfore be data driven by the settings system by loading configs where the mapping is not provided by the backend to avoid hard-coded button mapping issues on APIs that don't support/wouldn't map or want to map buttons progammatically.
+The responsibility of mapping action state and bindings to devices and buttons are per-backend. This is done because some backends already handle bindings at a deeper level, in which case the binding settings will have no affect to avoid creating a mess. If this is the case a capability flag is raised. The primary goal of the action API is to be compatible to be translated to OpenXR/Steam Input. Interact's action system will therfore be data driven by the settings system by loading configs where the mapping is not provided by the backend to avoid hard-coded button mapping issues on APIs that don't support/wouldn't map or want to map buttons progammatically. With that being said we cannot have an input that just declares actions without bindings, there would simply be no way to tie that to a device on most backends. So binding presets can be specified and loaded with a JSON file.
 
 ## Backends
 
 Backends are code paths can be optionaly compiled per-platform and implement device interfaces and instances. These backends are responsible for implementing the actual funtionality behind the player state and either react or respond. Many of these backends may be short-lived/hacky/proprietary so exclusion from the codebase should not impact anything exept the ability to use a device. When conflicting backends are possible (ex: SDL/Steam Input) the user should be able to choose which one takes dominance.
 
-## Suggested Input Paths
+## Suggested Input Paths and Config Options
 
-Here we go... All of the inputs that can be suggested to the backend to use for a action binding.
+### Config Format Example
+
+```json
+{
+	"deviceName": "Keyboard",
+	"devicePath": "/devices/keyboard/default",
+	"profiles":
+	[
+		{
+			"profileName": "WASD",
+			"profileDesc": "Wasd Movement",
+			"options": {
+				"useGyro": false
+			},
+			"actionSets": 
+			[
+				{
+					"setName": "walk",
+					"actions":
+					[
+						{
+							"actionName": "moveForward",
+							"bindings": 
+							[
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": 1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/w"
+								},
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": -1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/s"
+								}
+							]
+						},
+						{
+							"actionName": "moveLeft",
+							"bindings": 
+							[
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": 1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/d"
+								},
+								{
+									"deadzoneInner": 0.0,
+									"deadzoneOuter": 1.0,
+									"scale": -1.0,
+									"required": false,
+									"path": "/binding/keyboard/keys/a"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}
+```
+
+### Device Type Path
+
+Devices are provided to specify bindings depending on known device
+
+* /devices/keyboard/default
+* /devices/mouse/default
+* /devices/gamepad/default
+* /devices/gamepad/types/microsoft/xbox360
+* /devices/gamepad/types/microsoft/xboxone
+* /devices/gamepad/types/nintendo/switch/default **( don't make assumptions )**
+* /devices/gamepad/types/nintendo/switch/handheld **( only gyro motion, can touch )**
+* /devices/gamepad/types/nintendo/switch/half **( can't use half the controller, no touch )**
+* /devices/gamepad/types/nintendo/switch/split **( arm motion, no touch )**
+* /devices/gamepad/types/nintendo/switch/whole **( single controller motion, no touch )**
+* /devices/gamepad/types/sony/dualshock4
+* /devices/gamepad/types/sony/dualsense
+* /devices/gamepad/types/valve/steam
+* /devices/xr/[path/..] **( See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#semantic-path-interaction-profiles )**
+* /devices/sdl/joystick/by-id/[GUID] **( this will need to be manually tested for )**
 
 ### Keyboards
 	
-* /keyboard/shift
-* /keyboard/ctrl
-* /keyboard/alt
-* /keyboard/keys/[KEY_CODE] ( follows the SDL keycode convention, see: https://wiki.libsdl.org/SDL_Keycode )
-	* /keyboard/keys/a
-	* /keyboard/keys/6
-	* /keyboard/keys/BACKSLASH
-	* /keyboard/keys/F9
+* /binding/keyboard/shift
+* /binding/keyboard/ctrl
+* /binding/keyboard/alt
+* /binding/keyboard/keys/[KEY_CODE] **( Follows the SDL keycode convention, see: https://wiki.libsdl.org/SDL_Keycode )**
+	* /binding/keyboard/keys/a
+	* /binding/keyboard/keys/6
+	* /binding/keyboard/keys/BACKSLASH
+	* /binding/keyboard/keys/F9
 	* (etc...)
 
 ### Mice
 
 Absolute values are always only availible from cursor, this maps relative to action
 
-* /mouse/relative_move/x
-* /mouse/relative_move/y
-* /mouse/scroll/x
-* /mouse/scroll/y
-* /mouse/button/left
-* /mouse/button/right
-* /mouse/button/middle
+* /binding/mouse/relative_move/x
+* /binding/mouse/relative_move/y
+* /binding/mouse/scroll/x
+* /binding/mouse/scroll/y
+* /binding/mouse/button/left
+* /binding/mouse/button/right
+* /binding/mouse/button/middle
 
 ### Gamepads
 
@@ -110,27 +196,27 @@ Pads/pointing is handled by cursor
 
 Half a Switch controller drops triggers, select and right stick
 
-* /gamepad/a
-* /gamepad/b
-* /gamepad/x
-* /gamepad/y
-* /gamepad/dpad/up
-* /gamepad/dpad/down
-* /gamepad/dpad/left
-* /gamepad/dpad/right
-* /gamepad/shoulder_left
-* /gamepad/shoulder_right
-* /gamepad/trigger_left
-* /gamepad/trigger_right
-* /gamepad/thumbstick_left/click
-* /gamepad/thumbstick_right/click
-* /gamepad/thumbstick_left/x
-* /gamepad/thumbstick_left/y
-* /gamepad/thumbstick_right/x
-* /gamepad/thumbstick_right/y
-* /gamepad/start
-* /gamepad/select
-* /gamepad/guide (not reccomended)
+* /binding/gamepad/a
+* /binding/gamepad/b
+* /binding/gamepad/x
+* /binding/gamepad/y
+* /binding/gamepad/dpad/up
+* /binding/gamepad/dpad/down
+* /binding/gamepad/dpad/left
+* /binding/gamepad/dpad/right
+* /binding/gamepad/shoulder_left
+* /binding/gamepad/shoulder_right
+* /binding/gamepad/trigger_left
+* /binding/gamepad/trigger_right
+* /binding/gamepad/thumbstick_left/click
+* /binding/gamepad/thumbstick_right/click
+* /binding/gamepad/thumbstick_left/x
+* /binding/gamepad/thumbstick_left/y
+* /binding/gamepad/thumbstick_right/x
+* /binding/gamepad/thumbstick_right/y
+* /binding/gamepad/start
+* /binding/gamepad/select
+* /binding/gamepad/guide **( Not reccomended )**
 
 ### Virtual Reality
 
@@ -138,8 +224,25 @@ In the event that OpenXR is not supported for a vr device these paths will be em
 
 Action types will all be mapped/split to 1D, pose is not supported here and will be mapped to spacial
 
-* /xr/[path/..] See ( https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#semantic-path-interaction-profiles )
-	* /xr/user/hand/left/input/trackpad/click
-	* /xr/user/gamepad/input/a/click
-	* /xr/user/hand/right/input/back/click
+* /binding/xr/[path/..] **( See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#semantic-path-interaction-profiles )**
+	* /binding/xr/user/hand/left/input/trackpad/click
+	* /binding/xr/user/gamepad/input/a/click
+	* /binding/xr/user/hand/right/input/back/click
 	* (etc...)
+	
+### Joysticks
+
+Joysticks are an all-encompassing term for unknown inputs and are a bit more of a mess in terms of ecosystem. This will likely need manual bindings and community contribution for each device.
+
+* /binding/sdl/joystick/axis/[#]
+* /binding/sdl/joystick/ball/[#]/x
+* /binding/sdl/joystick/ball/[#]/y
+* /binding/sdl/joystick/button/[#]
+* /binding/sdl/joystick/hat/[#]/north
+* /binding/sdl/joystick/hat/[#]/south
+* /binding/sdl/joystick/hat/[#]/east
+* /binding/sdl/joystick/hat/[#]/west
+* /binding/sdl/joystick/hat/[#]/northeast
+* /binding/sdl/joystick/hat/[#]/southeast
+* /binding/sdl/joystick/hat/[#]/southwest
+* /binding/sdl/joystick/hat/[#]/northwest
