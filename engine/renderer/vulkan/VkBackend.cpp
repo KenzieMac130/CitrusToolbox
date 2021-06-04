@@ -429,8 +429,12 @@ ctResults ctVkBackend::Startup() {
       instanceInfo.enabledExtensionCount = (uint32_t)instanceExtensions.Count();
       instanceInfo.ppEnabledExtensionNames = instanceExtensions.Data();
       ctDebugLog("Creating Instance...");
-      CT_VK_CHECK(vkCreateInstance(&instanceInfo, &vkAllocCallback, &vkInstance),
-                  CT_NC("vkCreateInstance() Failed to create vulkan instance."));
+      CT_VK_CHECK(
+        vkCreateInstance(&instanceInfo, &vkAllocCallback, &vkInstance),
+        CT_NC("vkCreateInstance() Failed to create vulkan instance.\n"
+              "Please update the graphics drivers to the latest version available.\n"
+              "If this or other issues persist then upgrade the hardware or contact "
+              "support."));
    }
    /*Setup Validation Debug Callback*/
    {
