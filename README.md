@@ -12,7 +12,7 @@
   * Prerequisites:
      *  CMake 3.10x
      *  C++ 14 Compiler
-     *  Git (with command line access)
+     *  Git + LFS (with command line access)
      *  Python 3
   * Clone the repository to your machine in a directory with sufficient priveleges.
   * Configure and Generate CMake
