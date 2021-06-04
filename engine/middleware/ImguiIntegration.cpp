@@ -55,7 +55,7 @@ ctResults ctImguiIntegration::Shutdown() {
 
 ctResults ctImguiIntegration::NextFrame() {
 #if CITRUS_HEADLESS
-   ImGui::Render();
+   ImGui::EndFrame();
    ImGui::NewFrame();
 #else
    ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow.pSDLWindow);
