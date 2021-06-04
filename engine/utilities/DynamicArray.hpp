@@ -136,13 +136,13 @@ inline ctDynamicArray<T>::~ctDynamicArray() {
 
 template<class T>
 inline T& ctDynamicArray<T>::operator[](const size_t index) {
-   ctAssert(index <= Count());
+   ctAssert(index < Count());
    return _pData[index];
 }
 
 template<class T>
 inline T ctDynamicArray<T>::operator[](const size_t index) const {
-   ctAssert(index <= Count());
+   ctAssert(index < Count());
    return _pData[index];
 }
 

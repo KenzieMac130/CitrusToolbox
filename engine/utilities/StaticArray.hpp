@@ -123,13 +123,13 @@ inline size_t ctStaticArray<T, TCAPACITY>::Capacity() const {
 
 template<class T, size_t TCAPACITY>
 inline T& ctStaticArray<T, TCAPACITY>::operator[](const size_t index) {
-   ctAssert(index <= Count());
+   ctAssert(index < Count());
    return _pData[index];
 }
 
 template<class T, size_t TCAPACITY>
 inline T ctStaticArray<T, TCAPACITY>::operator[](const size_t index) const {
-   ctAssert(index <= Count());
+   ctAssert(index < Count());
    return _pData[index];
 }
 
