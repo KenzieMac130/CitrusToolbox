@@ -32,7 +32,7 @@ public:
    virtual ctResults OnShutdown();
 
    virtual const char* GetAppName() = 0;
-   virtual const char* GetAppPublisher() = 0;
+   virtual const char* GetAppDeveloperName() = 0;
    virtual ctAppVersion GetAppVersion() = 0;
 
    class ctEngineCore* Engine;
