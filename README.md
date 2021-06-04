@@ -5,7 +5,7 @@
 
  Project is a work-in-progress, feel free to take a look around.
  
-## Supported Platforms
+## Official Supported Platforms
   * Windows 64bit
  
 ## Building:
