@@ -127,7 +127,7 @@ int hash_table_test() {
          ctStringUtf8 result;
          result.Printf(
            64,
-           "Number %d  (PUSH PAST OPT.................................)",
+           "Number %d",
            i);
          uint32_t hash = result.xxHash32();
          if (i == 156) { findhash = hash; }
@@ -236,12 +236,12 @@ int json_test() {
    /*Read*/
    ctJSONReader reader;
    reader.BuildJsonForPtr(str.CStr(), str.ByteLength());
-   ctJSONReader::Entry entry;
+   ctJSONReadEntry entry;
    reader.GetRootEntry(entry);
    entry.GetObjectEntry("Second Object", entry);
    entry.GetObjectEntry("vectors", entry);
    entry.GetArrayEntry(0, entry);
-   entry.GetArrayEntry(0, entry);
+   entry.GetArrayEntry(1, entry);
    float value = -90.0f;
    entry.GetNumber(value);
    ctStringUtf8 str2;
