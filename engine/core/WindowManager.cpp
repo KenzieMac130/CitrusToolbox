@@ -80,17 +80,7 @@ ctResults ctWindowManager::Startup() {
                          "Enable vertical sync.",
                          CT_SETTINGS_BOUNDS_BOOL);
 
-   /* Check for power usage */
-   int percent;
-   SDL_PowerState power = SDL_GetPowerInfo(NULL, &percent);
-   if (power == SDL_POWERSTATE_ON_BATTERY) {
-      ctDebugWarning("!!!USER IS ON BATTERY!!! Expect performance issues!");
-      if (percent <= 5) {
-         ShowErrorMessage("Battery Warning!",
-                          CT_NC("Battery is almost dead!\n Please plug in the charger."));
-      }
-   }
-
+#if !CITRUS_HEADLESS
    uint32_t flags = windowModeFlags(mainWindowMode);
 #ifdef CITRUS_GFX_VULKAN
    flags |= SDL_WINDOW_VULKAN;
@@ -114,23 +104,30 @@ ctResults ctWindowManager::Startup() {
    if (!window) { return CT_FAILURE_UNKNOWN; }
    SDL_SetWindowMinimumSize(window, 640, 480);
    mainWindow.pSDLWindow = window;
+#endif
    return CT_SUCCESS;
 }
 
 ctResults ctWindowManager::Shutdown() {
+#if !CITRUS_HEADLESS
    SDL_DestroyWindow(mainWindow.pSDLWindow);
+#endif
    return CT_SUCCESS;
 }
 
 ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) {
+#if !CITRUS_HEADLESS
    if (SDL_ShowSimpleMessageBox(
          SDL_MESSAGEBOX_ERROR, title, msg, mainWindow.pSDLWindow)) {
       return CT_FAILURE_UNKNOWN;
    }
+#endif
    return CT_SUCCESS;
 }
 
 ctResults ctWindowManager::ShowMainWindow() {
+#if !CITRUS_HEADLESS
    if (mainWindow.pSDLWindow) { SDL_ShowWindow(mainWindow.pSDLWindow); }
+#endif
    return CT_SUCCESS;
 }
