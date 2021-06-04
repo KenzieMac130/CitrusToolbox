@@ -1,0 +1,76 @@
+import time
+import re
+import os
+import configparser
+import shutil
+import sys
+from waflib.Task import Task
+
+# Copy input configs
+class CopyFolder(Task):
+	def run(self):
+		shutil.copytree(self.inputs[0].abspath(), self.outputs[0].abspath())
+		return 0
+		
+	def scan(self): #Find all output files
+		return (self.inputs, time.time())
+		
+	def runnable_status(self):
+		ret = super(CopyFolder, self).runnable_status()
+		bld = self.generator.bld
+		return ret
+		
+# Compile a shader
+class CompileShader(Task):
+	def run(self):
+		print(self.inputs[0])
+		return self.exec_command('"%s" "%s" -o "%s" -std=450' % (self.env['GLSLC'][0], self.inputs[0].abspath(), self.outputs[0].abspath()))
+		
+	def scan(self): #Find all output files
+		return (self.inputs, time.time())
+		
+	def runnable_status(self):
+		ret = super(CompileShader, self).runnable_status()
+		bld = self.generator.bld
+		return ret
+
+def setdir(ctx):
+	print(sys.argv)
+
+# Define command line options
+def options(ctx):
+	ctx.add_option('--libs', default='', action='store', help='path to platform libs')
+
+# On environment configure
+def configure(ctx):
+	try:
+		ctx.find_program("glslc", path_list=ctx.options.libs + '/Vulkan/Bin/', var='GLSLC')
+	except:
+		raise ValueError("Could not find glslc!")
+	pass
+
+# On asset processing build
+def build(ctx):
+	print('Building: ' + ctx.path.abspath())
+	
+	# Define parallel build groups
+	ctx.add_group('Installs')
+	ctx.add_group('Shaders')
+	
+	# Define files to directly install
+	ctx.set_group('Installs')
+	task = CopyFolder(env=ctx.env)
+	task.set_inputs(ctx.path.find_node("input"));
+	task.set_outputs(ctx.path.find_or_declare("input"))
+	ctx.add_to_group(task)
+	
+	# Define shaders to compile
+	ctx.set_group('Shaders')
+	for file in ctx.path.ant_glob(['**/*.vert', '**/*.frag', '**/*.comp']):
+		fileName = file.relpath().split('.', 1)[0] + '.spv'
+		outFile = ctx.path.find_or_declare(fileName)
+		task = CompileShader(env=ctx.env)
+		task.set_inputs(file);
+		task.set_outputs(outFile)
+		ctx.add_to_group(task)
+	
