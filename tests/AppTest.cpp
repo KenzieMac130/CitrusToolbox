@@ -41,7 +41,8 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
-    Engine->FileSystem->MakePreferencesDirectory("Test");
+   ctDebugLog(CT_NC("Translation Test"));
+   Engine->FileSystem->MakePreferencesDirectory("Test");
    return CT_SUCCESS;
 }
 

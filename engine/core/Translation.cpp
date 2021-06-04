@@ -22,6 +22,9 @@ ctTranslation* mainTranslationSystem;
 
 ctTranslation::ctTranslation(bool shared) {
    if (shared) { mainTranslationSystem = this; }
+   for (int i = 0; i < CT_TRANSLATION_CATAGORY_COUNT; i++) {
+       dictionaries.Append(ctTranslation::_dictionary());
+   }
 }
 
 ctResults ctTranslation::Startup() {
