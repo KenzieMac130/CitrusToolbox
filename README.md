@@ -14,8 +14,10 @@
      *  C++ 14 Compiler
      *  Git + LFS (with command line access)
      *  Python 3
-  * Clone the repository to your machine in a directory with sufficient priveleges.
-  * Configure and Generate CMake
+  * Clone the repository/submodules to your machine in a directory with sufficient priveleges.
+     * `git clone --recurse-submodules https://github.com/KenzieMac130/CitrusToolbox/`
+  * Configure and Generate CMake 
+      * Make sure the target architecture is x64
   * Compile the Generated Project
  
 ## Areas of interest:
