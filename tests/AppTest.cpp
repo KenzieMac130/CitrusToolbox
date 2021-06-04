@@ -20,7 +20,7 @@
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
-   virtual const char* GetAppPublisher();
+   virtual const char* GetAppDeveloperName();
    virtual ctAppVersion GetAppVersion();
    virtual ctResults OnStartup();
    virtual ctResults OnTick(const float deltatime);
@@ -32,7 +32,7 @@ const char* TestApp::GetAppName() {
    return "AppTest";
 }
 
-const char* TestApp::GetAppPublisher() {
+const char* TestApp::GetAppDeveloperName() {
    return "CitrusToolbox";
 }
 
@@ -41,22 +41,26 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
+    Engine->FileSystem->MakePreferencesDirectory("Test");
    return CT_SUCCESS;
 }
 
 int loopvar = 0;
 ctResults TestApp::OnTick(const float deltatime) {
    ZoneScoped;
-   if (loopvar <= 5000) {
+   /*if (loopvar <= 5000) {
       Engine->Debug->Log("This Message %d", loopvar);
       loopvar++;
       if (loopvar == 5001) { ctDebugLog("Finished"); }
-   }
+   }*/
    return CT_SUCCESS;
 }
 
 ctResults TestApp::OnUIUpdate() {
    ImGui::ShowDemoWindow();
+   ImGui::Begin("Interact");
+   Engine->Interact->DebugImGui();
+   ImGui::End();
    return CT_SUCCESS;
 }
 
