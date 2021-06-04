@@ -81,7 +81,7 @@ Backends are code paths can be optionaly compiled per-platform and implement dev
 ```json
 {
 	"deviceName": "Keyboard",
-	"devicePath": "/devices/keyboard/default",
+	"skinPath": "/skins/keyboard"
 	"profiles":
 	[
 		{
@@ -158,6 +158,7 @@ Devices are provided to specify bindings depending on known device
 * /devices/gamepad/types/nintendo/switch/half **( can't use half the controller, no touch )**
 * /devices/gamepad/types/nintendo/switch/split **( arm motion, no touch )**
 * /devices/gamepad/types/nintendo/switch/whole **( single controller motion, no touch )**
+* /devices/gamepad/types/sony/dualshock3
 * /devices/gamepad/types/sony/dualshock4
 * /devices/gamepad/types/sony/dualsense
 * /devices/gamepad/types/valve/steam
