@@ -43,6 +43,7 @@ set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
 set(CT_MAX_GFX_STORAGE_IMAGES 64)
 set(CT_MAX_GFX_STORAGE_BUFFERS 4096)
 set(CT_MAX_INFLIGHT_FRAMES 3)
+set(CT_MAX_PLAYERS 8)
 
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
@@ -138,6 +139,7 @@ endif()
 
 
 # ---------- Add Subdirectories ----------
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/assets)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
