@@ -76,7 +76,7 @@ inline ctHashTable<T, K>::ctHashTable(const size_t baseSize) {
 template<class T, class K>
 inline T* ctHashTable<T, K>::Insert(const K key, const T& value) {
    if (key == 0) { return NULL; }
-   if (!_pKeys || !_pValues) { return NULL; }
+   if (!_pKeys || !_pValues) { Reserve(31); }
 
    /* Resize if needed */
    size_t load = Count() * 100 / Capacity();
