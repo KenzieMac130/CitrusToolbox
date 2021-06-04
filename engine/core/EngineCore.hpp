@@ -33,6 +33,7 @@
 #include "audition/HotReloadDetection.hpp"
 #endif
 
+#include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLime.hpp"
 #include "scene/SceneEngineBase.hpp"
 
@@ -61,6 +62,7 @@ public:
 #endif
    ctDebugSystem* Debug;
    ctWindowManager* WindowManager;
+   ctInteractionEngine* Interact;
    ctImguiIntegration* ImguiIntegration;
    ctIm3dIntegration* Im3dIntegration;
    ctKeyLimeRenderer* Renderer;

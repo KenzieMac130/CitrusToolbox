@@ -25,13 +25,13 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 
    /*SDL*/
 #if !CITRUS_HEADLESS
-   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER | SDL_INIT_HAPTIC);
+   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 #else
    SDL_Init(SDL_INIT_TIMER);
 #endif
 
    /* Create Modules */
-   FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppPublisher());
+   FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
    Settings = new ctSettings();
    Debug = new ctDebugSystem(32, true);
 #if CITRUS_INCLUDE_AUDITION
@@ -41,6 +41,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
+   Interact = new ctInteractionEngine();
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
@@ -60,11 +61,10 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 #if !CITRUS_HEADLESS
    WindowManager->ModuleStartup(this);
 #endif
+   Interact->ModuleStartup(this);
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
-#if !CITRUS_HEADLESS
    Renderer->ModuleStartup(this);
-#endif
    SceneEngine->Startup();
    ctDebugLog("Citrus Toolbox has Started!");
 
@@ -94,15 +94,12 @@ bool ctEngineCore::isExitRequested() {
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
-   // HotReload->CheckIn();
    App->OnTick(deltatime);
-   App->OnUIUpdate();
-   /*Update modules*/
-   OSEventManager->PollOSEvents();
-#if !CITRUS_HEADLESS
-   Renderer->RenderFrame();
-#endif
    SceneEngine->NextFrame();
+   App->OnUIUpdate();
+   Renderer->RenderFrame();
+   OSEventManager->PollOSEvents();
+   Interact->PumpInput();
    Im3dIntegration->NextFrame();
    ImguiIntegration->NextFrame();
    FrameMark;
@@ -118,11 +115,10 @@ ctResults ctEngineCore::Shutdown() {
    /*Shutdown modules*/
    ctDebugLog("Citrus Toolbox is Shutting Down...");
    SceneEngine->Shutdown();
-#if !CITRUS_HEADLESS
    Renderer->ModuleShutdown();
-#endif
    Im3dIntegration->ModuleShutdown();
    ImguiIntegration->ModuleShutdown();
+   Interact->ModuleShutdown();
 #if !CITRUS_HEADLESS
    WindowManager->ModuleShutdown();
 #endif
