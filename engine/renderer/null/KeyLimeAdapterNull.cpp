@@ -19,6 +19,7 @@
 #include "core/EngineCore.hpp"
 
 ctResults ctKeyLimeRenderer::Startup() {
+   ctDebugLog("Null Rendering Backend...");
    return CT_SUCCESS;
 };
 
