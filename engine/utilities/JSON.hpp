@@ -25,8 +25,6 @@
 
 class ctStringUtf8;
 
-//Todo: Cleanup and inline
-
 class CT_API ctJSONWriter {
 public:
    ctJSONWriter();
@@ -42,7 +40,6 @@ public:
    ctResults WriteNumber(int64_t value);
    ctResults WriteBool(bool value);
    ctResults WriteNull();
-   /*Todo: Vector Math*/
 
 private:
    void _finishLastEntry();
@@ -50,6 +47,7 @@ private:
    void _setDefinition(bool val);
    void _pushStack(bool isArray);
    void _popStack();
+   void _makeIndents();
    ctStringUtf8* _pStr;
 
    struct _json_stack {
@@ -57,64 +55,62 @@ private:
       bool isFirst;
       bool isArray;
    };
+   uint32_t indentLevel;
+   bool started;
    ctStaticArray<_json_stack, 32> _jsonStack;
+};
+
+class CT_API ctJSONReadEntry {
+public:
+   ctJSONReadEntry();
+   ctJSONReadEntry(
+     int id, int count, jsmntok_t token, jsmntok_t* pTokenArr, const char* pData);
+
+   size_t GetRaw(char* pDest, int size) const;
+
+   bool isObject() const;
+   int GetObjectEntryCount() const;
+   ctResults GetObjectEntry(const char* name, ctJSONReadEntry& entry) const;
+   ctResults
+   GetObjectEntry(int idx, ctJSONReadEntry& entry, ctStringUtf8* pLabel = NULL) const;
+
+   bool isArray() const;
+   int GetArrayLength() const;
+   ctResults GetArrayEntry(int index, ctJSONReadEntry& entry) const;
+
+   bool isString() const;
+   bool isPrimitive() const;
+   bool isNull() const;
+   bool isBool() const;
+   bool isNumber() const;
+   void GetString(ctStringUtf8& out) const;
+   void GetString(char* pDest, size_t max) const;
+   ctResults GetBool(bool& out) const;
+   ctResults GetNumber(float& out) const;
+   ctResults GetNumber(double& out) const;
+   ctResults GetNumber(int8_t& out) const;
+   ctResults GetNumber(int16_t& out) const;
+   ctResults GetNumber(int32_t& out) const;
+   ctResults GetNumber(int64_t& out) const;
+   ctResults GetNumber(uint8_t& out) const;
+   ctResults GetNumber(uint16_t& out) const;
+   ctResults GetNumber(uint32_t& out) const;
+   ctResults GetNumber(uint64_t& out) const;
+
+protected:
+   ctResults _getEntry(int index, ctJSONReadEntry& entry) const;
+   jsmntok_t _token;
+   int _tokenPos;
+   int _tokenCount;
+   jsmntok_t* _pTokens;
+   const char* _pData;
 };
 
 class CT_API ctJSONReader {
 public:
    ctResults BuildJsonForPtr(const char* pData, size_t length);
 
-   class Entry {
-   public:
-      Entry();
-      Entry(int id,
-            int count,
-            jsmntok_t token,
-            jsmntok_t* pTokenArr,
-            const char* pData);
-
-      size_t GetRaw(char* pDest, int size);
-
-      bool isObject();
-      ctResults GetObjectEntry(const char* name, Entry& entry);
-      int ObjectEntryCount();
-      ctResults
-      GetObjectEntryIdx(int index, Entry& entry, ctStringUtf8* pLabel);
-
-      bool isArray();
-      ctResults GetArrayEntry(int index, Entry& entry);
-      int ArrayLength();
-      /*Todo: Vector Math*/
-
-      bool isString();
-      bool isPrimitive();
-      bool isNull();
-      bool isBool();
-      bool isNumber();
-      void GetString(ctStringUtf8& out);
-      void GetString(char* pDest, size_t max);
-      ctResults GetBool(bool& out);
-      ctResults GetNumber(float& out);
-      ctResults GetNumber(double& out);
-      ctResults GetNumber(int8_t& out);
-      ctResults GetNumber(int16_t& out);
-      ctResults GetNumber(int32_t& out);
-      ctResults GetNumber(int64_t& out);
-      ctResults GetNumber(uint8_t& out);
-      ctResults GetNumber(uint16_t& out);
-      ctResults GetNumber(uint32_t& out);
-      ctResults GetNumber(uint64_t& out);
-
-   protected:
-      ctResults _getEntry(int index, Entry& entry);
-      jsmntok_t _token;
-      int _tokenPos;
-      int _tokenCount;
-      jsmntok_t* _pTokens;
-      const char* _pData;
-   };
-
-   void GetRootEntry(Entry& entry);
+   void GetRootEntry(ctJSONReadEntry& entry);
 
 private:
    const char* _pData;
