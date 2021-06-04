@@ -363,7 +363,7 @@ ctResults ctVkBackend::Startup() {
    /* Fill in AppInfo */
    {
       vkAppInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-      vkAppInfo.apiVersion = VK_VERSION_1_2;
+      vkAppInfo.apiVersion = VK_API_VERSION_1_2;
       vkAppInfo.pEngineName = "CitrusToolbox";
       vkAppInfo.engineVersion = VK_MAKE_VERSION(CITRUS_ENGINE_VERSION_MAJOR,
                                                 CITRUS_ENGINE_VERSION_MINOR,
