@@ -218,6 +218,19 @@ uint64_t ctStringUtf8::xxHash64() const {
    return xxHash64(0);
 }
 
+void ctStringUtf8::MakeUTF16Array(ctDynamicArray<char16_t>& arr) const {
+   size_t size = CodeLength();
+   arr.Reserve(size);
+   arr.Clear();
+   void* data = _dataVoid();
+   while (1) {
+      int32_t chr = 0;
+      data = utf8codepoint(data, &chr);
+      arr.Append((char16_t)chr);
+      if (chr == 0) { break; }
+   }
+}
+
 inline void* ctStringUtf8::_dataVoid() const {
    return (void*)_data.Data();
 }

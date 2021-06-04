@@ -76,12 +76,14 @@ public:
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
 
+   void MakeUTF16Array(ctDynamicArray<char16_t>& arr) const;
+
 private:
    void* _dataVoid() const;
    void _removeNullTerminator();
    void _nullTerminate();
 
    /* Todo: Small string optimization */
-   //ctStaticArray<char, 32> _smallData;
+   // ctStaticArray<char, 32> _smallData;
    ctDynamicArray<char> _data;
 };
