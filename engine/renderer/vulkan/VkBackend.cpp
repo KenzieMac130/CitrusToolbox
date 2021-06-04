@@ -376,9 +376,9 @@ ctResults ctVkBackend::Startup() {
 
       vkAllocCallback = VkAllocationCallbacks {};
       vkAllocCallback.pUserData = NULL;
-      vkAllocCallback.pfnAllocation = vAllocFunction;
-      vkAllocCallback.pfnReallocation = vReallocFunction;
-      vkAllocCallback.pfnFree = vFreeFunction;
+      vkAllocCallback.pfnAllocation = (PFN_vkAllocationFunction)vAllocFunction;
+      vkAllocCallback.pfnReallocation = (PFN_vkReallocationFunction)vReallocFunction;
+      vkAllocCallback.pfnFree = (PFN_vkFreeFunction)vFreeFunction;
 
       validationLayers.Append("VK_LAYER_KHRONOS_validation");
    }
