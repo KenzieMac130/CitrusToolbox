@@ -17,6 +17,12 @@
 #include "FileSystem.hpp"
 #include "EngineCore.hpp"
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
 ctFile::ctFile() {
    _fSize = -1;
    _fp = NULL;
@@ -186,4 +192,19 @@ const ctResults ctFileSystem::OpenAssetFile(ctFile& file,
    ctStringUtf8 finalPath = _assetPath;
    finalPath += relativePath;
    return file.Open(finalPath, CT_FILE_OPEN_READ);
+}
+
+const ctResults ctFileSystem::MakePreferencesDirectory(const ctStringUtf8& relativePath) {
+   ctStringUtf8 finalPath = _prefPath;
+   finalPath += relativePath;
+#ifdef _WIN32
+   ctDynamicArray<char16_t> wfinalPath;
+   finalPath.MakeUTF16Array(wfinalPath);
+   LPSECURITY_ATTRIBUTES attr;
+   attr = NULL;
+   if (CreateDirectory((LPWSTR)wfinalPath.Data(), attr)) { return CT_SUCCESS; }
+#else
+   if (!mkdir(finalPath.CStr(), (S_IRUSR | S_IWUSR))) { return CT_SUCCESS; }
+#endif
+   return CT_FAILURE_UNKNOWN;
 }

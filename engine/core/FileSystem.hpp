@@ -82,6 +82,8 @@ public:
    const ctResults OpenAssetFile(ctFile& file,
                                  const ctStringUtf8& relativePath);
 
+   const ctResults MakePreferencesDirectory(const ctStringUtf8& relativePath);
+
 private:
    ctStringUtf8 _organizationName;
    ctStringUtf8 _appName;
