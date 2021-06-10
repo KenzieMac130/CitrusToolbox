@@ -81,7 +81,7 @@ Backends are code paths can be optionaly compiled per-platform and implement dev
 ```json
 {
 	"deviceName": "Keyboard",
-	"skinPath": "/skins/keyboard"
+	"skinPath": "/skins/keyboard",
 	"profiles":
 	[
 		{
