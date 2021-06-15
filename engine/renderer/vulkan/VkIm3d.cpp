@@ -16,3 +16,28 @@
 
 #include "VkBackend.hpp"
 #include "VkIm3d.hpp"
+
+ctResults ctVkIm3d::Startup(ctVkBackend* pBackend,
+                            VkCommandBuffer textureUploadCmd,
+                            VkRenderPass guiRenderpass,
+                            uint32_t subpass) {
+   return ctResults();
+}
+
+ctResults ctVkIm3d::Shutdown() {
+   return ctResults();
+}
+
+void ctVkIm3d::BuildDrawLists() {
+    Im3d::EndFrame();
+}
+
+void ctVkIm3d::SetDisplaySize(int32_t windowWidth,
+                              int32_t windowHeight,
+                              int32_t internalWidth,
+                              int32_t internalHeight) {
+    
+}
+
+void ctVkIm3d::RenderCommands(VkCommandBuffer cmd) {
+}
