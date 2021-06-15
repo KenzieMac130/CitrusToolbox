@@ -65,7 +65,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
    Renderer->ModuleStartup(this);
-   SceneEngine->Startup();
+   SceneEngine->ModuleStartup(this);
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
