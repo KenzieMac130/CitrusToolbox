@@ -37,9 +37,10 @@ public:
     ctResults ShowMainWindow();
 
     ctWindow mainWindow;
+    ctResults GetMainWindowDrawableSize(int32_t* pWidth, int32_t* pHeight);
 
-    int32_t mainWindowWidth;
-    int32_t mainWindowHeight;
+    int32_t mainDesiredWindowWidth;
+    int32_t mainDesiredWindowHeight;
     int32_t mainWindowMonitorIdx;
     int32_t mainWindowVSync;
     ctStringUtf8 mainWindowMode;

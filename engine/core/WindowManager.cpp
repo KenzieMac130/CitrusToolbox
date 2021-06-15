@@ -19,6 +19,10 @@
 #include "core/EngineCore.hpp"
 #include "core/Application.hpp"
 
+#ifdef CITRUS_GFX_VULKAN
+#include "SDL_vulkan.h"
+#endif
+
 uint32_t windowModeFlags(const ctStringUtf8& windowMode) {
    if (windowMode == "Windowed") {
       return 0;
@@ -35,8 +39,8 @@ uint32_t windowModeFlags(const ctStringUtf8& windowMode) {
 }
 
 ctWindowManager::ctWindowManager() {
-   mainWindowWidth = 640;
-   mainWindowHeight = 480;
+   mainDesiredWindowWidth = 640;
+   mainDesiredWindowHeight = 480;
    mainWindowMonitorIdx = 0;
    mainWindowVSync = 1;
 #ifdef NDEBUG
@@ -50,13 +54,13 @@ ctWindowManager::ctWindowManager() {
 ctResults ctWindowManager::Startup() {
    ZoneScoped;
    ctSettingsSection* settings = Engine->Settings->CreateSection("Window", 4);
-   settings->BindInteger(&mainWindowWidth,
+   settings->BindInteger(&mainDesiredWindowWidth,
                          true,
                          true,
                          "WindowWidth",
                          "Width of the main window.",
                          CT_SETTINGS_BOUNDS_UINT);
-   settings->BindInteger(&mainWindowHeight,
+   settings->BindInteger(&mainDesiredWindowHeight,
                          true,
                          true,
                          "WindowHeight",
@@ -92,8 +96,8 @@ ctResults ctWindowManager::Startup() {
    } else {
       windowDim.x = SDL_WINDOWPOS_CENTERED_DISPLAY(mainWindowMonitorIdx);
       windowDim.y = SDL_WINDOWPOS_CENTERED_DISPLAY(mainWindowMonitorIdx);
-      windowDim.w = mainWindowWidth;
-      windowDim.h = mainWindowHeight;
+      windowDim.w = mainDesiredWindowWidth;
+      windowDim.h = mainDesiredWindowHeight;
    }
    SDL_Window* window = SDL_CreateWindow(Engine->App->GetAppName(),
                                          windowDim.x,
@@ -128,6 +132,18 @@ ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) 
 ctResults ctWindowManager::ShowMainWindow() {
 #if !CITRUS_HEADLESS
    if (mainWindow.pSDLWindow) { SDL_ShowWindow(mainWindow.pSDLWindow); }
+#endif
+   return CT_SUCCESS;
+}
+
+ctResults ctWindowManager::GetMainWindowDrawableSize(int32_t* pWidth, int32_t* pHeight) {
+#if !CITRUS_HEADLESS
+#ifdef CITRUS_GFX_VULKAN
+   SDL_Vulkan_GetDrawableSize(mainWindow.pSDLWindow, pWidth, pHeight);
+#endif
+#else
+   *pWidth = 640;
+   *pHeight = 480;
 #endif
    return CT_SUCCESS;
 }
