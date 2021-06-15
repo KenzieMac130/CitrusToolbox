@@ -26,5 +26,7 @@ public:
     ctResults Startup() final;
     ctResults Shutdown() final;
 
+    void DrawImguiText(float w, float h, mat4 viewProj);
+
     ctResults NextFrame();
 };
