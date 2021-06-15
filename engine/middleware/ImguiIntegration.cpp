@@ -33,6 +33,9 @@ ctResults ctImguiIntegration::Startup() {
 #endif
    Engine->OSEventManager->MiscEventHandlers.Append({processImguiEvent, this});
    Engine->OSEventManager->WindowEventHandlers.Append({processImguiEvent, this});
+   iniPath = Engine->FileSystem->GetPreferencesPath();
+   iniPath += "imgui.ini";
+   ImGui::GetIO().IniFilename = iniPath.CStr();
 #else
    ImGui::GetIO().Fonts->AddFontDefault();
    ImGui::GetIO().Fonts->Build();

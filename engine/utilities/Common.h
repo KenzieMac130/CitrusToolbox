@@ -134,6 +134,7 @@ CT_API void ctAlignedFree(void* block);
 #include "Vector.hpp"
 #include "Quaternion.hpp"
 #include "Matrix.hpp"
+#include "Meta.hpp"
 #include "Sync.hpp"
 #include "JSON.hpp"
 #endif

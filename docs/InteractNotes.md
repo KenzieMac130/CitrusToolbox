@@ -82,59 +82,52 @@ Backends are code paths can be optionaly compiled per-platform and implement dev
 {
 	"deviceName": "Keyboard",
 	"skinPath": "/skins/keyboard",
-	"profiles":
+	"options": {
+		"useGyro": false
+	},
+	"actionSets": 
 	[
 		{
-			"profileName": "WASD",
-			"profileDesc": "Wasd Movement",
-			"options": {
-				"useGyro": false
-			},
-			"actionSets": 
+			"setName": "walk",
+			"actions":
 			[
 				{
-					"setName": "walk",
-					"actions":
+					"actionName": "moveForward",
+					"bindings": 
 					[
 						{
-							"actionName": "moveForward",
-							"bindings": 
-							[
-								{
-									"deadzoneInner": 0.0,
-									"deadzoneOuter": 1.0,
-									"scale": 1.0,
-									"required": false,
-									"path": "/binding/keyboard/keys/w"
-								},
-								{
-									"deadzoneInner": 0.0,
-									"deadzoneOuter": 1.0,
-									"scale": -1.0,
-									"required": false,
-									"path": "/binding/keyboard/keys/s"
-								}
-							]
+							"deadzoneInner": 0.0,
+							"deadzoneOuter": 1.0,
+							"scale": 1.0,
+							"required": false,
+							"path": "/binding/keyboard/keys/w"
 						},
 						{
-							"actionName": "moveLeft",
-							"bindings": 
-							[
-								{
-									"deadzoneInner": 0.0,
-									"deadzoneOuter": 1.0,
-									"scale": 1.0,
-									"required": false,
-									"path": "/binding/keyboard/keys/d"
-								},
-								{
-									"deadzoneInner": 0.0,
-									"deadzoneOuter": 1.0,
-									"scale": -1.0,
-									"required": false,
-									"path": "/binding/keyboard/keys/a"
-								}
-							]
+							"deadzoneInner": 0.0,
+							"deadzoneOuter": 1.0,
+							"scale": -1.0,
+							"required": false,
+							"path": "/binding/keyboard/keys/s"
+						}
+					]
+				},
+				{
+					"actionName": "moveLeft",
+					"bindings": 
+					[
+						{
+							"deadzoneInner": 0.0,
+							"deadzoneOuter": 1.0,
+							"scale": 1.0,
+							"required": false,
+							"path": "/binding/keyboard/keys/d"
+						},
+						{
+							"deadzoneInner": 0.0,
+							"deadzoneOuter": 1.0,
+							"scale": -1.0,
+							"required": false,
+							"path": "/binding/keyboard/keys/a"
 						}
 					]
 				}

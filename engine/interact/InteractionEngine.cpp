@@ -86,6 +86,8 @@ ctResults ctInteractDeviceBindings::BindToPlayer(int32_t player) {
    if (player < 0 && player >= CT_MAX_PLAYERS) { return CT_FAILURE_OUT_OF_BOUNDS; }
    if (!GetDevicePtr()) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    _playerIdx = player;
+   // Todo: load bindings from profile for a player
+   GetDevicePtr()->LoadBindingsForPlayer(player);
    ctDebugLog("Bound Player %d to %s", player, GetDevicePtr()->GetName().CStr());
    return CT_SUCCESS;
 }

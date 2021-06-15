@@ -126,6 +126,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Meta.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp

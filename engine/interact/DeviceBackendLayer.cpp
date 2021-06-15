@@ -49,6 +49,10 @@ ctResults ctInteractAbstractDevice::PumpMessage(ctInteractMessageInterface&) {
    return CT_SUCCESS;
 }
 
+ctResults ctInteractAbstractDevice::LoadBindingsForPlayer(int32_t player) {
+   return CT_SUCCESS;
+}
+
 ctResults ctInteractAbstractBackend::Update() {
    return CT_SUCCESS;
 }
@@ -74,10 +78,8 @@ ctResults ctInteractAbstractBackend::DisconnectDevice(ctInteractAbstractDevice* 
    return CT_FAILURE_NOT_FOUND;
 }
 
-ctResults
-ctInteractAbstractBackend::ConnectDeviceWithChildren(ctInteractAbstractDevice** ppDevice,
-                                               size_t deviceCount,
-                                               int32_t wantsPlayerId) {
+ctResults ctInteractAbstractBackend::ConnectDeviceWithChildren(
+  ctInteractAbstractDevice** ppDevice, size_t deviceCount, int32_t wantsPlayerId) {
    ctDynamicArray<ctInteractDeviceBindings>& bindings = Engine->Interact->DeviceBindings;
    bool found = false;
    for (int i = 0; i < bindings.Count(); i++) {

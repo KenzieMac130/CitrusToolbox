@@ -36,4 +36,7 @@ public:
 private:
     ctCameraInfo LastCamera;
     ctCameraInfo CurrentCamera;
+
+    //Debug Camera temp
+    ctVec3 lookAt;
 };

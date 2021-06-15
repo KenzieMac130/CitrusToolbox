@@ -24,6 +24,22 @@
 #include "interfaces/Message.hpp"
 #include "interfaces/Text.hpp"
 
+class ctInteractInternalBindingLoader {
+    virtual ctResults LoadDevice(const char* path);
+    virtual ctResults LoadOverride(const char* profile);
+
+private:
+    struct actionInfo {
+        char name[64];
+    };
+    class _actionSet {
+        char name[64];
+        /* Maps a binding to a unique action */
+        ctHashTable<actionInfo, uint32_t> bindingToAction;
+    };
+    ctDynamicArray<_actionSet> actionSets;
+};
+
 class ctInteractAbstractDevice {
 public:
    virtual bool isActionsHandled();
@@ -35,6 +51,8 @@ public:
    virtual ctResults PumpCursor(class ctInteractCursorInterface&);
    virtual ctResults PumpText(class ctInteractTextInterface&);
    virtual ctResults PumpMessage(class ctInteractMessageInterface&);
+
+   virtual ctResults LoadBindingsForPlayer(int32_t player);
 
    virtual ctStringUtf8 GetName() = 0;
    virtual ctStringUtf8 GetPath() = 0;

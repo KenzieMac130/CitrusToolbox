@@ -64,7 +64,6 @@ void ctInteractSDLGamepadBackend::AddController(int32_t id) {
       ctDebugLog("Controller Added (%d) %s", insId, pDevice->GetName().CStr());
       controllers.Insert(insId + 1, pDevice);
       ConnectDevice(pDevice, SDL_GameControllerGetPlayerIndex(sdlController));
-      // Todo: load bindings from profile
    }
 }
 
@@ -98,8 +97,13 @@ bool ctInteractSDLGamepadDevice::isActionsHandled() {
 }
 
 ctResults ctInteractSDLGamepadDevice::PumpActions(ctInteractActionInterface& actions) {
-   ctDebugLog("Hello");
+   // todo
    return CT_SUCCESS;
+}
+
+ctResults ctInteractSDLGamepadDevice::LoadBindingsForPlayer(int32_t player)
+{
+    return ctResults();
 }
 
 ctStringUtf8 ctInteractSDLGamepadDevice::GetName() {

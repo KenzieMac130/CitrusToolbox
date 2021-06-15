@@ -62,6 +62,18 @@ ctResults TestApp::OnUIUpdate() {
    ImGui::Begin("Interact");
    Engine->Interact->DebugImGui();
    ImGui::End();
+   //Im3d::Text(Im3d::Vec3(-1, -1, 0), 2.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "0");
+   //Im3d::Text(
+   //  Im3d::Vec3(1, -1, 0), 2.0f, Im3d::Color_Green, Im3d::TextFlags_Default, "1");
+   //Im3d::Text(Im3d::Vec3(0, 1, 0), 2.0f, Im3d::Color_Blue, Im3d::TextFlags_Default, "2");
+   Im3d::Text(Im3d::Vec3(-1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "0");
+   Im3d::Text(Im3d::Vec3(1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "1");
+   Im3d::Text(Im3d::Vec3(-1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "2");
+   Im3d::Text(Im3d::Vec3(1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "3");
+   Im3d::Text(Im3d::Vec3(1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "4");
+   Im3d::Text(Im3d::Vec3(-1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "5");
+   Im3d::Text(Im3d::Vec3(1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "6");
+   Im3d::Text(Im3d::Vec3(-1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "7");
    return CT_SUCCESS;
 }
 

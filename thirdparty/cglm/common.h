@@ -8,7 +8,7 @@
 #ifndef cglm_common_h
 #define cglm_common_h
 
-#define _USE_MATH_DEFINES /* for windows */
+//#define _USE_MATH_DEFINES /* for windows */
 
 #include <stdint.h>
 #include <stddef.h>

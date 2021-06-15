@@ -1,4 +1,3 @@
-#include "HoneybellScene.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,7 +14,13 @@
    limitations under the License.
 */
 
+#include "HoneybellScene.hpp"
+#include "imgui/imgui.h"
+
 ctResults ctHoneybellSceneEngine::Startup() {
+   CurrentCamera.fov = 0.785f;
+   CurrentCamera.position = {0.0f, 0.0f, -5.0f};
+   lookAt = {0.0f, 0.0f, 0.0f};
    return ctResults();
 }
 
@@ -24,13 +29,21 @@ ctResults ctHoneybellSceneEngine::Shutdown() {
 }
 
 ctResults ctHoneybellSceneEngine::NextFrame() {
-    /* Todo: Move to it's own object when scene engine is developed */
-    /* Temporary Debug Camera */
-    {
-        ctCameraInfo debugCamera = {};
+   /* Todo: Move to it's own object when scene engine is developed */
+   /* Temporary Debug Camera */
+   {
+      ctCameraInfo debugCamera = CurrentCamera;
+      ImGui::Begin("Debug Camera");
+      ImGui::DragFloat("Fov", &debugCamera.fov, 0.01f, 0.01f, CT_PI / 2.0f);
+      ImGui::InputFloat3("Position", debugCamera.position.data);
+      ImGui::InputFloat3("LookAt", lookAt.data);
+      ImGui::End();
 
-        SetCameraInfo(debugCamera);
-    }
+      ctVec3 fwd = CT_FORWARD;
+      ctVec3 up = CT_UP;
+      glm_quat_for(lookAt.data, fwd.data, up.data, debugCamera.rotation.data);
+      SetCameraInfo(debugCamera);
+   }
 
    LastCamera = CurrentCamera;
    return CT_SUCCESS;

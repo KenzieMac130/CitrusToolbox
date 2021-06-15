@@ -1,0 +1,8 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema",
+	"title": "manifest",
+	"type": "object",
+	"description": "File manifest"
+	"properties":{
+	}
+}

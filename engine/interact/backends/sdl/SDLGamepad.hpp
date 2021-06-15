@@ -25,6 +25,8 @@ public:
    virtual bool isActionsHandled();
    virtual ctResults PumpActions(class ctInteractActionInterface&);
 
+   virtual ctResults LoadBindingsForPlayer(int32_t player);
+
    virtual ctStringUtf8 GetName();
    virtual ctStringUtf8 GetPath();
 

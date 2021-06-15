@@ -437,7 +437,7 @@ ctResults ctVkBackend::Startup() {
               "support."));
    }
    /*Setup Validation Debug Callback*/
-   {
+   if(validationEnabled){
       PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallback =
         (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(
           vkInstance, "vkCreateDebugReportCallbackEXT");
@@ -1026,7 +1026,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       vkCmdPipelineBarrier(cmd,
                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                            VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                           VK_DEPENDENCY_BY_REGION_BIT,
                            0,
                            NULL,
                            0,
@@ -1050,7 +1050,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       vkCmdPipelineBarrier(cmd,
                            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                            VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                           VK_DEPENDENCY_BY_REGION_BIT,
                            0,
                            NULL,
                            0,
@@ -1081,7 +1081,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
       vkCmdPipelineBarrier(cmd,
                            VK_PIPELINE_STAGE_TRANSFER_BIT,
                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                           VK_DEPENDENCY_VIEW_LOCAL_BIT,
+                           VK_DEPENDENCY_BY_REGION_BIT,
                            0,
                            NULL,
                            0,

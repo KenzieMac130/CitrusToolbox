@@ -274,6 +274,8 @@ ctResults ctVkKeyLimeCore::Render() {
 #endif
 
    /* Build Debug Internals */
+   vkIm3d.BuildDrawLists();
+   Engine->Im3dIntegration->DrawImguiText();
    vkImgui.BuildDrawLists();
 
    VkCommandBuffer gfxCommands = gfxCommandBuffers[vkBackend.currentFrame];

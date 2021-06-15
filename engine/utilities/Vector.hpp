@@ -18,6 +18,8 @@
 
 #include "Common.h"
 
+#include "cglm/cglm.h"
+
 /* Hard-coded coordinate spaces (based on glTF) */
 // clang-format off
 #define CT_UP        {  0.0f,  1.0f,  0.0f  } 
