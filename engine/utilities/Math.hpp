@@ -107,7 +107,7 @@ inline bool ctFloatCompare(const float a, const float b, const float threshold) 
 }
 
 inline float ctLerp(const float a, const float b, const float t) {
-    return (1 - t) * a + t * b;
+    return (1.0f - t) * a + t * b;
 }
 
 inline float ctSmoothStep(const float a, const float b, const float t) {
