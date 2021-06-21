@@ -41,7 +41,7 @@
 #define CT_AXIS_VERTICAL y
 
 /* --- Vec2 --- */
-struct CT_API CT_ALIGN(8) ctVec2 {
+struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC2) ctVec2 {
    inline ctVec2() {
       x = 0.0f;
       y = 0.0f;
@@ -119,7 +119,7 @@ inline ctVec2 lerp(const ctVec2& a, const ctVec2& b, float t) {
 }
 
 /* --- Vec3 --- */
-struct CT_API CT_ALIGN(16) ctVec3 {
+struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC3) ctVec3 {
    inline ctVec3() {
       x = 0.0f;
       y = 0.0f;
@@ -217,7 +217,7 @@ inline ctVec3 lerp(const ctVec3& a, const ctVec3& b, float t) {
 
 /* --- Vec4 --- */
 
-struct CT_API CT_ALIGN(16) ctVec4 {
+struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC4) ctVec4 {
    inline ctVec4() {
       x = 0.0f;
       y = 0.0f;
@@ -311,7 +311,7 @@ inline ctVec4 lerp(const ctVec4& a, const ctVec4& b, float t) {
 
 /* --- Quaternion --- */
 
-struct ctQuat {
+struct CT_API CT_ALIGN(CT_ALIGNMENT_QUAT) ctQuat {
    inline ctQuat() {
       x = 0.0f;
       y = 0.0f;
@@ -381,7 +381,7 @@ inline ctQuat ctQuatSlerp(const ctQuat& a, const ctQuat& b, float t) {
 }
 
 /* --- Mat4 --- */
-struct CT_API CT_ALIGN(32) ctMat4 {
+struct CT_API CT_ALIGN(CT_ALIGNMENT_MAT4) ctMat4 {
    inline ctMat4() {
       // clang-format off
        data[0][0] = 0; data[0][1] = 0; data[0][2] = 0; data[0][3] = 0;
@@ -429,6 +429,18 @@ inline ctMat4 operator*(const ctMat4& a, const ctMat4 b) {
    return result;
 }
 
+inline ctVec4 operator*(const ctVec4 v, const ctMat4& m) {
+   ctVec4 result;
+   glm_mat4_mulv((vec4*)m.data, (float*)v.data, result.data);
+   return result;
+}
+
+inline ctVec3 operator*(const ctVec3 v, const ctMat4& m) {
+   ctVec3 result;
+   glm_mat4_mulv3((vec4*)m.data, (float*)v.data, 1.0f, result.data);
+   return result;
+}
+
 inline ctMat4 ctMat4Identity() {
    return ctMat4(1.0f);
 }
@@ -465,37 +477,37 @@ inline void ctMat4Ortho(ctMat4& m, float size, float aspect) {
 }
 
 /* --- Narrowing/Widening --- */
-inline ctVec2::ctVec2(ctVec3 _v) {
+inline ctVec2::ctVec2(struct ctVec3 _v) {
    x = _v.x;
    y = _v.y;
 }
-inline ctVec2::ctVec2(ctVec4 _v) {
+inline ctVec2::ctVec2(struct ctVec4 _v) {
    x = _v.x;
    y = _v.y;
 }
-inline ctVec3::ctVec3(ctVec2 _v) {
+inline ctVec3::ctVec3(struct ctVec2 _v) {
    x = _v.x;
    y = _v.y;
    z = 0.0f;
 }
-inline ctVec3::ctVec3(ctVec4 _v) {
+inline ctVec3::ctVec3(struct ctVec4 _v) {
    x = _v.x;
    y = _v.y;
    z = _v.z;
 }
-inline ctVec4::ctVec4(ctVec2 _v) {
+inline ctVec4::ctVec4(struct ctVec2 _v) {
    x = _v.x;
    y = _v.y;
    z = 0.0f;
    w = 0.0f;
 }
-inline ctVec4::ctVec4(ctVec3 _v) {
+inline ctVec4::ctVec4(struct ctVec3 _v) {
    x = _v.x;
    y = _v.y;
    z = _v.z;
    w = 0.0f;
 }
-inline ctQuat::ctQuat(ctVec4 _v) {
+inline ctQuat::ctQuat(struct ctVec4 _v) {
    x = _v.x;
    y = _v.y;
    z = _v.z;
