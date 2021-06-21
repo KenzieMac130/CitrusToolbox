@@ -106,15 +106,12 @@ endforeach()
 set(ENGINE_SOURCE_FILES_UTILITIES
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.cpp
 )
 
 set(ENGINE_HEADER_FILES_UTILITIES
@@ -125,16 +122,15 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Matrix.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Meta.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Quaternion.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Vector.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.hpp
 )
 
 # ---------- Engine Core Framework ----------
