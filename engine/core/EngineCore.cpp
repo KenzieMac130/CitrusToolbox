@@ -46,6 +46,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
    SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
+   FrameTime = ctStopwatch();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
@@ -77,7 +78,8 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 ctResults ctEngineCore::EnterLoop() {
    _isRunning = true;
    while (_isRunning) {
-      LoopSingleShot(1.0f / 60.0f);
+      FrameTime.NextLap();
+      LoopSingleShot(FrameTime.GetDeltaTimeFloat());
    }
    Shutdown();
 

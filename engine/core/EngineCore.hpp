@@ -68,6 +68,8 @@ public:
    ctKeyLimeRenderer* Renderer;
    ctSceneEngineBase* SceneEngine;
 
+   ctStopwatch FrameTime;
+
 private:
    bool _isRunning = true;
 };
