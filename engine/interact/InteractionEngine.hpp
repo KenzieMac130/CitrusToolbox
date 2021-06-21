@@ -26,7 +26,7 @@
 #include "interfaces/Text.hpp"
 #include "interfaces/UserConfig.hpp"
 
-class ctInteractPlayer {
+class CT_API ctInteractPlayer {
 public:
    ctInteractActionInterface Action;
    ctInteractCursorInterface Cursor;
@@ -35,14 +35,14 @@ public:
    ctInteractUserConfigInterface Config;
 };
 
-class ctInteractDeviceBindings {
+class CT_API ctInteractDeviceBinding {
 public:
-   ctInteractDeviceBindings();
-   ctInteractDeviceBindings(class ctInteractAbstractDevice* device);
-   ctInteractDeviceBindings(size_t subdeviceCount,
+   ctInteractDeviceBinding();
+   ctInteractDeviceBinding(class ctInteractAbstractDevice* device);
+   ctInteractDeviceBinding(size_t subdeviceCount,
                             class ctInteractAbstractDevice** ppDevices);
 
-   ctResults BindToPlayer(int32_t player);
+   ctResults BindToPlayer(int32_t player, const char* configPath);
    ctResults Unbind();
 
    size_t GetSubdeviceCount();
@@ -51,7 +51,7 @@ public:
 
 private:
    int32_t _playerIdx;
-   ctStaticArray<ctInteractAbstractDevice*, 4> _devices;
+   ctStaticArray<ctInteractAbstractDevice*, CT_MAX_INTERACT_SUBDEVICES> _devices;
 };
 
 class CT_API ctInteractionEngine : public ctModuleBase {
@@ -63,7 +63,7 @@ public:
    ctResults DebugImGui();
 
    ctInteractPlayer Players[CT_MAX_PLAYERS];
-   ctDynamicArray<ctInteractDeviceBindings> DeviceBindings;
+   ctDynamicArray<ctInteractDeviceBinding> DeviceBindings;
 
 protected:
    ctDynamicArray<ctInteractAbstractBackend*> pBackends;

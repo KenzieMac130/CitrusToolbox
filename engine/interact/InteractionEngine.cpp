@@ -49,15 +49,15 @@ ctResults ctInteractionEngine::DebugImGui() {
       /* show interfaces */
    }
    for (int i = 0; i < DeviceBindings.Count(); i++) {
-       /* todo: better debug vis */
-       for (int j = 0; j < DeviceBindings[i].GetSubdeviceCount(); j++) {
-           ctInteractAbstractDevice* pDevice = DeviceBindings[i].GetDevicePtr(j);
-           if (!pDevice) { continue; }
-           ImGui::Text("Name: %s\nPath: %s\nPlayer: %d",
-                       pDevice->GetName().CStr(),
-                       pDevice->GetPath().CStr(),
-                       DeviceBindings[i].GetPlayerIdx());
-       }
+      /* todo: better debug vis */
+      for (int j = 0; j < DeviceBindings[i].GetSubdeviceCount(); j++) {
+         ctInteractAbstractDevice* pDevice = DeviceBindings[i].GetDevicePtr(j);
+         if (!pDevice) { continue; }
+         ImGui::Text("Name: %s\nPath: %s\nPlayer: %d",
+                     pDevice->GetName().CStr(),
+                     pDevice->GetPath().CStr(),
+                     DeviceBindings[i].GetPlayerIdx());
+      }
    }
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->DebugImGui();
@@ -65,48 +65,48 @@ ctResults ctInteractionEngine::DebugImGui() {
    return CT_SUCCESS;
 }
 
-ctInteractDeviceBindings::ctInteractDeviceBindings() {
+ctInteractDeviceBinding::ctInteractDeviceBinding() {
    _playerIdx = -1;
 }
 
-ctInteractDeviceBindings::ctInteractDeviceBindings(ctInteractAbstractDevice* device) {
+ctInteractDeviceBinding::ctInteractDeviceBinding(ctInteractAbstractDevice* device) {
    _playerIdx = -1;
    _devices.Append(device);
 }
 
-ctInteractDeviceBindings::ctInteractDeviceBindings(size_t subdeviceCount,
-                                                   ctInteractAbstractDevice** ppDevices) {
+ctInteractDeviceBinding::ctInteractDeviceBinding(size_t subdeviceCount,
+                                                 ctInteractAbstractDevice** ppDevices) {
+   ctAssert(subdeviceCount <= CT_MAX_INTERACT_SUBDEVICES);
    _playerIdx = -1;
    for (size_t i = 0; i < subdeviceCount; i++) {
       _devices.Append(ppDevices[i]);
    }
 }
 
-ctResults ctInteractDeviceBindings::BindToPlayer(int32_t player) {
+ctResults ctInteractDeviceBinding::BindToPlayer(int32_t player, const char* configPath) {
    if (player < 0 && player >= CT_MAX_PLAYERS) { return CT_FAILURE_OUT_OF_BOUNDS; }
    if (!GetDevicePtr()) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    _playerIdx = player;
-   // Todo: load bindings from profile for a player
-   GetDevicePtr()->LoadBindingsForPlayer(player);
+   GetDevicePtr()->LoadInputBindings(configPath);
    ctDebugLog("Bound Player %d to %s", player, GetDevicePtr()->GetName().CStr());
    return CT_SUCCESS;
 }
 
-ctResults ctInteractDeviceBindings::Unbind() {
+ctResults ctInteractDeviceBinding::Unbind() {
    ctDebugLog("Unbound Player %d from %s", _playerIdx, GetDevicePtr()->GetName().CStr());
    _playerIdx = -1;
    return CT_SUCCESS;
 }
 
-size_t ctInteractDeviceBindings::GetSubdeviceCount() {
+size_t ctInteractDeviceBinding::GetSubdeviceCount() {
    return _devices.Count();
 }
 
-ctInteractAbstractDevice* ctInteractDeviceBindings::GetDevicePtr(uint32_t subDevice) {
+ctInteractAbstractDevice* ctInteractDeviceBinding::GetDevicePtr(uint32_t subDevice) {
    if (subDevice >= _devices.Count()) { return NULL; }
    return _devices[subDevice];
 }
 
-int32_t ctInteractDeviceBindings::GetPlayerIdx() {
+int32_t ctInteractDeviceBinding::GetPlayerIdx() {
    return _playerIdx;
 }

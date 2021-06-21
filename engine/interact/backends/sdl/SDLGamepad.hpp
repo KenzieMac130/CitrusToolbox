@@ -19,22 +19,22 @@
 #include "utilities/Common.h"
 #include "interact/DeviceBackendLayer.hpp"
 
-class ctInteractSDLGamepadDevice : public ctInteractAbstractDevice {
+class CT_API ctInteractSDLGamepadDevice : public ctInteractAbstractDevice {
 public:
    ctInteractSDLGamepadDevice(SDL_GameController* controller);
    virtual bool isActionsHandled();
    virtual ctResults PumpActions(class ctInteractActionInterface&);
 
-   virtual ctResults LoadBindingsForPlayer(int32_t player);
-
    virtual ctStringUtf8 GetName();
    virtual ctStringUtf8 GetPath();
+
+   virtual ctResults LoadInputBindings(const char* basePath);
 
    SDL_GameController* gameController;
    ctStringUtf8 deviceName;
 };
 
-class ctInteractSDLGamepadBackend : public ctInteractAbstractBackend {
+class CT_API ctInteractSDLGamepadBackend : public ctInteractAbstractBackend {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;

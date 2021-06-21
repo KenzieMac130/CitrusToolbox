@@ -18,6 +18,6 @@
 
 #include "utilities/Common.h"
 
-class ctInteractUserConfigInterface {
+class CT_API ctInteractUserConfigInterface {
 public:
 };

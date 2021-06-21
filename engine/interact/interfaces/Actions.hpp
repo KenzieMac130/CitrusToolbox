@@ -18,19 +18,18 @@
 
 #include "utilities/Common.h"
 
-class ctInteractAction {
-    char builtinName[64];
-    char localName[128];
+class CT_API ctInteractAction {
+   char builtinName[64];
+   char localName[128];
 };
 
-class ctInteractActionGroup {
+class CT_API ctInteractActionGroup {
 public:
-    
 };
 
 typedef ctInteractActionGroup* ctInteractActionGroupHandle;
 
-class ctInteractActionInterface {
+class CT_API ctInteractActionInterface {
 public:
-    ctDynamicArray<ctInteractActionGroupHandle> activeActionGroups;
+   ctDynamicArray<ctInteractActionGroupHandle> activeActionGroups;
 };

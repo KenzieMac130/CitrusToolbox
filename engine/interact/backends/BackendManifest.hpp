@@ -18,7 +18,7 @@
 #include "interact/DeviceBackendLayer.hpp"
 #include "core/EngineCore.hpp"
 
-ctResults ctToggleInteractBackend(const char* name, bool use);
-void ctRetrieveInteractBackends(ctDynamicArray<ctInteractAbstractBackend*>& backendList);
-ctResults ctStartAndRetrieveInteractBackends(ctEngineCore* pEngine, ctDynamicArray<ctInteractAbstractBackend*>& backendList);
-ctResults ctShutdownInteractBackends();
+CT_API ctResults ctToggleInteractBackend(const char* name, bool use);
+CT_API void ctRetrieveInteractBackends(ctDynamicArray<ctInteractAbstractBackend*>& backendList);
+CT_API ctResults ctStartAndRetrieveInteractBackends(ctEngineCore* pEngine, ctDynamicArray<ctInteractAbstractBackend*>& backendList);
+CT_API ctResults ctShutdownInteractBackends();

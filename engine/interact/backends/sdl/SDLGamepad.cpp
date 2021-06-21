@@ -101,11 +101,6 @@ ctResults ctInteractSDLGamepadDevice::PumpActions(ctInteractActionInterface& act
    return CT_SUCCESS;
 }
 
-ctResults ctInteractSDLGamepadDevice::LoadBindingsForPlayer(int32_t player)
-{
-    return ctResults();
-}
-
 ctStringUtf8 ctInteractSDLGamepadDevice::GetName() {
    return deviceName;
 }
@@ -122,4 +117,8 @@ ctStringUtf8 ctInteractSDLGamepadDevice::GetPath() {
          return "/devices/gamepad/types/nintendo/switch/default";
       default: return "/devices/gamepad/default";
    }
+}
+
+ctResults ctInteractSDLGamepadDevice::LoadInputBindings(const char* basePath) {
+   return ctResults();
 }

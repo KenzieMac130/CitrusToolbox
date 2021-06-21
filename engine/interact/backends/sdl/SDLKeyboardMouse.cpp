@@ -60,6 +60,14 @@ ctStringUtf8 ctInteractSDLMouseDevice::GetPath() {
    return "/devices/mouse/default";
 }
 
+ctResults ctInteractSDLMouseDevice::LoadInputBindings(const char* basePath) {
+   ctStringUtf8 fullPath = basePath;
+   fullPath += "/devices/mouse/default.json";
+   ctInteractInternalBindingLoader bindLoader = ctInteractInternalBindingLoader();
+   CT_RETURN_FAIL(bindLoader.LoadFile(fullPath.CStr()));
+   return CT_SUCCESS;
+}
+
 bool ctInteractSDLKeyboardDevice::isActionsHandled() {
    return true;
 }
@@ -82,4 +90,12 @@ ctStringUtf8 ctInteractSDLKeyboardDevice::GetName() {
 
 ctStringUtf8 ctInteractSDLKeyboardDevice::GetPath() {
    return "/devices/keyboard/default";
+}
+
+ctResults ctInteractSDLKeyboardDevice::LoadInputBindings(const char* basePath) {
+   ctStringUtf8 fullPath = basePath;
+   fullPath += "/devices/keyboard/default.json";
+   ctInteractInternalBindingLoader bindLoader = ctInteractInternalBindingLoader();
+   CT_RETURN_FAIL(bindLoader.LoadFile(fullPath.CStr()));
+   return CT_SUCCESS;
 }

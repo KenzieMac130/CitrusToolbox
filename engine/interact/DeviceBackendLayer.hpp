@@ -18,29 +18,47 @@
 
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
+#include "core/FileSystem.hpp"
 
 #include "interfaces/Actions.hpp"
 #include "interfaces/Cursor.hpp"
 #include "interfaces/Message.hpp"
 #include "interfaces/Text.hpp"
 
-class ctInteractInternalBindingLoader {
-    virtual ctResults LoadDevice(const char* path);
-    virtual ctResults LoadOverride(const char* profile);
-
-private:
-    struct actionInfo {
-        char name[64];
-    };
-    class _actionSet {
-        char name[64];
-        /* Maps a binding to a unique action */
-        ctHashTable<actionInfo, uint32_t> bindingToAction;
-    };
-    ctDynamicArray<_actionSet> actionSets;
+struct CT_API ctInteractInternalBinding {
+    float deadzoneInner;
+    float deadzoneOuter;
+    float scale;
+    uint64_t scancode;
 };
 
-class ctInteractAbstractDevice {
+typedef ctInteractInternalBinding ctInteractInternalBindingList[CT_MAX_ACTION_BINDS];
+
+class CT_API ctInteractInternalBindingActionMap {
+public:
+   void AddBind(const char* set, const char* action, ctInteractInternalBindingList internalRep);
+   bool GetBind(const char* set, const char* action, ctInteractInternalBindingList& result);
+
+private:
+   ctHashTable<uint64_t, ctInteractInternalBindingList> mapping;
+};
+
+typedef ctResults(*ctInteractInternalBindingTranslateBindPathFn)(const char* path, uint64_t* out);
+
+  class CT_API ctInteractInternalBindingLoader {
+public:
+   virtual ctResults LoadFile(const char* path);
+   ~ctInteractInternalBindingLoader();
+   virtual ctResults PopulateActionMap(ctInteractInternalBindingActionMap& outMap,
+                                       ctInteractInternalBindingTranslateBindPathFn fpRemap);
+
+private:
+   ctFile file;
+   char* text;
+   ctJSONReader json;
+};
+
+class CT_API ctInteractAbstractDevice {
 public:
    virtual bool isActionsHandled();
    virtual bool isCursorHandled();
@@ -52,13 +70,13 @@ public:
    virtual ctResults PumpText(class ctInteractTextInterface&);
    virtual ctResults PumpMessage(class ctInteractMessageInterface&);
 
-   virtual ctResults LoadBindingsForPlayer(int32_t player);
-
    virtual ctStringUtf8 GetName() = 0;
    virtual ctStringUtf8 GetPath() = 0;
+
+   virtual ctResults LoadInputBindings(const char* basePath);
 };
 
-class ctInteractAbstractBackend : public ctModuleBase {
+class CT_API ctInteractAbstractBackend : public ctModuleBase {
 public:
    virtual ~ctInteractAbstractBackend() = default;
    virtual ctStringUtf8 GetName() = 0;
@@ -69,6 +87,6 @@ public:
    ctResults ConnectDevice(ctInteractAbstractDevice* pDevice, int32_t wantsPlayerId = -1);
    ctResults DisconnectDevice(ctInteractAbstractDevice* pDevice);
    ctResults ConnectDeviceWithChildren(ctInteractAbstractDevice** ppDevices,
-                                   size_t deviceCount,
-                                   int32_t wantsPlayerId = -1);
+                                       size_t deviceCount,
+                                       int32_t wantsPlayerId = -1);
 };

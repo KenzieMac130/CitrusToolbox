@@ -19,34 +19,39 @@
 #include "utilities/Common.h"
 #include "interact/DeviceBackendLayer.hpp"
 
-class ctInteractSDLKeyboardDevice : public ctInteractAbstractDevice {
+class CT_API ctInteractSDLKeyboardDevice : public ctInteractAbstractDevice {
 public:
-    virtual bool isActionsHandled();
-    virtual ctResults PumpActions(class ctInteractActionInterface&);
-    virtual bool isTextHandled();
-    virtual ctResults PumpText(class ctInteractTextInterface&);
+   virtual bool isActionsHandled();
+   virtual ctResults PumpActions(class ctInteractActionInterface&);
+   virtual bool isTextHandled();
+   virtual ctResults PumpText(class ctInteractTextInterface&);
 
-    virtual ctStringUtf8 GetName();
-    virtual ctStringUtf8 GetPath();
+   virtual ctStringUtf8 GetName();
+   virtual ctStringUtf8 GetPath();
+
+   virtual ctResults LoadInputBindings(const char* basePath);
 };
 
-class ctInteractSDLMouseDevice : public ctInteractAbstractDevice {
+class CT_API ctInteractSDLMouseDevice : public ctInteractAbstractDevice {
 public:
-    virtual bool isActionsHandled();
-    virtual ctResults PumpActions(class ctInteractActionInterface&);
-    virtual bool isCursorHandled();
-    virtual ctResults PumpCursor(class ctInteractCursorInterface&);
+   virtual bool isActionsHandled();
+   virtual ctResults PumpActions(class ctInteractActionInterface&);
+   virtual bool isCursorHandled();
+   virtual ctResults PumpCursor(class ctInteractCursorInterface&);
 
-    virtual ctStringUtf8 GetName();
-    virtual ctStringUtf8 GetPath();
+   virtual ctStringUtf8 GetName();
+   virtual ctStringUtf8 GetPath();
+
+   virtual ctResults LoadInputBindings(const char* basePath);
 };
 
-class ctInteractSDLKeyboardMouseBackend : public ctInteractAbstractBackend {
-    ctResults Startup() final;
-    ctResults Shutdown() final;
-    ctStringUtf8 GetName() final;
-    ctStringUtf8 GetDescription() final;
+class CT_API ctInteractSDLKeyboardMouseBackend : public ctInteractAbstractBackend {
+   ctResults Startup() final;
+   ctResults Shutdown() final;
+   ctStringUtf8 GetName() final;
+   ctStringUtf8 GetDescription() final;
+
 private:
-    ctInteractSDLKeyboardDevice keyboard;
-    ctInteractSDLMouseDevice mouse;
+   ctInteractSDLKeyboardDevice keyboard;
+   ctInteractSDLMouseDevice mouse;
 };

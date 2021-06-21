@@ -18,6 +18,6 @@
 
 #include "utilities/Common.h"
 
-class ctInteractCursorInterface {
+class CT_API ctInteractCursorInterface {
 public:
 };

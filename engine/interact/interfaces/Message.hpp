@@ -18,6 +18,6 @@
 
 #include "utilities/Common.h"
 
-class ctInteractMessageInterface {
+class CT_API ctInteractMessageInterface {
 public:
 };
