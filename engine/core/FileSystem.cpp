@@ -60,6 +60,7 @@ int64_t ctFile::GetFileSize() {
    if (_fSize == -1) {
       Seek(0, CT_FILE_SEEK_END);
       _fSize = Tell();
+      Seek(0, CT_FILE_SEEK_SET);
    }
    return _fSize;
 }
