@@ -250,11 +250,16 @@ int json_test() {
    return 0;
 }
 
+int math_3d_test() {
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
    dynamic_array_test();
    static_array_test();
    dynamic_string_test();
    hash_table_test();
    json_test();
+   math_3d_test();
    return 0;
 }
