@@ -41,7 +41,9 @@ extern "C" {
 #include <assert.h>
 #include <stdarg.h>
 
+#if CITRUS_SDL
 #include "SDL.h"
+#endif
 
 /*Exportable*/
 // clang-format off
@@ -84,6 +86,12 @@ enum ctResults {
    CT_FAILURE_MODULE_NOT_INITIALIZED = -17,
    CT_FAILURE_NOT_FOUND = -18,
 };
+
+#define CT_RETURN_FAIL(arg)                                                              \
+   ctResults __res = arg;                                                                \
+   if (__res != CT_SUCCESS) { return __res; }
+
+#define CT_ALIGN(x) alignas(x)
 
 /*C Helpers*/
 #define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
@@ -128,13 +136,12 @@ CT_API void ctAlignedFree(void* block);
 #include "DynamicArray.hpp"
 #include "StaticArray.hpp"
 #include "Math.hpp"
+#include "Math3d.hpp"
 #include "Hash.hpp"
 #include "String.hpp"
 #include "HashTable.hpp"
-#include "Vector.hpp"
-#include "Quaternion.hpp"
-#include "Matrix.hpp"
 #include "Meta.hpp"
 #include "Sync.hpp"
 #include "JSON.hpp"
+#include "Time.hpp"
 #endif
