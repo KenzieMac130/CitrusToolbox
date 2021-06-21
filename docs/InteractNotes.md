@@ -218,6 +218,8 @@ In the event that OpenXR is not supported for a vr device these paths will be em
 
 Action types will all be mapped/split to 1D, pose is not supported here and will be mapped to spacial
 
+Supported components: click, force, value, x/y, twist
+
 * /binding/xr/[path/..] **( See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#semantic-path-interaction-profiles )**
 	* /binding/xr/user/hand/left/input/trackpad/click
 	* /binding/xr/user/gamepad/input/a/click
