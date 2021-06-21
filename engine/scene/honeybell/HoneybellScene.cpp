@@ -39,8 +39,8 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       ImGui::InputFloat3("LookAt", lookAt.data);
       ImGui::End();
 
-      ctVec3 fwd = CT_FORWARD;
-      ctVec3 up = CT_UP;
+      ctVec3 fwd = CT_VEC3_FORWARD;
+      ctVec3 up = CT_VEC3_UP;
       glm_quat_for(lookAt.data, fwd.data, up.data, debugCamera.rotation.data);
       SetCameraInfo(debugCamera);
    }
