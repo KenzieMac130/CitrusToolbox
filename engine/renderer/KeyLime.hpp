@@ -21,12 +21,18 @@
 #include "core/ModuleBase.hpp"
 #include "utilities/Common.h"
 
+struct ctKeyLimeCameraDesc {
+   ctVec3 position;
+   ctQuat rotation;
+   float fov;
+};
 
 class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
+   ctResults UpdateCamera(const ctKeyLimeCameraDesc& cameraDesc);
    ctResults RenderFrame();
 
 #ifdef CITRUS_GFX_VULKAN

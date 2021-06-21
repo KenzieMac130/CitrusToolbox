@@ -261,6 +261,11 @@ ctResults ctVkKeyLimeCore::Shutdown() {
    return CT_SUCCESS;
 }
 
+ctResults ctVkKeyLimeCore::UpdateCamera(ctKeyLimeCameraDesc cameraDesc) {
+   ctAssert(viewBufferCount >= 1);
+       return CT_SUCCESS;
+}
+
 ctResults ctVkKeyLimeCore::Render() {
    ZoneScoped;
    vkBackend.WaitForFrameAvailible();
@@ -275,7 +280,7 @@ ctResults ctVkKeyLimeCore::Render() {
 
    /* Build Debug Internals */
    vkIm3d.BuildDrawLists();
-   Engine->Im3dIntegration->DrawImguiText();
+   Engine->Im3dIntegration->DrawImguiText(ctMat4());
    vkImgui.BuildDrawLists();
 
    VkCommandBuffer gfxCommands = gfxCommandBuffers[vkBackend.currentFrame];

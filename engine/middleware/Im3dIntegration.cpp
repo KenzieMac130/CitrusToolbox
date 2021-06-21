@@ -28,7 +28,7 @@ ctResults ctIm3dIntegration::Shutdown() {
    return CT_SUCCESS;
 }
 
-void ctIm3dIntegration::DrawImguiText(float w, float h, mat4 viewProj) {
+void ctIm3dIntegration::DrawImguiText(ctMat4 viewProj) {
    ZoneScoped;
    const ctCameraInfo cameraInfo = Engine->SceneEngine->GetCameraInfo(NULL);
    Im3d::AppData& appData = Im3d::GetAppData();

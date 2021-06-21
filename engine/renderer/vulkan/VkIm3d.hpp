@@ -31,7 +31,7 @@ public:
                        int32_t windowHeight,
                        int32_t internalWidth,
                        int32_t internalHeight);
-   void SetMatrices(mat4 view, mat4 projection);
+   void SetMatrices(ctMat4 view, ctMat4 projection);
    void RenderCommands(VkCommandBuffer cmd);
 
 private:

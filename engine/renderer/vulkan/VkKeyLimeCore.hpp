@@ -16,16 +16,31 @@
 
 #pragma once
 
+#include "renderer/KeyLime.hpp"
 #include "utilities/Common.h"
 #include "VkBackend.hpp"
 #include "VkImgui.hpp"
 #include "VkIm3d.hpp"
+
+struct ctVkKeyLimeGlobalBufferData {
+    float debug;
+    float time;
+    float deltaTime;
+};
+
+struct ctVkKeyLimeViewBufferData {
+    ctMat4 viewMatrix;
+    ctMat4 inverseViewMatrix;
+    ctMat4 projectionMatrix;
+    ctMat4 inverseProjectionMatrix;
+};
 
 class CT_API ctVkKeyLimeCore : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
+   ctResults UpdateCamera(ctKeyLimeCameraDesc cameraDesc);
    ctResults Render();
 
    VkFormat compositeFormat;
@@ -52,4 +67,13 @@ public:
 
    VkRenderPass guiRenderPass;
    VkFramebuffer guiFramebuffer;
+
+   /* Mapped buffer data, offsets into global upload */
+   ctVkCompleteBuffer frameDataUploadBuffer[CT_MAX_INFLIGHT_FRAMES];
+   void* frameDataUploadBaseMappings[CT_MAX_INFLIGHT_FRAMES];
+
+   ctVkKeyLimeGlobalBufferData* pGlobalBufferData;
+
+   size_t viewBufferCount = 1;
+   ctVkKeyLimeViewBufferData* pViewBufferData;
 };

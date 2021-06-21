@@ -29,6 +29,9 @@ ctResults ctKeyLimeRenderer::Shutdown() {
    delete vkKeyLime;
    return results;
 }
+ctResults ctKeyLimeRenderer::UpdateCamera(const ctKeyLimeCameraDesc& cameraDesc) {
+   return vkKeyLime->UpdateCamera(cameraDesc);
+}
 ctResults ctKeyLimeRenderer::RenderFrame() {
    return vkKeyLime->Render();
 };
