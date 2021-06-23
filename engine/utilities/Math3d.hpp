@@ -340,6 +340,13 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_QUAT) ctQuat {
       return *this;
    }
 
+   inline ctVec3 getForward() const;
+   inline ctVec3 getBack() const;
+   inline ctVec3 getUp() const;
+   inline ctVec3 getDown() const;
+   inline ctVec3 getRight() const;
+   inline ctVec3 getLeft() const;
+
    union {
       struct {
          float x;
@@ -357,20 +364,29 @@ inline ctQuat operator*(const ctQuat& a, const ctQuat b) {
    return result;
 }
 
+inline ctQuat operator-(const ctQuat& v) {
+   ctQuat result;
+   glm_quat_inv((float*)v.data, result.data);
+   return result;
+}
+
 inline ctQuat normalize(const ctQuat& v) {
    ctQuat result;
    glm_quat_normalize_to((float*)v.data, result.data);
    return result;
 }
 
-inline void ctVec3Rotate(ctVec3& v, const ctQuat q) {
-   glm_quat_rotatev(v.data, (float*)q.data, v.data);
+inline ctVec3 operator*(const ctVec3& v, const ctQuat q) {
+   ctVec3 result;
+   glm_quat_rotatev((float*)q.data, (float*)v.data, (float*)result.data);
+   return result;
 }
 
-inline ctQuat
-ctQuatLookTowards(const ctQuat& v, const ctVec3 dir, const ctVec3 up = CT_VEC3_UP) {
+inline ctQuat ctQuatLookTowards(const ctVec3 dir,
+                                const ctVec3 fwd = CT_VEC3_FORWARD,
+                                const ctVec3 up = CT_VEC3_UP) {
    ctQuat result;
-   glm_quat_normalize_to((float*)v.data, result.data);
+   glm_quat_for((float*)dir.data, (float*)fwd.data, (float*)up.data, (float*)result.data);
    return result;
 }
 
@@ -378,6 +394,25 @@ inline ctQuat ctQuatSlerp(const ctQuat& a, const ctQuat& b, float t) {
    ctQuat result;
    glm_quat_slerp((float*)a.data, (float*)b.data, t, result.data);
    return result;
+}
+
+inline ctVec3 ctQuat::getForward() const {
+   return CT_VEC3_FORWARD * *this;
+}
+inline ctVec3 ctQuat::getBack() const {
+   return CT_VEC3_BACK * *this;
+}
+inline ctVec3 ctQuat::getUp() const {
+   return CT_VEC3_UP * *this;
+}
+inline ctVec3 ctQuat::getDown() const {
+   return CT_VEC3_DOWN * *this;
+}
+inline ctVec3 ctQuat::getRight() const {
+   return CT_VEC3_RIGHT * *this;
+}
+inline ctVec3 ctQuat::getLeft() const {
+   return CT_VEC3_LEFT * *this;
 }
 
 /* --- Mat4 --- */
@@ -463,8 +498,9 @@ inline void ctMat4Scale(ctMat4& m, float s) {
 
 inline void
 ctMat4PerspectiveInfinite(ctMat4& m, float fov, float aspect, float nearClip) {
-   glm_perspective_infinite(fov, aspect, nearClip, m.data);
+   glm_perspective_infinite(fov, aspect, nearClip, (vec4*)m.data);
 #ifdef CITRUS_GFX_VULKAN
+   m.data[2][3] = 1.0f;
    m.data[1][1] *= -1.0f;
 #endif
 }
@@ -513,3 +549,25 @@ inline ctQuat::ctQuat(struct ctVec4 _v) {
    z = _v.z;
    w = _v.w;
 }
+
+/* --- Middleware Conversion --- */
+#define ctVec2ToIm3d(v) Im3d::Vec2(v.x, v.y)
+#define ctVec3ToIm3d(v) Im3d::Vec3(v.x, v.y, v.z)
+#define ctVec4ToIm3d(v) Im3d::Vec4(v.x, v.y, v.z, v.w)
+#define ctMat4ToIm3d(v)                                                                  \
+   Im3d::Mat4(v.data[0][0],                                                              \
+              v.data[0][1],                                                              \
+              v.data[0][2],                                                              \
+              v.data[0][3],                                                              \
+              v.data[1][0],                                                              \
+              v.data[1][1],                                                              \
+              v.data[1][2],                                                              \
+              v.data[1][3],                                                              \
+              v.data[2][0],                                                              \
+              v.data[2][1],                                                              \
+              v.data[2][2],                                                              \
+              v.data[2][3],                                                              \
+              v.data[3][0],                                                              \
+              v.data[3][1],                                                              \
+              v.data[3][2],                                                              \
+              v.data[3][3])
