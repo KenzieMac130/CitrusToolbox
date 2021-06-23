@@ -17,11 +17,17 @@
 enable_testing()
 
 #Utilities Test
-add_executable(UtilitiesTest UtilitiesTest.cpp)
-set_property(TARGET UtilitiesTest PROPERTY FOLDER "tests")
-target_link_libraries(UtilitiesTest PUBLIC engine)
+add_executable(Test_Utilities UtilitiesTest.cpp)
+set_property(TARGET Test_Utilities PROPERTY FOLDER "tests")
+target_link_libraries(Test_Utilities PUBLIC engine)
 
 #App Test
-add_executable(AppTest AppTest.cpp)
-set_property(TARGET AppTest PROPERTY FOLDER "tests")
-target_link_libraries(AppTest PUBLIC engine)
+add_executable(Test_App AppTest.cpp)
+set_property(TARGET Test_App PROPERTY FOLDER "tests")
+target_link_libraries(Test_App PUBLIC engine)
+
+#Interact Paths
+add_custom_target(Test_InteractPaths 
+   COMMAND python CheckInteractPaths.py
+   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/interactpaths
+   SOURCES interactpaths/CheckInteractPaths.py)
