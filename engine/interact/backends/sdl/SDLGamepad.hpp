@@ -19,31 +19,53 @@
 #include "utilities/Common.h"
 #include "interact/DeviceBackendLayer.hpp"
 
-class CT_API ctInteractSDLGamepadDevice : public ctInteractAbstractDevice {
-public:
-   ctInteractSDLGamepadDevice(SDL_GameController* controller);
-   virtual bool isActionsHandled();
-   virtual ctResults PumpActions(class ctInteractActionInterface&);
+struct ctInteractSDLGamepadInstance {
+   SDL_GameController* controller;
+   int32_t controllerId;
+   int32_t idx;
+};
 
-   virtual ctStringUtf8 GetName();
-   virtual ctStringUtf8 GetPath();
-
-   virtual ctResults LoadInputBindings(const char* basePath);
-
-   SDL_GameController* gameController;
-   ctStringUtf8 deviceName;
+struct ctInteractSDLGamepadPlayerContent {
+   union {
+      struct {
+         float a;
+         float b;
+         float x;
+         float y;
+         float dpad_up;
+         float dpad_down;
+         float dpad_left;
+         float dpad_right;
+         float shoulder_left;
+         float shoulder_right;
+         float trigger_left;
+         float trigger_right;
+         float thumbstick_left_click;
+         float thumbstick_right_click;
+         float thumbstick_left_x;
+         float thumbstick_left_y;
+         float thumbstick_right_x;
+         float thumbstick_right_y;
+         float select;
+         float start;
+         float guide;
+      };
+      float data[21];
+   };
 };
 
 class CT_API ctInteractSDLGamepadBackend : public ctInteractAbstractBackend {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
-   ctStringUtf8 GetName() final;
-   ctStringUtf8 GetDescription() final;
+
+   virtual ctResults Register(class ctInteractDirectorySystem& directory);
+   virtual ctResults Update(class ctInteractDirectorySystem& directory);
 
    void AddController(int32_t id);
    void RemoveController(int32_t id);
    void OnRemapController(int32_t id);
+
 private:
-   ctHashTable<ctInteractSDLGamepadDevice*, int32_t> controllers;
+   ctInteractSDLGamepadPlayerContent gamepads[4] = {0};
 };

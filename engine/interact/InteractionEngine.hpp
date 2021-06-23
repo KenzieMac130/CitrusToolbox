@@ -20,39 +20,68 @@
 #include "core/ModuleBase.hpp"
 #include "DeviceBackendLayer.hpp"
 
-#include "interfaces/Actions.hpp"
-#include "interfaces/Cursor.hpp"
-#include "interfaces/Message.hpp"
-#include "interfaces/Text.hpp"
-#include "interfaces/UserConfig.hpp"
+/* ---------------------------------- Virtual Directory ----------------------------------
+ */
 
-class CT_API ctInteractPlayer {
-public:
-   ctInteractActionInterface Action;
-   ctInteractCursorInterface Cursor;
-   ctInteractTextInterface Text;
-   ctInteractMessageInterface Message;
-   ctInteractUserConfigInterface Config;
+enum ctInteractionNodeType {
+   CT_INTERACT_NODETYPE_NULL = 0,
+   CT_INTERACT_NODETYPE_SCALAR = 1, /* Data points to a float */
+   CT_INTERACT_NODETYPE_BOOL = 2,   /* Data points to a boolean */
+   CT_INTERACT_NODETYPE_MERGER = 8, /* Data points to a value merger structure */
+   CT_INTERACT_NODETYPE_MAX = UINT8_MAX
 };
 
-class CT_API ctInteractDeviceBinding {
+struct CT_API ctInteractPath {
+   ctInteractPath();
+   ctInteractPath(const char* ptr, size_t count);
+   ctInteractPath(const char* ptr);
+   ctInteractPath(const ctStringUtf8& ctStr);
+   bool operator==(const ctInteractPath other) {
+       return ctCStrEql(str, other.str);
+   }
+   char str[CT_MAX_INTERACT_PATH_SIZE];
+};
+
+struct CT_API ctInteractNode {
+   inline ctInteractNode() {
+      path = ctInteractPath();
+      type = CT_INTERACT_NODETYPE_NULL;
+      accessible = true;
+      pData = NULL;
+   }
+   ctInteractPath path;
+   ctInteractionNodeType type;
+   bool accessible;
+   void* pData;
+};
+
+class CT_API ctInteractDirectorySystem {
 public:
-   ctInteractDeviceBinding();
-   ctInteractDeviceBinding(class ctInteractAbstractDevice* device);
-   ctInteractDeviceBinding(size_t subdeviceCount,
-                            class ctInteractAbstractDevice** ppDevices);
-
-   ctResults BindToPlayer(int32_t player, const char* configPath);
-   ctResults Unbind();
-
-   size_t GetSubdeviceCount();
-   ctInteractAbstractDevice* GetDevicePtr(uint32_t subDevice = 0);
-   int32_t GetPlayerIdx();
+   ctResults AddNode(ctInteractNode& node);
+   ctResults RemoveNode(ctInteractPath& path);
+   ctResults SetNodeAccessible(ctInteractPath& path, bool accessible);
+   ctResults
+   GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false);
+   void LogContents();
 
 private:
-   int32_t _playerIdx;
-   ctStaticArray<ctInteractAbstractDevice*, CT_MAX_INTERACT_SUBDEVICES> _devices;
+   ctHashTable<ctInteractNode, uint64_t> nodes;
 };
+
+/* ---------------------------------- Value Merger ---------------------------------- */
+
+class CT_API ctInteractMergeOp {
+   bool required;
+   ctInteractPath sourcePath;
+};
+
+class CT_API ctInteractMerger {
+public:
+   ctInteractPath targetPath;
+   ctDynamicArray<ctInteractMergeOp> mergeOps;
+};
+
+/* ---------------------------------- Engine ---------------------------------- */
 
 class CT_API ctInteractionEngine : public ctModuleBase {
 public:
@@ -62,9 +91,10 @@ public:
    ctResults PumpInput();
    ctResults DebugImGui();
 
-   ctInteractPlayer Players[CT_MAX_PLAYERS];
-   ctDynamicArray<ctInteractDeviceBinding> DeviceBindings;
+   float GetSignal(ctInteractPath& path);
+
+   ctInteractDirectorySystem Directory;
 
 protected:
-   ctDynamicArray<ctInteractAbstractBackend*> pBackends;
+   ctDynamicArray<class ctInteractAbstractBackend*> pBackends;
 };

@@ -37,88 +37,107 @@ void SDLGamecontrollerOnEvent(SDL_Event* event, void* data) {
 }
 
 ctResults ctInteractSDLGamepadBackend::Startup() {
+   ZoneScoped;
    ctDebugLog("Starting SDL Gamepad...");
    SDL_Init(SDL_INIT_GAMECONTROLLER);
-   this->Engine->OSEventManager->MiscEventHandlers.Append(
+   Engine->OSEventManager->MiscEventHandlers.Append(
      {SDLGamecontrollerOnEvent, this});
    return CT_SUCCESS;
 }
 
 ctResults ctInteractSDLGamepadBackend::Shutdown() {
+   ZoneScoped;
    return CT_SUCCESS;
 }
 
-ctStringUtf8 ctInteractSDLGamepadBackend::GetName() {
-   return CT_NC("SDL Game Controller");
+ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& directory) {
+   ZoneScoped;
+   /* Add mouse inputs */
+   char* inputPaths[] = {
+     "/input/a",
+     "/input/b",
+     "/input/x",
+     "/input/y",
+     "/input/dpad/up",
+     "/input/dpad/down",
+     "/input/dpad/left",
+     "/input/dpad/right",
+     "/input/shoulder_left",
+     "/input/shoulder_right",
+     "/input/trigger_left",
+     "/input/trigger_right",
+     "/input/thumbstick_left/click",
+     "/input/thumbstick_right/click",
+     "/input/thumbstick_left/x",
+     "/input/thumbstick_left/y",
+     "/input/thumbstick_right/x",
+     "/input/thumbstick_right/y",
+     "/input/start",
+     "/input/select",
+     "/input/guide",
+   };
+   for (int c = 0; c < 4; c++) {
+      for (int i = 0; i < 21; i++) {
+         ctInteractNode node = ctInteractNode();
+         node.type = CT_INTERACT_NODETYPE_SCALAR;
+         node.accessible = true;
+         snprintf(node.path.str,
+                  CT_MAX_INTERACT_PATH_SIZE,
+                  "/dev/gamepad/%d%s",
+                  c,
+                  inputPaths[i]);
+         node.pData = &gamepads[c].data[i];
+         directory.AddNode(node);
+      }
+   }
+   return CT_SUCCESS;
 }
 
-ctStringUtf8 ctInteractSDLGamepadBackend::GetDescription() {
-   return CT_NC("");
+ctResults ctInteractSDLGamepadBackend::Update(ctInteractDirectorySystem& directory) {
+   ZoneScoped;
+   return CT_SUCCESS;
 }
 
 void ctInteractSDLGamepadBackend::AddController(int32_t id) {
-   if (SDL_IsGameController(id)) {
-      SDL_GameController* sdlController = SDL_GameControllerOpen(id);
-      ctInteractSDLGamepadDevice* pDevice = new ctInteractSDLGamepadDevice(sdlController);
-      int32_t insId = SDL_JoystickGetDeviceInstanceID(id);
-      ctDebugLog("Controller Added (%d) %s", insId, pDevice->GetName().CStr());
-      controllers.Insert(insId + 1, pDevice);
-      ConnectDevice(pDevice, SDL_GameControllerGetPlayerIndex(sdlController));
-   }
+   ZoneScoped;
+   // if (SDL_IsGameController(id)) {
+   //   SDL_GameController* sdlController = SDL_GameControllerOpen(id);
+   //   int32_t insId = SDL_JoystickGetDeviceInstanceID(id);
+   //   ctDebugLog("Controller Added (%d)", insId);
+   //   int playerIdx = SDL_GameControllerGetPlayerIndex(sdlController);
+   //   /* Exceeds maximum*/
+   //   if (playerIdx >= 4) {
+   //      SDL_GameControllerClose(sdlController);
+   //      return;
+   //   }
+   //   /* Unknown bind (find empty slot) */
+   //   if (playerIdx < 0) {
+   //      for (int i = 0; i < 4; i++) {
+   //         if (gamepads[i].controller == NULL) {
+   //            playerIdx = i;
+   //            SDL_GameControllerSetPlayerIndex(sdlController, i);
+   //         }
+   //      }
+   //   }
+   //   gamepads[playerIdx].controller = sdlController;
+   //   gamepads[playerIdx].controllerId = insId;
+   //}
 }
 
 void ctInteractSDLGamepadBackend::RemoveController(int32_t id) {
-   ctInteractSDLGamepadDevice** ppController = controllers.FindPtr(id + 1);
-   if (ppController) {
-      ctDebugLog("Controller Removed: (%d) %s", id, (*ppController)->GetName().CStr());
-      DisconnectDevice(*ppController);
-      delete *ppController;
-   }
-   controllers.Remove(id);
+   ZoneScoped;
+   /*for (int i = 0; i < 4; i++) {
+      if (gamepads[i].controllerId == id) {
+         ctDebugLog("Controller Removed (%d)", id);
+         SDL_GameControllerClose(gamepads[i].controller);
+         memset(&gamepads[i], 0, sizeof(gamepads[0]));
+      }
+   }*/
 }
 
 void ctInteractSDLGamepadBackend::OnRemapController(int32_t id) {
-   ctInteractSDLGamepadDevice** ppController = controllers.FindPtr(id + 1);
-   if (ppController) {
-      ctDebugLog("Controller Remapped: (%d) %s", id, (*ppController)->GetName().CStr());
-      DisconnectDevice(*ppController);
-      ConnectDevice(*ppController,
-                    SDL_GameControllerGetPlayerIndex((*ppController)->gameController));
-   }
-}
-
-ctInteractSDLGamepadDevice::ctInteractSDLGamepadDevice(SDL_GameController* controller) {
-   gameController = controller;
-   deviceName = SDL_GameControllerName(controller);
-}
-
-bool ctInteractSDLGamepadDevice::isActionsHandled() {
-   return true;
-}
-
-ctResults ctInteractSDLGamepadDevice::PumpActions(ctInteractActionInterface& actions) {
-   // todo
-   return CT_SUCCESS;
-}
-
-ctStringUtf8 ctInteractSDLGamepadDevice::GetName() {
-   return deviceName;
-}
-
-ctStringUtf8 ctInteractSDLGamepadDevice::GetPath() {
-   SDL_GameControllerType type = SDL_GameControllerGetType(gameController);
-   switch (type) {
-      case SDL_CONTROLLER_TYPE_PS3: return "/devices/gamepad/types/sony/dualshock3";
-      case SDL_CONTROLLER_TYPE_PS4: return "/devices/gamepad/types/sony/dualshock4";
-      case SDL_CONTROLLER_TYPE_PS5: return "/devices/gamepad/types/sony/dualsense";
-      case SDL_CONTROLLER_TYPE_XBOX360: return "/devices/gamepad/types/microsoft/xbox360";
-      case SDL_CONTROLLER_TYPE_XBOXONE: return "/devices/gamepad/types/microsoft/xboxone";
-      case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:
-         return "/devices/gamepad/types/nintendo/switch/default";
-      default: return "/devices/gamepad/default";
-   }
-}
-
-ctResults ctInteractSDLGamepadDevice::LoadInputBindings(const char* basePath) {
-   return ctResults();
+   ZoneScoped;
+   /*for (int i = 0; i < 4; i++) {
+      if (gamepads[i].controllerId == id) { remaps.Append({gamepads[i].controller, id}); }
+   }*/
 }

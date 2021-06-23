@@ -19,39 +19,16 @@
 #include "utilities/Common.h"
 #include "interact/DeviceBackendLayer.hpp"
 
-class CT_API ctInteractSDLKeyboardDevice : public ctInteractAbstractDevice {
-public:
-   virtual bool isActionsHandled();
-   virtual ctResults PumpActions(class ctInteractActionInterface&);
-   virtual bool isTextHandled();
-   virtual ctResults PumpText(class ctInteractTextInterface&);
-
-   virtual ctStringUtf8 GetName();
-   virtual ctStringUtf8 GetPath();
-
-   virtual ctResults LoadInputBindings(const char* basePath);
-};
-
-class CT_API ctInteractSDLMouseDevice : public ctInteractAbstractDevice {
-public:
-   virtual bool isActionsHandled();
-   virtual ctResults PumpActions(class ctInteractActionInterface&);
-   virtual bool isCursorHandled();
-   virtual ctResults PumpCursor(class ctInteractCursorInterface&);
-
-   virtual ctStringUtf8 GetName();
-   virtual ctStringUtf8 GetPath();
-
-   virtual ctResults LoadInputBindings(const char* basePath);
-};
-
 class CT_API ctInteractSDLKeyboardMouseBackend : public ctInteractAbstractBackend {
+public:
    ctResults Startup() final;
    ctResults Shutdown() final;
-   ctStringUtf8 GetName() final;
-   ctStringUtf8 GetDescription() final;
 
-private:
-   ctInteractSDLKeyboardDevice keyboard;
-   ctInteractSDLMouseDevice mouse;
+   virtual ctResults Register(class ctInteractDirectorySystem& directory);
+   virtual ctResults Update(class ctInteractDirectorySystem& directory);
+   virtual ctResults DebugImGui();
+
+   uint8_t* keyStates;
+   bool mouseButtonStates[5];
+   float mouseAxisStates[4];
 };

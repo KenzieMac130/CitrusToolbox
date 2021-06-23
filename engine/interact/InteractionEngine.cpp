@@ -18,95 +18,111 @@
 #include "backends/BackendManifest.hpp"
 
 ctResults ctInteractionEngine::Startup() {
+   ZoneScoped;
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
-   return ctStartAndRetrieveInteractBackends(Engine, pBackends);
+   CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(Engine, pBackends));
+   for (int i = 0; i < pBackends.Count(); i++) {
+      pBackends[i]->Register(Directory);
+   }
+   return CT_SUCCESS;
 }
 
 ctResults ctInteractionEngine::Shutdown() {
+   ZoneScoped;
    return ctShutdownInteractBackends();
 }
 
 ctResults ctInteractionEngine::PumpInput() {
+   ZoneScoped;
    for (int i = 0; i < pBackends.Count(); i++) {
-      pBackends[i]->Update();
-   }
-   for (int i = 0; i < DeviceBindings.Count(); i++) {
-      ctInteractAbstractDevice* device = DeviceBindings[i].GetDevicePtr();
-      int32_t playerIdx = DeviceBindings[i].GetPlayerIdx();
-      if (!device || playerIdx < 0 || playerIdx >= CT_MAX_PLAYERS) { continue; }
-      ctInteractPlayer& player = Players[playerIdx];
-      if (device->isActionsHandled()) { device->PumpActions(player.Action); }
-      if (device->isCursorHandled()) { device->PumpCursor(player.Cursor); }
-      if (device->isTextHandled()) { device->PumpText(player.Text); }
-      if (device->isMessageHandled()) { device->PumpMessage(player.Message); }
+      pBackends[i]->Update(Directory);
    }
    return CT_SUCCESS;
 }
 
 ctResults ctInteractionEngine::DebugImGui() {
-   for (int i = 0; i < CT_MAX_PLAYERS; i++) {
-      /* show interfaces */
-   }
-   for (int i = 0; i < DeviceBindings.Count(); i++) {
-      /* todo: better debug vis */
-      for (int j = 0; j < DeviceBindings[i].GetSubdeviceCount(); j++) {
-         ctInteractAbstractDevice* pDevice = DeviceBindings[i].GetDevicePtr(j);
-         if (!pDevice) { continue; }
-         ImGui::Text("Name: %s\nPath: %s\nPlayer: %d",
-                     pDevice->GetName().CStr(),
-                     pDevice->GetPath().CStr(),
-                     DeviceBindings[i].GetPlayerIdx());
-      }
-   }
+   ZoneScoped;
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->DebugImGui();
    }
    return CT_SUCCESS;
 }
 
-ctInteractDeviceBinding::ctInteractDeviceBinding() {
-   _playerIdx = -1;
-}
-
-ctInteractDeviceBinding::ctInteractDeviceBinding(ctInteractAbstractDevice* device) {
-   _playerIdx = -1;
-   _devices.Append(device);
-}
-
-ctInteractDeviceBinding::ctInteractDeviceBinding(size_t subdeviceCount,
-                                                 ctInteractAbstractDevice** ppDevices) {
-   ctAssert(subdeviceCount <= CT_MAX_INTERACT_SUBDEVICES);
-   _playerIdx = -1;
-   for (size_t i = 0; i < subdeviceCount; i++) {
-      _devices.Append(ppDevices[i]);
+float ctInteractionEngine::GetSignal(ctInteractPath& path) {
+   ctInteractNode* pNode;
+   CT_RETURN_ON_FAIL(Directory.GetNode(path, pNode), 0.0f);
+   CT_RETURN_ON_NULL(pNode->pData, 0.0f);
+   if (pNode->type == CT_INTERACT_NODETYPE_SCALAR) {
+      return *(float*)pNode->pData;
+   } else if (pNode->type == CT_INTERACT_NODETYPE_BOOL) {
+      return *(bool*)pNode->pData ? 1.0f : 0.0f;
    }
+   return 0.0f;
 }
 
-ctResults ctInteractDeviceBinding::BindToPlayer(int32_t player, const char* configPath) {
-   if (player < 0 && player >= CT_MAX_PLAYERS) { return CT_FAILURE_OUT_OF_BOUNDS; }
-   if (!GetDevicePtr()) { return CT_FAILURE_CORRUPTED_CONTENTS; }
-   _playerIdx = player;
-   GetDevicePtr()->LoadInputBindings(configPath);
-   ctDebugLog("Bound Player %d to %s", player, GetDevicePtr()->GetName().CStr());
+ctInteractPath::ctInteractPath() {
+   memset(str, 0, CT_MAX_INTERACT_PATH_SIZE);
+}
+
+ctInteractPath::ctInteractPath(const char* ptr, size_t count) {
+   memset(str, 0, CT_MAX_INTERACT_PATH_SIZE);
+   strncpy(str,
+           ptr,
+           count > CT_MAX_INTERACT_PATH_SIZE - 1 ? CT_MAX_INTERACT_PATH_SIZE - 1 : count);
+}
+
+ctInteractPath::ctInteractPath(const char* ptr) {
+   *this = ctInteractPath(ptr, strlen(ptr));
+}
+
+ctInteractPath::ctInteractPath(const ctStringUtf8& ctStr) {
+   *this = ctInteractPath(ctStr.CStr());
+}
+
+ctResults ctInteractDirectorySystem::AddNode(ctInteractNode& node) {
+   ZoneScoped;
+   uint64_t hash = ctxxHash64(node.path.str);
+   ctAssert(!nodes.Exists(hash)); /* Catch duplicate on debug builds */
+   CT_RETURN_ON_NULL(nodes.Insert(hash, node), CT_FAILURE_INVALID_PARAMETER);
    return CT_SUCCESS;
 }
 
-ctResults ctInteractDeviceBinding::Unbind() {
-   ctDebugLog("Unbound Player %d from %s", _playerIdx, GetDevicePtr()->GetName().CStr());
-   _playerIdx = -1;
+ctResults ctInteractDirectorySystem::RemoveNode(ctInteractPath& path) {
+   ZoneScoped;
+   ctInteractNode* result;
+   CT_RETURN_FAIL(GetNode(path, result, true));
+   if (result->type == CT_INTERACT_NODETYPE_MERGER) {
+      if (result->pData) { delete result->pData; }
+   }
+   nodes.Remove(ctxxHash64(path.str));
    return CT_SUCCESS;
 }
 
-size_t ctInteractDeviceBinding::GetSubdeviceCount() {
-   return _devices.Count();
+ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path,
+                                                       bool accessible) {
+   ZoneScoped;
+   ctInteractNode* result;
+   CT_RETURN_FAIL(GetNode(path, result, true));
+   result->accessible = accessible;
+   return CT_SUCCESS;
 }
 
-ctInteractAbstractDevice* ctInteractDeviceBinding::GetDevicePtr(uint32_t subDevice) {
-   if (subDevice >= _devices.Count()) { return NULL; }
-   return _devices[subDevice];
+ctResults ctInteractDirectorySystem::GetNode(ctInteractPath& path,
+                                             ctInteractNode*& pOutNode,
+                                             bool forceAccess) {
+   ZoneScoped;
+   ctInteractNode* result = nodes.FindPtr(ctxxHash64(path.str));
+   CT_RETURN_ON_NULL(result, CT_FAILURE_DATA_DOES_NOT_EXIST);
+   ctAssert(result->path == path);
+   CT_RETURN_ON_UNTRUE(result->path == path, CT_FAILURE_CORRUPTED_CONTENTS);
+   if (!result->accessible && !forceAccess) { return CT_FAILURE_FILE_INACCESSIBLE; }
+   pOutNode = result;
+   return CT_SUCCESS;
 }
 
-int32_t ctInteractDeviceBinding::GetPlayerIdx() {
-   return _playerIdx;
+void ctInteractDirectorySystem::LogContents() {
+   for (auto it = nodes.GetIterator(); it; it++) {
+      ctDebugLog("%" PRIu64 ": %s", it.Key(), it.Value().path.str);
+   }
 }

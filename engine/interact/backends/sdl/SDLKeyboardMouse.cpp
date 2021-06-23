@@ -15,87 +15,105 @@
 */
 
 #include "SDLKeyboardMouse.hpp"
+#include "interact/InteractionEngine.hpp"
+#include "core/EngineCore.hpp"
+
+void SDLKeyboardMouseOnEvent(SDL_Event* event, void* data) {
+   ctInteractSDLKeyboardMouseBackend* pBackend = (ctInteractSDLKeyboardMouseBackend*)data;
+   switch (event->type) {
+      case SDL_MOUSEWHEEL: {
+         pBackend->mouseAxisStates[2] = (float)event->wheel.x;
+         pBackend->mouseAxisStates[3] = (float)event->wheel.y;
+      }
+      default: break;
+   }
+}
 
 ctResults ctInteractSDLKeyboardMouseBackend::Startup() {
+   ZoneScoped;
    ctDebugLog("Starting SDL Keyboard and Mouse...");
-   ctInteractAbstractDevice* devices[] = {&keyboard, &mouse};
-   ConnectDeviceWithChildren(devices, ctCStaticArrayLen(devices), 0);
+   keyStates = (uint8_t*)SDL_GetKeyboardState(NULL);
+   Engine->OSEventManager->MiscEventHandlers.Append({SDLKeyboardMouseOnEvent, this});
    return CT_SUCCESS;
 }
 
 ctResults ctInteractSDLKeyboardMouseBackend::Shutdown() {
-   DisconnectDevice(&keyboard);
    return CT_SUCCESS;
 }
 
-ctStringUtf8 ctInteractSDLKeyboardMouseBackend::GetName() {
-   return ctStringUtf8();
-}
+ctResults
+ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory) {
+   ZoneScoped;
+   /* Add all key inputs */
+   for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
+      ctInteractNode node = ctInteractNode();
+      node.type = CT_INTERACT_NODETYPE_BOOL;
+      node.accessible = true;
+      node.pData = &keyStates[i];
+      snprintf(
+        node.path.str, CT_MAX_INTERACT_PATH_SIZE, "/dev/keyboard/input/scancode/%d", i);
+      directory.AddNode(node);
+   }
 
-ctStringUtf8 ctInteractSDLKeyboardMouseBackend::GetDescription() {
-   return ctStringUtf8();
-}
+   /* Add mouse inputs */
+   char* mouseButtonPaths[] = {"/dev/mouse/input/button/left",
+                               "/dev/mouse/input/button/right",
+                               "/dev/mouse/input/button/middle",
+                               "/dev/mouse/input/button/x1",
+                               "/dev/mouse/input/button/x2"};
+   for (int i = 0; i < 5; i++) {
+      ctInteractNode node = ctInteractNode();
+      node.type = CT_INTERACT_NODETYPE_BOOL;
+      node.accessible = true;
+      node.path = mouseButtonPaths[i];
+      node.pData = &mouseButtonStates[i];
+      directory.AddNode(node);
+   }
 
-bool ctInteractSDLMouseDevice::isActionsHandled() {
-   return true;
-}
-
-ctResults ctInteractSDLMouseDevice::PumpActions(ctInteractActionInterface&) {
-   return ctResults();
-}
-
-bool ctInteractSDLMouseDevice::isCursorHandled() {
-   return true;
-}
-
-ctResults ctInteractSDLMouseDevice::PumpCursor(ctInteractCursorInterface&) {
-   return ctResults();
-}
-
-ctStringUtf8 ctInteractSDLMouseDevice::GetName() {
-   return "Mouse";
-}
-
-ctStringUtf8 ctInteractSDLMouseDevice::GetPath() {
-   return "/devices/mouse/default";
-}
-
-ctResults ctInteractSDLMouseDevice::LoadInputBindings(const char* basePath) {
-   ctStringUtf8 fullPath = basePath;
-   fullPath += "/devices/mouse/default.json";
-   ctInteractInternalBindingLoader bindLoader = ctInteractInternalBindingLoader();
-   CT_RETURN_FAIL(bindLoader.LoadFile(fullPath.CStr()));
+   char* mouseAxisPaths[] = {"/dev/mouse/input/relative_move/x",
+                             "/dev/mouse/input/relative_move/y",
+                             "/dev/mouse/input/scroll/x",
+                             "/dev/mouse/input/scroll/y"};
+   for (int i = 0; i < 4; i++) {
+      ctInteractNode node = ctInteractNode();
+      node.type = CT_INTERACT_NODETYPE_SCALAR;
+      node.accessible = true;
+      node.path = mouseAxisPaths[i];
+      node.pData = &mouseAxisStates[i];
+      directory.AddNode(node);
+   }
    return CT_SUCCESS;
 }
 
-bool ctInteractSDLKeyboardDevice::isActionsHandled() {
-   return true;
+ctResults
+ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) {
+   ZoneScoped;
+   int x, y;
+   uint32_t mouseFlags = SDL_GetRelativeMouseState(&x, &y);
+   memset(mouseAxisStates, 0, sizeof(mouseAxisStates));
+   memset(mouseButtonStates, 0, sizeof(mouseButtonStates));
+   if (mouseFlags & SDL_BUTTON(SDL_BUTTON_LEFT)) { mouseButtonStates[0] = true; }
+   if (mouseFlags & SDL_BUTTON(SDL_BUTTON_RIGHT)) { mouseButtonStates[1] = true; }
+   if (mouseFlags & SDL_BUTTON(SDL_BUTTON_MIDDLE)) { mouseButtonStates[2] = true; }
+   if (mouseFlags & SDL_BUTTON(SDL_BUTTON_X1)) { mouseButtonStates[3] = true; }
+   if (mouseFlags & SDL_BUTTON(SDL_BUTTON_X2)) { mouseButtonStates[4] = true; }
+
+   /* Calculate normalized mouse movement */
+   int w, h;
+   SDL_Window* pWindow = SDL_GetMouseFocus();
+   SDL_GetWindowSize(pWindow, &w, &h);
+   float aspect = (float)w / (float)h;
+   mouseAxisStates[0] = (float)x / (float)w;
+   mouseAxisStates[1] = (float)y * aspect / (float)h;
+   return CT_SUCCESS;
 }
 
-ctResults ctInteractSDLKeyboardDevice::PumpActions(ctInteractActionInterface&) {
-   return ctResults();
-}
-
-bool ctInteractSDLKeyboardDevice::isTextHandled() {
-   return true;
-}
-
-ctResults ctInteractSDLKeyboardDevice::PumpText(ctInteractTextInterface&) {
-   return ctResults();
-}
-
-ctStringUtf8 ctInteractSDLKeyboardDevice::GetName() {
-   return "Keyboard";
-}
-
-ctStringUtf8 ctInteractSDLKeyboardDevice::GetPath() {
-   return "/devices/keyboard/default";
-}
-
-ctResults ctInteractSDLKeyboardDevice::LoadInputBindings(const char* basePath) {
-   ctStringUtf8 fullPath = basePath;
-   fullPath += "/devices/keyboard/default.json";
-   ctInteractInternalBindingLoader bindLoader = ctInteractInternalBindingLoader();
-   CT_RETURN_FAIL(bindLoader.LoadFile(fullPath.CStr()));
+ctResults ctInteractSDLKeyboardMouseBackend::DebugImGui() {
+   ImGui::PlotHistogram("Mouse Axis", mouseAxisStates, 4, 0, NULL, -1.0f, 1.0f);
+   ImGui::Text("Mouse Axis Print: %f, %f, %f, %f",
+               mouseAxisStates[0],
+               mouseAxisStates[1],
+               mouseAxisStates[2],
+               mouseAxisStates[3]);
    return CT_SUCCESS;
 }

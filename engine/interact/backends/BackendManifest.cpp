@@ -25,16 +25,18 @@
 
 /* Register SDL based backends*/
 #if CITRUS_INTERACT_INPUT_SDL
-#define CTI_REGISTER_SDL()\
-CTI_REGISTER(CT_INTERACT_BACKEND_SDL_GAMEPAD, "SdlGamepad", ctInteractSDLGamepadBackend)\
-CTI_REGISTER(CT_INTERACT_BACKEND_SDL_KEYBOARDMOUSE, "SdlKeyboardMouse", ctInteractSDLKeyboardMouseBackend)
+#define CTI_REGISTER_SDL()                                                               \
+   CTI_REGISTER(                                                                         \
+     CT_INTERACT_BACKEND_SDL_GAMEPAD, "SdlGamepad", ctInteractSDLGamepadBackend)         \
+   CTI_REGISTER(CT_INTERACT_BACKEND_SDL_KEYBOARDMOUSE,                                   \
+                "SdlKeyboardMouse",                                                      \
+                ctInteractSDLKeyboardMouseBackend)
 #else
 #define CTI_REGISTER_SDL()
 #endif
 
 /* Register all backends*/
-#define CTI_REGISTER_ALL()\
-CTI_REGISTER_SDL()
+#define CTI_REGISTER_ALL() CTI_REGISTER_SDL()
 // clang-format on
 
 /* ---------------------------------- Internal ---------------------------------- */
@@ -43,21 +45,18 @@ CTI_REGISTER_SDL()
 #define CTI_REGISTER(_enum, _name, _class) _enum,
 
 enum ctInteractBackends {
-    CT_INTERACT_BACKEND_NULL,
-    CTI_REGISTER_ALL()
-    CT_INTERACT_BACKEND_COUNT,
+   CT_INTERACT_BACKEND_NULL,
+   CTI_REGISTER_ALL() CT_INTERACT_BACKEND_COUNT,
 };
 
 #undef CTI_REGISTER
 #define CTI_REGISTER(_enum, _name, _class) _name,
 
-const char* backendNames[CT_INTERACT_BACKEND_COUNT]{
-   "NULL",
-   CTI_REGISTER_ALL()
-};
+const char* backendNames[CT_INTERACT_BACKEND_COUNT] {"NULL", CTI_REGISTER_ALL()};
 
 #undef CTI_REGISTER
-#define CTI_REGISTER(_enum, _name, _class) case _enum: return new _class();
+#define CTI_REGISTER(_enum, _name, _class)                                               \
+   case _enum: return new _class();
 
 ctInteractAbstractBackend* newBackend(ctInteractBackends type) {
    switch (type) {
@@ -93,6 +92,7 @@ void ctRetrieveInteractBackends(ctDynamicArray<ctInteractAbstractBackend*>& back
 
 ctResults ctStartAndRetrieveInteractBackends(
   ctEngineCore* pEngine, ctDynamicArray<ctInteractAbstractBackend*>& backendList) {
+   ZoneScoped;
    for (int i = 0; i < CT_INTERACT_BACKEND_COUNT; i++) {
       if (backendEnabled[i]) {
          pBackends[i] = newBackend((ctInteractBackends)i);
@@ -105,6 +105,7 @@ ctResults ctStartAndRetrieveInteractBackends(
 }
 
 ctResults ctShutdownInteractBackends() {
+   ZoneScoped;
    for (int i = 0; i < CT_INTERACT_BACKEND_COUNT; i++) {
       if (backendEnabled[i]) {
          pBackends[i]->ModuleShutdown();
