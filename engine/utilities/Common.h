@@ -87,9 +87,19 @@ enum ctResults {
    CT_FAILURE_NOT_FOUND = -18,
 };
 
-#define CT_RETURN_FAIL(arg)                                                              \
-   ctResults __res = arg;                                                                \
-   if (__res != CT_SUCCESS) { return __res; }
+#define CT_RETURN_FAIL(_arg)                                                             \
+   {                                                                                     \
+      ctResults __res = (_arg);                                                          \
+      if (__res != CT_SUCCESS) { return __res; }                                         \
+   }
+
+#define CT_RETURN_ON_FAIL(_arg, _code)                                                   \
+   if ((_arg) != CT_SUCCESS) { return _code; }
+
+#define CT_RETURN_ON_UNTRUE(_arg, _code)                                                 \
+   if (!(_arg)) { return _code; }
+
+#define CT_RETURN_ON_NULL(_arg, _code) CT_RETURN_ON_UNTRUE(_arg, _code)
 
 #define CT_ALIGN(x) alignas(x)
 
