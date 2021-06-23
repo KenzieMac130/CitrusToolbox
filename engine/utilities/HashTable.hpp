@@ -32,15 +32,44 @@ public:
    T* Insert(const K key, const T& value);
    /* Key must never be 0! */
    T* Insert(const K key, T&& value);
-   T* FindPtr(const K key);
+   T* FindPtr(const K key) const;
    /* Does not call destructor or free for value! */
    void Remove(const K key);
    bool isEmpty() const;
+   bool Exists(const K key) const;
    size_t Count() const;
    size_t Capacity() const;
    ctResults Reserve(const size_t amount);
 
-   /*Todo: Itterator*/
+   class CT_API Iterator {
+   public:
+      Iterator(ctHashTable<T, K>* pTable);
+      T& Value() const;
+      const K& Key() const;
+      inline Iterator& operator++() {
+         ctAssert(pTable);
+         currentIdx++;
+         findNextValid();
+         return *this;
+      }
+      inline Iterator operator++(int) {
+         Iterator tmp = *this;
+         ++*this;
+         return tmp;
+      }
+      inline operator bool() const {
+         return currentIdx < pTable->_Capacity;
+      }
+
+   private:
+      inline void findNextValid();
+      ctHashTable<T, K>* pTable;
+      size_t currentIdx;
+   };
+   /* Only call if not empty */
+   Iterator GetIterator() {
+      return Iterator(this);
+   }
 
 private:
    K* _pKeys;
@@ -68,8 +97,8 @@ inline ctHashTable<T, K>::ctHashTable(const size_t baseSize) {
    _Count = 0;
 }
 
-#define _HASH_LOOP_BEGIN(_capacity_)                                           \
-   for (K attempt = 0; attempt < _capacity_; attempt++) {                      \
+#define _HASH_LOOP_BEGIN(_capacity_)                                                     \
+   for (K attempt = 0; attempt < _capacity_; attempt++) {                                \
       const K idx = (key + attempt) % _capacity_;
 #define _HASH_LOOP_END }
 
@@ -104,7 +133,7 @@ inline T* ctHashTable<T, K>::Insert(const K key, T&& value) {
 }
 
 template<class T, class K>
-inline T* ctHashTable<T, K>::FindPtr(const K key) {
+inline T* ctHashTable<T, K>::FindPtr(const K key) const {
    if (key == 0) { return NULL; }
    if (!_pKeys || !_pValues) { return NULL; }
    _HASH_LOOP_BEGIN(Capacity()) {
@@ -131,6 +160,11 @@ inline void ctHashTable<T, K>::Remove(const K key) {
 template<class T, class K>
 inline bool ctHashTable<T, K>::isEmpty() const {
    return _Count == 0;
+}
+
+template<class T, class K>
+inline bool ctHashTable<T, K>::Exists(const K key) const {
+   return (FindPtr(key) != NULL);
 }
 
 template<class T, class K>
@@ -169,4 +203,36 @@ inline ctResults ctHashTable<T, K>::Reserve(const size_t baseSize) {
    delete[] oldKeys;
 
    return CT_SUCCESS;
+}
+
+template<class T, class K>
+inline ctHashTable<T, K>::Iterator::Iterator(ctHashTable<T, K>* _pTable) {
+   ctAssert(pTable);
+   pTable = _pTable;
+   currentIdx = 0;
+   findNextValid();
+}
+
+template<class T, class K>
+inline T& ctHashTable<T, K>::Iterator::Value() const {
+   ctAssert(pTable);
+   ctAssert(currentIdx < pTable->_Capacity);
+   return pTable->_pValues[currentIdx];
+}
+
+template<class T, class K>
+inline const K& ctHashTable<T, K>::Iterator::Key() const {
+   ctAssert(pTable);
+   ctAssert(currentIdx < pTable->_Capacity);
+   return pTable->_pKeys[currentIdx];
+}
+
+template<class T, class K>
+inline void ctHashTable<T, K>::Iterator::findNextValid() {
+   if (currentIdx < pTable->_Capacity) {
+      while (pTable->_pKeys[currentIdx] == 0) {
+         currentIdx++;
+         if (currentIdx >= pTable->_Capacity) { break; }
+      }
+   }
 }
