@@ -118,6 +118,22 @@ int hash_table_test() {
       int* iptr = hashTable.FindPtr(findhash);
       if (iptr) { ctDebugLog("Number %d", *iptr); }
    }
+   ctDebugLog("Hash Table (Iterate)...");
+   {
+       ctHashTable<char, uint32_t> hashTable =
+           ctHashTable<char, uint32_t>(0);
+       hashTable.Insert(1, 'A');
+       hashTable.Insert(2, 'B');
+       hashTable.Insert(3, 'C');
+       hashTable.Insert(4, 'D');
+       hashTable.Insert(5, 'E');
+       hashTable.Insert(6, 'F');
+       hashTable.Insert(7, 'G');
+
+       for (auto itt = hashTable.GetIterator(); itt; itt++) {
+           ctDebugLog("Key: %d - Value: %c", itt.Key(), itt.Value());
+       }
+   }
    ctDebugLog("Hash Table (Worst Case Dynamic String)...");
    {
       ctHashTable<ctStringUtf8, uint32_t> hashTable =
