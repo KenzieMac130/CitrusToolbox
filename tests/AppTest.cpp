@@ -43,6 +43,9 @@ ctAppVersion TestApp::GetAppVersion() {
 ctResults TestApp::OnStartup() {
    ctDebugLog(CT_NC("Translation Test"));
    Engine->FileSystem->MakePreferencesDirectory("Test");
+   ctDebugLog("---------------------- Dumping paths ----------------------");
+   Engine->Interact->Directory.LogContents();
+   ctDebugLog("-----------------------------------------------------------");
    return CT_SUCCESS;
 }
 
@@ -62,10 +65,12 @@ ctResults TestApp::OnUIUpdate() {
    ImGui::Begin("Interact");
    Engine->Interact->DebugImGui();
    ImGui::End();
-   //Im3d::Text(Im3d::Vec3(-1, -1, 0), 2.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "0");
-   //Im3d::Text(
-   //  Im3d::Vec3(1, -1, 0), 2.0f, Im3d::Color_Green, Im3d::TextFlags_Default, "1");
-   //Im3d::Text(Im3d::Vec3(0, 1, 0), 2.0f, Im3d::Color_Blue, Im3d::TextFlags_Default, "2");
+
+   // clang-format off
+   Im3d::Text(Im3d::Vec3(0, 1, 0), 1.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "Red");
+   Im3d::Text(Im3d::Vec3(1, -1, 0), 1.0f, Im3d::Color_Green, Im3d::TextFlags_Default, "Green");
+   Im3d::Text(Im3d::Vec3(-1, -1, 0), 1.0f, Im3d::Color_Blue, Im3d::TextFlags_Default, "Blue");
+
    Im3d::Text(Im3d::Vec3(-1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "0");
    Im3d::Text(Im3d::Vec3(1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "1");
    Im3d::Text(Im3d::Vec3(-1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "2");
@@ -74,6 +79,8 @@ ctResults TestApp::OnUIUpdate() {
    Im3d::Text(Im3d::Vec3(-1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "5");
    Im3d::Text(Im3d::Vec3(1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "6");
    Im3d::Text(Im3d::Vec3(-1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "7");
+   Im3d::DrawSphere(Im3d::Vec3(0, 0, 0), 1.0f);
+   // clang-format on
    return CT_SUCCESS;
 }
 
