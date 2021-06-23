@@ -25,15 +25,14 @@ message("--------------------------------------------")
 set(ASSET_CORE_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/common.glsl
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/portability.glsl
-${CMAKE_CURRENT_SOURCE_DIR}/input/manifest.json
-${CMAKE_CURRENT_SOURCE_DIR}/input/devices/gamepad/default.json
-${CMAKE_CURRENT_SOURCE_DIR}/input/devices/keyboard/default.json
-${CMAKE_CURRENT_SOURCE_DIR}/input/devices/mouse/default.json
+${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/im3d_vert.vert
+${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/im3d_frag.frag
 )
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ASSET_CORE_FILES})
 
 # Add asset build system as target
 add_custom_target(assets 
 COMMAND python waf build -v
+DEPENDS ${ASSET_CORE_FILES}
 SOURCES ${ASSET_CORE_FILES}
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

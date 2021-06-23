@@ -243,22 +243,12 @@ endif()
 set(ENGINE_SOURCE_FILES_INTERACT
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/InteractionEngine.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/DeviceBackendLayer.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Actions.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Cursor.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Message.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Text.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/UserConfig.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.cpp)
 
 set(ENGINE_HEADER_FILES_INTERACT
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/InteractionEngine.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/DeviceBackendLayer.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Actions.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Cursor.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Message.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/Text.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/interfaces/UserConfig.hpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.hpp)
 
 # ---------- Interaction Engine All Active Backends ----------
 
