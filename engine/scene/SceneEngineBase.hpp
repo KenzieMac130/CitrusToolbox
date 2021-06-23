@@ -19,7 +19,7 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
-struct ctCameraInfo {
+struct CT_API ctCameraInfo {
    ctVec3 position;
    ctQuat rotation;
    float fov;
