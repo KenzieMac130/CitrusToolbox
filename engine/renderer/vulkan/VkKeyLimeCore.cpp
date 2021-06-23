@@ -45,8 +45,10 @@ ctResults ctVkKeyLimeCore::Startup() {
    vkBackend.maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
    vkBackend.maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
 
-   internalResolutionWidth = 2560;
-   internalResolutionHeight = 1440;
+   int w, h;
+   Engine->WindowManager->GetMainWindowDrawableSize(&w, &h);
+   internalResolutionWidth = w;
+   internalResolutionHeight = h;
 
    ctSettingsSection* vkSettings = Engine->Settings->CreateSection("VulkanBackend", 32);
    vkSettings->BindInteger(&vkBackend.preferredDevice,
@@ -179,10 +181,11 @@ ctResults ctVkKeyLimeCore::Startup() {
       createInfo.pAttachments = attachments;
       createInfo.subpassCount = ctCStaticArrayLen(subpasses);
       createInfo.pSubpasses = subpasses;
-      CT_VK_CHECK(
-        vkCreateRenderPass(
-          vkBackend.vkDevice, &createInfo, &vkBackend.vkAllocCallback, &guiRenderPass),
-        CT_NC("vkCreateRenderPass() failed to create gui renderpass"));
+      CT_VK_CHECK(vkCreateRenderPass(vkBackend.vkDevice,
+                                     &createInfo,
+                                     &vkBackend.vkAllocCallback,
+                                     &forwardRenderPass),
+                  CT_NC("vkCreateRenderPass() failed to create gui renderpass"));
    }
    /* Depth/Composite and Framebuffers */
    {
@@ -214,11 +217,11 @@ ctResults ctVkKeyLimeCore::Startup() {
       framebufferInfo.width = internalResolutionWidth;
       framebufferInfo.height = internalResolutionHeight;
       framebufferInfo.layers = 1;
-      framebufferInfo.renderPass = guiRenderPass;
+      framebufferInfo.renderPass = forwardRenderPass;
       CT_VK_CHECK(vkCreateFramebuffer(vkBackend.vkDevice,
                                       &framebufferInfo,
                                       &vkBackend.vkAllocCallback,
-                                      &guiFramebuffer),
+                                      &forwardFramebuffer),
                   CT_NC("vkCreateFramebuffer() failed to create gui framebuffer."));
    }
    /* Setup ImGUI */
@@ -231,13 +234,22 @@ ctResults ctVkKeyLimeCore::Startup() {
                              vkBackend.mainScreenResources.extent.height,
                              internalResolutionWidth,
                              internalResolutionHeight);
-      vkImgui.Startup(&vkBackend, frameInitialUploadCommandBuffers[0], guiRenderPass, 0);
+      vkImgui.Startup(
+        &vkBackend, frameInitialUploadCommandBuffers[0], forwardRenderPass, 0);
       vkEndCommandBuffer(startupTransferCommands);
       VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
       submitInfo.commandBufferCount = 1;
       submitInfo.pCommandBuffers = &startupTransferCommands;
       vkQueueSubmit(vkBackend.transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
       vkQueueWaitIdle(vkBackend.transferQueue);
+   }
+   /* Setup Im3d */
+   {
+      /*vkIm3d.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
+                            vkBackend.mainScreenResources.extent.height,
+                            internalResolutionWidth,
+                            internalResolutionHeight);*/
+      vkIm3d.Startup(&vkBackend, forwardRenderPass, 0);
    }
    return CT_SUCCESS;
 }
@@ -248,9 +260,11 @@ ctResults ctVkKeyLimeCore::Shutdown() {
    vkDestroyCommandPool(vkBackend.vkDevice, gfxCommandPool, &vkBackend.vkAllocCallback);
    vkDestroyCommandPool(
      vkBackend.vkDevice, transferCommandPool, &vkBackend.vkAllocCallback);
+   vkIm3d.Shutdown();
    vkImgui.Shutdown();
-   vkDestroyRenderPass(vkBackend.vkDevice, guiRenderPass, &vkBackend.vkAllocCallback);
-   vkDestroyFramebuffer(vkBackend.vkDevice, guiFramebuffer, &vkBackend.vkAllocCallback);
+   vkDestroyRenderPass(vkBackend.vkDevice, forwardRenderPass, &vkBackend.vkAllocCallback);
+   vkDestroyFramebuffer(
+     vkBackend.vkDevice, forwardFramebuffer, &vkBackend.vkAllocCallback);
    vkBackend.TryDestroyCompleteImage(depthBuffer);
    vkBackend.TryDestroyCompleteImage(compositeBuffer);
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
@@ -263,7 +277,7 @@ ctResults ctVkKeyLimeCore::Shutdown() {
 
 ctResults ctVkKeyLimeCore::UpdateCamera(ctKeyLimeCameraDesc cameraDesc) {
    ctAssert(viewBufferCount >= 1);
-       return CT_SUCCESS;
+   return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Render() {
@@ -274,6 +288,8 @@ ctResults ctVkKeyLimeCore::Render() {
    /* Check if shaders have been updated */
    if (ShaderHotReload.isContentUpdated()) {
       ctDebugLog("Shaders Updated...");
+      vkDeviceWaitIdle(vkBackend.vkDevice);
+      vkIm3d.LoadShaders(forwardRenderPass, 0);
       ShaderHotReload.ClearChanges();
    }
 #endif
@@ -288,6 +304,18 @@ ctResults ctVkKeyLimeCore::Render() {
    vkResetCommandBuffer(gfxCommands, 0);
    vkBeginCommandBuffer(gfxCommands, &gfxBeginInfo);
 
+   /* View Projection */
+   ctCameraInfo camera = Engine->SceneEngine->GetCameraInfo(NULL);
+   ctMat4 viewMatrix = ctMat4(1);
+   ctMat4 projMatrix = ctMat4(1);
+   ctMat4Rotate(viewMatrix, -camera.rotation);
+   ctMat4Translate(viewMatrix, -camera.position);
+   ctMat4PerspectiveInfinite(projMatrix,
+                             camera.fov,
+                             (float)internalResolutionWidth /
+                               (float)internalResolutionHeight,
+                             0.01f);
+
    /* Render GUI */
    {
       VkClearValue clearValues[2];
@@ -296,11 +324,23 @@ ctResults ctVkKeyLimeCore::Render() {
       VkRenderPassBeginInfo passBeginInfo {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
       passBeginInfo.clearValueCount = ctCStaticArrayLen(clearValues);
       passBeginInfo.pClearValues = clearValues;
-      passBeginInfo.renderPass = guiRenderPass;
-      passBeginInfo.framebuffer = guiFramebuffer;
+      passBeginInfo.renderPass = forwardRenderPass;
+      passBeginInfo.framebuffer = forwardFramebuffer;
       passBeginInfo.renderArea =
         VkRect2D {{0, 0}, {internalResolutionWidth, internalResolutionHeight}};
       vkCmdBeginRenderPass(gfxCommands, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+      /* Scissor/Viewport */
+      VkViewport viewport = {0};
+      viewport.maxDepth = 1.0f;
+      viewport.width = (float)internalResolutionWidth;
+      viewport.height = (float)internalResolutionHeight;
+      VkRect2D scissor = {{0, 0}, {internalResolutionWidth, internalResolutionHeight}};
+      vkCmdSetViewport(gfxCommands, 0, 1, &viewport);
+      vkCmdSetScissor(gfxCommands, 0, 1, &scissor);
+
+      vkIm3d.RenderCommands(gfxCommands, viewMatrix, projMatrix);
+
       vkImgui.RenderCommands(gfxCommands);
       vkCmdEndRenderPass(gfxCommands);
    }

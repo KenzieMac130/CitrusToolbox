@@ -65,8 +65,8 @@ public:
    VkCommandBuffer frameInitialUploadCommandBuffers[CT_MAX_INFLIGHT_FRAMES];
    VkSemaphore renderFinished[CT_MAX_INFLIGHT_FRAMES];
 
-   VkRenderPass guiRenderPass;
-   VkFramebuffer guiFramebuffer;
+   VkRenderPass forwardRenderPass;
+   VkFramebuffer forwardFramebuffer;
 
    /* Mapped buffer data, offsets into global upload */
    ctVkCompleteBuffer frameDataUploadBuffer[CT_MAX_INFLIGHT_FRAMES];

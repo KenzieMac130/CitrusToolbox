@@ -17,27 +17,121 @@
 #include "VkBackend.hpp"
 #include "VkIm3d.hpp"
 
-ctResults ctVkIm3d::Startup(ctVkBackend* pBackend,
-                            VkCommandBuffer textureUploadCmd,
-                            VkRenderPass guiRenderpass,
-                            uint32_t subpass) {
-   return ctResults();
+#define CT_MAX_IM3D_PRIMS 10000
+
+struct vkim3dPushConstant {
+   ctMat4 viewProj;
+   uint32_t vertBuffBindIdx;
+   uint32_t primType;
+};
+
+ctResults
+ctVkIm3d::Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass) {
+   ZoneScoped;
+   _pBackend = pBackend;
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      pBackend->CreateCompleteBuffer(vertexBuffer[i],
+                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                     0,
+                                     sizeof(Im3d::VertexData) * CT_MAX_IM3D_PRIMS,
+                                     VMA_MEMORY_USAGE_CPU_TO_GPU);
+      vmaMapMemory(pBackend->vmaAllocator, vertexBuffer[i].alloc, (void**)&vertexData[i]);
+      _pBackend->ExposeBindlessStorageBuffer(vertexBuffBindIdx[i],
+                                             vertexBuffer[i].buffer);
+   }
+   VkPushConstantRange pushConstRange = {0};
+   pushConstRange.offset = 0;
+   pushConstRange.size = sizeof(vkim3dPushConstant);
+   pushConstRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+   _pBackend->CreateBindlessPipelineLayout(pipelineLayout, 1, &pushConstRange);
+   LoadShaders(guiRenderpass, subpass);
+   return CT_SUCCESS;
 }
 
 ctResults ctVkIm3d::Shutdown() {
-   return ctResults();
+   ZoneScoped;
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      _pBackend->ReleaseBindlessStorageBuffer(vertexBuffBindIdx[i]);
+      vmaUnmapMemory(_pBackend->vmaAllocator, vertexBuffer[i].alloc);
+      _pBackend->TryDestroyCompleteBuffer(vertexBuffer[i]);
+   }
+   vkDestroyPipelineLayout(
+     _pBackend->vkDevice, pipelineLayout, &_pBackend->vkAllocCallback);
+   if (pipeline != VK_NULL_HANDLE) {
+      vkDestroyPipeline(_pBackend->vkDevice, pipeline, &_pBackend->vkAllocCallback);
+   }
+   return CT_SUCCESS;
+}
+
+ctResults ctVkIm3d::LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass) {
+   ZoneScoped;
+   VkShaderModule vertShader;
+   VkShaderModule fragShader;
+   _pBackend->CreateShaderModuleFromAsset(vertShader, "core/shaders/im3d_vert.spv");
+   _pBackend->CreateShaderModuleFromAsset(fragShader, "core/shaders/im3d_frag.spv");
+
+   if (pipeline != VK_NULL_HANDLE) {
+      vkDestroyPipeline(_pBackend->vkDevice, pipeline, &_pBackend->vkAllocCallback);
+   }
+   _pBackend->CreateGraphicsPipeline(
+     pipeline, pipelineLayout, guiRenderpass, 0, vertShader, fragShader);
+
+   vkDestroyShaderModule(_pBackend->vkDevice, vertShader, &_pBackend->vkAllocCallback);
+   vkDestroyShaderModule(_pBackend->vkDevice, fragShader, &_pBackend->vkAllocCallback);
+
+   return CT_SUCCESS;
 }
 
 void ctVkIm3d::BuildDrawLists() {
-    Im3d::EndFrame();
+   ZoneScoped;
+   const int currentFrame = _pBackend->currentFrame;
+   Im3d::EndFrame();
+   uint32_t drawListCount = Im3d::GetDrawListCount();
+   const Im3d::DrawList* drawLists = Im3d::GetDrawLists();
+   size_t nextVertex = 0;
+   for (uint32_t i = 0; i < drawListCount; i++) {
+      const uint32_t vertexCount = drawLists[i].m_vertexCount;
+      memcpy(vertexData[currentFrame] + nextVertex,
+             drawLists[i].m_vertexData,
+             vertexCount * sizeof(Im3d::VertexData));
+      nextVertex += vertexCount;
+   }
+   if (nextVertex != 0) {
+      vmaFlushAllocation(_pBackend->vmaAllocator,
+                         vertexBuffer[currentFrame].alloc,
+                         0,
+                         nextVertex * sizeof(Im3d::VertexData));
+   }
 }
 
-void ctVkIm3d::SetDisplaySize(int32_t windowWidth,
-                              int32_t windowHeight,
-                              int32_t internalWidth,
-                              int32_t internalHeight) {
-    
-}
+void ctVkIm3d::RenderCommands(VkCommandBuffer cmd, ctMat4 view, ctMat4 projection) {
+   ZoneScoped;
+   uint32_t drawListCount = Im3d::GetDrawListCount();
+   const Im3d::DrawList* drawLists = Im3d::GetDrawLists();
+   if (!drawListCount) { return; }
 
-void ctVkIm3d::RenderCommands(VkCommandBuffer cmd) {
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+   vkCmdBindDescriptorSets(cmd,
+                           VK_PIPELINE_BIND_POINT_GRAPHICS,
+                           pipelineLayout,
+                           0,
+                           1,
+                           &_pBackend->vkGlobalDescriptorSet,
+                           0,
+                           NULL);
+
+   vkim3dPushConstant pushConstant = {0};
+   pushConstant.vertBuffBindIdx = vertexBuffBindIdx[_pBackend->currentFrame];
+   pushConstant.viewProj = projection * view;
+   for (uint32_t i = 0; i < 1; i++) {
+      const Im3d::DrawList drawList = drawLists[i];
+      pushConstant.primType = drawList.m_primType;
+      vkCmdPushConstants(cmd,
+                         pipelineLayout,
+                         VK_SHADER_STAGE_VERTEX_BIT,
+                         0,
+                         sizeof(pushConstant),
+                         &pushConstant);
+      vkCmdDraw(cmd, 3, 1, 0, 0);
+   }
 }

@@ -30,7 +30,7 @@
 #define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \
       const VkResult _tmpvresult = _func;                                                \
-      if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, _msg); }          \
+      if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, _msg); }           \
    }
 
 struct ctVkQueueFamilyIndices {
@@ -95,9 +95,9 @@ public:
    ctDynamicArray<ctVkScreenResizeCallback> screenResizeCallbacks;
 
 private:
-    VkCommandPool blitCommandPool;
-    VkCommandBuffer blitCommands[CT_MAX_INFLIGHT_FRAMES];
-    uint32_t frameIdx;
+   VkCommandPool blitCommandPool;
+   VkCommandBuffer blitCommands[CT_MAX_INFLIGHT_FRAMES];
+   uint32_t frameIdx;
 };
 
 class CT_API ctVkDescriptorManager {
@@ -158,8 +158,9 @@ public:
                                 VkSharingMode sharing = VK_SHARING_MODE_EXCLUSIVE,
                                 uint32_t queueFamilyIndexCount = 0,
                                 uint32_t* pQueueFamilyIndices = NULL);
+
    VkResult CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
-                                 VkImageUsageFlags usage,
+                                 VkBufferUsageFlags usage,
                                  VmaAllocationCreateFlags allocFlags,
                                  size_t size,
                                  VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY,
@@ -167,6 +168,29 @@ public:
                                  VkSharingMode sharing = VK_SHARING_MODE_EXCLUSIVE,
                                  uint32_t queueFamilyIndexCount = 0,
                                  uint32_t* pQueueFamilyIndices = NULL);
+
+   VkResult CreateShaderModuleFromAsset(VkShaderModule& shader, const char* path);
+   VkResult CreateBindlessPipelineLayout(VkPipelineLayout& layout,
+                                         uint32_t pushConstantRangeCount = 0,
+                                         VkPushConstantRange* pPushConstantRanges = NULL);
+   VkResult CreateGraphicsPipeline(
+     VkPipeline& pipeline,
+     VkPipelineLayout layout,
+     VkRenderPass renderpass,
+     uint32_t subpass,
+     VkShaderModule vertexShader,
+     VkShaderModule fragShader,
+     bool depthTest = false,
+     bool depthWrite = true,
+     VkFrontFace winding = VK_FRONT_FACE_CLOCKWISE,
+     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT,
+     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+     bool blendEnable = false, /* Enable blending on defaults */
+     uint32_t colorBlendCount = 1,
+     VkPipelineColorBlendAttachmentState* pCustomBlends = NULL,
+     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT,
+     uint32_t customDynamicCount = 0,
+     VkDynamicState* pDynamicStates = NULL);
 
    void TryDestroyCompleteImage(ctVkCompleteImage& fullImage);
    void TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer);
@@ -198,6 +222,8 @@ public:
 
    VkPipelineCache vkPipelineCache;
 
+   /* Bindless System */
+
    VkDescriptorSetLayout vkDescriptorSetLayout;
    VkDescriptorPool vkDescriptorPool;
    VkDescriptorSet vkGlobalDescriptorSet;
@@ -205,6 +231,14 @@ public:
    ctVkDescriptorManager descriptorsSampledImage;
    ctVkDescriptorManager descriptorsStorageImage;
    ctVkDescriptorManager descriptorsStorageBuffer;
+
+   void ExposeBindlessStorageBuffer(uint32_t& outIdx,
+                                    VkBuffer buffer,
+                                    VkDeviceSize range = VK_WHOLE_SIZE,
+                                    VkDeviceSize offset = 0);
+   void ReleaseBindlessStorageBuffer(uint32_t idx);
+
+   /* Screen */
 
    ctVkScreenResources mainScreenResources;
 

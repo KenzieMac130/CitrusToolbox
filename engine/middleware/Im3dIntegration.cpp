@@ -46,7 +46,8 @@ void ctIm3dIntegration::DrawImguiText(ctMat4 viewProj) {
                                       0.0f, 0.0f, viewZ, -2.0f * n,
                                       0.0f, 0.0f, viewZ, 0.0f);
    // clang-format on
-   Im3d::Mat4 camView = Im3d::Inverse(Im3d::LookAt(appData.m_viewOrigin, (appData.m_viewOrigin + appData.m_viewDirection)));
+   Im3d::Mat4 camView = Im3d::Inverse(Im3d::LookAt(
+     appData.m_viewOrigin, (appData.m_viewOrigin + appData.m_viewDirection)));
    Im3d::Mat4 camViewProj = m_camProj * camView;
    ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32_BLACK_TRANS);
    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
@@ -70,9 +71,9 @@ void ctIm3dIntegration::DrawImguiText(ctMat4 viewProj) {
 
          // Project world -> screen space.
          Im3d::Vec4 clip = camViewProj * Im3d::Vec4(textData.m_positionSize.x,
-                                                 textData.m_positionSize.y,
-                                                 textData.m_positionSize.z,
-                                                 1.0f);
+                                                    textData.m_positionSize.y,
+                                                    textData.m_positionSize.z,
+                                                    1.0f);
          Im3d::Vec2 screen = Im3d::Vec2(clip.x / clip.w, clip.y / clip.w);
 
          // Cull text which falls offscreen. Note that this doesn't take into account text
@@ -135,16 +136,11 @@ ctResults ctIm3dIntegration::NextFrame() {
    }
    const ctCameraInfo cameraInfo = Engine->SceneEngine->GetCameraInfo(NULL);
    Im3d::AppData& appData = Im3d::GetAppData();
-   appData.m_cursorRayOrigin = {cameraInfo.cursorPosition.x,
-                                cameraInfo.cursorPosition.y,
-                                cameraInfo.cursorPosition.z};
-   appData.m_cursorRayDirection = {cameraInfo.cursorDirection.x,
-                                   cameraInfo.cursorDirection.y,
-                                   cameraInfo.cursorDirection.z};
+   appData.m_cursorRayOrigin = ctVec3ToIm3d(cameraInfo.cursorPosition);
+   appData.m_cursorRayDirection = ctVec3ToIm3d(cameraInfo.cursorDirection);
    appData.m_worldUp = CT_UP;
-   appData.m_viewOrigin = {
-     cameraInfo.position.x, cameraInfo.position.y, cameraInfo.position.z};
-   appData.m_viewDirection = {0.0f, 0.0f, 1.0f};
+   appData.m_viewOrigin = ctVec3ToIm3d(cameraInfo.position);
+   appData.m_viewDirection = ctVec3ToIm3d(cameraInfo.rotation.getForward());
    int32_t ih, iw = 0;
    Engine->WindowManager->GetMainWindowDrawableSize(&iw, &ih);
    appData.m_viewportSize.x = (float)iw;

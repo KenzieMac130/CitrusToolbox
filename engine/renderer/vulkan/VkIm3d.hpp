@@ -21,19 +21,18 @@
 
 class CT_API ctVkIm3d {
 public:
-   ctResults Startup(ctVkBackend* pBackend,
-                     VkCommandBuffer textureUploadCmd,
-                     VkRenderPass guiRenderpass,
-                     uint32_t subpass);
+   ctResults Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass);
    ctResults Shutdown();
+   ctResults LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass);
    void BuildDrawLists();
-   void SetDisplaySize(int32_t windowWidth,
-                       int32_t windowHeight,
-                       int32_t internalWidth,
-                       int32_t internalHeight);
-   void SetMatrices(ctMat4 view, ctMat4 projection);
-   void RenderCommands(VkCommandBuffer cmd);
+   void RenderCommands(VkCommandBuffer cmd, ctMat4 view, ctMat4 projection);
 
 private:
+   Im3d::VertexData* vertexData[CT_MAX_INFLIGHT_FRAMES];
+   ctVkCompleteBuffer vertexBuffer[CT_MAX_INFLIGHT_FRAMES];
+   uint32_t vertexBuffBindIdx[CT_MAX_INFLIGHT_FRAMES];
+
+   VkPipelineLayout pipelineLayout;
+   VkPipeline pipeline;
    ctVkBackend* _pBackend;
 };

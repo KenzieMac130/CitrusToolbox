@@ -38,5 +38,6 @@ private:
     ctCameraInfo CurrentCamera;
 
     //Debug Camera temp
-    ctVec3 lookAt;
+    float camYaw;
+    float camPitch;
 };

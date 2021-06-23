@@ -37,6 +37,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
                                               const char* pLayerPrefix,
                                               const char* pMsg,
                                               void* pUserData) {
+   ZoneScoped;
    if ((flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) != 0) {
       ctDebugLog("VK Information: %s", pLayerPrefix, pMsg);
    } else {
@@ -48,6 +49,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
 /* ------------- Helpers ------------- */
 
 bool ctVkBackend::isValidationLayersAvailible() {
+   ZoneScoped;
    uint32_t layerCount = 0;
    vkEnumerateInstanceLayerProperties(&layerCount, NULL);
    ctDynamicArray<VkLayerProperties> layerProps;
@@ -76,6 +78,7 @@ bool vIsQueueFamilyComplete(ctVkQueueFamilyIndices indices) {
 }
 
 ctVkQueueFamilyIndices ctVkBackend::FindQueueFamilyIndices(VkPhysicalDevice gpu) {
+   ZoneScoped;
    ctVkQueueFamilyIndices result = {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
    uint32_t queueFamilyCount;
    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, NULL);
@@ -162,7 +165,7 @@ VkResult ctVkBackend::CreateCompleteImage(ctVkCompleteImage& fullImage,
 }
 
 VkResult ctVkBackend::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
-                                           VkImageUsageFlags usage,
+                                           VkBufferUsageFlags usage,
                                            VmaAllocationCreateFlags allocFlags,
                                            size_t size,
                                            VmaMemoryUsage memUsage,
@@ -183,6 +186,192 @@ VkResult ctVkBackend::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
    allocInfo.usage = memUsage;
    return vmaCreateBuffer(
      vmaAllocator, &bufferInfo, &allocInfo, &fullBuffer.buffer, &fullBuffer.alloc, NULL);
+}
+
+VkResult ctVkBackend::CreateShaderModuleFromAsset(VkShaderModule& shader,
+                                                  const char* path) {
+   ZoneScoped;
+   ctStringUtf8 fullPath = Engine->FileSystem->GetAssetPath();
+   fullPath += path;
+   fullPath.FilePathLocalize();
+   uint32_t* shaderData = NULL;
+   ctFile shaderFile;
+   CT_RETURN_ON_FAIL(shaderFile.Open(fullPath.CStr(), CT_FILE_OPEN_READ),
+                     VK_ERROR_UNKNOWN);
+   size_t fSize = shaderFile.GetFileSize();
+   shaderData = (uint32_t*)ctMalloc(fSize);
+   CT_RETURN_ON_NULL(shaderData, VK_ERROR_UNKNOWN);
+   shaderFile.ReadRaw(shaderData, fSize, 1);
+   shaderFile.Close();
+   VkShaderModuleCreateInfo info = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+   info.codeSize = fSize;
+   info.pCode = shaderData;
+   VkResult result = vkCreateShaderModule(vkDevice, &info, &vkAllocCallback, &shader);
+   ctFree(shaderData);
+   return result;
+}
+
+VkResult
+ctVkBackend::CreateBindlessPipelineLayout(VkPipelineLayout& layout,
+                                          uint32_t pushConstantRangeCount,
+                                          VkPushConstantRange* pPushConstantRanges) {
+   ZoneScoped;
+   VkPipelineLayoutCreateInfo createInfo = {
+     VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+   createInfo.setLayoutCount = 1;
+   createInfo.pSetLayouts = &vkDescriptorSetLayout;
+   createInfo.pushConstantRangeCount = pushConstantRangeCount;
+   createInfo.pPushConstantRanges = pPushConstantRanges;
+   return vkCreatePipelineLayout(vkDevice, &createInfo, &vkAllocCallback, &layout);
+}
+
+VkResult
+ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
+                                    VkPipelineLayout layout,
+                                    VkRenderPass renderpass,
+                                    uint32_t subpass,
+                                    VkShaderModule vertexShader,
+                                    VkShaderModule fragShader,
+                                    bool depthTest,
+                                    bool depthWrite,
+                                    VkFrontFace winding,
+                                    VkCullModeFlags cullMode,
+                                    VkPrimitiveTopology topology,
+                                    bool blendEnable,
+                                    uint32_t colorBlendCount,
+                                    VkPipelineColorBlendAttachmentState* pCustomBlends,
+                                    VkSampleCountFlagBits msaaSamples,
+                                    uint32_t customDynamicCount,
+                                    VkDynamicState* pDynamicStates) {
+   ZoneScoped;
+   ctAssert(colorBlendCount <= 8);
+   VkGraphicsPipelineCreateInfo createInfo = {
+     VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+
+   VkPipelineColorBlendAttachmentState colorBlendsDefault[8];
+   colorBlendsDefault[0] = VkPipelineColorBlendAttachmentState();
+   colorBlendsDefault[0].blendEnable = blendEnable ? VK_TRUE : VK_FALSE;
+   colorBlendsDefault[0].colorWriteMask =
+     VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+     VK_COLOR_COMPONENT_A_BIT;
+   for (int i = 1; i < 8; i++) {
+      colorBlendsDefault[i] = colorBlendsDefault[0];
+   }
+
+   /* Shader stages */
+   VkPipelineShaderStageCreateInfo shaderStages[2];
+   createInfo.stageCount = ctCStaticArrayLen(shaderStages);
+   createInfo.pStages = shaderStages;
+
+   /* Vertex */
+   shaderStages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+   shaderStages[0].module = vertexShader;
+   shaderStages[0].pName = "main";
+   shaderStages[0].pSpecializationInfo = NULL;
+   shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+
+   /* Fragment */
+   shaderStages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+   shaderStages[1].module = fragShader;
+   shaderStages[1].pName = "main";
+   shaderStages[1].pSpecializationInfo = NULL;
+   shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+   /* Color Blend state */
+   VkPipelineColorBlendStateCreateInfo colorBlendStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+   colorBlendStateDefault.attachmentCount = colorBlendCount;
+   colorBlendStateDefault.pAttachments =
+     pCustomBlends ? pCustomBlends : colorBlendsDefault;
+
+   /* Rasterization state */
+   VkPipelineRasterizationStateCreateInfo rasterStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+   rasterStateDefault.cullMode = cullMode;
+   rasterStateDefault.frontFace = winding;
+   rasterStateDefault.lineWidth = 1.0f;
+   rasterStateDefault.polygonMode = VK_POLYGON_MODE_FILL;
+   rasterStateDefault.rasterizerDiscardEnable = VK_FALSE;
+   rasterStateDefault.depthBiasEnable = VK_FALSE;
+   rasterStateDefault.depthClampEnable = VK_FALSE;
+   rasterStateDefault.depthBiasConstantFactor = 0.0f;
+   rasterStateDefault.depthBiasSlopeFactor = 0.0f;
+   rasterStateDefault.depthBiasClamp = 0.0f;
+
+   /* Viewport state */
+   VkPipelineViewportStateCreateInfo viewportStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+   VkViewport viewportDefault = {0.0f, 0.0f, 512.0f, 512.0f, 0.0f, 1.0f};
+   VkRect2D scissorDefault = {0, 00, 512, 512};
+   viewportStateDefault.viewportCount = 1;
+   viewportStateDefault.pViewports = &viewportDefault;
+   viewportStateDefault.scissorCount = 1;
+   viewportStateDefault.pScissors = &scissorDefault;
+
+   /* Vertex state */
+   VkPipelineVertexInputStateCreateInfo vertexStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+   vertexStateDefault.vertexAttributeDescriptionCount = 0;
+   vertexStateDefault.vertexBindingDescriptionCount = 0;
+
+   /* Depth Stencil state */
+   VkPipelineDepthStencilStateCreateInfo depthStencilStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+   depthStencilStateDefault.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
+   depthStencilStateDefault.depthWriteEnable = depthWrite ? VK_TRUE : VK_FALSE;
+   depthStencilStateDefault.depthCompareOp = VK_COMPARE_OP_GREATER;
+   depthStencilStateDefault.depthBoundsTestEnable = VK_FALSE;
+   depthStencilStateDefault.minDepthBounds = 0.0f;
+   depthStencilStateDefault.maxDepthBounds = 1.0f;
+   depthStencilStateDefault.stencilTestEnable = VK_FALSE;
+
+   /* Input Assembly state */
+   VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+   inputAssemblyStateDefault.topology = topology;
+   inputAssemblyStateDefault.primitiveRestartEnable = VK_FALSE;
+
+   /* MSAA state */
+   VkPipelineMultisampleStateCreateInfo msaaStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+   msaaStateDefault.sampleShadingEnable =
+     msaaSamples != VK_SAMPLE_COUNT_1_BIT ? VK_TRUE : VK_FALSE;
+   msaaStateDefault.rasterizationSamples = msaaSamples;
+
+   /* Tessellation state */
+   VkPipelineTessellationStateCreateInfo tessStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, 0, 0, 0};
+
+   /* Dynamic state */
+   VkPipelineDynamicStateCreateInfo dynamicStateDefault = {
+     VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+   VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
+   dynamicStateDefault.pDynamicStates = pDynamicStates ? pDynamicStates : dynamicStates;
+   dynamicStateDefault.dynamicStateCount =
+     pDynamicStates ? customDynamicCount : ctCStaticArrayLen(dynamicStates);
+
+   /* Renderpass and Subpass */
+   createInfo.renderPass = renderpass;
+   createInfo.subpass = subpass;
+
+   /* Pipeline derivitives */
+   createInfo.basePipelineHandle = VK_NULL_HANDLE;
+   createInfo.basePipelineIndex = 0;
+
+   /* Assign states */
+   createInfo.layout = layout;
+   createInfo.pColorBlendState = &colorBlendStateDefault;
+   createInfo.pViewportState = &viewportStateDefault;
+   createInfo.pRasterizationState = &rasterStateDefault;
+   createInfo.pVertexInputState = &vertexStateDefault;
+   createInfo.pDepthStencilState = &depthStencilStateDefault;
+   createInfo.pInputAssemblyState = &inputAssemblyStateDefault;
+   createInfo.pMultisampleState = &msaaStateDefault;
+   createInfo.pTessellationState = &tessStateDefault;
+   createInfo.pDynamicState = &dynamicStateDefault;
+
+   return vkCreateGraphicsPipelines(
+     vkDevice, vkPipelineCache, 1, &createInfo, &vkAllocCallback, &pipeline);
 }
 
 void ctVkBackend::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
@@ -209,7 +398,32 @@ VkResult ctVkBackend::WaitForFrameAvailible() {
    return vkResetFences(vkDevice, 1, &frameAvailibleFences[currentFrame]);
 }
 
+void ctVkBackend::ExposeBindlessStorageBuffer(uint32_t& outIdx,
+                                              VkBuffer buffer,
+                                              VkDeviceSize range,
+                                              VkDeviceSize offset) {
+   ZoneScoped;
+   outIdx = descriptorsStorageBuffer.AllocateSlot();
+   VkDescriptorBufferInfo buffInfo = {0};
+   buffInfo.buffer = buffer;
+   buffInfo.offset = offset;
+   buffInfo.range = range;
+   VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+   write.descriptorCount = 1;
+   write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+   write.dstSet = vkGlobalDescriptorSet;
+   write.dstBinding = 3;
+   write.dstArrayElement = outIdx;
+   write.pBufferInfo = &buffInfo;
+   vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
+}
+
+void ctVkBackend::ReleaseBindlessStorageBuffer(uint32_t idx) {
+   descriptorsStorageBuffer.ReleaseSlot(idx);
+}
+
 void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
+   ZoneScoped;
    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &surfaceCapabilities);
 
    uint32_t formatCount;
@@ -230,6 +444,7 @@ void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface
 }
 
 bool ctVkBackend::DeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
+   ZoneScoped;
    uint32_t extCount;
    vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, NULL);
    VkExtensionProperties* availible =
@@ -254,6 +469,7 @@ bool ctVkBackend::DeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
 }
 
 bool vDeviceHasSwapChainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
+   ZoneScoped;
    ctVkSwapchainSupport support;
    support.GetSupport(gpu, surface);
    return !support.presentModes.isEmpty() && !support.surfaceFormats.isEmpty();
@@ -281,6 +497,7 @@ bool vDeviceHasRequiredFeatures(
 VkPhysicalDevice ctVkBackend::PickBestDevice(VkPhysicalDevice* pGpus,
                                              uint32_t count,
                                              VkSurfaceKHR surface) {
+   ZoneScoped;
    int64_t bestGPUIdx = -1;
    int64_t bestGPUScore = -1;
    int64_t currentGPUScore;
@@ -437,7 +654,7 @@ ctResults ctVkBackend::Startup() {
               "support."));
    }
    /*Setup Validation Debug Callback*/
-   if(validationEnabled){
+   if (validationEnabled) {
       PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallback =
         (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(
           vkInstance, "vkCreateDebugReportCallbackEXT");
@@ -752,6 +969,7 @@ ctResults ctVkBackend::Startup() {
 }
 
 ctResults ctVkBackend::Shutdown() {
+   ZoneScoped;
    ctDebugLog("Vulkan Backend is Shutting Down...");
    vkDeviceWaitIdle(vkDevice);
 
@@ -801,6 +1019,7 @@ ctResults ctVkBackend::Shutdown() {
 /* ------------- Screen Resources ------------- */
 
 ctResults ctVkScreenResources::CreateSurface(ctVkBackend* pBackend, SDL_Window* pWindow) {
+   ZoneScoped;
    ctDebugLog("Creating Surface...");
    window = pWindow;
    if (SDL_Vulkan_CreateSurface(pWindow, pBackend->vkInstance, &surface)) {
@@ -810,6 +1029,7 @@ ctResults ctVkScreenResources::CreateSurface(ctVkBackend* pBackend, SDL_Window* 
 }
 
 VkSurfaceFormatKHR vPickBestSurfaceFormat(VkSurfaceFormatKHR* formats, size_t count) {
+   ZoneScoped;
    for (uint32_t i = 0; i < count; i++) {
       const VkSurfaceFormatKHR fmt = formats[i];
       if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB &&
@@ -821,6 +1041,7 @@ VkSurfaceFormatKHR vPickBestSurfaceFormat(VkSurfaceFormatKHR* formats, size_t co
 }
 
 VkPresentModeKHR vPickPresentMode(VkPresentModeKHR* modes, size_t count, bool vsync) {
+   ZoneScoped;
    int64_t bestIdx = 0;
    int64_t bestScore = -1;
    int64_t currentScore;
@@ -866,6 +1087,7 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
                                                ctVkQueueFamilyIndices indices,
                                                int32_t vsync,
                                                VkSwapchainKHR oldSwapchain) {
+   ZoneScoped;
    ctDebugLog("Creating Swapchain...");
 
    swapChainSupport.GetSupport(pBackend->vkPhysicalDevice, surface);
@@ -929,6 +1151,7 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
 }
 
 ctResults ctVkScreenResources::CreatePresentResources(ctVkBackend* pBackend) {
+   ZoneScoped;
    /* Create image availible semaphore */
    VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
@@ -952,11 +1175,13 @@ ctResults ctVkScreenResources::CreatePresentResources(ctVkBackend* pBackend) {
 }
 
 ctResults ctVkScreenResources::DestroySwapchain(ctVkBackend* pBackend) {
+   ZoneScoped;
    vkDestroySwapchainKHR(pBackend->vkDevice, swapchain, &pBackend->vkAllocCallback);
    return CT_SUCCESS;
 }
 
 ctResults ctVkScreenResources::DestroyPresentResources(ctVkBackend* pBackend) {
+   ZoneScoped;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkDestroySemaphore(
         pBackend->vkDevice, imageAvailible[i], &pBackend->vkAllocCallback);
@@ -966,6 +1191,7 @@ ctResults ctVkScreenResources::DestroyPresentResources(ctVkBackend* pBackend) {
 }
 
 ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
+   ZoneScoped;
    vkDestroySurfaceKHR(pBackend->vkInstance, surface, NULL);
    return CT_SUCCESS;
 }
