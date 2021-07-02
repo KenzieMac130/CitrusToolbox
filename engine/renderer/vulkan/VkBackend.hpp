@@ -80,6 +80,8 @@ public:
    ctResults DestroySwapchain(class ctVkBackend* pBackend);
    ctResults DestroyPresentResources(class ctVkBackend* pBackend);
 
+   bool HandleResizeIfNeeded(class ctVkBackend* pBackend);
+
    VkResult BlitAndPresent(class ctVkBackend* pBackend,
                            uint32_t blitQueueIdx,
                            VkQueue blitQueue,
@@ -182,12 +184,12 @@ public:
      VkShaderModule fragShader,
      bool depthTest = false,
      bool depthWrite = true,
-     VkFrontFace winding = VK_FRONT_FACE_CLOCKWISE,
-     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT,
-     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
      bool blendEnable = false, /* Enable blending on defaults */
      uint32_t colorBlendCount = 1,
      VkPipelineColorBlendAttachmentState* pCustomBlends = NULL,
+     VkFrontFace winding = VK_FRONT_FACE_CLOCKWISE,
+     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT,
+     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
      VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT,
      uint32_t customDynamicCount = 0,
      VkDynamicState* pDynamicStates = NULL);

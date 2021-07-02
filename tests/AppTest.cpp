@@ -26,6 +26,10 @@ class TestApp : public ctApplication {
    virtual ctResults OnTick(const float deltatime);
    virtual ctResults OnUIUpdate();
    virtual ctResults OnShutdown();
+
+   float rad = 5.0f;
+   float phase = 0;
+   float diskPos[2] = {0};
 };
 
 const char* TestApp::GetAppName() {
@@ -66,6 +70,10 @@ ctResults TestApp::OnUIUpdate() {
    Engine->Interact->DebugImGui();
    ImGui::End();
 
+   phase += Engine->FrameTime.GetDeltaTimeFloat();
+   diskPos[0] = ctSin(phase) * rad;
+   diskPos[1] = ctCos(phase) * rad;
+
    // clang-format off
    Im3d::Text(Im3d::Vec3(0, 1, 0), 1.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "Red");
    Im3d::Text(Im3d::Vec3(1, -1, 0), 1.0f, Im3d::Color_Green, Im3d::TextFlags_Default, "Green");
@@ -79,7 +87,35 @@ ctResults TestApp::OnUIUpdate() {
    Im3d::Text(Im3d::Vec3(-1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "5");
    Im3d::Text(Im3d::Vec3(1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "6");
    Im3d::Text(Im3d::Vec3(-1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "7");
-   Im3d::DrawSphere(Im3d::Vec3(0, 0, 0), 1.0f);
+
+   Im3d::PushColor(Im3d::Color_Blue);
+   Im3d::PushAlpha(1.0f);
+   Im3d::DrawCircleFilled(Im3d::Vec3(diskPos[0], 0, diskPos[1]), Im3d::Vec3(0, 1, 0), 1.0f);
+   Im3d::DrawCircle(Im3d::Vec3(-diskPos[0], 0, -diskPos[1]), Im3d::Vec3(0, 1, 0), 1.0f);
+   Im3d::PopAlpha();
+   Im3d::PopColor();
+
+   Im3d::PushColor(Im3d::Color_Red);
+   Im3d::PushAlpha(1.0f);
+   Im3d::DrawAlignedBoxFilled(Im3d::Vec3(-0.5f, -0.5f, -0.5f), Im3d::Vec3(0.5f, 0.5f, 0.5f));
+   Im3d::DrawPoint(Im3d::Vec3(-5.0, 0, 0), 16.0f, Im3d::Color_Green);
+   Im3d::DrawPoint(Im3d::Vec3(-5.0, 1, 0), 16.0f, Im3d::Color_Green);
+   Im3d::DrawPoint(Im3d::Vec3(-5.0, 2, 0), 16.0f, Im3d::Color_Green);
+   Im3d::DrawPoint(Im3d::Vec3(-5.0, 3, 0), 16.0f, Im3d::Color_Green);
+   Im3d::PopAlpha();
+   Im3d::PopColor();
+
+   Im3d::PushColor(Im3d::Color_Red);
+   Im3d::PushAlpha(1.0f);
+   Im3d::PushSize(16.0f);
+   Im3d::PushMatrix();
+   Im3d::Translate(Im3d::Vec3(5.0, 0, 0));
+   Im3d::DrawXyzAxes();
+   Im3d::PopMatrix();
+   Im3d::PopSize();
+   Im3d::PopAlpha();
+   Im3d::PopColor();
+
    // clang-format on
    return CT_SUCCESS;
 }

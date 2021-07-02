@@ -23,22 +23,25 @@
 #include "VkIm3d.hpp"
 
 struct ctVkKeyLimeGlobalBufferData {
-    float debug;
-    float time;
-    float deltaTime;
+   float debug;
+   float time;
+   float deltaTime;
 };
 
 struct ctVkKeyLimeViewBufferData {
-    ctMat4 viewMatrix;
-    ctMat4 inverseViewMatrix;
-    ctMat4 projectionMatrix;
-    ctMat4 inverseProjectionMatrix;
+   ctMat4 viewMatrix;
+   ctMat4 inverseViewMatrix;
+   ctMat4 projectionMatrix;
+   ctMat4 inverseProjectionMatrix;
 };
 
 class CT_API ctVkKeyLimeCore : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+
+   ctResults CreateScreenResources();
+   ctResults DestroyScreenResources();
 
    ctResults UpdateCamera(ctKeyLimeCameraDesc cameraDesc);
    ctResults Render();

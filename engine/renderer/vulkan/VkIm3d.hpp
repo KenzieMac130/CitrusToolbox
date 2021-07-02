@@ -25,7 +25,7 @@ public:
    ctResults Shutdown();
    ctResults LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass);
    void BuildDrawLists();
-   void RenderCommands(VkCommandBuffer cmd, ctMat4 view, ctMat4 projection);
+   void RenderCommands(VkCommandBuffer cmd, ctVec2 viewSize, ctMat4 view, ctMat4 projection);
 
 private:
    Im3d::VertexData* vertexData[CT_MAX_INFLIGHT_FRAMES];

@@ -234,12 +234,12 @@ ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
                                     VkShaderModule fragShader,
                                     bool depthTest,
                                     bool depthWrite,
-                                    VkFrontFace winding,
-                                    VkCullModeFlags cullMode,
-                                    VkPrimitiveTopology topology,
                                     bool blendEnable,
                                     uint32_t colorBlendCount,
                                     VkPipelineColorBlendAttachmentState* pCustomBlends,
+                                    VkFrontFace winding,
+                                    VkCullModeFlags cullMode,
+                                    VkPrimitiveTopology topology,
                                     VkSampleCountFlagBits msaaSamples,
                                     uint32_t customDynamicCount,
                                     VkDynamicState* pDynamicStates) {
@@ -254,6 +254,12 @@ ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
    colorBlendsDefault[0].colorWriteMask =
      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
      VK_COLOR_COMPONENT_A_BIT;
+   colorBlendsDefault[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+   colorBlendsDefault[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+   colorBlendsDefault[0].colorBlendOp = VK_BLEND_OP_ADD;
+   colorBlendsDefault[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+   colorBlendsDefault[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+   colorBlendsDefault[0].alphaBlendOp = VK_BLEND_OP_ADD;
    for (int i = 1; i < 8; i++) {
       colorBlendsDefault[i] = colorBlendsDefault[0];
    }
@@ -622,6 +628,7 @@ ctResults ctVkBackend::Startup() {
 
       deviceExtensions.Append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
       deviceExtensions.Append("VK_EXT_descriptor_indexing");
+      deviceExtensions.Append("VK_KHR_relaxed_block_layout");
       if (validationEnabled) {
          deviceExtensions.Append(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
       }
@@ -1190,6 +1197,18 @@ ctResults ctVkScreenResources::DestroyPresentResources(ctVkBackend* pBackend) {
    return CT_SUCCESS;
 }
 
+bool ctVkScreenResources::HandleResizeIfNeeded(ctVkBackend* pBackend) {
+   if (resizeTriggered) {
+      vkDeviceWaitIdle(pBackend->vkDevice);
+      DestroySwapchain(pBackend);
+      CreateSwapchain(
+        pBackend, pBackend->queueFamilyIndices, pBackend->vsync, VK_NULL_HANDLE);
+      resizeTriggered = false;
+      return true;
+   }
+   return false;
+}
+
 ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
    ZoneScoped;
    vkDestroySurfaceKHR(pBackend->vkInstance, surface, NULL);
@@ -1217,8 +1236,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
                                            &imageIndex);
    if (resizeTriggered || result == VK_ERROR_OUT_OF_DATE_KHR) {
       resizeTriggered = true;
-      vkDeviceWaitIdle(pBackend->vkDevice);
-      ctFatalError(-1, "Resize Not Supported Yet");
+      return VK_ERROR_OUT_OF_DATE_KHR;
    } else if (result != VK_SUCCESS) {
       return result;
    }
@@ -1227,12 +1245,6 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
    {
       VkCommandBuffer cmd = blitCommands[pBackend->currentFrame];
       VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-      /*[ERROR] VK Validation Layer: [Validation] Code 0 : Validation Error: [
-       * VUID-vkResetCommandBuffer-commandBuffer-00045 ] Object 0: handle = 0x2a5679cc080,
-       * type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x1e7883ea | Attempt to reset
-       * VkCommandBuffer 0x2a5679cc080[] which is in use. The Vulkan spec states:
-       * commandBuffer must not be in the pending state
-       * (https://vulkan.lunarg.com/doc/view/1.2.148.0/windows/1.2-extensions/vkspec.html#VUID-vkResetCommandBuffer-commandBuffer-00045)*/
       vkResetCommandBuffer(cmd, 0);
       vkBeginCommandBuffer(cmd, &beginInfo);
 
@@ -1354,6 +1366,8 @@ int32_t ctVkDescriptorManager::AllocateSlot() {
    if (!freedIdx.isEmpty()) {
       result = freedIdx.Last();
       freedIdx.RemoveLast();
+   } else {
+      nextNewIdx++;
    }
    return result;
 }

@@ -21,6 +21,7 @@
 
 struct vkim3dPushConstant {
    ctMat4 viewProj;
+   ctVec2 viewSize;
    uint32_t vertBuffBindIdx;
    uint32_t primType;
 };
@@ -73,8 +74,19 @@ ctResults ctVkIm3d::LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass) {
    if (pipeline != VK_NULL_HANDLE) {
       vkDestroyPipeline(_pBackend->vkDevice, pipeline, &_pBackend->vkAllocCallback);
    }
-   _pBackend->CreateGraphicsPipeline(
-     pipeline, pipelineLayout, guiRenderpass, 0, vertShader, fragShader);
+   _pBackend->CreateGraphicsPipeline(pipeline,
+                                     pipelineLayout,
+                                     guiRenderpass,
+                                     0,
+                                     vertShader,
+                                     fragShader,
+                                     true,
+                                     true,
+                                     true,
+                                     1,
+                                     NULL,
+                                     VK_FRONT_FACE_CLOCKWISE,
+                                     VK_CULL_MODE_NONE);
 
    vkDestroyShaderModule(_pBackend->vkDevice, vertShader, &_pBackend->vkAllocCallback);
    vkDestroyShaderModule(_pBackend->vkDevice, fragShader, &_pBackend->vkAllocCallback);
@@ -97,14 +109,15 @@ void ctVkIm3d::BuildDrawLists() {
       nextVertex += vertexCount;
    }
    if (nextVertex != 0) {
-      vmaFlushAllocation(_pBackend->vmaAllocator,
-                         vertexBuffer[currentFrame].alloc,
-                         0,
-                         nextVertex * sizeof(Im3d::VertexData));
+      vmaFlushAllocation(
+        _pBackend->vmaAllocator, vertexBuffer[currentFrame].alloc, 0, VK_WHOLE_SIZE);
    }
 }
 
-void ctVkIm3d::RenderCommands(VkCommandBuffer cmd, ctMat4 view, ctMat4 projection) {
+void ctVkIm3d::RenderCommands(VkCommandBuffer cmd,
+                              ctVec2 viewSize,
+                              ctMat4 view,
+                              ctMat4 projection) {
    ZoneScoped;
    uint32_t drawListCount = Im3d::GetDrawListCount();
    const Im3d::DrawList* drawLists = Im3d::GetDrawLists();
@@ -123,7 +136,9 @@ void ctVkIm3d::RenderCommands(VkCommandBuffer cmd, ctMat4 view, ctMat4 projectio
    vkim3dPushConstant pushConstant = {0};
    pushConstant.vertBuffBindIdx = vertexBuffBindIdx[_pBackend->currentFrame];
    pushConstant.viewProj = projection * view;
-   for (uint32_t i = 0; i < 1; i++) {
+   pushConstant.viewSize = viewSize;
+   uint32_t nextVerts = 0;
+   for (uint32_t i = 0; i < drawListCount; i++) {
       const Im3d::DrawList drawList = drawLists[i];
       pushConstant.primType = drawList.m_primType;
       vkCmdPushConstants(cmd,
@@ -132,6 +147,20 @@ void ctVkIm3d::RenderCommands(VkCommandBuffer cmd, ctMat4 view, ctMat4 projectio
                          0,
                          sizeof(pushConstant),
                          &pushConstant);
-      vkCmdDraw(cmd, 3, 1, 0, 0);
+      /* Draw Tris */
+      if (drawList.m_primType == Im3d::DrawPrimitive_Triangles) {
+         vkCmdDraw(cmd, drawList.m_vertexCount, 1, nextVerts, 0);
+         nextVerts += drawList.m_vertexCount;
+      }
+      /* Draw Lines */
+      else if (drawList.m_primType == Im3d::DrawPrimitive_Lines) {
+         vkCmdDraw(cmd, 6, drawList.m_vertexCount / 2, 0, nextVerts);
+         nextVerts += drawList.m_vertexCount;
+      }
+      /* Draw Points */
+      else if (drawList.m_primType == Im3d::DrawPrimitive_Points) {
+         vkCmdDraw(cmd, 6, drawList.m_vertexCount, 0, nextVerts);
+         nextVerts += drawList.m_vertexCount;
+      }
    }
 }

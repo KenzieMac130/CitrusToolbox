@@ -140,6 +140,55 @@ ctResults ctVkKeyLimeCore::Startup() {
                            &renderFinished[i]);
       }
    }
+   CreateScreenResources();
+   /* Setup ImGUI */
+   {
+      VkCommandBuffer startupTransferCommands = frameInitialUploadCommandBuffers[0];
+      VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+      beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      vkBeginCommandBuffer(startupTransferCommands, &beginInfo);
+      vkImgui.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
+                             vkBackend.mainScreenResources.extent.height,
+                             internalResolutionWidth,
+                             internalResolutionHeight);
+      vkImgui.Startup(
+        &vkBackend, frameInitialUploadCommandBuffers[0], forwardRenderPass, 0);
+      vkEndCommandBuffer(startupTransferCommands);
+      VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+      submitInfo.commandBufferCount = 1;
+      submitInfo.pCommandBuffers = &startupTransferCommands;
+      vkQueueSubmit(vkBackend.transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+      vkQueueWaitIdle(vkBackend.transferQueue);
+   }
+   /* Setup Im3d */
+   {
+      /*vkIm3d.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
+                            vkBackend.mainScreenResources.extent.height,
+                            internalResolutionWidth,
+                            internalResolutionHeight);*/
+      vkIm3d.Startup(&vkBackend, forwardRenderPass, 0);
+   }
+   return CT_SUCCESS;
+}
+
+ctResults ctVkKeyLimeCore::Shutdown() {
+   ZoneScoped;
+   vkDeviceWaitIdle(vkBackend.vkDevice);
+   vkDestroyCommandPool(vkBackend.vkDevice, gfxCommandPool, &vkBackend.vkAllocCallback);
+   vkDestroyCommandPool(
+     vkBackend.vkDevice, transferCommandPool, &vkBackend.vkAllocCallback);
+   vkIm3d.Shutdown();
+   vkImgui.Shutdown();
+   DestroyScreenResources();
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkDestroySemaphore(
+        vkBackend.vkDevice, renderFinished[i], &vkBackend.vkAllocCallback);
+   }
+   vkBackend.ModuleShutdown();
+   return CT_SUCCESS;
+}
+
+ctResults ctVkKeyLimeCore::CreateScreenResources() {
    /* GUI Renderpass and Framebuffer */
    {
       compositeFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -224,54 +273,15 @@ ctResults ctVkKeyLimeCore::Startup() {
                                       &forwardFramebuffer),
                   CT_NC("vkCreateFramebuffer() failed to create gui framebuffer."));
    }
-   /* Setup ImGUI */
-   {
-      VkCommandBuffer startupTransferCommands = frameInitialUploadCommandBuffers[0];
-      VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-      beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-      vkBeginCommandBuffer(startupTransferCommands, &beginInfo);
-      vkImgui.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
-                             vkBackend.mainScreenResources.extent.height,
-                             internalResolutionWidth,
-                             internalResolutionHeight);
-      vkImgui.Startup(
-        &vkBackend, frameInitialUploadCommandBuffers[0], forwardRenderPass, 0);
-      vkEndCommandBuffer(startupTransferCommands);
-      VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-      submitInfo.commandBufferCount = 1;
-      submitInfo.pCommandBuffers = &startupTransferCommands;
-      vkQueueSubmit(vkBackend.transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
-      vkQueueWaitIdle(vkBackend.transferQueue);
-   }
-   /* Setup Im3d */
-   {
-      /*vkIm3d.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
-                            vkBackend.mainScreenResources.extent.height,
-                            internalResolutionWidth,
-                            internalResolutionHeight);*/
-      vkIm3d.Startup(&vkBackend, forwardRenderPass, 0);
-   }
    return CT_SUCCESS;
 }
 
-ctResults ctVkKeyLimeCore::Shutdown() {
-   ZoneScoped;
-   vkDeviceWaitIdle(vkBackend.vkDevice);
-   vkDestroyCommandPool(vkBackend.vkDevice, gfxCommandPool, &vkBackend.vkAllocCallback);
-   vkDestroyCommandPool(
-     vkBackend.vkDevice, transferCommandPool, &vkBackend.vkAllocCallback);
-   vkIm3d.Shutdown();
-   vkImgui.Shutdown();
+ctResults ctVkKeyLimeCore::DestroyScreenResources() {
    vkDestroyRenderPass(vkBackend.vkDevice, forwardRenderPass, &vkBackend.vkAllocCallback);
    vkDestroyFramebuffer(
      vkBackend.vkDevice, forwardFramebuffer, &vkBackend.vkAllocCallback);
    vkBackend.TryDestroyCompleteImage(depthBuffer);
    vkBackend.TryDestroyCompleteImage(compositeBuffer);
-   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroySemaphore(
-        vkBackend.vkDevice, renderFinished[i], &vkBackend.vkAllocCallback);
-   }
-   vkBackend.ModuleShutdown();
    return CT_SUCCESS;
 }
 
@@ -282,6 +292,16 @@ ctResults ctVkKeyLimeCore::UpdateCamera(ctKeyLimeCameraDesc cameraDesc) {
 
 ctResults ctVkKeyLimeCore::Render() {
    ZoneScoped;
+   if (vkBackend.mainScreenResources.HandleResizeIfNeeded(&vkBackend)) {
+      internalResolutionWidth = vkBackend.mainScreenResources.extent.width;
+      internalResolutionHeight = vkBackend.mainScreenResources.extent.height;
+      DestroyScreenResources();
+      CreateScreenResources();
+      vkImgui.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
+                             vkBackend.mainScreenResources.extent.height,
+                             internalResolutionWidth,
+                             internalResolutionHeight);
+   }
    vkBackend.WaitForFrameAvailible();
 
 #if CITRUS_INCLUDE_AUDITION
@@ -294,6 +314,18 @@ ctResults ctVkKeyLimeCore::Render() {
    }
 #endif
 
+   /* View Projection */
+   ctCameraInfo camera = Engine->SceneEngine->GetCameraInfo(NULL);
+   ctMat4 viewMatrix = ctMat4(1);
+   ctMat4 projMatrix = ctMat4(1);
+   ctMat4Rotate(viewMatrix, -camera.rotation);
+   ctMat4Translate(viewMatrix, -camera.position);
+   ctMat4PerspectiveInfinite(projMatrix,
+                             camera.fov,
+                             (float)vkBackend.mainScreenResources.extent.width /
+                               (float)vkBackend.mainScreenResources.extent.height,
+                             0.01f);
+
    /* Build Debug Internals */
    vkIm3d.BuildDrawLists();
    Engine->Im3dIntegration->DrawImguiText(ctMat4());
@@ -303,18 +335,6 @@ ctResults ctVkKeyLimeCore::Render() {
    VkCommandBufferBeginInfo gfxBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
    vkResetCommandBuffer(gfxCommands, 0);
    vkBeginCommandBuffer(gfxCommands, &gfxBeginInfo);
-
-   /* View Projection */
-   ctCameraInfo camera = Engine->SceneEngine->GetCameraInfo(NULL);
-   ctMat4 viewMatrix = ctMat4(1);
-   ctMat4 projMatrix = ctMat4(1);
-   ctMat4Rotate(viewMatrix, -camera.rotation);
-   ctMat4Translate(viewMatrix, -camera.position);
-   ctMat4PerspectiveInfinite(projMatrix,
-                             camera.fov,
-                             (float)internalResolutionWidth /
-                               (float)internalResolutionHeight,
-                             0.01f);
 
    /* Render GUI */
    {
@@ -339,7 +359,11 @@ ctResults ctVkKeyLimeCore::Render() {
       vkCmdSetViewport(gfxCommands, 0, 1, &viewport);
       vkCmdSetScissor(gfxCommands, 0, 1, &scissor);
 
-      vkIm3d.RenderCommands(gfxCommands, viewMatrix, projMatrix);
+      vkIm3d.RenderCommands(
+        gfxCommands,
+        ctVec2((float)internalResolutionWidth, (float)internalResolutionHeight),
+        viewMatrix,
+        projMatrix);
 
       vkImgui.RenderCommands(gfxCommands);
       vkCmdEndRenderPass(gfxCommands);

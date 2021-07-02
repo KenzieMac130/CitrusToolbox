@@ -43,6 +43,7 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       ImGui::End();
 
       float speed = 1.0f * deltaTime;
+      float lookSpeed = 2.0f * deltaTime;
 
       /* Look */
       if (Engine->Interact->GetSignal(ctInteractPath("/dev/mouse/input/button/right"))) {
@@ -50,8 +51,8 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
            ctInteractPath("/dev/mouse/input/relative_move/x"));
          float verticalMove = Engine->Interact->GetSignal(
            ctInteractPath("/dev/mouse/input/relative_move/y"));
-         camYaw += horizontalMove * 2.0f;
-         camPitch += verticalMove * 2.0f;
+         camYaw += horizontalMove * lookSpeed;
+         camPitch += verticalMove * lookSpeed;
          if (camPitch < -CT_PI / 2.0f + 0.05f) { camPitch = -CT_PI / 2.0f + 0.05f; }
          if (camPitch > CT_PI / 2.0f - 0.05f) { camPitch = CT_PI / 2.0f - 0.05f; }
       }

@@ -24,6 +24,7 @@ message("--------------------------------------------")
 # Get core assets to add to IDE
 set(ASSET_CORE_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/common.glsl
+${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/bindless.glsl
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/portability.glsl
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/im3d_vert.vert
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/im3d_frag.frag
