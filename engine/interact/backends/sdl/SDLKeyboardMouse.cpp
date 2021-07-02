@@ -102,9 +102,10 @@ ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) 
    int w, h;
    SDL_Window* pWindow = SDL_GetMouseFocus();
    SDL_GetWindowSize(pWindow, &w, &h);
-   float aspect = (float)w / (float)h;
-   mouseAxisStates[0] = (float)x / (float)w;
-   mouseAxisStates[1] = (float)y * aspect / (float)h;
+   const float aspect = (float)w / (float)h;
+   const float time = Engine->FrameTime.GetDeltaTimeFloat();
+   mouseAxisStates[0] = ((float)x / (float)w) / time;
+   mouseAxisStates[1] = ((float)y * aspect / (float)h) / time;
    return CT_SUCCESS;
 }
 
