@@ -1,5 +1,5 @@
 # CitrusToolbox
- Minimalist Game Engine
+ Small Game Engine
  
  ![CitrusToolboxArchitecture](/docs/CitrusToolboxArchitecture.png)
 
