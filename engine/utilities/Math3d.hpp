@@ -571,3 +571,24 @@ inline ctQuat::ctQuat(struct ctVec4 _v) {
               v.data[3][1],                                                              \
               v.data[3][2],                                                              \
               v.data[3][3])
+
+#define ctVec2FromIm3d(v) ctVec2(v.x, v.y)
+#define ctVec3FromIm3d(v) ctVec3(v.x, v.y, v.z)
+#define ctVec4FromIm3d(v) ctVec4(v.x, v.y, v.z, v.w)
+#define ctMat4FromIm3d(v)                                                                \
+   ctMat4(v(0, 0),                                                                       \
+          v(0, 1),                                                                       \
+          v(0, 2),                                                                       \
+          v(0, 3),                                                                       \
+          v(1, 0),                                                                       \
+          v(1, 1),                                                                       \
+          v(1, 2),                                                                       \
+          v(1, 3),                                                                       \
+          v(2, 0),                                                                       \
+          v(2, 1),                                                                       \
+          v(2, 2),                                                                       \
+          v(2, 3),                                                                       \
+          v(3, 0),                                                                       \
+          v(3, 1),                                                                       \
+          v(3, 2),                                                                       \
+          v(3, 3))
