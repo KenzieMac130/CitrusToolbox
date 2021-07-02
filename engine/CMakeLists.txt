@@ -304,11 +304,20 @@ target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdpar
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
 
-target_link_libraries(engine ${SDL2_LIBRARIES})
-target_include_directories(engine PUBLIC ${SDL2_INCLUDE_DIRS})
+if(CITRUS_SDL)
+	target_link_libraries(engine ${SDL2_LIBRARIES})
+	target_include_directories(engine PUBLIC ${SDL2_INCLUDE_DIRS})
+endif()
 
-target_link_libraries(engine ${Vulkan_LIBRARIES})
-target_include_directories(engine PUBLIC ${Vulkan_INCLUDE_DIRS})
+if(CITRUS_GFX_VULKAN)
+	target_link_libraries(engine ${Vulkan_LIBRARIES})
+	target_include_directories(engine PUBLIC ${Vulkan_INCLUDE_DIRS})
+endif()
+
+if(CITRUS_PHYSX)
+	target_link_libraries(engine ${PHYSX_LIBRARIES})
+	target_include_directories(engine PUBLIC ${PHYSX_SHARED_LIBRARIES})
+endif()
 
 # ---------- Copy Shared Libraries and Config ----------
 add_custom_command(TARGET engine POST_BUILD
@@ -319,7 +328,19 @@ add_custom_command(TARGET engine POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 "${SHARED_LIBRARY_DIRECTORY}/assets.redirect"
 $<TARGET_FILE_DIR:engine>)
-add_custom_command(TARGET engine POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy_if_different
-"${SHARED_LIBRARY_DIRECTORY}/SDL2${SHARED_LIBRARY_FORMAT}"
-$<TARGET_FILE_DIR:engine>)
+
+if(CITRUS_SDL)
+	add_custom_command(TARGET engine POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"${SHARED_LIBRARY_DIRECTORY}/SDL2${SHARED_LIBRARY_FORMAT}"
+	$<TARGET_FILE_DIR:engine>)
+endif()
+if(CITRUS_PHYSX)
+	foreach(LIB IN LISTS PHYSX_SHARED_LIBRARIES)
+		message(STATUS ${LIB})
+		add_custom_command(TARGET engine POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		"${LIB}"
+		$<TARGET_FILE_DIR:engine>)
+	endforeach()
+endif()

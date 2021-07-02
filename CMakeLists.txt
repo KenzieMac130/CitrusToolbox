@@ -33,6 +33,14 @@ endif()
 #---------- Unhelpful Warnings ----------
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
+#---------- Global Pragmas ----------
+set (CITRUS_ENGINE_PRAGMAS 
+"#if defined(_MSC_VER)
+    /* enum class nonsense */
+    #pragma warning(disable: 26812)
+#endif"
+)
+
 # ---------- Limits ----------
 set(CT_MAX_SMALL_STRING 40)
 set(CT_MAX_FILE_PATH_LENGTH 4096)
@@ -110,6 +118,28 @@ if(CITRUS_GFX_VULKAN)
 endif()
 
 # ---------- Find PhysX ----------
+set(CITRUS_PHYSX 1)
+set(CITRUS_PHYSX_CHECKED 1)
+if(CITRUS_PHYSX)
+    set(PHYSX_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/PhysX/include)
+    if(CITRUS_PHYSX_CHECKED)
+        set(PHYSX_PROFILE_NAME checked)
+    else()
+        set(PHYSX_PROFILE_NAME release)
+    endif()
+    set(PHYSX_SHARED_LIBRARIES 
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysX_64${SHARED_LIBRARY_FORMAT}
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysXCommon_64${SHARED_LIBRARY_FORMAT}
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysXCooking_64${SHARED_LIBRARY_FORMAT}
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysXFoundation_64${SHARED_LIBRARY_FORMAT})
+    set(PHYSX_LIBRARIES 
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysX_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysXCommon_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysXCooking_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysXFoundation_64.lib)
+endif()
+
+# ---------- Find Lua ----------
 
 # ---------- Tracy Profiler ---------- 
 option(TRACY_DEBUG "Enable Tracy Debugger" ON)
