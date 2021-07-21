@@ -45,8 +45,8 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
-   SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
    FrameTime = ctStopwatch();
+   SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
