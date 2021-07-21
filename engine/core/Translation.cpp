@@ -18,6 +18,12 @@
 #include "Translation.hpp"
 #include "EngineCore.hpp"
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <locale.h>
+#endif
+
 ctTranslation* mainTranslationSystem;
 
 ctTranslation::ctTranslation(bool shared) {
@@ -29,7 +35,33 @@ ctTranslation::ctTranslation(bool shared) {
 
 ctResults ctTranslation::Startup() {
    ZoneScoped;
-   language = GetUserOSLanguage();
+#if defined(_WIN32)
+   wchar_t data[LOCALE_NAME_MAX_LENGTH];
+   GetLocaleInfoEx(
+     LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
+   language = ctStringUtf8(data);
+#elif defined(__linux__)
+   /* Try to extract a similar string off "setlocale" (tested only on Ubuntu) */
+   const char* cbuf = setlocale(LC_ALL, "");
+   size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
+   char scratch[256];
+   memset(scratch, 0, 256);
+   strncpy(scratch, cbuf, max);
+   char* nextVal = scratch;
+   while (*nextVal != '\0') {
+      if (*nextVal == '_') { *nextVal = '-'; }
+      if (*nextVal == '.') {
+         *nextVal = '\0';
+         break;
+      }
+      nextVal++;
+   }
+   result = scratch;
+   if (result == "C") { result = "DEFAULT"; }
+#else
+   language = "DEFAULT";
+#endif
+   setlocale(LC_ALL, "C"); /* Unify C Locale */
    ctDebugLog("Detected Language: %s", language.CStr());
    return CT_SUCCESS;
 }
@@ -75,41 +107,8 @@ ctResults ctTranslation::LoadAll() {
    return CT_SUCCESS;
 }
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <locale.h>
-#endif
-
 ctStringUtf8 ctTranslation::GetUserOSLanguage() {
-   ctStringUtf8 result;
-#if defined(_WIN32)
-   wchar_t data[LOCALE_NAME_MAX_LENGTH];
-   GetLocaleInfoEx(
-     LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
-   result = ctStringUtf8(data);
-#elif defined(__linux__)
-   /* Try to extract a similar string off "setlocale" (tested only on Ubuntu) */
-   const char* cbuf = setlocale(LC_ALL, "");
-   size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
-   char scratch[256];
-   memset(scratch, 0, 256);
-   strncpy(scratch, cbuf, max);
-   char* nextVal = scratch;
-   while (*nextVal != '\0') {
-      if (*nextVal == '_') { *nextVal = '-'; }
-      if (*nextVal == '.') {
-         *nextVal = '\0';
-         break;
-      }
-      nextVal++;
-   }
-   result = scratch;
-   if (result == "C") { result = "DEFAULT"; }
-#else
-   result = "DEFAULT";
-#endif
-   return result;
+   return language;
 }
 
 const char* ctTranslation::GetLocalString(ctTranslationCatagory category,

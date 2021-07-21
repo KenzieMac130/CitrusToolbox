@@ -70,7 +70,7 @@ public:
     skip language auto-detect if data is in unknown format.
     Modify this function when porting to other platforms.
     Do not rely on this, always provide language selection.*/
-   static ctStringUtf8 GetUserOSLanguage();
+   ctStringUtf8 GetUserOSLanguage();
 
 private:
    class _dictionary {
