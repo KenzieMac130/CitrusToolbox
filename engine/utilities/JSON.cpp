@@ -29,16 +29,16 @@ ctJSONWriter::ctJSONWriter() {
 
 void ctJSONWriter::SetStringPtr(ctStringUtf8* pString) {
    _pStr = pString;
-   _jsonStack.Clear();
+   _jsonStackCt = 0;
    _pushStack(false);
 }
 
 ctResults ctJSONWriter::PushObject() {
    if (!_pStr) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    if (started) {
-       _finishLastEntry();
-       *_pStr += '\n';
-       _makeIndents();
+      _finishLastEntry();
+      *_pStr += '\n';
+      _makeIndents();
    }
    *_pStr += "{";
    _unmarkFirst();
@@ -143,7 +143,7 @@ ctResults ctJSONWriter::WriteNull() {
 }
 
 void ctJSONWriter::_finishLastEntry() {
-   const ctJSONWriter::_json_stack state = _jsonStack.Last();
+   const ctJSONWriter::_json_stack state = _jsonStack[_jsonStackCt - 1];
    if (state.isDefinition) { return; }
    if (!state.isFirst) { *_pStr += ","; }
    if (!state.isArray) {
@@ -153,24 +153,25 @@ void ctJSONWriter::_finishLastEntry() {
 }
 
 void ctJSONWriter::_unmarkFirst() {
-   _jsonStack.Last().isFirst = false;
+    _jsonStack[_jsonStackCt - 1].isFirst = false;
 }
 
 void ctJSONWriter::_setDefinition(bool val) {
-   _jsonStack.Last().isDefinition = val;
+    _jsonStack[_jsonStackCt - 1].isDefinition = val;
 }
 
 void ctJSONWriter::_pushStack(bool isArray) {
-   ctAssert(_jsonStack.Count() != _jsonStack.Capacity());
+   ctAssert(_jsonStackCt != 32);
    ctJSONWriter::_json_stack state;
    state.isFirst = true;
    state.isDefinition = false;
    state.isArray = isArray;
-   _jsonStack.Append(state);
+   _jsonStack[_jsonStackCt]= state;
+   _jsonStackCt++;
 }
 
 void ctJSONWriter::_popStack() {
-   if (_jsonStack.Count() > 1) { _jsonStack.RemoveLast(); }
+   if (_jsonStackCt > 1) { _jsonStackCt--; }
 }
 
 void ctJSONWriter::_makeIndents() {

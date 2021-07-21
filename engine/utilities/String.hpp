@@ -18,7 +18,7 @@
 
 #include "Common.h"
 
-class CT_API ctStringUtf8 {
+class CT_API_EXP ctStringUtf8 {
 public:
    ctStringUtf8();
    ctStringUtf8(ctStringUtf8& str);

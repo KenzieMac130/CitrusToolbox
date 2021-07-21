@@ -14,33 +14,15 @@
    limitations under the License.
 */
 
-/* Temporary test */
+#include "engine_build_dummy.h"
 
-#include "Common.h"
+#include "xxhash/xxhash.h"
 
-#include "utilities/Reflect.gen.hpp"
-
-class mine {};
-
-#pragma ct class {json = true, imgui = false }
-class doot : mine {
-public:
-#pragma ct var { serialize = true }
-   int integer;
-
-#pragma ct var { serialize = true }
-   bool boolean = false;
-
-#pragma ct var { serialize = true }
-   bool arr[32];
-
-#pragma ct var {serialize = true }
-   ctDynamicArray<int> dArr;
-
-#pragma ct var {serialize = true }
-   ctStaticArray<int, 8> sArr;
-
-/*Not valid*/
-#pragma ct var { serialize = false }
-   bool* ptr;
-};
+unsigned int ctGetEngineBuildId() {
+   const char* timestamp = __TIMESTAMP__;
+   size_t size = 0;
+   for (const char* p = timestamp; *p != 0; p++) {
+      size++;
+   }
+   return XXH32(timestamp, size, 0);
+}

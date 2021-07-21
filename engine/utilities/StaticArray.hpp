@@ -19,7 +19,7 @@
 #include "Common.h"
 
 template<class T, size_t TCAPACITY>
-class CT_API ctStaticArray {
+class CT_API_EXP ctStaticArray {
 public:
    /* Constructors */
    ctStaticArray();

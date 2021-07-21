@@ -33,16 +33,19 @@ ctStringUtf8::ctStringUtf8(const ctStringUtf8& str) {
 }
 
 ctStringUtf8::ctStringUtf8(const char* input, const size_t count) {
+   if (!input) { return; }
    const size_t final_count = strnlen(input, count);
    Append(input, count);
 }
 
 ctStringUtf8::ctStringUtf8(const char* input) {
+   if (!input) { return; }
    const size_t count = strlen(input);
    Append(input, count);
 }
 
 ctStringUtf8::ctStringUtf8(const wchar_t* input) {
+   if (!input) { return; }
    const wchar_t* next = input;
    while (*next != 0) {
       *this += (int)*next;
@@ -97,6 +100,7 @@ ctStringUtf8& ctStringUtf8::operator+=(const int32_t c) {
 }
 
 ctStringUtf8& ctStringUtf8::operator+=(const char* str) {
+   if (!str) { return *this; }
    return Append(str, strlen(str));
 }
 
@@ -105,6 +109,7 @@ ctStringUtf8& ctStringUtf8::operator+=(const ctStringUtf8& str) {
 }
 
 ctStringUtf8& ctStringUtf8::Append(const char* str, const size_t count) {
+   if (!str) { return *this; }
    _removeNullTerminator();
    _data.Append(str, count);
    _nullTerminate();
@@ -119,6 +124,7 @@ ctStringUtf8& ctStringUtf8::Append(const char chr, const size_t count) {
 }
 
 void ctStringUtf8::Printf(const size_t max, const char* format, ...) {
+   if (!format) { return; }
    va_list args;
    va_start(args, format);
    VPrintf(max, format, args);
@@ -126,6 +132,7 @@ void ctStringUtf8::Printf(const size_t max, const char* format, ...) {
 }
 
 void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
+   if (!format) { return; }
    const size_t beginning_length = ByteLength();
    Append('\0', max);
    vsnprintf((char*)_dataVoid() + beginning_length, max, format, args);
@@ -136,10 +143,12 @@ int ctStringUtf8::Cmp(const ctStringUtf8& str) const {
 }
 
 int ctStringUtf8::Cmp(const char* str) const {
+   if (!str) { return INT32_MIN; }
    return Cmp(str, strlen(str));
 }
 
 int ctStringUtf8::Cmp(const char* str, const size_t len) const {
+   if (!str) { return INT32_MIN; }
    const size_t maxlen = len > ByteLength() ? ByteLength() : len;
    return utf8ncmp(CStr(), str, maxlen);
 }

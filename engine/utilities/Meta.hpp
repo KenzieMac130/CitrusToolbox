@@ -16,6 +16,4 @@
 
 #pragma once
 
-/* Wraps around STL Port Type Traits */
-//#include "stlport/stl/config/features.h"
-//#include "stlport/stl/type_traits.h"
+#include <type_traits>

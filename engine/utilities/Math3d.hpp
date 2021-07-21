@@ -57,6 +57,13 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC2) ctVec2 {
    inline ctVec2(struct ctVec3 _v);
    inline ctVec2(struct ctVec4 _v);
 
+   inline ctVec2& operator+=(const ctVec2& v);
+   inline ctVec2& operator-=(const ctVec2& v);
+   inline ctVec2& operator*=(const ctVec2& v);
+   inline ctVec2& operator*=(const float& v);
+   inline ctVec2& operator/=(const ctVec2& v);
+   inline ctVec2& operator/=(const float& v);
+
    union {
       struct {
          float x;
@@ -92,6 +99,25 @@ inline ctVec2 operator/(const ctVec2& a, const ctVec2 b) {
 
 inline ctVec2 operator/(const ctVec2& a, const float v) {
    return ctVec2(a.x / v, a.y / v);
+}
+
+inline ctVec2& ctVec2::operator+=(const ctVec2& v) {
+   return *this = *this + v;
+}
+inline ctVec2& ctVec2::operator-=(const ctVec2& v) {
+   return *this = *this - v;
+}
+inline ctVec2& ctVec2::operator*=(const ctVec2& v) {
+   return *this = *this * v;
+}
+inline ctVec2& ctVec2::operator*=(const float& v) {
+   return *this = *this * v;
+}
+inline ctVec2& ctVec2::operator/=(const ctVec2& v) {
+   return *this = *this / v;
+}
+inline ctVec2& ctVec2::operator/=(const float& v) {
+   return *this = *this / v;
 }
 
 inline float dot(const ctVec2& a, const ctVec2& b) {
@@ -138,6 +164,13 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC3) ctVec3 {
    inline ctVec3(struct ctVec2 _v);
    inline ctVec3(struct ctVec4 _v);
 
+   inline ctVec3& operator+=(const ctVec3& v);
+   inline ctVec3& operator-=(const ctVec3& v);
+   inline ctVec3& operator*=(const ctVec3& v);
+   inline ctVec3& operator*=(const float& v);
+   inline ctVec3& operator/=(const ctVec3& v);
+   inline ctVec3& operator/=(const float& v);
+
    union {
       struct {
          float x;
@@ -179,6 +212,25 @@ inline ctVec3 operator/(const ctVec3& a, const ctVec3 b) {
 
 inline ctVec3 operator/(const ctVec3& a, const float v) {
    return ctVec3(a.x / v, a.y / v, a.z / v);
+}
+
+inline ctVec3& ctVec3::operator+=(const ctVec3& v) {
+   return *this = *this + v;
+}
+inline ctVec3& ctVec3::operator-=(const ctVec3& v) {
+   return *this = *this - v;
+}
+inline ctVec3& ctVec3::operator*=(const ctVec3& v) {
+   return *this = *this * v;
+}
+inline ctVec3& ctVec3::operator*=(const float& v) {
+   return *this = *this * v;
+}
+inline ctVec3& ctVec3::operator/=(const ctVec3& v) {
+   return *this = *this / v;
+}
+inline ctVec3& ctVec3::operator/=(const float& v) {
+   return *this = *this / v;
 }
 
 inline float dot(const ctVec3& a, const ctVec3& b) {
@@ -239,6 +291,13 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC4) ctVec4 {
    inline ctVec4(struct ctVec2 _v);
    inline ctVec4(struct ctVec3 _v);
 
+   inline ctVec4& operator+=(const ctVec4& v);
+   inline ctVec4& operator-=(const ctVec4& v);
+   inline ctVec4& operator*=(const ctVec4& v);
+   inline ctVec4& operator*=(const float& v);
+   inline ctVec4& operator/=(const ctVec4& v);
+   inline ctVec4& operator/=(const float& v);
+
    union {
       struct {
          float x;
@@ -284,6 +343,25 @@ inline ctVec4 operator/(const ctVec4& a, const float v) {
    return ctVec4(a.x / v, a.y / v, a.z / v, a.w / v);
 }
 
+inline ctVec4& ctVec4::operator+=(const ctVec4& v) {
+   return *this = *this + v;
+}
+inline ctVec4& ctVec4::operator-=(const ctVec4& v) {
+   return *this = *this - v;
+}
+inline ctVec4& ctVec4::operator*=(const ctVec4& v) {
+   return *this = *this * v;
+}
+inline ctVec4& ctVec4::operator*=(const float& v) {
+   return *this = *this * v;
+}
+inline ctVec4& ctVec4::operator/=(const ctVec4& v) {
+   return *this = *this / v;
+}
+inline ctVec4& ctVec4::operator/=(const float& v) {
+   return *this = *this / v;
+}
+
 inline float dot(const ctVec4& a, const ctVec4& b) {
    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
@@ -308,6 +386,40 @@ inline ctVec4 lerp(const ctVec4& a, const ctVec4& b, float t) {
    return ctVec4(
      ctLerp(a.x, b.x, t), ctLerp(a.y, b.y, t), ctLerp(a.z, b.z, t), ctLerp(a.w, b.w, t));
 }
+
+/* --- Bounding Box --- */
+
+struct CT_API ctBoundBox {
+   inline ctBoundBox() {
+      min = ctVec3(FLT_MAX);
+      max = ctVec3(-FLT_MAX);
+   }
+   inline ctBoundBox(ctVec3 pmin, ctVec3 pmax) {
+      min = pmin;
+      max = pmax;
+   }
+
+   inline void AddPoint(ctVec3 pt) {
+      if (pt.x < min.x) { min.x = pt.x; }
+      if (pt.y < min.y) { min.y = pt.y; }
+      if (pt.z < min.z) { min.z = pt.z; }
+      if (pt.x > max.x) { max.x = pt.x; }
+      if (pt.y > max.y) { max.y = pt.y; }
+      if (pt.z > max.z) { max.z = pt.z; }
+   }
+
+   inline void AddBox(ctBoundBox bx) {
+      AddPoint(bx.min);
+      AddPoint(bx.max);
+   }
+
+   inline bool isValid() {
+      return min.x <= max.x && min.y <= max.y && min.z <= max.z;
+   }
+
+   ctVec3 min;
+   ctVec3 max;
+};
 
 /* --- Quaternion --- */
 
@@ -455,6 +567,8 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_MAT4) ctMat4 {
       return data[r][c];
    }
 
+   inline ctMat4& operator*=(const ctMat4& v);
+
    float data[4][4];
 };
 
@@ -474,6 +588,10 @@ inline ctVec3 operator*(const ctVec3 v, const ctMat4& m) {
    ctVec3 result;
    glm_mat4_mulv3((vec4*)m.data, (float*)v.data, 1.0f, result.data);
    return result;
+}
+
+inline ctMat4& ctMat4::operator*=(const ctMat4& v) {
+   return *this = *this * v;
 }
 
 inline ctMat4 ctMat4Identity() {

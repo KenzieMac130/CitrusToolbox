@@ -25,7 +25,7 @@
 
 class ctStringUtf8;
 
-class CT_API ctJSONWriter {
+class CT_API_EXP ctJSONWriter {
 public:
    ctJSONWriter();
    void SetStringPtr(ctStringUtf8* pString);
@@ -57,10 +57,11 @@ private:
    };
    uint32_t indentLevel;
    bool started;
-   ctStaticArray<_json_stack, 32> _jsonStack;
+   size_t _jsonStackCt;
+   _json_stack _jsonStack[32];
 };
 
-class CT_API ctJSONReadEntry {
+class CT_API_EXP ctJSONReadEntry {
 public:
    ctJSONReadEntry();
    ctJSONReadEntry(
@@ -106,7 +107,7 @@ protected:
    const char* _pData;
 };
 
-class CT_API ctJSONReader {
+class CT_API_EXP ctJSONReader {
 public:
    ctResults BuildJsonForPtr(const char* pData, size_t length);
 
