@@ -398,6 +398,11 @@ void ctVkBackend::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
 
 VkResult ctVkBackend::WaitForFrameAvailible() {
    ZoneScoped;
+   uint32_t flags = SDL_GetWindowFlags(mainScreenResources.window);
+   if ((SDL_WINDOW_MINIMIZED & flags) == flags) {
+       vkDeviceWaitIdle(vkDevice);
+       VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
+   }
    VkResult result = vkWaitForFences(
      vkDevice, 1, &frameAvailibleFences[currentFrame], VK_TRUE, UINT64_MAX);
    if (result != VK_SUCCESS) { return result; }
@@ -1110,6 +1115,7 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
    /* Get Size */
    int w, h;
    SDL_Vulkan_GetDrawableSize(window, &w, &h);
+   uint32_t flags = SDL_GetWindowFlags(window);
    extent.width = w;
    extent.height = h;
 

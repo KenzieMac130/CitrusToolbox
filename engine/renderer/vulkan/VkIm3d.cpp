@@ -17,7 +17,7 @@
 #include "VkBackend.hpp"
 #include "VkIm3d.hpp"
 
-#define CT_MAX_IM3D_PRIMS 10000
+#define CT_MAX_IM3D_VERTS 300000
 
 struct vkim3dPushConstant {
    ctMat4 viewProj;
@@ -34,7 +34,7 @@ ctVkIm3d::Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t su
       pBackend->CreateCompleteBuffer(vertexBuffer[i],
                                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                      0,
-                                     sizeof(Im3d::VertexData) * CT_MAX_IM3D_PRIMS,
+                                     sizeof(Im3d::VertexData) * CT_MAX_IM3D_VERTS,
                                      VMA_MEMORY_USAGE_CPU_TO_GPU);
       vmaMapMemory(pBackend->vmaAllocator, vertexBuffer[i].alloc, (void**)&vertexData[i]);
       _pBackend->ExposeBindlessStorageBuffer(vertexBuffBindIdx[i],
@@ -103,6 +103,10 @@ void ctVkIm3d::BuildDrawLists() {
    size_t nextVertex = 0;
    for (uint32_t i = 0; i < drawListCount; i++) {
       const uint32_t vertexCount = drawLists[i].m_vertexCount;
+      if (nextVertex + vertexCount > CT_MAX_IM3D_VERTS) {
+         ctDebugWarning("Debug draw vertex budget blown");
+         break;
+      }
       memcpy(vertexData[currentFrame] + nextVertex,
              drawLists[i].m_vertexData,
              vertexCount * sizeof(Im3d::VertexData));
