@@ -47,22 +47,30 @@ extern "C" {
 
 /*Exportable*/
 // clang-format off
+#ifndef CT_API
 #if defined(_MSC_VER)
     #if CITRUS_IMPORT
         #define CT_API __declspec(dllimport)
+        #define CT_API_EXP 
     #else
         #define CT_API __declspec(dllexport)
+        #define CT_API_EXP __declspec(dllexport)
     #endif
 #elif defined(__GNUC__)
     #if CITRUS_IMPORT
         #define CT_API __attribute__((visibility("default")))
+        #define CT_API_EXP 
     #else
         #define CT_API
+        #define CT_API_EXP 
     #endif
 #else
     #define CT_API
 #endif
+#endif
 // clang-format on
+
+unsigned int ctGetEngineBuildId();
 
 /*Errors*/
 enum ctResults {
@@ -85,12 +93,34 @@ enum ctResults {
    CT_FAILURE_DEPENDENCY_NOT_MET = -16,
    CT_FAILURE_MODULE_NOT_INITIALIZED = -17,
    CT_FAILURE_NOT_FOUND = -18,
+   CT_FAILURE_SYNTAX_ERROR = -19,
+   CT_FAILURE_RUNTIME_ERROR = -19,
+   CT_FAILURE_TYPE_ERROR = -20
 };
+
+#define CT_PANIC_FAIL(_arg, _message)                                                    \
+   {                                                                                     \
+      if (_arg != CT_SUCCESS) { ctFatalError(-1, _message); }                            \
+   }
+
+#define CT_PANIC_UNTRUE(_arg, _message)                                                  \
+   {                                                                                     \
+      if (!_arg) { ctFatalError(-1, _message); }                                         \
+   }
 
 #define CT_RETURN_FAIL(_arg)                                                             \
    {                                                                                     \
       ctResults __res = (_arg);                                                          \
       if (__res != CT_SUCCESS) { return __res; }                                         \
+   }
+
+#define CT_RETURN_FAIL_CLEAN(_arg, _cleanup)                                             \
+   {                                                                                     \
+      ctResults __res = (_arg);                                                          \
+      if (__res != CT_SUCCESS) {                                                         \
+         _cleanup;                                                                       \
+         return __res;                                                                   \
+      }                                                                                  \
    }
 
 #define CT_RETURN_ON_FAIL(_arg, _code)                                                   \
@@ -144,6 +174,7 @@ CT_API void ctAlignedFree(void* block);
 #ifdef __cplusplus
 #include "SharedLogging.h"
 #include "DynamicArray.hpp"
+#include "HandleManager.hpp"
 #include "StaticArray.hpp"
 #include "Math.hpp"
 #include "Math3d.hpp"
