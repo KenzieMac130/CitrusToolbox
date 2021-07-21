@@ -16,26 +16,4 @@
 
 #pragma once
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
-
-#include "lua.hpp"
-
-#include "api/CommonApi.hpp"
-
-class CT_API ctLuaContext {
-public:
-   ctResults Startup(bool trusted);
-   ctResults Shutdown();
-
-   ctResults OpenEngineLibrary(const char* name);
-
-   ctResults LoadFromBuffer(const char* data, size_t size, const char* name);
-   ctResults LoadFromFile(const char* path);
-
-   ctResults RunScript();
-
-   ctResults CallFunction(const char* name, const char* signature, ...);
-
-   lua_State* L;
-};
+#define CT_SCRIPTOBTYPE_NULL 0
