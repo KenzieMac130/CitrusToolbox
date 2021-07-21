@@ -17,16 +17,3 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
-
-#include "imgui/imgui.h"
-
-class CT_API ctImguiIntegration : public ctModuleBase {
-public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
-
-    ctResults NextFrame();
-private:
-    ctStringUtf8 iniPath;
-};

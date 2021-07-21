@@ -18,26 +18,36 @@
 
 #include "utilities/Common.h"
 
+#include "scripting/LuaScript.hpp"
 #include "scene/SceneEngineBase.hpp"
+
+#include "Scene.hpp"
 
 #define CITRUS_SCENE_ENGINE_CLASS ctHoneybellSceneEngine
 
 class CT_API ctHoneybellSceneEngine : public ctSceneEngineBase {
 public:
-    ctResults Startup();
-    ctResults Shutdown();
+   ctResults Startup();
+   ctResults Shutdown();
 
-    ctResults NextFrame();
+   ctResults NextFrame();
 
-    void SetCameraInfo(ctCameraInfo camera, const char* cameraId = NULL);
-    ctCameraInfo GetCameraInfo(const char* cameraId) final;
-    ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
+   void SetCameraInfo(ctCameraInfo camera, const char* cameraId = NULL);
+   ctCameraInfo GetCameraInfo(const char* cameraId) final;
+   ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
+   ctResults LoadScene(const char* name) final;
 
 private:
-    ctCameraInfo LastCamera;
-    ctCameraInfo CurrentCamera;
+   ctLuaContext LevelScript;
+   ctHoneybell::Scene mainScene;
+   ctHoneybell::ToyTypeRegistry toyRegistry;
 
-    //Debug Camera temp
-    float camYaw;
-    float camPitch;
+   ctCameraInfo LastCamera;
+   ctCameraInfo CurrentCamera;
+
+   // Debug Camera temp
+   float camYaw;
+   float camPitch;
+
+   ctDynamicArray<ctHoneybell::ToyBase*> myTestToys;
 };

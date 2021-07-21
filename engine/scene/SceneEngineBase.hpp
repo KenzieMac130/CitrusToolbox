@@ -36,4 +36,6 @@ public:
    virtual ctCameraInfo GetCameraInfo(const char* cameraId) = 0;
    /* Get ctCameraInfo from the previous frame (NULL must return the "main camera")*/
    virtual ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) = 0;
+   /* Load scene/level */
+   virtual ctResults LoadScene(const char* name) = 0;
 };

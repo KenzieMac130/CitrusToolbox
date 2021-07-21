@@ -98,6 +98,9 @@ endif()
 # ---------- Find ISPC ----------
 set(ISPC_COMPILER_PATH ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc)
 
+# ---------- Find SWIG ----------
+set(SWIG_EXECUTABLE_PATH ${BASE_LIBRARY_DIRECTORY}/SWIG/swig)
+
 # ---------- Find SDL2 ----------
 set(CITRUS_SDL 1)
 find_package(SDL2 
@@ -140,6 +143,12 @@ if(CITRUS_PHYSX)
 endif()
 
 # ---------- Find Lua ----------
+set(CITRUS_LUA 1)
+if(CITRUS_LUA)
+    set(LUA_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/LuaJIT)
+    set(LUA_LIBRARIES 
+        ${BASE_LIBRARY_DIRECTORY}/LuaJIT/lua51.lib)
+endif()
 
 # ---------- Tracy Profiler ---------- 
 option(TRACY_DEBUG "Enable Tracy Debugger" ON)
@@ -178,8 +187,8 @@ endif()
 
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/assets)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools)

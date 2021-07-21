@@ -16,17 +16,15 @@
 
 #pragma once
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
+#include "GameCommon.hpp"
 
-#include "imgui/imgui.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class CT_API ctImguiIntegration : public ctModuleBase {
-public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+/* Checks the hash of the engine library before dynamic linking */
+GAME_API unsigned int GameRegisterGetEngineHash();
 
-    ctResults NextFrame();
-private:
-    ctStringUtf8 iniPath;
-};
+#ifdef __cplusplus
+}
+#endif

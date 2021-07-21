@@ -1,3 +1,4 @@
+#include "GameRegister.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -14,19 +15,8 @@
    limitations under the License.
 */
 
-#pragma once
+#include "engine_build_dummy.h"
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
-
-#include "imgui/imgui.h"
-
-class CT_API ctImguiIntegration : public ctModuleBase {
-public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
-
-    ctResults NextFrame();
-private:
-    ctStringUtf8 iniPath;
-};
+GAME_API unsigned int GameRegisterGetEngineHash() {
+   return ctGetEngineBuildId();
+}

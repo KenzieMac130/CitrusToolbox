@@ -19,20 +19,67 @@
 
 #include "core/EngineCore.hpp"
 
+#include "scripting/api/HoneybellScript.hpp"
+
+/* Defined in TypeRegistration */
+namespace ctHoneybell {
+void RegisterBuiltinToys(ctHoneybell::ToyTypeRegistry& registry);
+}
+
 ctResults ctHoneybellSceneEngine::Startup() {
+   ZoneScoped;
+   RegisterBuiltinToys(toyRegistry);
+   mainScene.ModuleStartup(Engine);
+   mainScene.tickInterval = 1.0 / 60;
+
    CurrentCamera.fov = 0.785f;
    CurrentCamera.position = {0.0f, 0.0f, -5.0f};
-   return ctResults();
+   LevelScript.Startup(false);
+   LevelScript.OpenEngineLibrary("scene");
+
+   /* Todo: wrap spawn */
+   for (int i = 0; i < 1; i++) {
+      ctHoneybell::SpawnData spawnData = ctHoneybell::SpawnData();
+      spawnData.rotation = ctQuat(CT_VEC3_UP, (float)i / 1 * CT_PI*2);
+      spawnData.position = ctVec3(0, 0, 0);
+      spawnData.scale = ctVec3(1.0f);
+      ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
+      ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
+      constructCtx.pOwningScene = &mainScene;
+      constructCtx.pComponentRegistry = &mainScene.componentRegistry;
+      constructCtx.spawn = spawnData;
+      constructCtx.prefab = prefabData;
+      constructCtx.typePath = "citrus/debugCamera";
+      ctHoneybell::ToyBase* myTestToy = toyRegistry.NewToy(constructCtx);
+      if (myTestToy) {
+         myTestToy->_SetIdentifier(mainScene._RegisterToy(myTestToy));
+         myTestToys.Append(myTestToy);
+      }
+   }
+   return CT_SUCCESS;
 }
 
 ctResults ctHoneybellSceneEngine::Shutdown() {
-   return ctResults();
+   ZoneScoped;
+   LevelScript.Shutdown();
+
+   /* Todo: wrap delete */
+   for (int i = 0; i < myTestToys.Count(); i++) {
+      ctHoneybell::ToyBase* myTestToy = myTestToys[i];
+      if (myTestToy) {
+         mainScene._UnregisterToy(myTestToy->GetIdentifier());
+         delete myTestToy;
+      }
+   }
+
+   mainScene.ModuleShutdown();
+   return CT_SUCCESS;
 }
 
 ctResults ctHoneybellSceneEngine::NextFrame() {
-   /* Todo: Move to it's own object when scene engine is developed */
-   /* Temporary Debug Camera */
+   ZoneScoped;
    float deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
+   mainScene.Update(deltaTime, Engine->JobSystem);
    {
       ctCameraInfo debugCamera = CurrentCamera;
       ImGui::Begin("Debug Camera");
@@ -115,4 +162,21 @@ ctCameraInfo ctHoneybellSceneEngine::GetCameraInfo(const char* cameraId) {
 
 ctCameraInfo ctHoneybellSceneEngine::GetCameraInfoLastFrame(const char* cameraId) {
    return LastCamera;
+}
+
+ctResults ctHoneybellSceneEngine::LoadScene(const char* name) {
+   ZoneScoped;
+   ctStringUtf8 str = Engine->FileSystem->GetAssetPath();
+   str += "scene/";
+   str += name;
+   str += "/scene.lua";
+   str.FilePathLocalize();
+   CT_RETURN_FAIL(LevelScript.LoadFromFile(str.CStr()));
+   CT_RETURN_FAIL(LevelScript.RunScript());
+
+   int returnValue = -1;
+   ctScriptTypedLightData loaderData = {CT_SCRIPTOBTYPE_NULL, NULL};
+   CT_RETURN_FAIL(
+     LevelScript.CallFunction("loadScene", "u:i", &loaderData, &returnValue));
+   return CT_SUCCESS;
 }

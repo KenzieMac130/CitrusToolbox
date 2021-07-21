@@ -17,16 +17,23 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
 
-#include "imgui/imgui.h"
+#include "../Toy.hpp"
+#include "../components/CameraComponent.hpp"
 
-class CT_API ctImguiIntegration : public ctModuleBase {
+namespace ctHoneybell {
+
+class CT_API DebugCameraToy : public ToyBase {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   DebugCameraToy(ConstructContext& ctx);
+   virtual ~DebugCameraToy();
 
-    ctResults NextFrame();
+   virtual ctResults OnBegin(BeginContext& ctx);
+   virtual ctResults OnTickParallel(TickParallelContext& ctx);
+   virtual ctResults OnFrameUpdate(FrameUpdateContext& ctx);
+
 private:
-    ctStringUtf8 iniPath;
+   float angle;
+   ComponentPtr<CameraComponent> camera;
 };
+}

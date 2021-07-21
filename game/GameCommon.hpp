@@ -16,17 +16,30 @@
 
 #pragma once
 
+/* Base engine config */
+#include "Config.h"
+
+/* Game layer exportable */
+// clang-format off
+#if defined(_MSC_VER)
+    #if GAME_IMPORT
+        #define GAME_API __declspec(dllimport)
+    #else
+        #define GAME_API __declspec(dllexport)
+    #endif
+#elif defined(__GNUC__)
+    #if GAME_IMPORT
+        #define GAME_API __attribute__((visibility("default")))
+    #else
+        #define GAME_API
+    #endif
+#else
+    #define GAME_API
+#endif
+
+/* Import engine content */
+#undef CITRUS_IMPORT
+#define CITRUS_IMPORT 1
+// clang-format on
+
 #include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
-
-#include "imgui/imgui.h"
-
-class CT_API ctImguiIntegration : public ctModuleBase {
-public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
-
-    ctResults NextFrame();
-private:
-    ctStringUtf8 iniPath;
-};

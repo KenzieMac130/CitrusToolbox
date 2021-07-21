@@ -87,6 +87,7 @@ ctResults ctJobSystem::PushJobs(size_t count,
 
 ctResults ctJobSystem::RunAllJobs() {
    ZoneScoped;
+   /* Todo: investigate, it seems to fail on scene ticks */
    cute_threadpool_kick_and_wait(pool);
    return CT_SUCCESS;
 }

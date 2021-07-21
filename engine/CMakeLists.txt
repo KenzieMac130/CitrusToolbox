@@ -67,40 +67,48 @@ DEPENDS ${ISPC_IN}
 ${LIBRARY_INSTALL_DEPENDENCY})
 endforeach()
 
-# ---------- Citrus Reflect ----------
-set(CITRUS_REFLECT_INPUTS
-/utilities/Reflect.hpp
+#---------- Generate Scripting Bindings ----------
+set(SWIG_INPUTS
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/SwigWrap.i
 )
-set(CITRUS_REFLECT_OUTPUTS)
+set(SWIG_DEPENDS
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/HoneybellScript.hpp
+)
+set(SWIG_OUTPUTS
+${CITRUS_CODEGEN_DIR}/bind_lua/Bind_Lua.gen.cpp
+)
 
-# for each file in relative inputs
-foreach(FILE_IN IN LISTS CITRUS_REFLECT_INPUTS)
-
-# get the file name without path
-get_filename_component(FILE_IN_NAME ${FILE_IN} NAME_WLE)
-get_filename_component(FILE_IN_REL_PATH ${FILE_IN} DIRECTORY)
-# create the reflection output
-string(CONCAT REFLECT_OUT 
-${CITRUS_REFLECT_OUTPUT_DIR} 
-${FILE_IN_REL_PATH} "/"
-${FILE_IN_NAME}
-${REFLECT_IN} 
-".gen.hpp")
-
-string(CONCAT FILE_IN ${CMAKE_CURRENT_SOURCE_DIR} ${FILE_IN})
-get_filename_component(REFLECT_OUT_REL_PATH ${REFLECT_OUT} DIRECTORY)
-file(MAKE_DIRECTORY ${REFLECT_OUT_REL_PATH})
-add_custom_command(OUTPUT ${REFLECT_OUT}
+add_custom_command(OUTPUT ${SWIG_OUTPUTS}
 COMMAND
-python ${CITRUS_REFLECT_PY} 
-"${FILE_IN}" 
-"${REFLECT_OUT}" 
+${SWIG_EXECUTABLE_PATH} -lua -c++
+-outdir ${CITRUS_CODEGEN_DIR}/bind_lua
+-o \"${CITRUS_CODEGEN_DIR}/bind_lua/Bind_Lua.gen.cpp\"
+\"${CMAKE_CURRENT_SOURCE_DIR}/scripting/SwigWrap.i\" 
 DEPENDS
-${FILE_IN}
-${CITRUS_REFLECT_PY} 
+${SWIG_INPUTS}
+${SWIG_DEPENDS}
 ${LIBRARY_INSTALL_DEPENDENCY})
-list(APPEND CITRUS_REFLECT_OUTPUTS ${REFLECT_OUT})
-endforeach()
+
+
+#file(MAKE_DIRECTORY ${CITRUS_CODEGEN_DIR}/bind_lua)
+#foreach(FILE_IN IN LISTS SWIG_INPUTS)
+#get_filename_component(FILE_IN_NAME ${FILE_IN} NAME_WLE)
+#get_filename_component(FILE_IN_REL_PATH ${FILE_IN} DIRECTORY)
+#string(CONCAT SWIG_OUT 
+#	${CITRUS_CODEGEN_DIR}/bind_lua/${FILE_IN_NAME}_Lua.gen.cpp)
+#string(CONCAT SWIG_OUT_H 
+#	${CITRUS_CODEGEN_DIR}/bind_lua/${FILE_IN_NAME}_Lua.gen.hpp)
+#add_custom_command(OUTPUT ${SWIG_OUT}
+#COMMAND
+#${SWIG_EXECUTABLE_PATH} -lua
+#-outdir ${CITRUS_CODEGEN_DIR}/bind_lua
+#-o \""${SWIG_OUT}"\"
+#\"${FILE_IN}\" 
+#DEPENDS
+#${FILE_IN}
+#${LIBRARY_INSTALL_DEPENDENCY})
+#list(APPEND SWIG_OUTPUTS ${SWIG_OUT})
+#endforeach()
 
 # ---------- Utility Libraries ----------
 set(ENGINE_SOURCE_FILES_UTILITIES
@@ -112,12 +120,14 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Version.c
 )
 
 set(ENGINE_HEADER_FILES_UTILITIES
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandleManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
@@ -125,7 +135,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Meta.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
@@ -187,10 +196,21 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.hpp
 
 set(ENGINE_SOURCE_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/TypeRegistration.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/DebugCameraToy.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/DebugCameraToy.hpp
 )
 
 # ---------- Third Party Implementation ---------- 
@@ -200,10 +220,15 @@ ${THIRD_PARTY_DIRECTORY}/imgui/imgui_draw.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui_tables.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui_widgets.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui.cpp
-${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_sdl.cpp
-${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp
 ${THIRD_PARTY_DIRECTORY}/im3d/im3d.cpp
 )
+
+if(CITRUS_GFX_VULKAN)
+list(APPEND THIRD_PARTY_IMPL_FILES ${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp)
+endif()
+if(CITRUS_SDL)
+list(APPEND THIRD_PARTY_IMPL_FILES ${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_sdl.cpp)
+endif()
 
 # ---------- Middleware Integration ---------- 
 set(ENGINE_SOURCE_FILES_MIDDLEWARE
@@ -215,6 +240,20 @@ set(ENGINE_HEADER_FILES_MIDDLEWARE
 ${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.hpp
 )
+
+# ---------- Scripting Integration ---------- 
+if(CITRUS_LUA)
+set(ENGINE_SOURCE_FILES_SCRIPTING
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/LuaScript.cpp
+)
+
+set(ENGINE_HEADER_FILES_SCRIPTING
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/LuaScript.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/ObjTypes.h
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/CommonApi.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/HoneybellScript.hpp
+)
+endif()
 
 # ---------- Graphics Backend Files ----------
 if(CITRUS_GFX_NULL)
@@ -274,7 +313,9 @@ ${ENGINE_SOURCE_FILES_INTERACT_BACKEND} ${ENGINE_SOURCE_FILES_INTERACT_BACKEND}
 ${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
 ${ENGINE_SOURCE_FILES_GFX_BACKEND} ${ENGINE_HEADER_FILES_GFX_BACKEND}
 ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
-${ISPC_KERNEL_INPUTS} ${ISPC_KERNEL_OUTPUTS})
+${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
+${ISPC_KERNEL_INPUTS}
+${SWIG_INPUTS})
 
 # ----------Generate Config Files ----------
 configure_file (
@@ -285,16 +326,20 @@ ${CITRUS_CODEGEN_DIR}/Config.h)
 add_library(engine 
 ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
 ${ENGINE_FILES}
-${CITRUS_REFLECT_OUTPUTS}
 ${TRACY_FILES}
 ${THIRD_PARTY_IMPL_FILES}
-${NATIVE_SOURCE_FILES})
+${NATIVE_SOURCE_FILES}
+${ISPC_KERNEL_OUTPUTS}
+${SWIG_OUTPUTS})
+
+# ---------- Create Version ----------
+add_custom_command(TARGET engine DEPENDS engine COMMAND ${CMAKE_COMMAND} -E touch ${CITRUS_CODEGEN_DIR}/engine_build_dummy.h)
 
 # ---------- Setup Folders ----------
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../ FILES ${THIRD_PARTY_IMPL_FILES})
 source_group(tracy FILES ${TRACY_FILES})
-source_group(generated FILES ${CITRUS_REFLECT_OUTPUTS})
+source_group(generated FILES ${CITRUS_REFLECT_OUTPUTS} ${SWIG_OUTPUTS} ${ISPC_KERNEL_OUTPUTS})
 source_group(native FILES ${NATIVE_SOURCE_FILES})
 
 # ---------- Include and Link ----------
@@ -316,7 +361,12 @@ endif()
 
 if(CITRUS_PHYSX)
 	target_link_libraries(engine ${PHYSX_LIBRARIES})
-	target_include_directories(engine PUBLIC ${PHYSX_SHARED_LIBRARIES})
+	target_include_directories(engine PUBLIC ${PHYSX_INCLUDE_DIR})
+endif()
+
+if(CITRUS_LUA)
+	target_link_libraries(engine ${LUA_LIBRARIES})
+	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
 endif()
 
 # ---------- Copy Shared Libraries and Config ----------
@@ -335,9 +385,14 @@ if(CITRUS_SDL)
 	"${SHARED_LIBRARY_DIRECTORY}/SDL2${SHARED_LIBRARY_FORMAT}"
 	$<TARGET_FILE_DIR:engine>)
 endif()
+if(CITRUS_LUA)
+	add_custom_command(TARGET engine POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"${SHARED_LIBRARY_DIRECTORY}/lua51${SHARED_LIBRARY_FORMAT}"
+	$<TARGET_FILE_DIR:engine>)
+endif()
 if(CITRUS_PHYSX)
 	foreach(LIB IN LISTS PHYSX_SHARED_LIBRARIES)
-		message(STATUS ${LIB})
 		add_custom_command(TARGET engine POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		"${LIB}"

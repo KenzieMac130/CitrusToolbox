@@ -14,19 +14,14 @@
    limitations under the License.
 */
 
-#pragma once
+#include "CameraComponent.hpp"
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
+ctHoneybell::CameraComponent::CameraComponent(class ComponentFactoryBase* _factory,
+                                              class ToyBase* _toy) :
+    ComponentBase::ComponentBase(_factory, _toy) {
+}
 
-#include "imgui/imgui.h"
-
-class CT_API ctImguiIntegration : public ctModuleBase {
-public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
-
-    ctResults NextFrame();
-private:
-    ctStringUtf8 iniPath;
-};
+ctHoneybell::ComponentBase*
+ctHoneybell::CameraComponentFactory::NewComponent(ToyBase* _owner) {
+   return new CameraComponent(this, _owner);
+}

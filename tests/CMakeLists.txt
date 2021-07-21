@@ -26,6 +26,11 @@ add_executable(Test_App AppTest.cpp)
 set_property(TARGET Test_App PROPERTY FOLDER "tests")
 target_link_libraries(Test_App PUBLIC engine)
 
+#Scene Test
+add_executable(Test_Scene SceneTest.cpp)
+set_property(TARGET Test_Scene PROPERTY FOLDER "tests")
+target_link_libraries(Test_Scene PUBLIC engine)
+
 #Interact Paths
 add_custom_target(Test_InteractPaths 
    COMMAND python CheckInteractPaths.py
