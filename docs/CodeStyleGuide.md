@@ -3,7 +3,7 @@
 ## Files
 
 ### Naming
-* File names must be in "cammelCase"
+* File names must be in "UpperCammelCase"
 * Folder names must be kept as "flatcase"
 * Folder names must also be kept ideally close to one word, abbreviation or a compound.
 * Files and Folders in the "thirdparty" must be kept faithful to their original as much as possible.
