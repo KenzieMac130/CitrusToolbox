@@ -36,6 +36,12 @@ public:
    ctCameraInfo GetCameraInfo(const char* cameraId) final;
    ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
    ctResults LoadScene(const char* name) final;
+   ctResults SpawnToy(const char* prefabPath,
+                         ctTransform& transform = ctTransform(),
+                         const char* message = NULL);
+   ctResults SpawnErrorToy(ctTransform& transform);
+
+   int32_t pauseSim;
 
 private:
    ctLuaContext LevelScript;
@@ -45,9 +51,11 @@ private:
    ctCameraInfo LastCamera;
    ctCameraInfo CurrentCamera;
 
-   // Debug Camera temp
+   int32_t debugCameraActive = true;
+   ctCameraInfo debugCamera;
    float camYaw;
    float camPitch;
+   float camSpeedBase;
 
    ctDynamicArray<ctHoneybell::ToyBase*> myTestToys;
 };

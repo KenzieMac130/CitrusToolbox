@@ -26,6 +26,13 @@
 
 /* All component types */
 #include "components/CameraComponent.hpp"
+#include "components/DebugShapeComponent.hpp"
+#include "components/PhysXActorComponent.hpp"
+#include "components/PhysXControllerComponent.hpp"
+
+#if CITRUS_PHYSX
+#include "PxScene.h"
+#endif
 
 namespace ctHoneybell {
 
@@ -37,7 +44,8 @@ public:
    virtual ctResults Startup();
    virtual ctResults Shutdown();
 
-   void Update(double deltaTime, ctJobSystem* pJobSystem);
+   void Simulate(double deltaTime, ctJobSystem* pJobSystem);
+   void NextFrame();
    double tickInterval = 1.0 / 60;
 
    /* -------- Don't call these manually --------*/
@@ -46,7 +54,14 @@ public:
 
    ComponentRegistry componentRegistry;
 
+#if CITRUS_PHYSX
+   physx::PxScene* pPxScene;
+   void* physMemory;
+#endif
+
 private:
+   ctVec3 globalGravity;
+
    ctHandleManager toyHandleManager;
    ctHashTable<ToyBase*, ctHandle> toys;
 
@@ -56,6 +71,9 @@ private:
 
    /* Component factories */
    CameraComponentFactory componentFactory_Camera;
+   DebugShapeComponentFactory componentFactory_DebugShape;
+   PhysXActorComponentFactory componentFactory_PhysXActor;
+   PhysXControllerComponentFactory componentFactory_PhysXController;
 
    double tickTimer;
 

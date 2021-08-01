@@ -17,6 +17,12 @@
 #include "Scene.hpp"
 #include "core/EngineCore.hpp"
 
+#include "middleware/PhysXIntegration.hpp"
+
+#if CITRUS_PHYSX
+#define PHYSX_SCRATCH_MEMORY_AMOUNT 0
+#endif
+
 ctHoneybell::Scene::Scene() {
    toyHandleManager = ctHandleManager();
 }
@@ -52,7 +58,7 @@ void ctHoneybell::Scene::_UnregisterToy(ctHandle hndl) {
 void doParallelTickJob(void* pData) {
    ZoneScoped;
    struct jobData {
-      ctHoneybell::TickParallelContext tickCtx;
+      ctHoneybell::TickContext tickCtx;
       ctHoneybell::ToyBase* pToy;
    };
    jobData* job = (jobData*)pData;
@@ -61,22 +67,61 @@ void doParallelTickJob(void* pData) {
 
 ctResults ctHoneybell::Scene::Startup() {
    ZoneScoped;
+
+#if CITRUS_PHYSX
+   globalGravity = ctVec3(0.0f, -9.81f, 0.0f);
+   PxSceneDesc sceneDesc = PxSceneDesc(Engine->PhysXIntegration->toleranceScale);
+   sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
+   sceneDesc.cpuDispatcher = Engine->PhysXIntegration->pCpuDispatcher;
+   sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+   sceneDesc.gravity = ctVec3ToPx(globalGravity);
+   physMemory = ctAlignedMalloc(PHYSX_SCRATCH_MEMORY_AMOUNT, 16);
+   pPxScene = Engine->PhysXIntegration->pPhysics->createScene(sceneDesc);
+   componentFactory_PhysXActor.pPxScene = pPxScene;
+   componentFactory_PhysXController.pPxScene = pPxScene;
+#endif
+
    /* Startup component factories */
    componentFactory_Camera.ModuleStartup(Engine);
+   componentFactory_DebugShape.ModuleStartup(Engine);
+   componentFactory_PhysXActor.ModuleStartup(Engine);
+   componentFactory_PhysXController.ModuleStartup(Engine);
+
    /* Register component factories */
    componentRegistry.RegisterComponentFactory<CameraComponent>(&componentFactory_Camera);
+   componentRegistry.RegisterComponentFactory<DebugShapeComponent>(
+     &componentFactory_DebugShape);
+   componentRegistry.RegisterComponentFactory<PhysXActorComponent>(
+     &componentFactory_PhysXActor);
+   componentRegistry.RegisterComponentFactory<PhysXControllerComponent>(
+     &componentFactory_PhysXController);
+
    return CT_SUCCESS;
 }
 
 ctResults ctHoneybell::Scene::Shutdown() {
    ZoneScoped;
    /* Shutdown component factories */
-   componentFactory_Camera.Shutdown();
+   componentFactory_Camera.ModuleShutdown();
+   componentFactory_DebugShape.ModuleShutdown();
+   componentFactory_PhysXActor.ModuleShutdown();
+   componentFactory_PhysXController.ModuleShutdown();
+#if CITRUS_PHYSX
+   pPxScene->release();
+#endif
+   ctAlignedFree(physMemory);
    return CT_SUCCESS;
 }
 
-void ctHoneybell::Scene::Update(double deltaTime, ctJobSystem* pJobSystem) {
+void ctHoneybell::Scene::NextFrame() {
    ZoneScoped;
+   /* Draw debug shapes */
+   componentFactory_DebugShape.Im3dDrawAll();
+}
+
+void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
+   ZoneScoped;
+
    /* Simulation ticks */
    tickTimer += deltaTime;
    ctStopwatch tickLapTimer = ctStopwatch();
@@ -85,6 +130,7 @@ void ctHoneybell::Scene::Update(double deltaTime, ctJobSystem* pJobSystem) {
       /* Setup tick context */
       struct TickContext tickCtx = TickContext();
       tickCtx.deltaTime = tickInterval;
+      tickCtx.gravity = globalGravity;
 
       /* Tick Parallel */
       parallelJobData.Resize(toys_TickParallel.Count());
@@ -103,6 +149,15 @@ void ctHoneybell::Scene::Update(double deltaTime, ctJobSystem* pJobSystem) {
          if (pToy) { pToy->OnTickSerial(tickCtx); }
       }
 
+#if CITRUS_PHYSX
+      /*Todo: scratch buffer*/
+      if (pPxScene) {
+         pPxScene->simulate(
+           (physx::PxReal)tickInterval, NULL, physMemory, PHYSX_SCRATCH_MEMORY_AMOUNT);
+         pPxScene->fetchResults(true); /* Todo: investigate better fetch */
+      }
+#endif
+
       /* Todo: Handle deletions */
 
       /* Handle tick budget issues */
@@ -111,19 +166,24 @@ void ctHoneybell::Scene::Update(double deltaTime, ctJobSystem* pJobSystem) {
       totalTickTime += tickTime;
       if (tickTime > tickInterval) {
          tickTimer -= tickTime;
-         ctDebugWarning("Tick is over budget! %lf>%lf: Throttling to avoid deathspiral...", tickTime, tickInterval);
-         if (tickTime > 0.10) {
+         ctDebugWarning(
+           "Tick is over budget! %lf>%lf: Throttling to avoid deathspiral...",
+           tickTime,
+           tickInterval);
+         if (tickTime > 0.02) {
             ctDebugWarning("Tick hitch detected... Bailed out!");
             break;
          }
       } else {
          tickTimer -= tickInterval;
+         if (tickTimer < 0.0) { tickTimer = 0.0; }
       }
    }
 
    /* Frame updates */
    FrameUpdateContext updateCtx = FrameUpdateContext();
    updateCtx.deltaTime = deltaTime;
+   updateCtx.gravity = globalGravity;
    for (int i = 0; i < toys_FrameUpdate.Count(); i++) {
       ToyBase* pToy = toys_FrameUpdate[i];
       if (pToy) { pToy->OnFrameUpdate(updateCtx); }

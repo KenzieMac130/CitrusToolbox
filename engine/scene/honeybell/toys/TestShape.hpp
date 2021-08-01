@@ -16,19 +16,26 @@
 
 #pragma once
 
-#include "CommonApi.hpp"
+#include "utilities/Common.h"
 
-namespace ctScriptApi {
-namespace Honeybell {
-   int SpawnToy(ctScriptTypedLightData* scene,
-                const char* path,
-                float x,
-                float y,
-                float z,
-                float yaw,
-                float pitch,
-                float roll,
-                float scale,
-                const char* message);
-}
+#include "../Toy.hpp"
+#include "../components/DebugShapeComponent.hpp"
+#include "../components/PhysXActorComponent.hpp"
+
+namespace ctHoneybell {
+
+class CT_API TestShape : public ToyBase {
+public:
+   TestShape(ConstructContext& ctx);
+   virtual ~TestShape();
+
+   virtual ctResults OnBegin(BeginContext& ctx);
+   virtual ctResults OnTickSerial(TickContext& ctx);
+   virtual ctResults OnFrameUpdate(FrameUpdateContext& ctx);
+
+private:
+   float angle;
+   ComponentPtr<PhysXActorComponent> physxComp;
+   ComponentPtr<DebugShapeComponent> debugShape;
+};
 }

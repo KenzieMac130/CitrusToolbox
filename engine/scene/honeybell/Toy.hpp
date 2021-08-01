@@ -18,23 +18,31 @@
 
 #include "utilities/Common.h"
 #include "Component.hpp"
+#include "wad/WADCore.h"
+
+/* Forward declaration for middleware */
+namespace physx {
+class PxPhysics;
+}
 
 namespace ctHoneybell {
 
 struct CT_API SpawnData {
-   ctVec3 position;
-   ctQuat rotation;
-   ctVec3 scale;
-   const char* command;
-}; /* Position, Rotation, Scale, Command */
+   ctTransform transform;
+   const char* message;
+};
 
 struct CT_API PrefabData {
-   ctJSONReader* pJson;
-}; /* File paths, key-values, gltf, etc */
+   ctWADReader wadReader;
+   /* File paths, key-values, gltf, etc */
+};
 
 struct CT_API ConstructContext {
    class Scene* pOwningScene;
    class ComponentRegistry* pComponentRegistry;
+#if CITRUS_PHYSX
+   physx::PxPhysics* pPhysics;
+#endif
    const char* typePath;
    SpawnData spawn;
    PrefabData prefab;
@@ -50,22 +58,26 @@ struct CT_API BeginContext {
 /* Time, Signal output */
 struct CT_API TickContext {
    double deltaTime;
-};
-
-struct CT_API TickParallelContext {
-   double deltaTime;
+   ctVec3 gravity;
 };
 
 struct CT_API FrameUpdateContext {
    double deltaTime;
+   ctVec3 gravity;
 };
 
 struct CT_API SignalContext {
-   const char* path;
-   ctVec3 position;
-   float value;
-   uint32_t flags;
-   ctHandle originToy;
+   const char* name;      /* Name of the type of signal */
+   ctTransform transform; /* Transform of the signal origin */
+   float value;           /* Scalar value of the signal */
+   uint32_t flags;        /* Additional flags to pass the */
+   ctHandle originToy;    /* The toy that broadcasted the signal (if any) */
+};
+
+struct CT_API PossessionContext {
+   int32_t playerIdx;       /* Index of the player taking control */
+   const char* command;     /* Additional info (seat in car, etc) */
+   bool wantsCameraControl; /* Wants the toy to take camera control */
 };
 
 /* A toy is a scene object which can be dynamically updated by game code.
@@ -119,28 +131,22 @@ public:
    virtual ctResults OnBegin(BeginContext& ctx);
    /* OnTick is called every tick in an undefined but threadsafe order */
    virtual ctResults OnTickSerial(TickContext& ctx);
-   /* OnTickParallel is called every tick and run in the job system */
-   virtual ctResults OnTickParallel(TickParallelContext& ctx);
+   /* OnTickParallel is called every tick and run in the job system (may be any thread) */
+   virtual ctResults OnTickParallel(TickContext& ctx);
    /* OnUIUpdate is called every frame and should be used for UI/debug draw/input */
    virtual ctResults OnFrameUpdate(FrameUpdateContext& ctx);
-   /* OnSignal is called to inform the toy about the outside world (non-threaddsafe) */
+   /* OnSignal is called to inform the toy about the outside world (may be any thread) */
    virtual ctResults OnSignal(SignalContext& ctx);
+   /* OnTryPossess is called when a player attempts to possess the toy */
+   virtual ctResults OnTryPossess(PossessionContext& ctx);
 
    /* ---- Getters/Setters ---- */
-   /* Get a unique handle identifier for this object */
+   /* Get a unique handle identifier for this toy */
    ctHandle GetIdentifier();
-   /* Get world position */
-   virtual ctVec3 GetWorldPosition();
-   /* Set world position */
-   virtual void SetWorldPosition(ctVec3 v);
-   /* Get world rotation */
-   virtual ctQuat GetWorldRotation();
-   /* Set world rotation */
-   virtual void SetWorldRotation(ctQuat v);
-   /* Get world scale */
-   virtual ctVec3 GetWorldScale();
-   /* Set world scale */
-   virtual void SetWorldScale(ctVec3 v);
+   /* Get world transform */
+   virtual ctTransform GetWorldTransform();
+   /* Set world transform */
+   virtual void SetWorldTransform(ctTransform v);
    /* Get bounds (pre-transform) */
    virtual ctBoundBox GetAABB();
    /* Set bounds (pre-transform) */
@@ -150,10 +156,8 @@ public:
    void _SetIdentifier(ctHandle hndl);
 
 private:
-   ctVec3 position;
    ctHandle identifier;
-   ctQuat rotation;
-   ctVec3 scale;
+   ctTransform transform;
    ctBoundBox aabb;
 };
 

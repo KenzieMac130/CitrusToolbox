@@ -19,9 +19,9 @@
 #include "Scene.hpp"
 
 ctHoneybell::ToyBase::ToyBase(ConstructContext& ctx) {
-   position = ctx.spawn.position;
-   rotation = ctx.spawn.rotation;
-   scale = ctx.spawn.scale;
+   transform.position = ctx.spawn.transform.position;
+   transform.rotation = ctx.spawn.transform.rotation;
+   transform.scale = ctx.spawn.transform.scale;
    aabb = ctBoundBox();
 }
 
@@ -36,7 +36,7 @@ ctResults ctHoneybell::ToyBase::OnTickSerial(TickContext& ctx) {
    return CT_SUCCESS;
 }
 
-ctResults ctHoneybell::ToyBase::OnTickParallel(TickParallelContext& ctx) {
+ctResults ctHoneybell::ToyBase::OnTickParallel(TickContext& ctx) {
    return CT_SUCCESS;
 }
 
@@ -48,28 +48,16 @@ ctResults ctHoneybell::ToyBase::OnSignal(SignalContext& ctx) {
    return CT_SUCCESS;
 }
 
-ctVec3 ctHoneybell::ToyBase::GetWorldPosition() {
-   return position;
+ctResults ctHoneybell::ToyBase::OnTryPossess(PossessionContext& ctx) {
+   return CT_FAILURE_INACCESSIBLE;
 }
 
-void ctHoneybell::ToyBase::SetWorldPosition(ctVec3 v) {
-   position = v;
+void ctHoneybell::ToyBase::SetWorldTransform(ctTransform v) {
+   transform = v;
 }
 
-ctQuat ctHoneybell::ToyBase::GetWorldRotation() {
-   return rotation;
-}
-
-void ctHoneybell::ToyBase::SetWorldRotation(ctQuat v) {
-   rotation = v;
-}
-
-ctVec3 ctHoneybell::ToyBase::GetWorldScale() {
-   return scale;
-}
-
-void ctHoneybell::ToyBase::SetWorldScale(ctVec3 v) {
-   scale = v;
+ctTransform ctHoneybell::ToyBase::GetWorldTransform() {
+   return transform;
 }
 
 ctBoundBox ctHoneybell::ToyBase::GetAABB() {

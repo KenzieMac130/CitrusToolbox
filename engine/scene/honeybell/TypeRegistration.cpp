@@ -18,19 +18,19 @@
 #include "Toy.hpp"
 
 /* ---------------- Toy Includes ---------------- */
-#include "toys/DebugCameraToy.hpp"
+#include "toys/TestShape.hpp"
+#include "toys/GroundPlane.hpp"
 
 namespace ctHoneybell {
 
-#define HB_COMPONENT_REGISTER_ENTRY(_COMPCLASS, _FACTORYCLASS)
-#define HB_TOY_REGISTER_ENTRY(_PATH, _CLASS)
-
-/* clang-format off */
 /* ---------------- Builtin Toys Defined Here ---------------- */
+/* clang-format off */
 #define HB_TOY_REGISTRIES() \
-HB_TOY_REGISTER_ENTRY("citrus/debugCamera", DebugCameraToy)
+HB_TOY_REGISTER_ENTRY("citrus/testShape", TestShape)\
+HB_TOY_REGISTER_ENTRY("citrus/groundPlane", GroundPlane)
 
 /* clang-format on */
+
 /* ---------------- Internals ---------------- */
 
 #undef HB_TOY_REGISTER_ENTRY

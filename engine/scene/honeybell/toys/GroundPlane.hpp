@@ -19,21 +19,18 @@
 #include "utilities/Common.h"
 
 #include "../Toy.hpp"
-#include "../components/CameraComponent.hpp"
+#include "../components/DebugShapeComponent.hpp"
+#include "../components/PhysXActorComponent.hpp"
 
 namespace ctHoneybell {
 
-class CT_API DebugCameraToy : public ToyBase {
+class CT_API GroundPlane : public ToyBase {
 public:
-   DebugCameraToy(ConstructContext& ctx);
-   virtual ~DebugCameraToy();
+   GroundPlane(ConstructContext& ctx);
 
    virtual ctResults OnBegin(BeginContext& ctx);
-   virtual ctResults OnTickParallel(TickParallelContext& ctx);
-   virtual ctResults OnFrameUpdate(FrameUpdateContext& ctx);
 
 private:
-   float angle;
-   ComponentPtr<CameraComponent> camera;
+   ComponentPtr<PhysXActorComponent> PhysicsPlane;
 };
 }
