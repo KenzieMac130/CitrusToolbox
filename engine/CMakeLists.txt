@@ -120,7 +120,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Version.c
 )
 
 set(ENGINE_HEADER_FILES_UTILITIES
@@ -154,6 +153,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gamelayer/GameLayer.cpp
 )
 
 set(ENGINE_HEADER_FILES_CORE
@@ -168,6 +168,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gamelayer/GameLayer.hpp
 )
 
 # ---------- Audition  ---------- 
@@ -180,6 +181,15 @@ set(ENGINE_HEADER_FILES_AUDITION
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.hpp
 )
 endif()
+
+# ---------- Wad and Prototypes  ---------- 
+set(ENGINE_SOURCE_FILES_WAD
+${CMAKE_CURRENT_SOURCE_DIR}/wad/WADCore.c
+)
+
+set(ENGINE_HEADER_FILES_WAD
+${CMAKE_CURRENT_SOURCE_DIR}/wad/WADCore.h
+)
 
 # ---------- Renderer Frontend ---------- 
 set(ENGINE_SOURCE_FILES_RENDERER)
@@ -201,7 +211,11 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/TypeRegistration.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/DebugCameraToy.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
@@ -210,7 +224,11 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/DebugCameraToy.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.hpp
 )
 
 # ---------- Third Party Implementation ---------- 
@@ -240,6 +258,13 @@ set(ENGINE_HEADER_FILES_MIDDLEWARE
 ${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.hpp
 )
+
+if(CITRUS_PHYSX)
+list(APPEND ENGINE_SOURCE_FILES_MIDDLEWARE
+${CMAKE_CURRENT_SOURCE_DIR}/middleware/PhysXIntegration.cpp)
+list(APPEND ENGINE_HEADER_FILES_MIDDLEWARE
+${CMAKE_CURRENT_SOURCE_DIR}/middleware/PhysXIntegration.hpp)
+endif()
 
 # ---------- Scripting Integration ---------- 
 if(CITRUS_LUA)
@@ -290,7 +315,6 @@ set(ENGINE_HEADER_FILES_INTERACT
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.hpp)
 
 # ---------- Interaction Engine All Active Backends ----------
-
 if(CITRUS_INTERACT_INPUT_SDL)
 list(APPEND ENGINE_SOURCE_FILES_INTERACT
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLGamepad.cpp
@@ -300,6 +324,17 @@ list(APPEND ENGINE_HEADER_FILES_INTERACT
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLGamepad.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLKeyboardMouse.hpp)
 endif()
+
+# ---------- Asset System ----------
+set(ENGINE_SOURCE_FILES_ASSET_SYSTEM
+${CMAKE_CURRENT_SOURCE_DIR}/asset/AssetManager.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/asset/types/WAD.cpp
+)
+
+set(ENGINE_HEADER_FILES_ASSET_SYSTEM
+${CMAKE_CURRENT_SOURCE_DIR}/asset/AssetManager.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/asset/types/WAD.hpp
+)
 
 # ---------- All Engine Files ----------
 set(ENGINE_FILES 
@@ -314,6 +349,8 @@ ${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
 ${ENGINE_SOURCE_FILES_GFX_BACKEND} ${ENGINE_HEADER_FILES_GFX_BACKEND}
 ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
 ${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
+${ENGINE_SOURCE_FILES_ASSET_SYSTEM} ${ENGINE_HEADER_FILES_ASSET_SYSTEM}
+${ENGINE_SOURCE_FILES_WAD} ${ENGINE_HEADER_FILES_WAD}
 ${ISPC_KERNEL_INPUTS}
 ${SWIG_INPUTS})
 
@@ -331,9 +368,6 @@ ${THIRD_PARTY_IMPL_FILES}
 ${NATIVE_SOURCE_FILES}
 ${ISPC_KERNEL_OUTPUTS}
 ${SWIG_OUTPUTS})
-
-# ---------- Create Version ----------
-add_custom_command(TARGET engine DEPENDS engine COMMAND ${CMAKE_COMMAND} -E touch ${CITRUS_CODEGEN_DIR}/engine_build_dummy.h)
 
 # ---------- Setup Folders ----------
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
@@ -361,6 +395,7 @@ endif()
 
 if(CITRUS_PHYSX)
 	target_link_libraries(engine ${PHYSX_LIBRARIES})
+	target_link_libraries(engine ${PHYSX_STATIC_LIBRARIES})
 	target_include_directories(engine PUBLIC ${PHYSX_INCLUDE_DIR})
 endif()
 

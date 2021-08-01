@@ -44,7 +44,6 @@ public:
    ctResults Seek(const int64_t offset, const ctFileSeekMode mode);
 
    size_t ReadRaw(void* pDest, const size_t size, const size_t count);
-   size_t ReadString(ctStringUtf8& pDest, const size_t count);
 
    size_t WriteRaw(const void* pData, size_t size, const size_t count);
    int64_t Printf(const char* format, ...);
@@ -62,8 +61,7 @@ private:
 
 class CT_API ctFileSystem : public ctModuleBase {
 public:
-   ctFileSystem(const ctStringUtf8& appName,
-                const ctStringUtf8& organizationName);
+   ctFileSystem(const ctStringUtf8& appName, const ctStringUtf8& organizationName);
 
    ctResults Startup() final;
    ctResults Shutdown() final;
@@ -77,10 +75,8 @@ public:
    const ctResults OpenPreferencesFile(ctFile& file,
                                        const ctStringUtf8& relativePath,
                                        const ctFileOpenMode mode);
-   const ctResults OpenExeRelativeFile(ctFile& file,
-                                       const ctStringUtf8& relativePath);
-   const ctResults OpenAssetFile(ctFile& file,
-                                 const ctStringUtf8& relativePath);
+   const ctResults OpenExeRelativeFile(ctFile& file, const ctStringUtf8& relativePath);
+   const ctResults OpenAssetFile(ctFile& file, const ctStringUtf8& relativePath);
 
    const ctResults MakePreferencesDirectory(const ctStringUtf8& relativePath);
 

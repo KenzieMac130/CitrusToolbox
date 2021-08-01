@@ -17,6 +17,10 @@
 #include "EngineCore.hpp"
 #include "Application.hpp"
 
+#include "middleware/PhysXIntegration.hpp"
+
+#include "gamelayer/GameLayer.hpp"
+
 #include CITRUS_SCENE_ENGINE_HEADER
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {
@@ -32,6 +36,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
+   AssetManager = new ctAssetManager(FileSystem);
    Settings = new ctSettings();
    Debug = new ctDebugSystem(32, true);
 #if CITRUS_INCLUDE_AUDITION
@@ -47,6 +52,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    Renderer = new ctKeyLimeRenderer();
    FrameTime = ctStopwatch();
    SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
+   PhysXIntegration = new ctPhysXIntegration();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
@@ -56,6 +62,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    HotReload->ModuleStartup(this);
 #endif
    FileSystem->LogPaths();
+   AssetManager->ModuleStartup(this);
    Translation->ModuleStartup(this);
    JobSystem->ModuleStartup(this);
    OSEventManager->ModuleStartup(this);
@@ -66,10 +73,12 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
    Renderer->ModuleStartup(this);
+   PhysXIntegration->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
+   ctGetGameLayer().ModuleStartup(this);
    App->OnStartup();
    ctDebugLog("Application has Started!");
    return CT_SUCCESS;
@@ -113,10 +122,12 @@ ctResults ctEngineCore::Shutdown() {
    /*Shutdown application*/
    ctDebugLog("Application is Shutting Down...");
    App->OnShutdown();
+   ctGetGameLayer().ModuleShutdown();
 
    /*Shutdown modules*/
    ctDebugLog("Citrus Toolbox is Shutting Down...");
-   SceneEngine->Shutdown();
+   SceneEngine->ModuleShutdown();
+   PhysXIntegration->ModuleShutdown();
    Renderer->ModuleShutdown();
    Im3dIntegration->ModuleShutdown();
    ImguiIntegration->ModuleShutdown();
@@ -125,6 +136,7 @@ ctResults ctEngineCore::Shutdown() {
    WindowManager->ModuleShutdown();
 #endif
    OSEventManager->ModuleShutdown();
+   AssetManager->Shutdown();
    JobSystem->ModuleShutdown();
    Translation->ModuleShutdown();
 #if CITRUS_INCLUDE_AUDITION
@@ -137,6 +149,7 @@ ctResults ctEngineCore::Shutdown() {
    delete ImguiIntegration;
    delete WindowManager;
    delete Debug;
+   delete AssetManager;
    delete FileSystem;
    delete Settings;
    delete OSEventManager;

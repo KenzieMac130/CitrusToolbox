@@ -36,6 +36,7 @@
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLime.hpp"
 #include "scene/SceneEngineBase.hpp"
+#include "asset/AssetManager.hpp"
 
 class CT_API ctEngineCore {
 public:
@@ -56,6 +57,7 @@ public:
    ctOSEventManager* OSEventManager;
    ctTranslation* Translation;
    ctFileSystem* FileSystem;
+   ctAssetManager* AssetManager;
    ctSettings* Settings;
 #if CITRUS_INCLUDE_AUDITION
    ctHotReloadDetection* HotReload;
@@ -67,6 +69,10 @@ public:
    ctIm3dIntegration* Im3dIntegration;
    ctKeyLimeRenderer* Renderer;
    ctSceneEngineBase* SceneEngine;
+
+#if CITRUS_PHYSX
+   class ctPhysXIntegration* PhysXIntegration;
+#endif
 
    ctStopwatch FrameTime;
 

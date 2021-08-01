@@ -44,7 +44,7 @@ ctResults ctFile::Open(const ctStringUtf8& filePath, const ctFileOpenMode mode) 
    if (_fp) {
       return CT_SUCCESS;
    } else {
-      return CT_FAILURE_FILE_INACCESSIBLE;
+      return CT_FAILURE_INACCESSIBLE;
    }
 }
 
@@ -73,21 +73,14 @@ int64_t ctFile::Tell() {
 
 ctResults ctFile::Seek(const int64_t offset, const ctFileSeekMode mode) {
    ZoneScoped;
-   if (!_fp) { return CT_FAILURE_FILE_INACCESSIBLE; }
-   return fseek(_fp, (long)offset, mode) == 0 ? CT_SUCCESS : CT_FAILURE_FILE_INACCESSIBLE;
+   if (!_fp) { return CT_FAILURE_INACCESSIBLE; }
+   return fseek(_fp, (long)offset, mode) == 0 ? CT_SUCCESS : CT_FAILURE_INACCESSIBLE;
 }
 
 size_t ctFile::ReadRaw(void* pDest, const size_t size, const size_t count) {
    ZoneScoped;
    if (!_fp) { return 0; }
    return fread(pDest, size, count, _fp);
-}
-
-size_t ctFile::ReadString(ctStringUtf8& pDest, const size_t count) {
-   ZoneScoped;
-   // if (!_fp) { return 0; }
-   // return fread(pDest, size, count, _fp);
-   return 0;
 }
 
 size_t ctFile::WriteRaw(const void* pData, size_t size, const size_t count) {
@@ -148,7 +141,7 @@ ctResults ctFileSystem::Startup() {
    _assetPath += "assets/";
    _assetPath.FilePathLocalize();
    assetRedirectFile.Close();
-   return ctResults();
+   return CT_SUCCESS;
 }
 
 ctResults ctFileSystem::Shutdown() {
