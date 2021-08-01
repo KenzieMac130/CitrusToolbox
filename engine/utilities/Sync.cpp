@@ -35,3 +35,13 @@ bool ctMutexTryLock(ctMutex mutex) {
 bool ctMutexUnlock(ctMutex mutex) {
    return SDL_UnlockMutex(mutex) == 0;
 }
+
+CT_API ctThread ctThreadCreate(int (*func)(void*), void* data, const char* name) {
+   return SDL_CreateThread(func, name, data);
+}
+
+CT_API int ctThreadWaitForExit(ctThread thread) {
+   int result;
+   SDL_WaitThread(thread, &result);
+   return result;
+}

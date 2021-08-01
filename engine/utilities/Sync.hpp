@@ -26,3 +26,7 @@ CT_API void ctMutexDestroy(ctMutex mutex);
 CT_API bool ctMutexLock(ctMutex mutex);
 CT_API bool ctMutexTryLock(ctMutex mutex);
 CT_API bool ctMutexUnlock(ctMutex mutex);
+
+typedef struct SDL_Thread* ctThread;
+CT_API ctThread ctThreadCreate(int (*func)(void*), void* data, const char* name);
+CT_API int ctThreadWaitForExit(ctThread thread);
