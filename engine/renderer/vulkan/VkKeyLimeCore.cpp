@@ -35,6 +35,7 @@ ctResults ctVkKeyLimeCore::Startup() {
    ZoneScoped;
    vkBackend.preferredDevice = -1;
    vkBackend.vsync = Engine->WindowManager->mainWindowVSync;
+   vkBackend.nextFrameTimeout = INT32_MAX;
 #ifndef NDEBUG
    vkBackend.validationEnabled = 1;
 #else
@@ -87,6 +88,12 @@ ctResults ctVkKeyLimeCore::Startup() {
                            "MaxStorageBuffers",
                            "Max number of storage buffers.",
                            CT_SETTINGS_BOUNDS_UINT);
+   vkSettings->BindInteger(&vkBackend.nextFrameTimeout,
+                           false,
+                           true,
+                           "NextFrameTimeout",
+                           "Amount of time until timeout.",
+                           CT_SETTINGS_BOUNDS_BOOL);
 
    ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
@@ -131,14 +138,6 @@ ctResults ctVkKeyLimeCore::Startup() {
          vkAllocateCommandBuffers(
            vkBackend.vkDevice, &allocInfo, frameInitialUploadCommandBuffers);
       }
-
-      VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-         vkCreateSemaphore(vkBackend.vkDevice,
-                           &semaphoreInfo,
-                           &vkBackend.vkAllocCallback,
-                           &renderFinished[i]);
-      }
    }
    CreateScreenResources();
    /* Setup ImGUI */
@@ -180,10 +179,6 @@ ctResults ctVkKeyLimeCore::Shutdown() {
    vkIm3d.Shutdown();
    vkImgui.Shutdown();
    DestroyScreenResources();
-   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroySemaphore(
-        vkBackend.vkDevice, renderFinished[i], &vkBackend.vkAllocCallback);
-   }
    vkBackend.ModuleShutdown();
    return CT_SUCCESS;
 }
@@ -257,6 +252,16 @@ ctResults ctVkKeyLimeCore::CreateScreenResources() {
                                       internalResolutionHeight),
         CT_NC("Failed to create depth buffer."));
    }
+   /* Render to image finished */
+   {
+      VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+         vkCreateSemaphore(vkBackend.vkDevice,
+                           &semaphoreInfo,
+                           &vkBackend.vkAllocCallback,
+                           &renderFinished[i]);
+      }
+   }
    /* GUI Framebuffer */
    {
       VkImageView fbAttachments[] {compositeBuffer.view, depthBuffer.view};
@@ -282,6 +287,10 @@ ctResults ctVkKeyLimeCore::DestroyScreenResources() {
      vkBackend.vkDevice, forwardFramebuffer, &vkBackend.vkAllocCallback);
    vkBackend.TryDestroyCompleteImage(depthBuffer);
    vkBackend.TryDestroyCompleteImage(compositeBuffer);
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkDestroySemaphore(
+        vkBackend.vkDevice, renderFinished[i], &vkBackend.vkAllocCallback);
+   }
    return CT_SUCCESS;
 }
 
@@ -292,27 +301,6 @@ ctResults ctVkKeyLimeCore::UpdateCamera(ctKeyLimeCameraDesc cameraDesc) {
 
 ctResults ctVkKeyLimeCore::Render() {
    ZoneScoped;
-   if (vkBackend.mainScreenResources.HandleResizeIfNeeded(&vkBackend)) {
-      internalResolutionWidth = vkBackend.mainScreenResources.extent.width;
-      internalResolutionHeight = vkBackend.mainScreenResources.extent.height;
-      DestroyScreenResources();
-      CreateScreenResources();
-      vkImgui.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
-                             vkBackend.mainScreenResources.extent.height,
-                             internalResolutionWidth,
-                             internalResolutionHeight);
-   }
-   vkBackend.WaitForFrameAvailible();
-
-#if CITRUS_INCLUDE_AUDITION
-   /* Check if shaders have been updated */
-   if (ShaderHotReload.isContentUpdated()) {
-      ctDebugLog("Shaders Updated...");
-      vkDeviceWaitIdle(vkBackend.vkDevice);
-      vkIm3d.LoadShaders(forwardRenderPass, 0);
-      ShaderHotReload.ClearChanges();
-   }
-#endif
 
    /* View Projection */
    ctCameraInfo camera = Engine->SceneEngine->GetCameraInfo(NULL);
@@ -330,6 +318,30 @@ ctResults ctVkKeyLimeCore::Render() {
    vkIm3d.BuildDrawLists();
    Engine->Im3dIntegration->DrawImguiText(ctMat4());
    vkImgui.BuildDrawLists();
+
+   if (vkBackend.mainScreenResources.HandleResizeIfNeeded(&vkBackend)) {
+      internalResolutionWidth = vkBackend.mainScreenResources.extent.width;
+      internalResolutionHeight = vkBackend.mainScreenResources.extent.height;
+      DestroyScreenResources();
+      CreateScreenResources();
+      vkImgui.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
+                             vkBackend.mainScreenResources.extent.height,
+                             internalResolutionWidth,
+                             internalResolutionHeight);
+      vkBackend.RecreateSync();
+      VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+   }
+   if (vkBackend.WaitForFrameAvailible() != VK_SUCCESS) { return CT_SUCCESS; };
+
+#if CITRUS_INCLUDE_AUDITION
+   /* Check if shaders have been updated */
+   if (ShaderHotReload.isContentUpdated()) {
+      ctDebugLog("Shaders Updated...");
+      vkDeviceWaitIdle(vkBackend.vkDevice);
+      vkIm3d.LoadShaders(forwardRenderPass, 0);
+      ShaderHotReload.ClearChanges();
+   }
+#endif
 
    VkCommandBuffer gfxCommands = gfxCommandBuffers[vkBackend.currentFrame];
    VkCommandBufferBeginInfo gfxBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};

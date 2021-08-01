@@ -400,13 +400,28 @@ VkResult ctVkBackend::WaitForFrameAvailible() {
    ZoneScoped;
    uint32_t flags = SDL_GetWindowFlags(mainScreenResources.window);
    if ((SDL_WINDOW_MINIMIZED & flags) == flags) {
-       vkDeviceWaitIdle(vkDevice);
-       VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
+      vkDeviceWaitIdle(vkDevice);
+      VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
+   }
+   if (mainScreenResources.ShouldSkip()) {
+      SDL_Delay(10);
+      return VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
    }
    VkResult result = vkWaitForFences(
      vkDevice, 1, &frameAvailibleFences[currentFrame], VK_TRUE, UINT64_MAX);
    if (result != VK_SUCCESS) { return result; }
    return vkResetFences(vkDevice, 1, &frameAvailibleFences[currentFrame]);
+}
+
+void ctVkBackend::RecreateSync() {
+   VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      if (frameAvailibleFences[i] != VK_NULL_HANDLE) {
+         vkDestroyFence(vkDevice, frameAvailibleFences[i], &vkAllocCallback);
+      }
+      vkCreateFence(vkDevice, &fenceInfo, &vkAllocCallback, &frameAvailibleFences[i]);
+   }
 }
 
 void ctVkBackend::ExposeBindlessStorageBuffer(uint32_t& outIdx,
@@ -848,13 +863,9 @@ ctResults ctVkBackend::Startup() {
    }
    /* Frame Sync */
    {
-      VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-      fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-      for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-         vkCreateFence(vkDevice, &fenceInfo, &vkAllocCallback, &frameAvailibleFences[i]);
-      }
-   }
-   /* Pipeline Cache */
+      /* Recreate frame syncronization */
+      RecreateSync();
+   } /* Pipeline Cache */
    {
       ctDebugLog("Loading Pipeline Cache...");
       ctFile cacheFile;
@@ -1100,9 +1111,14 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
                                                int32_t vsync,
                                                VkSwapchainKHR oldSwapchain) {
    ZoneScoped;
-   ctDebugLog("Creating Swapchain...");
 
    swapChainSupport.GetSupport(pBackend->vkPhysicalDevice, surface);
+   if (swapChainSupport.surfaceCapabilities.currentExtent.width == 0 ||
+       swapChainSupport.surfaceCapabilities.currentExtent.height == 0) {
+      return CT_FAILURE_NOT_UPDATABLE;
+   }
+
+   ctDebugLog("Creating Swapchain...");
 
    /* Select a Image and Color Format */
    surfaceFormat = vPickBestSurfaceFormat(swapChainSupport.surfaceFormats.Data(),
@@ -1189,7 +1205,9 @@ ctResults ctVkScreenResources::CreatePresentResources(ctVkBackend* pBackend) {
 
 ctResults ctVkScreenResources::DestroySwapchain(ctVkBackend* pBackend) {
    ZoneScoped;
+   if (swapchain == VK_NULL_HANDLE) { return CT_FAILURE_NOT_FOUND; }
    vkDestroySwapchainKHR(pBackend->vkDevice, swapchain, &pBackend->vkAllocCallback);
+   swapchain = VK_NULL_HANDLE;
    return CT_SUCCESS;
 }
 
@@ -1204,15 +1222,33 @@ ctResults ctVkScreenResources::DestroyPresentResources(ctVkBackend* pBackend) {
 }
 
 bool ctVkScreenResources::HandleResizeIfNeeded(ctVkBackend* pBackend) {
+   if (isMinimized) {
+      swapChainSupport.GetSupport(pBackend->vkPhysicalDevice, surface);
+      if (swapChainSupport.surfaceCapabilities.currentExtent.width != 0 ||
+          swapChainSupport.surfaceCapabilities.currentExtent.height != 0) {
+         resizeTriggered = true;
+         isMinimized = false;
+      }
+   }
    if (resizeTriggered) {
       vkDeviceWaitIdle(pBackend->vkDevice);
+      DestroyPresentResources(pBackend);
+      CreatePresentResources(pBackend);
       DestroySwapchain(pBackend);
-      CreateSwapchain(
-        pBackend, pBackend->queueFamilyIndices, pBackend->vsync, VK_NULL_HANDLE);
+      if (CreateSwapchain(
+            pBackend, pBackend->queueFamilyIndices, pBackend->vsync, VK_NULL_HANDLE) !=
+          VK_SUCCESS) {
+         isMinimized = true;
+      }
       resizeTriggered = false;
       return true;
    }
    return false;
+}
+
+bool ctVkScreenResources::ShouldSkip() {
+   return swapChainSupport.surfaceCapabilities.currentExtent.width == 0 ||
+          swapChainSupport.surfaceCapabilities.currentExtent.height == 0;
 }
 
 ctResults ctVkScreenResources::DestroySurface(ctVkBackend* pBackend) {
@@ -1236,7 +1272,7 @@ VkResult ctVkScreenResources::BlitAndPresent(ctVkBackend* pBackend,
    uint32_t imageIndex = 0;
    VkResult result = vkAcquireNextImageKHR(pBackend->vkDevice,
                                            swapchain,
-                                           UINT64_MAX,
+                                           pBackend->nextFrameTimeout,
                                            imageAvailible[pBackend->currentFrame],
                                            VK_NULL_HANDLE,
                                            &imageIndex);

@@ -68,6 +68,7 @@ public:
    ctDynamicArray<VkImage> swapImages;
 
    bool resizeTriggered;
+   bool isMinimized;
    VkSemaphore imageAvailible[CT_MAX_INFLIGHT_FRAMES];
 
    ctResults CreateSurface(class ctVkBackend* pBackend, SDL_Window* pWindow);
@@ -81,6 +82,7 @@ public:
    ctResults DestroyPresentResources(class ctVkBackend* pBackend);
 
    bool HandleResizeIfNeeded(class ctVkBackend* pBackend);
+   bool ShouldSkip();
 
    VkResult BlitAndPresent(class ctVkBackend* pBackend,
                            uint32_t blitQueueIdx,
@@ -224,6 +226,8 @@ public:
 
    VkPipelineCache vkPipelineCache;
 
+   void RecreateSync();
+
    /* Bindless System */
 
    VkDescriptorSetLayout vkDescriptorSetLayout;
@@ -254,4 +258,5 @@ public:
    int32_t maxStorageBuffers;
 
    int32_t vsync;
+   int32_t nextFrameTimeout;
 };
