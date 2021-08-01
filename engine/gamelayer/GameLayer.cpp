@@ -13,3 +13,21 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "GameLayer.hpp"
+
+/* Include game */
+#include "../game/GameRegister.hpp"
+Game::GameCore game;
+
+ctGameLayer& ctGetGameLayer() {
+   return game;
+}
+
+ctResults ctGameLayer::Startup() {
+   return CT_SUCCESS;
+}
+
+ctResults ctGameLayer::Shutdown() {
+   return CT_SUCCESS;
+}

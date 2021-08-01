@@ -17,3 +17,16 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "core/ModuleBase.hpp"
+
+#include "scene/honeybell/Toy.hpp"
+
+class CT_API ctGameLayer : public ctModuleBase {
+public:
+   virtual ctResults Startup();
+   virtual ctResults Shutdown();
+   /* Note, this will be run before full startup! Do not rely on Engine! */
+   virtual void HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry) = 0;
+};
+
+ctGameLayer& ctGetGameLayer();
