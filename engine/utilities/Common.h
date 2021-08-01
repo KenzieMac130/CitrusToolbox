@@ -47,30 +47,27 @@ extern "C" {
 
 /*Exportable*/
 // clang-format off
-#ifndef CT_API
+#if CITRUS_STATIC_ONLY
+    #define CT_API
+#endif
+#if !defined(CT_API)
 #if defined(_MSC_VER)
     #if CITRUS_IMPORT
         #define CT_API __declspec(dllimport)
-        #define CT_API_EXP 
     #else
         #define CT_API __declspec(dllexport)
-        #define CT_API_EXP __declspec(dllexport)
     #endif
 #elif defined(__GNUC__)
     #if CITRUS_IMPORT
         #define CT_API __attribute__((visibility("default")))
-        #define CT_API_EXP 
     #else
         #define CT_API
-        #define CT_API_EXP 
     #endif
 #else
     #define CT_API
 #endif
 #endif
 // clang-format on
-
-unsigned int ctGetEngineBuildId();
 
 /*Errors*/
 enum ctResults {
@@ -84,7 +81,7 @@ enum ctResults {
    CT_FAILURE_PARSE_ERROR = -7,
    CT_FAILURE_DECOMPRESSION_ERROR = -8,
    CT_FAILURE_FILE_NOT_FOUND = -9,
-   CT_FAILURE_FILE_INACCESSIBLE = -10,
+   CT_FAILURE_INACCESSIBLE = -10,
    CT_FAILURE_DATA_DOES_NOT_EXIST = -11,
    CT_FAILURE_DUPLICATE_ENTRY = -12,
    CT_FAILURE_NOT_UPDATABLE = -13,
