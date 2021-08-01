@@ -24,7 +24,7 @@
  Collisions are expected to be resolved offline or by the key being a mask.
  A key value of 0 is reserved for empty items, make sure keys are never 0! */
 template<class T, class K>
-class CT_API_EXP ctHashTable {
+class ctHashTable {
 public:
    ctHashTable();
    ctHashTable(const size_t baseSize);
@@ -41,7 +41,7 @@ public:
    size_t Capacity() const;
    ctResults Reserve(const size_t amount);
 
-   class CT_API_EXP Iterator {
+   class Iterator {
    public:
       Iterator(ctHashTable<T, K>* pTable);
       T& Value() const;
