@@ -1,4 +1,3 @@
-#include "GameRegister.hpp"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -15,8 +14,24 @@
    limitations under the License.
 */
 
-#include "engine_build_dummy.h"
+#include "GameRegister.hpp"
 
-GAME_API unsigned int GameRegisterGetEngineHash() {
-   return ctGetEngineBuildId();
+/* This is all boilerplate code you probably don't need to touch... */
+
+#undef HB_TOY_REGISTER_ENTRY
+#define HB_TOY_REGISTER_ENTRY(_PATH, _CLASS)                                             \
+   ctHoneybell::ToyBase* toyNewFunc_GAME_##_CLASS(ctHoneybell::ConstructContext& ctx) {  \
+      return new _CLASS(ctx);                                                            \
+   };
+
+using namespace Game;
+HB_TOY_REGISTRIES()
+
+#undef HB_TOY_REGISTER_ENTRY
+#define HB_TOY_REGISTER_ENTRY(_PATH, _CLASS)                                             \
+   registry.RegisterToyType(_PATH, toyNewFunc_GAME_##_CLASS);
+
+void Game::GameCore::HoneybellRegisterToys(class ctHoneybell::ToyTypeRegistry& registry) {
+   ZoneScoped;
+   HB_TOY_REGISTRIES()
 }

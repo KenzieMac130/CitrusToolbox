@@ -21,6 +21,10 @@
 
 /* Game layer exportable */
 // clang-format off
+#if CITRUS_STATIC_ONLY
+#define GAME_API
+#endif
+#if !defined(GAME_API)
 #if defined(_MSC_VER)
     #if GAME_IMPORT
         #define GAME_API __declspec(dllimport)
@@ -36,10 +40,9 @@
 #else
     #define GAME_API
 #endif
+#endif
 
 /* Import engine content */
 #undef CITRUS_IMPORT
 #define CITRUS_IMPORT 1
 // clang-format on
-
-#include "utilities/Common.h"
