@@ -23,8 +23,11 @@ ctResults ctModuleBase::ModuleStartup(class ctEngineCore* pEngine) {
 }
 
 ctResults ctModuleBase::ModuleShutdown() {
-   _started = false;
-   return Shutdown();
+    if (_started) {
+        _started = false;
+        return Shutdown();
+    }
+    return CT_FAILURE_MODULE_NOT_INITIALIZED;
 }
 
 bool ctModuleBase::isStarted() const
