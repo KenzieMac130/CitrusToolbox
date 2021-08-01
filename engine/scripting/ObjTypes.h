@@ -17,3 +17,4 @@
 #pragma once
 
 #define CT_SCRIPTOBTYPE_NULL 0
+#define CT_SCRIPTOBTYPE_HBENGINE 1

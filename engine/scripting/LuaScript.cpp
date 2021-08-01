@@ -99,9 +99,11 @@ ctResults ctLuaContext::LoadFromFile(const char* path) {
    if (!result) {
       return CT_SUCCESS;
    } else if (result == LUA_ERRSYNTAX) {
+      ctDebugError("Syntax error in: %s", path);
       return CT_FAILURE_SYNTAX_ERROR;
    } else if (result == LUA_ERRFILE) {
-      return CT_FAILURE_FILE_INACCESSIBLE;
+      ctDebugError("Failed to load file: %s", path);
+      return CT_FAILURE_INACCESSIBLE;
    }
    return CT_FAILURE_UNKNOWN;
 }
