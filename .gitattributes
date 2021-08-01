@@ -3,3 +3,4 @@
 
 # Ignore file types in language detection
 *.bat linguist-vendored
+*.swig linguist-vendored
