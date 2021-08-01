@@ -17,14 +17,24 @@
 #pragma once
 
 #include "GameCommon.hpp"
+#include "gamelayer/GameLayer.hpp"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "scene/honeybell/Toy.hpp"
 
-/* Checks the hash of the engine library before dynamic linking */
-GAME_API unsigned int GameRegisterGetEngineHash();
+/* Include toys */
+#include "toys/FPSDemoPlayer.hpp"
 
-#ifdef __cplusplus
+namespace Game {
+
+/* ---------------- Game Toys Defined Here ---------------- */
+/* clang-format off */
+#define HB_TOY_REGISTRIES() \
+HB_TOY_REGISTER_ENTRY("fps/player", FPSPlayer)
+/* clang-format on */
+
+class GAME_API GameCore : public ctGameLayer {
+public:
+   virtual void HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry);
+};
+
 }
-#endif
