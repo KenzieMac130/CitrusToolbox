@@ -116,7 +116,7 @@ ctResults ctInteractDirectorySystem::GetNode(ctInteractPath& path,
    CT_RETURN_ON_NULL(result, CT_FAILURE_DATA_DOES_NOT_EXIST);
    ctAssert(result->path == path);
    CT_RETURN_ON_UNTRUE(result->path == path, CT_FAILURE_CORRUPTED_CONTENTS);
-   if (!result->accessible && !forceAccess) { return CT_FAILURE_FILE_INACCESSIBLE; }
+   if (!result->accessible && !forceAccess) { return CT_FAILURE_INACCESSIBLE; }
    pOutNode = result;
    return CT_SUCCESS;
 }
