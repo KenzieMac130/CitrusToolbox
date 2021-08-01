@@ -30,7 +30,7 @@ struct _ctInternalHandleRep {
    };
 };
 
-class CT_API_EXP ctHandleManager {
+class ctHandleManager {
 public:
    inline ctHandleManager() {
       _freeList.Clear();

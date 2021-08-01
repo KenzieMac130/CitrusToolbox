@@ -19,7 +19,7 @@
 #include "Common.h"
 
 template<class T>
-class CT_API_EXP ctDynamicArray {
+class ctDynamicArray {
 public:
    /* Constructors */
    ctDynamicArray();
