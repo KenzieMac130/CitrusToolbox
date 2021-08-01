@@ -20,17 +20,35 @@
 
 #include "../Component.hpp"
 
+#include "PxPhysicsAPI.h"
+
+using namespace physx;
+
 namespace ctHoneybell {
 
-class CT_API CameraComponent : public ComponentBase {
+class CT_API PhysXControllerComponent : public ComponentBase {
 public:
-   CameraComponent(class ComponentFactoryBase* _factory, class ToyBase* _toy);
-   //Todo...
+   PhysXControllerComponent(class ComponentFactoryBase* _factory, class ToyBase* _toy);
+   ~PhysXControllerComponent();
+
+   ctResults InitController(PxControllerDesc* pDesc = NULL);
+
+   virtual bool hasTransform() const;
+   virtual ctTransform GetWorldTransform();
+   virtual void SetWorldTransform(ctTransform v);
+   virtual ctBoundBox GetWorldBounds();
+
+   PxController* pPxController;
+   PxMaterial* pPxMaterialStorage;
 };
 
 /* Boilerplate */
-class CT_API CameraComponentFactory : public ComponentFactoryBase {
+class CT_API PhysXControllerComponentFactory : public ComponentFactoryBase {
 public:
+   virtual ctResults Startup();
+   virtual ctResults Shutdown();
    virtual ComponentBase* NewComponent(class ToyBase* _owner);
+   PxScene* pPxScene;
+   PxControllerManager* pControllerManager;
 };
 }

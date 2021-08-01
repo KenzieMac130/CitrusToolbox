@@ -37,24 +37,16 @@ public:
 
    /* ---- Component World Transforms ---- */
    /* Does the component have transforms? */
-   virtual bool hasTransform();
-   /* Get component world position (if applicable) */
-   virtual ctVec3 GetWorldPosition();
-   /* Set component world position (if applicable) */
-   virtual void SetWorldPosition(ctVec3 v);
-   /* Get component world rotation (if applicable) */
-   virtual ctQuat GetWorldRotation();
-   /* Set component world rotation (if applicable) */
-   virtual void SetWorldRotation(ctQuat v);
-   /* Get component world scale (if applicable) */
-   virtual ctVec3 GetWorldScale();
-   /* Set component world scale (if applicable) */
-   virtual void SetWorldScale(ctVec3 v);
+   virtual bool hasTransform() const;
+   /* Get component world transform (if applicable) */
+   virtual ctTransform GetWorldTransform() const;
+   /* Set component world transform (if applicable) */
+   virtual void SetWorldTransform(ctTransform& v);
    /* Copy the world transforms of the owning toy */
    void CopyOwnerTransform();
 
    /* Get the bounds of the component (if applicable) */
-   virtual ctBoundBox GetAABB();
+   virtual ctBoundBox GetWorldBounds() const;
 
 protected:
    class ToyBase* pToy;
@@ -78,6 +70,9 @@ public:
 template<class T>
 class CT_API ComponentPtr {
 public:
+   ComponentPtr() {
+      ptr = NULL;
+   }
    inline bool isValid() {
       return ptr != NULL;
    }

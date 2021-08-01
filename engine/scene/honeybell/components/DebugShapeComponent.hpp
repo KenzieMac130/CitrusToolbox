@@ -22,15 +22,29 @@
 
 namespace ctHoneybell {
 
-class CT_API CameraComponent : public ComponentBase {
+class CT_API DebugShapeComponent : public ComponentBase {
 public:
-   CameraComponent(class ComponentFactoryBase* _factory, class ToyBase* _toy);
-   //Todo...
+   DebugShapeComponent(class ComponentFactoryBase* _factory, class ToyBase* _toy);
+   ctVec4 rgba;
+   ctStringUtf8 text;
+
+   virtual bool hasTransform() const;
+   virtual void SetWorldTransform(ctTransform& v);
+   virtual ctTransform GetWorldTransform() const;
+
+   virtual void SetLocalBounds(ctBoundBox& v);
+   virtual ctBoundBox GetLocalBounds() const;
+
+private:
+   ctTransform transform;
+   ctBoundBox bounds;
 };
 
-/* Boilerplate */
-class CT_API CameraComponentFactory : public ComponentFactoryBase {
+class CT_API DebugShapeComponentFactory : public ComponentFactoryBase {
 public:
+   ctDynamicArray<DebugShapeComponent*> shapes;
    virtual ComponentBase* NewComponent(class ToyBase* _owner);
+   virtual void DeleteComponent(ComponentBase* _component);
+   void Im3dDrawAll();
 };
 }

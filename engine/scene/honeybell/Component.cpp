@@ -35,41 +35,26 @@ class ctHoneybell::ComponentFactoryBase* ctHoneybell::ComponentBase::GetFactoryP
    return pFactory;
 }
 
-bool ctHoneybell::ComponentBase::hasTransform() {
+bool ctHoneybell::ComponentBase::hasTransform() const {
    return false;
 }
 
-ctVec3 ctHoneybell::ComponentBase::GetWorldPosition() {
-   return ctVec3(0.0f);
+ctTransform ctHoneybell::ComponentBase::GetWorldTransform() const {
+   return ctTransform();
 }
 
-void ctHoneybell::ComponentBase::SetWorldPosition(ctVec3 v) {
-}
-
-ctQuat ctHoneybell::ComponentBase::GetWorldRotation() {
-   return ctQuat();
-}
-
-void ctHoneybell::ComponentBase::SetWorldRotation(ctQuat v) {
-}
-
-ctVec3 ctHoneybell::ComponentBase::GetWorldScale() {
-   return ctVec3(1.0f);
-}
-
-void ctHoneybell::ComponentBase::SetWorldScale(ctVec3 v) {
+void ctHoneybell::ComponentBase::SetWorldTransform(ctTransform& v) {
 }
 
 void ctHoneybell::ComponentBase::CopyOwnerTransform() {
    if (!pToy) { return; }
-   SetWorldPosition(pToy->GetWorldPosition());
-   SetWorldRotation(pToy->GetWorldRotation());
-   SetWorldScale(pToy->GetWorldScale());
+   SetWorldTransform(pToy->GetWorldTransform());
 }
 
-ctBoundBox ctHoneybell::ComponentBase::GetAABB() {
+ctBoundBox ctHoneybell::ComponentBase::GetWorldBounds() const {
    if (hasTransform()) {
-      return ctBoundBox(ctVec3(0.0f), ctVec3(0.0f));
+      const ctTransform& transform = GetWorldTransform();
+      return ctBoundBox(transform.position, transform.position);
    } else {
       return ctBoundBox(); /* Invalid bounds */
    }
