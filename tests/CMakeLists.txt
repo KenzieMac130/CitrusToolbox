@@ -20,16 +20,19 @@ enable_testing()
 add_executable(Test_Utilities UtilitiesTest.cpp)
 set_property(TARGET Test_Utilities PROPERTY FOLDER "tests")
 target_link_libraries(Test_Utilities PUBLIC engine)
+target_link_libraries(Test_Utilities PUBLIC game)
 
 #App Test
 add_executable(Test_App AppTest.cpp)
 set_property(TARGET Test_App PROPERTY FOLDER "tests")
 target_link_libraries(Test_App PUBLIC engine)
+target_link_libraries(Test_App PUBLIC game)
 
 #Scene Test
 add_executable(Test_Scene SceneTest.cpp)
 set_property(TARGET Test_Scene PROPERTY FOLDER "tests")
 target_link_libraries(Test_Scene PUBLIC engine)
+target_link_libraries(Test_Scene PUBLIC game)
 
 #Interact Paths
 add_custom_target(Test_InteractPaths 
