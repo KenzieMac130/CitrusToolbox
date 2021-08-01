@@ -60,6 +60,9 @@ set(CT_ALIGNMENT_VEC4 16)
 set(CT_ALIGNMENT_QUAT 16)
 set(CT_ALIGNMENT_MAT4 32)
 
+# ---------- Collision Mitigation ----------
+set(CT_HASH_RESEED_ASSET_PATH 0)
+
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
@@ -89,6 +92,13 @@ else()
 endif()
 set(TOOLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 set(THIRD_PARTY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
+
+#---------- Build Config Feedback ----------
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+set(BUILD_CONFIGURATION_DIR $(Configuration))
+else()
+set(BUILD_CONFIGURATION_DIR ${CMAKE_BUILD_TYPE})
+endif()
 
 # ---------- Install Libraries ----------
 if(NOT EXISTS ${BASE_LIBRARY_DIRECTORY})
@@ -123,23 +133,32 @@ endif()
 # ---------- Find PhysX ----------
 set(CITRUS_PHYSX 1)
 set(CITRUS_PHYSX_CHECKED 1)
+set(CITRUS_PHYSX_RUNTIMECOOK 1)
 if(CITRUS_PHYSX)
     set(PHYSX_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/PhysX/include)
+
     if(CITRUS_PHYSX_CHECKED)
         set(PHYSX_PROFILE_NAME checked)
     else()
         set(PHYSX_PROFILE_NAME release)
     endif()
+
     set(PHYSX_SHARED_LIBRARIES 
             ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysX_64${SHARED_LIBRARY_FORMAT}
             ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysXCommon_64${SHARED_LIBRARY_FORMAT}
             ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysXCooking_64${SHARED_LIBRARY_FORMAT}
             ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${PHYSX_PROFILE_NAME}/PhysXFoundation_64${SHARED_LIBRARY_FORMAT})
     set(PHYSX_LIBRARIES 
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysX_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysXCommon_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysXCooking_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${PHYSX_PROFILE_NAME}/PhysXFoundation_64.lib)
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysX_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXCommon_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXCooking_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXFoundation_64.lib)
+    set(PHYSX_STATIC_LIBRARIES
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXTask_static_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXPvdSDK_static_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXExtensions_static_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXCharacterKinematic_static_64.lib
+            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/${PHYSX_PROFILE_NAME}/PhysXVehicle_static_64.lib)
 endif()
 
 # ---------- Find Lua ----------
@@ -172,6 +191,10 @@ endif()
 # ---------- Interaction Backends ----------
 set(CITRUS_INTERACT_INPUT_SDL 1)
 
+# ---------- ImGui ----------
+set(CITRUS_IMGUI 1)
+set(CITRUS_IM3D 1)
+
 # ---------- Headlesss Mode ----------
 option(IS_HEADLESS "Command line only" OFF)
 if(IS_HEADLESS)
@@ -180,10 +203,19 @@ if(IS_HEADLESS)
    set(CITRUS_GFX_NULL 1)
    set(CITRUS_INTERACT_INPUT_SDL 0)
    set(CITRUS_INTERACT_INPUT_NULL 1)
+   set(CITRUS_IMGUI 0)
+   set(CITRUS_IM3D 0)
 else()
    set(CITRUS_HEADLESS 0)
 endif()
 
+# ---------- Static vs Dynamic ----------
+option(IS_STATIC "Static only" ON)
+if(IS_STATIC)
+   set(CITRUS_STATIC_ONLY 1)
+else()
+   set(CITRUS_STATIC_ONLY 0)
+endif()
 
 # ---------- Add Subdirectories ----------
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/assets)
