@@ -49,6 +49,7 @@ ctResults TestApp::OnTick(const float deltatime) {
 }
 
 ctResults TestApp::OnUIUpdate() {
+   ImGui::ShowDemoWindow();
    Im3d::PushColor(Im3d::Color_Purple);
    Im3d::DrawAlignedBoxFilled(Im3d::Vec3(-1, -1, -1), Im3d::Vec3(1, 1, 1));
    Im3d::PopColor();
