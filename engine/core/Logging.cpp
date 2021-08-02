@@ -107,7 +107,9 @@ void ctDebugSystem::LogArgs(const char* format, va_list args) {
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
    TracyMessage(tmp, strlen(tmp));
+#if CITRUS_USE_STDOUT
    fprintf(stdout, "[LOG] %s\n", tmp);
+#endif
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 0;
@@ -130,7 +132,9 @@ void ctDebugSystem::WarningArgs(const char* format, va_list args) {
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
    TracyMessageC(tmp, strlen(tmp), 0xE5A91A);
+#if CITRUS_USE_STDOUT
    fprintf(stderr, "[WARNING] %s\n", tmp);
+#endif
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 1;
@@ -153,7 +157,9 @@ void ctDebugSystem::ErrorArgs(const char* format, va_list args) {
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    ctMutexLock(_logLock);
    TracyMessageC(tmp, strlen(tmp), 0xE51A1A);
+#if CITRUS_USE_STDOUT
    fprintf(stderr, "[ERROR] %s\n", tmp);
+#endif
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
    msg.level = 2;

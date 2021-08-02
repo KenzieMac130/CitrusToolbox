@@ -63,6 +63,14 @@ set(CT_ALIGNMENT_MAT4 32)
 # ---------- Collision Mitigation ----------
 set(CT_HASH_RESEED_ASSET_PATH 0)
 
+# ---------- Other Defines ----------
+option(USE_STDOUT "Enable STD Out" ON)
+if(USE_STDOUT)
+set(CITRUS_USE_STDOUT 1)
+else()
+set(CITRUS_USE_STDOUT 0)
+endif()
+
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
