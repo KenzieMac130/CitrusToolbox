@@ -44,6 +44,15 @@ public:
    virtual ctResults Startup();
    virtual ctResults Shutdown();
 
+   void ClearScene();
+   ctResults SpawnToy(const char* prefabPath,
+                      ctTransform& transform = ctTransform(),
+                      const char* message = NULL);
+   ctResults SpawnInternalToy(const char* toyType,
+                              ctTransform& transform = ctTransform(),
+                              const char* message = NULL);
+   ctResults SpawnErrorToy(ctTransform& transform);
+
    void Simulate(double deltaTime, ctJobSystem* pJobSystem);
    void NextFrame();
    double tickInterval = 1.0 / 60;
@@ -53,6 +62,7 @@ public:
    void _UnregisterToy(ctHandle hndl);
 
    ComponentRegistry componentRegistry;
+   ToyTypeRegistry* pToyRegistry;
 
 #if CITRUS_PHYSX
    physx::PxScene* pPxScene;
@@ -64,6 +74,7 @@ private:
 
    ctHandleManager toyHandleManager;
    ctHashTable<ToyBase*, ctHandle> toys;
+   ctDynamicArray<ToyBase*> toysLinear;
 
    ctDynamicArray<ToyBase*> toys_TickSerial;
    ctDynamicArray<ToyBase*> toys_TickParallel;

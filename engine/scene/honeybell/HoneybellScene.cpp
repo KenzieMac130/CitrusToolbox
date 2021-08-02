@@ -19,13 +19,7 @@
 
 #include "core/EngineCore.hpp"
 
-#include "scripting/api/HoneybellScript.hpp"
 #include "gamelayer/GameLayer.hpp"
-
-#include "middleware/PhysXIntegration.hpp"
-
-#include "asset/AssetManager.hpp"
-#include "asset/types/WAD.hpp"
 
 /* Defined in TypeRegistration */
 namespace ctHoneybell {
@@ -36,6 +30,7 @@ ctResults ctHoneybellSceneEngine::Startup() {
    ZoneScoped;
    /* Configuration */
    pauseSim = false;
+   simSingleShots = 0;
 #if NDEBUG
    debugCameraActive = false;
 #else
@@ -50,10 +45,17 @@ ctResults ctHoneybellSceneEngine::Startup() {
                           CT_SETTINGS_BOUNDS_BOOL);
    pSettings->BindInteger(
      &pauseSim, false, true, "PauseSim", "Pause the simulation", CT_SETTINGS_BOUNDS_BOOL);
+   pSettings->BindInteger(&simSingleShots,
+                          false,
+                          true,
+                          "SimSingleShots",
+                          "Number of shots to inject while paused.",
+                          CT_SETTINGS_BOUNDS_UINT);
 
    RegisterBuiltinToys(toyRegistry);
    ctGetGameLayer().HoneybellRegisterToys(toyRegistry);
    mainScene.ModuleStartup(Engine);
+   mainScene.pToyRegistry = &toyRegistry;
    mainScene.tickInterval = 1.0 / 30;
 
    CurrentCamera.fov = 0.785f;
@@ -62,23 +64,18 @@ ctResults ctHoneybellSceneEngine::Startup() {
 
    debugCamera = CurrentCamera;
 
-   LevelScript.Startup(false);
-   LevelScript.OpenEngineLibrary("scene");
+   levelScript.Startup(false);
+   levelScript.OpenEngineLibrary("scene");
+
+#if CITRUS_INCLUDE_AUDITION
+   Engine->HotReload->RegisterAssetCategory(&hotReload);
+#endif
    return CT_SUCCESS;
 }
 
 ctResults ctHoneybellSceneEngine::Shutdown() {
    ZoneScoped;
-   LevelScript.Shutdown();
-
-   /* Todo: wrap delete */
-   for (int i = 0; i < myTestToys.Count(); i++) {
-      ctHoneybell::ToyBase* myTestToy = myTestToys[i];
-      if (myTestToy) {
-         mainScene._UnregisterToy(myTestToy->GetIdentifier());
-         delete myTestToy;
-      }
-   }
+   levelScript.Shutdown();
 
    mainScene.ModuleShutdown();
    return CT_SUCCESS;
@@ -86,9 +83,24 @@ ctResults ctHoneybellSceneEngine::Shutdown() {
 
 ctResults ctHoneybellSceneEngine::NextFrame() {
    ZoneScoped;
+
+#if CITRUS_INCLUDE_AUDITION
+   if (hotReload.isContentUpdated()) {
+      sceneReload = true;
+      hotReload.ClearChanges();
+   }
+#endif
+   if (sceneReload) {
+      sceneReload = false;
+      LoadScene(activeSceneName.CStr());
+   }
+
    float deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
 
-   if (!pauseSim) { mainScene.Simulate(deltaTime, Engine->JobSystem); }
+   if (!pauseSim || simSingleShots) {
+      mainScene.Simulate(deltaTime, Engine->JobSystem);
+      if (simSingleShots > 0) { simSingleShots--; }
+   }
    mainScene.NextFrame();
 
    /* Lastly apply the debug camera */
@@ -105,6 +117,8 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
          if (ImGui::Checkbox(CT_NC("Pause Simulation"), &_simPaused)) {
             pauseSim = _simPaused;
          }
+         if (ImGui::Button(CT_NC("Single Shot"))) { simSingleShots++; }
+         if (ImGui::Button(CT_NC("Reset Scene"))) { sceneReload = true; }
          ImGui::Text(
            "Fly: WASD\nUp/Down: EQ\nFaster: Shift\nLook: Right-click\nRe-open: Ctrl+'`'");
       }
@@ -199,93 +213,21 @@ ctResults ctHoneybellSceneEngine::LoadScene(const char* name) {
    str += name;
    str += "/scene.lua";
    str.FilePathLocalize();
-   CT_RETURN_FAIL_CLEAN(LevelScript.LoadFromFile(str.CStr()));
-   CT_RETURN_FAIL(LevelScript.RunScript());
+   CT_RETURN_FAIL(levelScript.LoadFromFile(str.CStr()));
+   CT_RETURN_FAIL(levelScript.RunScript());
+   mainScene.ClearScene();
+   activeSceneName = name;
+
+#if CITRUS_INCLUDE_AUDITION
+   str.Clear();
+   str.Printf(24 + strlen(name), "scene/%s/scene.lua", name);
+   hotReload.Reset();
+   hotReload.RegisterPath(str.CStr());
+#endif
 
    int returnValue = -1;
-   ctScriptTypedLightData loaderData = {CT_SCRIPTOBTYPE_HBENGINE, this};
+   ctScriptTypedLightData loaderData = {CT_SCRIPTOBTYPE_HBSCENE, &mainScene};
    CT_RETURN_FAIL(
-     LevelScript.CallFunction("loadScene", "u:i", &loaderData, &returnValue));
+     levelScript.CallFunction("loadScene", "u:i", &loaderData, &returnValue));
    return CT_SUCCESS;
-}
-
-ctResults ctHoneybellSceneEngine::SpawnToy(const char* prefabPath,
-                                           ctTransform& transform,
-                                           const char* message) {
-   ctWADAsset* pWadAsset = Engine->AssetManager->GetWADAsset(prefabPath);
-   if (!pWadAsset) {
-      ctDebugWarning("Failed to spawn %s at (%f,%f,%f)",
-                     prefabPath,
-                     transform.position.x,
-                     transform.position.y,
-                     transform.position.z);
-      SpawnErrorToy(transform);
-      return CT_FAILURE_FILE_NOT_FOUND;
-   }
-
-   char* pTypePath = NULL;
-   int32_t typePathSize = 0;
-   ctStringUtf8 sanitizedPath;
-   ctWADFindLump(&pWadAsset->wadReader, "TOYTYPE", (void**)&pTypePath, &typePathSize);
-   if (!pTypePath) {
-      ctDebugWarning("Failed to spawn %s: No toy type!", prefabPath);
-      SpawnErrorToy(transform);
-      return CT_FAILURE_CORRUPTED_CONTENTS;
-   }
-   sanitizedPath = ctStringUtf8(pTypePath, typePathSize);
-
-   ctHoneybell::SpawnData spawnData = ctHoneybell::SpawnData();
-   spawnData.transform = transform;
-   spawnData.message = message;
-   ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
-   prefabData.wadReader = pWadAsset->wadReader;
-   ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
-   constructCtx.pOwningScene = &mainScene;
-   constructCtx.pComponentRegistry = &mainScene.componentRegistry;
-   constructCtx.pPhysics = Engine->PhysXIntegration->pPhysics;
-   constructCtx.spawn = spawnData;
-   constructCtx.prefab = prefabData;
-   constructCtx.typePath = sanitizedPath.CStr();
-   ctHoneybell::ToyBase* myTestToy = toyRegistry.NewToy(constructCtx);
-   if (myTestToy) {
-      myTestToy->_SetIdentifier(mainScene._RegisterToy(myTestToy));
-      myTestToys.Append(myTestToy);
-   }
-   pWadAsset->Dereferene();
-   return CT_SUCCESS;
-}
-
-ctResults ctHoneybellSceneEngine::SpawnErrorToy(ctTransform& transform) {
-   ctHoneybell::SpawnData spawnData = ctHoneybell::SpawnData();
-   spawnData.transform = transform;
-   spawnData.message = "";
-   ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
-   ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
-   constructCtx.pOwningScene = &mainScene;
-   constructCtx.pComponentRegistry = &mainScene.componentRegistry;
-   constructCtx.pPhysics = Engine->PhysXIntegration->pPhysics;
-   constructCtx.spawn = spawnData;
-   constructCtx.prefab = prefabData;
-   constructCtx.typePath = "citrus/testShape";
-   ctHoneybell::ToyBase* myTestToy = toyRegistry.NewToy(constructCtx);
-   if (myTestToy) {
-      myTestToy->_SetIdentifier(mainScene._RegisterToy(myTestToy));
-      myTestToys.Append(myTestToy);
-   }
-   return ctResults();
-}
-
-int ctScriptApi::Honeybell::SpawnToy(ctScriptTypedLightData* ldata,
-                                     const char* path,
-                                     float x,
-                                     float y,
-                                     float z,
-                                     float yaw,
-                                     float pitch,
-                                     float roll,
-                                     float scale,
-                                     const char* message) {
-   ctTransform transform = ctTransform(ctVec3(x, y, z), ctQuat(), ctVec3(scale));
-   ((ctHoneybellSceneEngine*)(ldata->ptr))->SpawnToy(path, transform, message);
-   return 0;
 }

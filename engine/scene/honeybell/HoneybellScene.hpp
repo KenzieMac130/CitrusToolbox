@@ -22,6 +22,7 @@
 #include "scene/SceneEngineBase.hpp"
 
 #include "Scene.hpp"
+#include "audition/HotReloadDetection.hpp"
 
 #define CITRUS_SCENE_ENGINE_CLASS ctHoneybellSceneEngine
 
@@ -36,15 +37,18 @@ public:
    ctCameraInfo GetCameraInfo(const char* cameraId) final;
    ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
    ctResults LoadScene(const char* name) final;
-   ctResults SpawnToy(const char* prefabPath,
-                         ctTransform& transform = ctTransform(),
-                         const char* message = NULL);
-   ctResults SpawnErrorToy(ctTransform& transform);
 
    int32_t pauseSim;
+   int32_t simSingleShots;
+   int32_t sceneReload;
 
 private:
-   ctLuaContext LevelScript;
+#if CITRUS_INCLUDE_AUDITION
+   ctHotReloadCategory hotReload;
+#endif
+
+   ctStringUtf8 activeSceneName;
+   ctLuaContext levelScript;
    ctHoneybell::Scene mainScene;
    ctHoneybell::ToyTypeRegistry toyRegistry;
 
@@ -56,6 +60,4 @@ private:
    float camYaw;
    float camPitch;
    float camSpeedBase;
-
-   ctDynamicArray<ctHoneybell::ToyBase*> myTestToys;
 };
