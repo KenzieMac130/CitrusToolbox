@@ -99,7 +99,7 @@ ctResults ctLuaContext::LoadFromFile(const char* path) {
    if (!result) {
       return CT_SUCCESS;
    } else if (result == LUA_ERRSYNTAX) {
-      ctDebugError("Syntax error in: %s", path);
+      ctDebugError("Syntax error in \"%s\": %s", path, lua_tostring(L, -1));
       return CT_FAILURE_SYNTAX_ERROR;
    } else if (result == LUA_ERRFILE) {
       ctDebugError("Failed to load file: %s", path);
