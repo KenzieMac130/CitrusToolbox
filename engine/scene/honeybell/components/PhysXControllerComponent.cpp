@@ -58,7 +58,7 @@ ctTransform ctHoneybell::PhysXControllerComponent::GetWorldTransform() {
    return ctTransform(ctVec3FromPxExt(pPxController->getPosition());
 }
 
-void ctHoneybell::PhysXControllerComponent::SetWorldTransform(ctTransform v) {
+void ctHoneybell::PhysXControllerComponent::SetWorldTransform(ctTransform& v) {
    if (!pPxController) { return; }
    pPxController->setPosition(ctVec3ToPxExt(v.position));
 }

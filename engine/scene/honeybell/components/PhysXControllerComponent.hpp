@@ -35,7 +35,7 @@ public:
 
    virtual bool hasTransform() const;
    virtual ctTransform GetWorldTransform();
-   virtual void SetWorldTransform(ctTransform v);
+   virtual void SetWorldTransform(ctTransform& v);
    virtual ctBoundBox GetWorldBounds();
 
    PxController* pPxController;
