@@ -48,6 +48,8 @@ uint64_t hashAssetPathAndType(const char* assetPath, const char* assetType) {
 
 ctAssetManager::ctAssetManager(ctFileSystem* _pFileSystem) {
    pFileSystem = _pFileSystem;
+   gcAutoActive = true;
+   assetsByHash.Reserve(1024);
    // pAssetSystem = NULL;
 }
 
