@@ -23,7 +23,7 @@ ctHoneybell::GroundPlane::GroundPlane(ConstructContext& ctx) : ToyBase(ctx) {
         ctx.pPhysics->createMaterial(0.5f, 0.5f, 0.6f));
       PhysicsPlane->pPxRigidActor =
         PxCreatePlane(*ctx.pPhysics,
-                      PxPlane(CT_UP, ctx.spawn.transform.position.CT_AXIS_VERTICAL),
+                      PxPlane(CT_UP, -ctx.spawn.transform.position.CT_AXIS_VERTICAL),
                       *PhysicsPlane->PxMaterialStorage[0]);
    }
 }
