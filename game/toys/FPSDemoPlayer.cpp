@@ -20,12 +20,6 @@ Game::FPSPlayer::FPSPlayer(ctHoneybell::ConstructContext& ctx) :
     ctHoneybell::ToyBase(ctx) {
    Controller = ctx.pComponentRegistry->NewComponent<PhysXControllerComponent>(this);
    DebugShape = ctx.pComponentRegistry->NewComponent<DebugShapeComponent>(this);
-   if (Controller.isValid()) { Controller->CopyOwnerTransform(); }
-   if (DebugShape.isValid()) {
-      DebugShape->rgba = CT_COLOR_GREEN;
-      DebugShape->SetLocalBounds(
-        ctBoundBox(ctVec3(-0.5f, -1.0f, -0.5f), ctVec3(0.5f, 1.0f, 0.5f)));
-   }
 }
 
 Game::FPSPlayer::~FPSPlayer() {
@@ -33,10 +27,16 @@ Game::FPSPlayer::~FPSPlayer() {
 
 ctResults Game::FPSPlayer::OnBegin(ctHoneybell::BeginContext& ctx) {
    ToyBase::OnBegin(ctx);
+   ctx.canTickSerial = true;
    if (Controller.isValid()) {
       CT_RETURN_FAIL(Controller->InitController());
       Controller->pPxController->setUpDirection(ctVec3ToPx(CT_VEC3_UP));
-      ctx.canTickSerial = true;
+      Controller->CopyOwnerTransform();
+   }
+   if (DebugShape.isValid()) {
+       DebugShape->rgba = CT_COLOR_GREEN;
+       DebugShape->SetLocalBounds(
+           ctBoundBox(ctVec3(-0.5f, -1.0f, -0.5f), ctVec3(0.5f, 1.0f, 0.5f)));
    }
    return CT_SUCCESS;
 }
