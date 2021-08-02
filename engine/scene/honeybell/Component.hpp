@@ -83,6 +83,7 @@ public:
       return ptr;
    }
    inline ~ComponentPtr() {
+      ZoneScoped;
       if (ptr) {
          ComponentFactoryBase* pFactory = ptr->GetFactoryPtr();
          if (pFactory) {}
