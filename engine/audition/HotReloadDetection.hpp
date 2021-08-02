@@ -23,6 +23,7 @@ class CT_API ctHotReloadCategory {
 public:
    void RegisterPath(const char* relativePath);
    void UnregisterPath(const char* relativePath);
+   void Reset();
 
    bool isContentUpdated();
    void BeginReadingChanges();

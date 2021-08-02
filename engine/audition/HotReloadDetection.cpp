@@ -29,9 +29,9 @@ static void watch_callback(dmon_watch_id watch_id,
                            void* user) {
    ctHotReloadDetection* pDetector = (ctHotReloadDetection*)user;
    if (action == DMON_ACTION_MODIFY) {
-       ctMutexLock(pDetector->_callbackLock);
-       pDetector->_PushPathUpdate(filepath);
-       ctMutexUnlock(pDetector->_callbackLock);
+      ctMutexLock(pDetector->_callbackLock);
+      pDetector->_PushPathUpdate(filepath);
+      ctMutexUnlock(pDetector->_callbackLock);
    }
 }
 
@@ -90,6 +90,11 @@ void ctHotReloadCategory::UnregisterPath(const char* relativePath) {
    ZoneScoped;
    uint64_t hash = XXH64(relativePath, strlen(relativePath), 0);
    watchedPathHashes.Remove(hash);
+}
+
+void ctHotReloadCategory::Reset() {
+   watchedPathHashes.Clear();
+   updatedPaths.Clear();
 }
 
 bool ctHotReloadCategory::isContentUpdated() {
