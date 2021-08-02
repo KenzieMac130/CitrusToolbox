@@ -69,7 +69,7 @@ void ctHoneybell::DebugShapeComponentFactory::Im3dDrawAll() {
          ctMat4Rotate(mat, transform.rotation);
          ctMat4Scale(mat, transform.scale);
          Im3d::PushMatrix(ctMat4ToIm3d(mat));
-         Im3d::DrawAlignedBox(ctVec3ToIm3d(bounds.min), ctVec3ToIm3d(bounds.max));
+         Im3d::DrawAlignedBoxFilled(ctVec3ToIm3d(bounds.min), ctVec3ToIm3d(bounds.max));
          Im3d::PopMatrix();
       }
    }
