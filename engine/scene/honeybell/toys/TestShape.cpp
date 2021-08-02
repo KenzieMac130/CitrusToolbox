@@ -26,6 +26,16 @@ ctHoneybell::TestShape::TestShape(ConstructContext& ctx) : ToyBase(ctx) {
    aabb.AddPoint(ctVec3(-0.5f));
    aabb.AddPoint(ctVec3(0.5f));
    debugShape->SetLocalBounds(aabb);
+
+   const char* msg = ctx.spawn.message;
+   char* msgnc = NULL;
+   if (msg) { debugShape->rgba.r = strtof(msg, &msgnc); }
+   msg = msgnc;
+   if (msg) { debugShape->rgba.g = strtof(msg, &msgnc); }
+   msg = msgnc;
+   if (msg) { debugShape->rgba.b = strtof(msg, &msgnc); }
+   msg = msgnc;
+   if (msg) { debugShape->rgba.a = strtof(msg, &msgnc); }
    angle = 0.0f;
 
    /* Setup Physics */
