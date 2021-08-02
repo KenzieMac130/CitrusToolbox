@@ -35,6 +35,7 @@ public:
    T* FindPtr(const K key) const;
    /* Does not call destructor or free for value! */
    void Remove(const K key);
+   void Clear();
    bool isEmpty() const;
    bool Exists(const K key) const;
    size_t Count() const;
@@ -81,8 +82,11 @@ private:
 
 template<class T, class K>
 inline ctHashTable<T, K>::ctHashTable() {
+   _pKeys = NULL;
+   _pValues = NULL;
+   _Capacity = 0;
    _Count = 0;
-   _baseSize = 0;
+   _baseSize = 1;
 }
 
 template<class T, class K>
@@ -155,6 +159,12 @@ inline void ctHashTable<T, K>::Remove(const K key) {
       }
       _HASH_LOOP_END
    }
+}
+
+template<class T, class K>
+inline void ctHashTable<T, K>::Clear() {
+   memset(_pKeys, 0, sizeof(K) * _Capacity);
+   _Count = 0;
 }
 
 template<class T, class K>
