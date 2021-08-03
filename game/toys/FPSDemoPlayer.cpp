@@ -34,9 +34,9 @@ ctResults Game::FPSPlayer::OnBegin(ctHoneybell::BeginContext& ctx) {
       Controller->CopyOwnerTransform();
    }
    if (DebugShape.isValid()) {
-       DebugShape->rgba = CT_COLOR_GREEN;
-       DebugShape->SetLocalBounds(
-           ctBoundBox(ctVec3(-0.5f, -1.0f, -0.5f), ctVec3(0.5f, 1.0f, 0.5f)));
+      DebugShape->rgba = CT_COLOR_GREEN;
+      DebugShape->SetLocalBounds(
+        ctBoundBox(ctVec3(-0.5f, -1.0f, -0.5f), ctVec3(0.5f, 1.0f, 0.5f)));
    }
    return CT_SUCCESS;
 }
@@ -44,7 +44,7 @@ ctResults Game::FPSPlayer::OnBegin(ctHoneybell::BeginContext& ctx) {
 ctResults Game::FPSPlayer::OnTickSerial(ctHoneybell::TickContext& ctx) {
    if (Controller.isValid()) {
       if (Controller->pPxController) {
-         const ctVec3 moveto = (ctx.gravity + ctVec3(0.0f, 0.0f, 1.0f)) * (float)ctx.deltaTime;
+         const ctVec3 moveto = ctx.gravity + Controller->rotation.getForward() * 0.1f;
          Controller->pPxController->move(
            ctVec3ToPx(moveto), 0.01f, (float)ctx.deltaTime, PxControllerFilters());
          DebugShape->SetWorldTransform(Controller->GetWorldTransform());
