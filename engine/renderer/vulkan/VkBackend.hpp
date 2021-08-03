@@ -25,7 +25,8 @@
 #include "tracy/TracyVulkan.hpp"
 #endif
 
-#include "core/EngineCore.hpp"
+#include "core/ModuleBase.hpp"
+#include "core/Translation.hpp"
 
 #define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \

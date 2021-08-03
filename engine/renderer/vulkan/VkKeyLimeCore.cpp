@@ -16,6 +16,11 @@
 
 #include "VkKeyLimeCore.hpp"
 #include "core/EngineCore.hpp"
+#include "core/WindowManager.hpp"
+#include "core/Settings.hpp"
+#include "core/OSEvents.hpp"
+#include "scene/SceneEngineBase.hpp"
+#include "middleware/Im3dIntegration.hpp"
 
 void sendResizeSignal(SDL_Event* event, void* pData) {
    ctVkKeyLimeCore* pCore = (ctVkKeyLimeCore*)pData;

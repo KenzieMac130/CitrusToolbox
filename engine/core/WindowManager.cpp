@@ -16,8 +16,9 @@
 */
 
 #include "WindowManager.hpp"
-#include "core/EngineCore.hpp"
-#include "core/Application.hpp"
+#include "EngineCore.hpp"
+#include "Application.hpp"
+#include "Settings.hpp"
 
 #ifdef CITRUS_GFX_VULKAN
 #include "SDL_vulkan.h"

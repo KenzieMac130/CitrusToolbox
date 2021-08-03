@@ -22,6 +22,10 @@
 #include "VkImgui.hpp"
 #include "VkIm3d.hpp"
 
+#if CITRUS_INCLUDE_AUDITION
+#include "audition/HotReloadDetection.hpp"
+#endif
+
 struct ctVkKeyLimeGlobalBufferData {
    float debug;
    float time;

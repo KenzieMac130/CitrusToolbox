@@ -32,6 +32,7 @@
 #endif
 
 #include "EngineCore.hpp"
+#include "Settings.hpp"
 
 ctJobSystem::ctJobSystem(int32_t _threadReserve) {
    threadReserve = _threadReserve;

@@ -21,6 +21,26 @@
 
 #include "gamelayer/GameLayer.hpp"
 
+#include "JobSystem.hpp"
+#include "FileSystem.hpp"
+#include "Logging.hpp"
+#include "Settings.hpp"
+#include "WindowManager.hpp"
+#include "OSEvents.hpp"
+#include "Translation.hpp"
+
+#include "middleware/ImguiIntegration.hpp"
+#include "middleware/Im3dIntegration.hpp"
+
+#if CITRUS_INCLUDE_AUDITION
+#include "audition/HotReloadDetection.hpp"
+#endif
+
+#include "interact/InteractionEngine.hpp"
+#include "renderer/KeyLime.hpp"
+#include "scene/SceneEngineBase.hpp"
+#include "asset/AssetManager.hpp"
+
 #include CITRUS_SCENE_ENGINE_HEADER
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp) {

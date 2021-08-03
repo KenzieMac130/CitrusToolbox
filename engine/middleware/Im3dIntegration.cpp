@@ -16,7 +16,8 @@
 
 #include "Im3dIntegration.hpp"
 #include "core/EngineCore.hpp"
-
+#include "scene/SceneEngineBase.hpp"
+#include "core/WindowManager.hpp"
 #include "im3d/im3d_math.h"
 #include "imgui/imgui.h"
 

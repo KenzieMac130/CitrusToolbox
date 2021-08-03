@@ -17,6 +17,8 @@
 #include "PhysXIntegration.hpp"
 
 #include "core/EngineCore.hpp"
+#include "core/Settings.hpp"
+#include "core/Translation.hpp"
 
 ctResults ctPhysXIntegration::Startup() {
    ctDebugLog("Starting PhysX...");
@@ -97,8 +99,8 @@ ctResults ctPhysXIntegration::Startup() {
    PxRegisterHeightFields(*pPhysics);
 
 #if CITRUS_PHYSX_RUNTIMECOOK
-   pCooking = PxCreateCooking(
-     PX_PHYSICS_VERSION, *pFoundation, PxCookingParams(toleranceScale));
+   pCooking =
+     PxCreateCooking(PX_PHYSICS_VERSION, *pFoundation, PxCookingParams(toleranceScale));
    if (!pCooking) { ctFatalError(-1, "PxCreateCooking failed!"); }
 #endif
 

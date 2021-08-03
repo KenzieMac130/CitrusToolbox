@@ -15,6 +15,8 @@
 */
 
 #include "core/Application.hpp"
+#include "scene/SceneEngineBase.hpp"
+#include "imgui/imgui.h"
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();

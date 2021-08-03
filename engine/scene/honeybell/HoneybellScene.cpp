@@ -18,8 +18,10 @@
 #include "imgui/imgui.h"
 
 #include "core/EngineCore.hpp"
-
+#include "core/Settings.hpp"
+#include "core/Translation.hpp"
 #include "gamelayer/GameLayer.hpp"
+#include "interact/InteractionEngine.hpp"
 
 /* Defined in TypeRegistration */
 namespace ctHoneybell {

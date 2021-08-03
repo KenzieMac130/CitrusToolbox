@@ -17,6 +17,7 @@
 
 #include "HotReloadDetection.hpp"
 #include "core/EngineCore.hpp"
+#include "core/Settings.hpp"
 
 #define DMON_IMPL
 #include "dmon/dmon.h"

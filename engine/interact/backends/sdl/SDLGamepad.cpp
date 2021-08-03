@@ -16,6 +16,8 @@
 
 #include "SDLGamepad.hpp"
 #include "core/EngineCore.hpp"
+#include "core/OSEvents.hpp"
+#include "interact/InteractionEngine.hpp"
 
 void SDLGamecontrollerOnEvent(SDL_Event* event, void* data) {
    ctInteractSDLGamepadBackend* pGamepadBackend = (ctInteractSDLGamepadBackend*)data;

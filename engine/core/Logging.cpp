@@ -15,7 +15,9 @@
 */
 
 #include "Logging.hpp"
-#include "core/EngineCore.hpp"
+#include "EngineCore.hpp"
+#include "Settings.hpp"
+#include "WindowManager.hpp"
 
 ctDynamicArray<ctDebugSystem*> danglingDebugSystems;
 bool savedExit = false;

@@ -16,6 +16,9 @@
 
 #include "VkBackend.hpp"
 #include "core/Application.hpp"
+#include "core/FileSystem.hpp"
+#include "core/WindowManager.hpp"
+#include "core/OSEvents.hpp"
 
 #include "tracy/Tracy.hpp"
 

@@ -18,26 +18,6 @@
 
 #include "utilities/Common.h"
 
-#include "JobSystem.hpp"
-#include "FileSystem.hpp"
-#include "Logging.hpp"
-#include "Settings.hpp"
-#include "WindowManager.hpp"
-#include "OSEvents.hpp"
-#include "Translation.hpp"
-
-#include "middleware/ImguiIntegration.hpp"
-#include "middleware/Im3dIntegration.hpp"
-
-#if CITRUS_INCLUDE_AUDITION
-#include "audition/HotReloadDetection.hpp"
-#endif
-
-#include "interact/InteractionEngine.hpp"
-#include "renderer/KeyLime.hpp"
-#include "scene/SceneEngineBase.hpp"
-#include "asset/AssetManager.hpp"
-
 class CT_API ctEngineCore {
 public:
    /* Initialize the engine and all subsystems */
@@ -53,22 +33,22 @@ public:
    ctResults Shutdown();
 
    class ctApplication* App;
-   ctJobSystem* JobSystem;
-   ctOSEventManager* OSEventManager;
-   ctTranslation* Translation;
-   ctFileSystem* FileSystem;
-   ctAssetManager* AssetManager;
-   ctSettings* Settings;
+   class ctJobSystem* JobSystem;
+   class ctOSEventManager* OSEventManager;
+   class ctTranslation* Translation;
+   class ctFileSystem* FileSystem;
+   class ctAssetManager* AssetManager;
+   class ctSettings* Settings;
 #if CITRUS_INCLUDE_AUDITION
-   ctHotReloadDetection* HotReload;
+   class ctHotReloadDetection* HotReload;
 #endif
-   ctDebugSystem* Debug;
-   ctWindowManager* WindowManager;
-   ctInteractionEngine* Interact;
-   ctImguiIntegration* ImguiIntegration;
-   ctIm3dIntegration* Im3dIntegration;
-   ctKeyLimeRenderer* Renderer;
-   ctSceneEngineBase* SceneEngine;
+   class ctDebugSystem* Debug;
+   class ctWindowManager* WindowManager;
+   class ctInteractionEngine* Interact;
+   class ctImguiIntegration* ImguiIntegration;
+   class ctIm3dIntegration* Im3dIntegration;
+   class ctKeyLimeRenderer* Renderer;
+   class ctSceneEngineBase* SceneEngine;
 
 #if CITRUS_PHYSX
    class ctPhysXIntegration* PhysXIntegration;

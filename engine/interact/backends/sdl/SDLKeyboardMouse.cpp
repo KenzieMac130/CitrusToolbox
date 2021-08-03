@@ -17,6 +17,8 @@
 #include "SDLKeyboardMouse.hpp"
 #include "interact/InteractionEngine.hpp"
 #include "core/EngineCore.hpp"
+#include "core/OSEvents.hpp"
+#include "imgui/imgui.h"
 
 void SDLKeyboardMouseOnEvent(SDL_Event* event, void* data) {
    ctInteractSDLKeyboardMouseBackend* pBackend = (ctInteractSDLKeyboardMouseBackend*)data;
