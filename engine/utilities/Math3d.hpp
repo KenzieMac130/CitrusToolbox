@@ -543,6 +543,14 @@ inline ctVec3 ctQuat::getLeft() const {
    return CT_VEC3_LEFT * *this;
 }
 
+inline ctQuat ctQuatYawPitchRoll(float yaw, float pitch, float roll) {
+   ctQuat result = ctQuat();
+   result *= ctQuat(CT_VEC3_UP, yaw);
+   result *= ctQuat(CT_VEC3_RIGHT, pitch);
+   result *= ctQuat(CT_VEC3_FORWARD, roll);
+   return result;
+}
+
 /* --- Mat4 --- */
 struct CT_API CT_ALIGN(CT_ALIGNMENT_MAT4) ctMat4 {
    inline ctMat4() {
