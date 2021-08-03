@@ -289,7 +289,8 @@ int ctScriptApi::Honeybell::spawnToy(ctScriptTypedLightData* ldata,
                                      float roll,
                                      float scale,
                                      const char* message) {
-   ctTransform transform = ctTransform(ctVec3(x, y, z), ctQuat(), ctVec3(scale));
+   ctTransform transform =
+     ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
    ((ctHoneybell::Scene*)(ldata->ptr))->SpawnToy(path, transform, message);
    return 0;
 }
@@ -304,7 +305,7 @@ int ctScriptApi::Honeybell::spawnInternalToy(ctScriptTypedLightData* ldata,
                                              float roll,
                                              float scale,
                                              const char* message) {
-   ctTransform transform = ctTransform(ctVec3(x, y, z), ctQuat(), ctVec3(scale));
+   ctTransform transform = ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
    ((ctHoneybell::Scene*)(ldata->ptr))->SpawnInternalToy(type, transform, message);
    return 0;
 }
