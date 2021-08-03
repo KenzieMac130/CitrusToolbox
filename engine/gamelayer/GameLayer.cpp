@@ -17,7 +17,7 @@
 #include "GameLayer.hpp"
 
 /* Include game */
-#include "../game/GameRegister.hpp"
+#include "../game/Game.hpp"
 Game::GameCore game;
 
 ctGameLayer& ctGetGameLayer() {

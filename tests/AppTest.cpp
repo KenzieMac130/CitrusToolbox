@@ -15,7 +15,8 @@
 */
 
 #include "core/Application.hpp"
-
+#include "core/Translation.hpp"
+#include "im3d/im3d.h"
 #include "imgui/imgui.h"
 
 class TestApp : public ctApplication {

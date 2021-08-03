@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "GameRegister.hpp"
+#include "Game.hpp"
 
 /* This is all boilerplate code you probably don't need to touch... */
 

@@ -781,7 +781,7 @@ struct CT_API ctTransform {
 
 #define ctVec2FromPx(v) ctVec2(v.x, v.y)
 #define ctVec3FromPx(v) ctVec3(v.x, v.y, v.z)
-#define ctVec3FromPxExt(v)   ctVec3((float)v.x, (float)v.y, (float)v.z))
+#define ctVec3FromPxExt(v)   ctVec3((float)v.x, (float)v.y, (float)v.z)
 #define ctVec4FromPx(v)      ctVec4(v.x, v.y, v.z, v.w)
 #define ctQuatFromPx(v)      ctQuat(v.x, v.y, v.z, v.w)
 #define ctTransformFromPx(v) ctTransform(ctVec3FromPx(v.p), ctQuatFromPx(v.q))

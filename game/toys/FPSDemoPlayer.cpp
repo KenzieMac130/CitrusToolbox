@@ -34,7 +34,7 @@ ctResults Game::FPSPlayer::OnBegin(ctHoneybell::BeginContext& ctx) {
       Controller->CopyOwnerTransform();
    }
    if (DebugShape.isValid()) {
-      DebugShape->rgba = CT_COLOR_GREEN;
+      DebugShape->rgba = CT_COLOR_PINK;
       DebugShape->SetLocalBounds(
         ctBoundBox(ctVec3(-0.5f, -1.0f, -0.5f), ctVec3(0.5f, 1.0f, 0.5f)));
    }

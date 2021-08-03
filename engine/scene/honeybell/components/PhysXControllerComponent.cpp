@@ -56,7 +56,7 @@ bool ctHoneybell::PhysXControllerComponent::hasTransform() const {
 
 ctTransform ctHoneybell::PhysXControllerComponent::GetWorldTransform() {
    if (!pPxController) { return ctTransform(); }
-   return ctTransform(ctVec3FromPxExt(pPxController->getPosition(), rotation);
+   return ctTransform(ctVec3FromPxExt(pPxController->getPosition()), rotation);
 }
 
 void ctHoneybell::PhysXControllerComponent::SetWorldTransform(ctTransform& v) {
