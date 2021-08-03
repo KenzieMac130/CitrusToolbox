@@ -22,11 +22,9 @@ class CT_API ctModuleBase {
 public:
     virtual ctResults Startup() = 0;
     virtual ctResults Shutdown() = 0;
-    ctResults ModuleStartup(class ctEngineCore* pEngine);
+    ctResults ModuleStartup();
     ctResults ModuleShutdown();
     bool isStarted() const;
-protected:
-    class ctEngineCore* Engine = NULL;
 private:
     bool _started = false;
 };

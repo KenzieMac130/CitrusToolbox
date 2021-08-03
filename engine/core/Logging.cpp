@@ -38,10 +38,17 @@ void shared_callback(int level, const char* format, va_list args) {
    }
 }
 
-ctDebugSystem::ctDebugSystem(uint32_t flushafter, bool shared_log) {
+ctDebugSystem::ctDebugSystem(class ctFileSystem* _pFileSystem,
+                             uint32_t flushafter,
+                             bool sharedLog,
+                             class ctSettings* _pSettings,
+                             class ctWindowManager* _pWindowManager) {
    _flushAfter = flushafter;
    _logLock = ctMutexCreate();
-   if (shared_log) {
+   pSettings = _pSettings;
+   pFileSystem = _pFileSystem;
+   pWindowManager = _pWindowManager;
+   if (sharedLog) {
       mainDebugSystem = this;
       _ctDebugLogSetCallback(shared_callback);
    }
@@ -53,7 +60,7 @@ ctDebugSystem::~ctDebugSystem() {
 
 ctResults ctDebugSystem::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings = Engine->Settings->CreateSection("DebugSystem", 1);
+   ctSettingsSection* settings = pSettings->CreateSection("DebugSystem", 1);
    settings->BindInteger(&_flushAfter,
                          false,
                          true,
@@ -61,8 +68,8 @@ ctResults ctDebugSystem::Startup() {
                          "Write the debug log contents after a certain amount of logs.",
                          CT_SETTINGS_BOUNDS_UINT);
 
-   if (Engine->FileSystem->isStarted()) {
-      Engine->FileSystem->OpenPreferencesFile(_logFile, "Log.txt", CT_FILE_OPEN_WRITE);
+   if (pFileSystem->isStarted()) {
+      pFileSystem->OpenPreferencesFile(_logFile, "Log.txt", CT_FILE_OPEN_WRITE);
    }
    if (!_logFile.isOpen()) {
       Error("Debug System: Log.txt CANNOT BE OPENED!");
@@ -180,12 +187,11 @@ void ctDebugSystem::PopupError(const char* format, ...) {
 void ctDebugSystem::PopupErrorArgs(const char* format, va_list args) {
    ZoneScoped;
    ErrorArgs(format, args);
-   if (!Engine) { return; }
-   if (!Engine->WindowManager) { return; }
-   if (!Engine->WindowManager->isStarted()) { return; };
+   if (!pWindowManager) { return; }
+   if (!pWindowManager->isStarted()) { return; };
    ctStringUtf8 msg = ctStringUtf8();
    msg.VPrintf(CT_MAX_LOG_LENGTH, format, args);
-   Engine->WindowManager->ShowErrorMessage("Fatal Error", msg.CStr());
+   pWindowManager->ShowErrorMessage("Fatal Error", msg.CStr());
 }
 
 void ctDebugSystem::_flushMessageQueue() {

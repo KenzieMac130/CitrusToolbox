@@ -36,9 +36,15 @@ static void watch_callback(dmon_watch_id watch_id,
    }
 }
 
+ctHotReloadDetection::ctHotReloadDetection(class ctFileSystem* _pFileSystem,
+                                           ctSettings* _pSettings) {
+   pSettings = _pSettings;
+   pFileSystem = _pFileSystem;
+}
+
 ctResults ctHotReloadDetection::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings = Engine->Settings->CreateSection("HotReload", 1);
+   ctSettingsSection* settings = pSettings->CreateSection("HotReload", 1);
    watchEnable = 1;
    settings->BindInteger(&watchEnable,
                          false,
@@ -50,7 +56,7 @@ ctResults ctHotReloadDetection::Startup() {
    if (watchIsRunning) {
       ctDebugLog("Hot Reload Watch Enabled...");
       _callbackLock = ctMutexCreate();
-      ctStringUtf8 assetPath = Engine->FileSystem->GetAssetPath();
+      ctStringUtf8 assetPath = pFileSystem->GetAssetPath();
       dmon_init();
       dmon_watch(assetPath.CStr(), watch_callback, DMON_WATCHFLAGS_RECURSIVE, this);
    }

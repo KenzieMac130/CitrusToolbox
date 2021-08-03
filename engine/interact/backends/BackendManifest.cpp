@@ -56,9 +56,10 @@ const char* backendNames[CT_INTERACT_BACKEND_COUNT] {"NULL", CTI_REGISTER_ALL()}
 
 #undef CTI_REGISTER
 #define CTI_REGISTER(_enum, _name, _class)                                               \
-   case _enum: return new _class();
+   case _enum: return new _class(pOSEvents);
 
-ctInteractAbstractBackend* newBackend(ctInteractBackends type) {
+ctInteractAbstractBackend* newBackend(class ctOSEventManager* pOSEvents,
+                                      ctInteractBackends type) {
    switch (type) {
       CTI_REGISTER_ALL()
       default: ctAssert(1);
@@ -91,13 +92,14 @@ void ctRetrieveInteractBackends(ctDynamicArray<ctInteractAbstractBackend*>& back
 }
 
 ctResults ctStartAndRetrieveInteractBackends(
-  ctEngineCore* pEngine, ctDynamicArray<ctInteractAbstractBackend*>& backendList) {
+  class ctOSEventManager* pOSEvents,
+  ctDynamicArray<ctInteractAbstractBackend*>& backendList) {
    ZoneScoped;
    for (int i = 0; i < CT_INTERACT_BACKEND_COUNT; i++) {
       if (backendEnabled[i]) {
-         pBackends[i] = newBackend((ctInteractBackends)i);
+         pBackends[i] = newBackend(pOSEvents, (ctInteractBackends)i);
          ctAssert(pBackends[i]);
-         pBackends[i]->ModuleStartup(pEngine);
+         pBackends[i]->ModuleStartup();
       }
    }
    ctRetrieveInteractBackends(backendList);

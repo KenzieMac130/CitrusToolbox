@@ -17,11 +17,16 @@
 #include "core/EngineCore.hpp"
 #include "DeviceBackendLayer.hpp"
 
-ctResults ctInteractAbstractBackend::Register(ctInteractDirectorySystem& directory) {
-    return CT_SUCCESS;
+ctInteractAbstractBackend::ctInteractAbstractBackend(ctOSEventManager* _pOSEvents) {
+   pOSEvents = _pOSEvents;
 }
 
-ctResults ctInteractAbstractBackend::Update(ctInteractDirectorySystem& directory) {
+ctResults ctInteractAbstractBackend::Register(ctInteractDirectorySystem& directory) {
+   return CT_SUCCESS;
+}
+
+ctResults ctInteractAbstractBackend::Update(double deltaTime,
+                                            ctInteractDirectorySystem& directory) {
    return CT_SUCCESS;
 }
 

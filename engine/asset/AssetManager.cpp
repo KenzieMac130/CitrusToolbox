@@ -165,7 +165,7 @@ ctAssetBase* ctAssetManager::FindOrReferenceAsset(const char* path, const char* 
 
    /* Immediately load and login the file (this will do for now) */
    ctFile file;
-   if (Engine->FileSystem->OpenAssetFile(file, path) == CT_SUCCESS) {
+   if (pFileSystem->OpenAssetFile(file, path) == CT_SUCCESS) {
       newAsset->OnLoad(file);
       newAsset->OnLogin();
    }

@@ -21,7 +21,7 @@
 
 ctResults ctKeyLimeRenderer::Startup() {
    vkKeyLime = new ctVkKeyLimeCore();
-   return vkKeyLime->ModuleStartup(Engine);
+   return vkKeyLime->ModuleStartup();
 };
 
 ctResults ctKeyLimeRenderer::Shutdown() {

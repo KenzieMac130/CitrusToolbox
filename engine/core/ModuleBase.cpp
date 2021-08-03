@@ -15,8 +15,7 @@
    limitations under the License.
 */
 
-ctResults ctModuleBase::ModuleStartup(class ctEngineCore* pEngine) {
-   Engine = pEngine;
+ctResults ctModuleBase::ModuleStartup() {
    ctResults result = Startup();
    if (result == CT_SUCCESS) { _started = true; }
    return result;

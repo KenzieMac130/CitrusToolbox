@@ -24,10 +24,6 @@ public:
    ctResults Ignite(class ctApplication* pApp);
    /* Enter the game loop (returns on shutdown) */
    ctResults EnterLoop();
-   /* Exit */
-   void Exit();
-   /* Is Running */
-   bool isExitRequested();
    /* Single shot the game loop (returns after frame) */
    ctResults LoopSingleShot(const float deltatime);
    ctResults Shutdown();
@@ -55,7 +51,4 @@ public:
 #endif
 
    ctStopwatch FrameTime;
-
-private:
-   bool _isRunning = true;
 };

@@ -22,8 +22,12 @@
 
 class CT_API ctInteractAbstractBackend : public ctModuleBase {
 public:
+   ctInteractAbstractBackend(class ctOSEventManager* pOSEvents);
    virtual ~ctInteractAbstractBackend() = default;
    virtual ctResults Register(class ctInteractDirectorySystem& directory);
-   virtual ctResults Update(class ctInteractDirectorySystem& directory);
+   virtual ctResults Update(double deltaTime, class ctInteractDirectorySystem& directory);
    virtual ctResults DebugImGui();
+
+protected:
+   class ctOSEventManager* pOSEvents;
 };

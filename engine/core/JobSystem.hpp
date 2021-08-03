@@ -21,7 +21,7 @@
 
 class CT_API ctJobSystem : public ctModuleBase {
 public:
-   ctJobSystem(int32_t threadReserve);
+   ctJobSystem(int32_t threadReserve, class ctSettings* pSettings = NULL);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
@@ -30,6 +30,7 @@ public:
    ctResults RunAllJobs();
 
 protected:
+   class ctSettings* pSettings;
    int32_t threadReserve;
    int32_t threadCount;
    struct cute_threadpool_t* pool;

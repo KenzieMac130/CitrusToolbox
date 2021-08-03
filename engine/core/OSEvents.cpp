@@ -30,18 +30,18 @@ ctResults ctOSEventManager::PollOSEvents() {
    ZoneScoped;
    SDL_Event event;
    while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { Engine->Exit(); }
-      else if (event.type == SDL_WINDOWEVENT) {
-          for (size_t i = 0; i < WindowEventHandlers.Count(); i++) {
-              const ctOSEventHandler handler = WindowEventHandlers[i];
-              handler.callback(&event, handler.data);
-          }
-      }
-      else {
-          for (size_t i = 0; i < MiscEventHandlers.Count(); i++) {
-              const ctOSEventHandler handler = MiscEventHandlers[i];
-              handler.callback(&event, handler.data);
-          }
+      if (event.type == SDL_QUIT) {
+         wantsExit = true;
+      } else if (event.type == SDL_WINDOWEVENT) {
+         for (size_t i = 0; i < WindowEventHandlers.Count(); i++) {
+            const ctOSEventHandler handler = WindowEventHandlers[i];
+            handler.callback(&event, handler.data);
+         }
+      } else {
+         for (size_t i = 0; i < MiscEventHandlers.Count(); i++) {
+            const ctOSEventHandler handler = MiscEventHandlers[i];
+            handler.callback(&event, handler.data);
+         }
       }
    }
    return CT_SUCCESS;

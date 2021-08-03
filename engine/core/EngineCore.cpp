@@ -56,71 +56,62 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
-   AssetManager = new ctAssetManager(FileSystem);
    Settings = new ctSettings();
-   Debug = new ctDebugSystem(32, true);
+   AssetManager = new ctAssetManager(FileSystem);
+   WindowManager = new ctWindowManager(App->GetAppName(), Settings);
+   Debug = new ctDebugSystem(FileSystem, 32, true, Settings, WindowManager);
 #if CITRUS_INCLUDE_AUDITION
-   HotReload = new ctHotReloadDetection();
+   HotReload = new ctHotReloadDetection(FileSystem, Settings);
 #endif
    Translation = new ctTranslation(true);
-   JobSystem = new ctJobSystem(2);
+   JobSystem = new ctJobSystem(2, Settings);
    OSEventManager = new ctOSEventManager();
-   WindowManager = new ctWindowManager();
-   Interact = new ctInteractionEngine();
+   Interact = new ctInteractionEngine(OSEventManager);
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
    FrameTime = ctStopwatch();
-   SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
+   SceneEngine = new CITRUS_SCENE_ENGINE_CLASS(this);
    PhysXIntegration = new ctPhysXIntegration();
 
    /* Startup Modules */
-   Settings->ModuleStartup(this);
-   FileSystem->ModuleStartup(this);
-   Debug->ModuleStartup(this);
+   Settings->ModuleStartup();
+   FileSystem->ModuleStartup();
+   Debug->ModuleStartup();
 #if CITRUS_INCLUDE_AUDITION
-   HotReload->ModuleStartup(this);
+   HotReload->ModuleStartup();
 #endif
    FileSystem->LogPaths();
-   AssetManager->ModuleStartup(this);
-   Translation->ModuleStartup(this);
-   JobSystem->ModuleStartup(this);
-   OSEventManager->ModuleStartup(this);
+   AssetManager->ModuleStartup();
+   Translation->ModuleStartup();
+   JobSystem->ModuleStartup();
+   OSEventManager->ModuleStartup();
 #if !CITRUS_HEADLESS
-   WindowManager->ModuleStartup(this);
+   WindowManager->ModuleStartup();
 #endif
-   Interact->ModuleStartup(this);
-   ImguiIntegration->ModuleStartup(this);
-   Im3dIntegration->ModuleStartup(this);
-   Renderer->ModuleStartup(this);
-   PhysXIntegration->ModuleStartup(this);
-   SceneEngine->ModuleStartup(this);
+   Interact->ModuleStartup();
+   ImguiIntegration->ModuleStartup();
+   Im3dIntegration->ModuleStartup();
+   Renderer->ModuleStartup();
+   PhysXIntegration->ModuleStartup();
+   SceneEngine->ModuleStartup();
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
-   ctGetGameLayer().ModuleStartup(this);
+   ctGetGameLayer().ModuleStartup();
    App->OnStartup();
    ctDebugLog("Application has Started!");
    return CT_SUCCESS;
 }
 
 ctResults ctEngineCore::EnterLoop() {
-   _isRunning = true;
-   while (_isRunning) {
+   while (!OSEventManager->wantsExit) {
       FrameTime.NextLap();
       LoopSingleShot(FrameTime.GetDeltaTimeFloat());
    }
    Shutdown();
 
    return CT_SUCCESS;
-}
-
-void ctEngineCore::Exit() {
-   _isRunning = false;
-}
-
-bool ctEngineCore::isExitRequested() {
-   return !_isRunning;
 }
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
@@ -130,7 +121,7 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    App->OnUIUpdate();
    Renderer->RenderFrame();
    OSEventManager->PollOSEvents();
-   Interact->PumpInput();
+   Interact->PumpInput(deltatime);
    Im3dIntegration->NextFrame();
    ImguiIntegration->NextFrame();
    FrameMark;

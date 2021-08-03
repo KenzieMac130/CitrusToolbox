@@ -33,8 +33,8 @@ public:
 
    void _AddFileUpdate(const char* path);
    class ctHotReloadDetection* _pOwner;
-protected: 
 
+protected:
 private:
    ctDynamicArray<uint64_t> watchedPathHashes;
    ctDynamicArray<ctStringUtf8> updatedPaths;
@@ -42,6 +42,8 @@ private:
 
 class CT_API ctHotReloadDetection : public ctModuleBase {
 public:
+   ctHotReloadDetection(class ctFileSystem* pFileSystem,
+                        class ctSettings* pSettings = NULL);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
@@ -51,6 +53,8 @@ public:
    void _PushPathUpdate(const char* path);
 
 private:
+   class ctSettings* pSettings;
+   class ctFileSystem* pFileSystem;
    ctDynamicArray<ctHotReloadCategory*> hotReloads;
    int32_t watchEnable;
    bool watchIsRunning;

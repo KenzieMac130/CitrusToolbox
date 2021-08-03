@@ -19,6 +19,9 @@
 #include "core/EngineCore.hpp"
 
 CT_API ctResults ctToggleInteractBackend(const char* name, bool use);
-CT_API void ctRetrieveInteractBackends(ctDynamicArray<ctInteractAbstractBackend*>& backendList);
-CT_API ctResults ctStartAndRetrieveInteractBackends(ctEngineCore* pEngine, ctDynamicArray<ctInteractAbstractBackend*>& backendList);
+CT_API void
+ctRetrieveInteractBackends(ctDynamicArray<ctInteractAbstractBackend*>& backendList);
+CT_API ctResults ctStartAndRetrieveInteractBackends(
+  class ctOSEventManager* pOSEvents,
+  ctDynamicArray<ctInteractAbstractBackend*>& backendList);
 CT_API ctResults ctShutdownInteractBackends();

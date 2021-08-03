@@ -34,6 +34,8 @@
 #include "PxScene.h"
 #endif
 
+class ctEngineCore;
+
 namespace ctHoneybell {
 
 class CT_API Scene : public ctModuleBase {
@@ -68,6 +70,7 @@ public:
    physx::PxScene* pPxScene;
    void* physMemory;
 #endif
+   class ctEngineCore* Engine;
 
 private:
    ctVec3 globalGravity;

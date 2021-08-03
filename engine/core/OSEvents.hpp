@@ -22,17 +22,17 @@
 typedef void (*ctOSEventCallback)(SDL_Event*, void*);
 
 struct ctOSEventHandler {
-    ctOSEventCallback callback;
-    void* data;
+   ctOSEventCallback callback;
+   void* data;
 };
 
 class CT_API ctOSEventManager : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
-
    ctResults PollOSEvents();
 
-    ctDynamicArray<ctOSEventHandler> MiscEventHandlers;
-    ctDynamicArray<ctOSEventHandler> WindowEventHandlers;
+   bool wantsExit;
+   ctDynamicArray<ctOSEventHandler> MiscEventHandlers;
+   ctDynamicArray<ctOSEventHandler> WindowEventHandlers;
 };

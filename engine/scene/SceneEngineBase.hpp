@@ -29,6 +29,9 @@ struct CT_API ctCameraInfo {
 
 class CT_API ctSceneEngineBase : public ctModuleBase {
 public:
+   inline ctSceneEngineBase(class ctEngineCore* _pEngine) {
+      Engine = _pEngine;
+   };
    /* Called at the end of a frame */
    virtual ctResults NextFrame() = 0;
 
@@ -38,4 +41,7 @@ public:
    virtual ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) = 0;
    /* Load scene/level */
    virtual ctResults LoadScene(const char* name) = 0;
+
+protected:
+   class ctEngineCore* Engine;
 };

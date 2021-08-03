@@ -87,10 +87,10 @@ ctResults ctHoneybell::Scene::Startup() {
 #endif
 
    /* Startup component factories */
-   componentFactory_Camera.ModuleStartup(Engine);
-   componentFactory_DebugShape.ModuleStartup(Engine);
-   componentFactory_PhysXActor.ModuleStartup(Engine);
-   componentFactory_PhysXController.ModuleStartup(Engine);
+   componentFactory_Camera.ModuleStartup();
+   componentFactory_DebugShape.ModuleStartup();
+   componentFactory_PhysXActor.ModuleStartup();
+   componentFactory_PhysXController.ModuleStartup();
 
    /* Register component factories */
    componentRegistry.RegisterComponentFactory<CameraComponent>(&componentFactory_Camera);
@@ -305,7 +305,8 @@ int ctScriptApi::Honeybell::spawnInternalToy(ctScriptTypedLightData* ldata,
                                              float roll,
                                              float scale,
                                              const char* message) {
-   ctTransform transform = ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
+   ctTransform transform =
+     ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
    ((ctHoneybell::Scene*)(ldata->ptr))->SpawnInternalToy(type, transform, message);
    return 0;
 }

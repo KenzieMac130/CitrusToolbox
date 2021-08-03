@@ -37,7 +37,7 @@ struct CT_API ctInteractPath {
    ctInteractPath(const char* ptr);
    ctInteractPath(const ctStringUtf8& ctStr);
    bool operator==(const ctInteractPath other) {
-       return ctCStrEql(str, other.str);
+      return ctCStrEql(str, other.str);
    }
    char str[CT_MAX_INTERACT_PATH_SIZE];
 };
@@ -85,10 +85,11 @@ public:
 
 class CT_API ctInteractionEngine : public ctModuleBase {
 public:
+   ctInteractionEngine(class ctOSEventManager* pOSEvents);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
-   ctResults PumpInput();
+   ctResults PumpInput(double deltaTime);
    ctResults DebugImGui();
 
    float GetSignal(ctInteractPath& path);
@@ -96,5 +97,6 @@ public:
    ctInteractDirectorySystem Directory;
 
 protected:
+   class ctOSEventManager* pOSEvents;
    ctDynamicArray<class ctInteractAbstractBackend*> pBackends;
 };

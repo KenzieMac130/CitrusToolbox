@@ -56,7 +56,8 @@ ctResults ctHoneybellSceneEngine::Startup() {
 
    RegisterBuiltinToys(toyRegistry);
    ctGetGameLayer().HoneybellRegisterToys(toyRegistry);
-   mainScene.ModuleStartup(Engine);
+   mainScene.Engine = Engine;
+   mainScene.ModuleStartup();
    mainScene.pToyRegistry = &toyRegistry;
    mainScene.tickInterval = 1.0 / 30;
 

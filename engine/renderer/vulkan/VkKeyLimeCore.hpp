@@ -41,6 +41,12 @@ struct ctVkKeyLimeViewBufferData {
 
 class CT_API ctVkKeyLimeCore : public ctModuleBase {
 public:
+   ctVkKeyLimeCore(class ctWindowManager* pWindowManager,
+                   class ctOSEventManager* pOSEventManager,
+                   class ctHotReloadDetection* pHotReload,
+                   class ctSettings* pSettings = NULL,
+                   class ctImguiIntegration* pImguiIntegration = NULL,
+                   class ctIm3dIntegration* pIm3dIntegration = NULL);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
@@ -49,6 +55,12 @@ public:
 
    ctResults UpdateCamera(ctKeyLimeCameraDesc cameraDesc);
    ctResults Render();
+
+   class ctSettings* pSettings;
+   class ctWindowManager* pWindowManager;
+   class ctOSEventManager* pOSEventManager;
+   class ctImguiIntegration* pImguiIntegration;
+   class ctIm3dIntegration* pIm3dIntegration;
 
    VkFormat compositeFormat;
    VkFormat depthFormat;
@@ -63,6 +75,7 @@ public:
    ctVkIm3d vkIm3d;
 
 #if CITRUS_INCLUDE_AUDITION
+   class ctHotReloadDetection* pHotReload;
    ctHotReloadCategory ShaderHotReload;
 #endif
 

@@ -56,11 +56,12 @@ struct ctInteractSDLGamepadPlayerContent {
 
 class CT_API ctInteractSDLGamepadBackend : public ctInteractAbstractBackend {
 public:
+   ctInteractSDLGamepadBackend(class ctOSEventManager* pOSEvents);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
    virtual ctResults Register(class ctInteractDirectorySystem& directory);
-   virtual ctResults Update(class ctInteractDirectorySystem& directory);
+   virtual ctResults Update(double deltaTime, class ctInteractDirectorySystem& directory);
 
    void AddController(int32_t id);
    void RemoveController(int32_t id);

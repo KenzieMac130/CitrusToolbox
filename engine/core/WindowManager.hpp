@@ -23,25 +23,29 @@
 
 class CT_API ctWindow {
 public:
-    SDL_Window* pSDLWindow;
+   SDL_Window* pSDLWindow;
 };
 
 class CT_API ctWindowManager : public ctModuleBase {
 public:
-    ctWindowManager();
+   ctWindowManager(const char* appTitle, class ctSettings* pSettings = NULL);
 
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
-    ctResults ShowErrorMessage(const char* title, const char* msg);
-    ctResults ShowMainWindow();
+   ctResults ShowErrorMessage(const char* title, const char* msg);
+   ctResults ShowMainWindow();
 
-    ctWindow mainWindow;
-    ctResults GetMainWindowDrawableSize(int32_t* pWidth, int32_t* pHeight);
+   ctWindow mainWindow;
+   ctResults GetMainWindowDrawableSize(int32_t* pWidth, int32_t* pHeight);
 
-    int32_t mainDesiredWindowWidth;
-    int32_t mainDesiredWindowHeight;
-    int32_t mainWindowMonitorIdx;
-    int32_t mainWindowVSync;
-    ctStringUtf8 mainWindowMode;
+   int32_t mainDesiredWindowWidth;
+   int32_t mainDesiredWindowHeight;
+   int32_t mainWindowMonitorIdx;
+   int32_t mainWindowVSync;
+   ctStringUtf8 mainWindowMode;
+
+private:
+   ctStringUtf8 windowTitle;
+   class ctSettings* pSettings;
 };

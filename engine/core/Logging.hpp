@@ -23,7 +23,11 @@
 
 class CT_API ctDebugSystem : public ctModuleBase {
 public:
-   ctDebugSystem(uint32_t flushafter, bool shared_log);
+   ctDebugSystem(class ctFileSystem* pFileSystem,
+                 uint32_t flushafter,
+                 bool sharedLog,
+                 class ctSettings* pSettings = NULL,
+                 class ctWindowManager* pWindowManager = NULL);
    ~ctDebugSystem();
 
    ctResults Startup() final;
@@ -39,7 +43,11 @@ public:
    void PopupErrorArgs(const char* format, va_list args);
 
    void _EmergencExit();
+
 private:
+   class ctSettings* pSettings;
+   class ctFileSystem* pFileSystem;
+   class ctWindowManager* pWindowManager;
    struct _internalMessage {
       int level;
       char msg[CT_MAX_LOG_LENGTH];

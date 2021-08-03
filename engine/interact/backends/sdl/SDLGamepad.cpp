@@ -38,12 +38,15 @@ void SDLGamecontrollerOnEvent(SDL_Event* event, void* data) {
    }
 }
 
+ctInteractSDLGamepadBackend::ctInteractSDLGamepadBackend(ctOSEventManager* pOSEvents) :
+    ctInteractAbstractBackend(pOSEvents) {
+}
+
 ctResults ctInteractSDLGamepadBackend::Startup() {
    ZoneScoped;
    ctDebugLog("Starting SDL Gamepad...");
    SDL_Init(SDL_INIT_GAMECONTROLLER);
-   Engine->OSEventManager->MiscEventHandlers.Append(
-     {SDLGamecontrollerOnEvent, this});
+   pOSEvents->MiscEventHandlers.Append({SDLGamecontrollerOnEvent, this});
    return CT_SUCCESS;
 }
 
@@ -95,7 +98,8 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
    return CT_SUCCESS;
 }
 
-ctResults ctInteractSDLGamepadBackend::Update(ctInteractDirectorySystem& directory) {
+ctResults ctInteractSDLGamepadBackend::Update(double deltaTime,
+                                              ctInteractDirectorySystem& directory) {
    ZoneScoped;
    return CT_SUCCESS;
 }

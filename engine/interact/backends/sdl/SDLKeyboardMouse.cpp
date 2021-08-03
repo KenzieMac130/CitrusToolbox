@@ -31,11 +31,16 @@ void SDLKeyboardMouseOnEvent(SDL_Event* event, void* data) {
    }
 }
 
+ctInteractSDLKeyboardMouseBackend::ctInteractSDLKeyboardMouseBackend(
+  ctOSEventManager* pOSEvents) :
+    ctInteractAbstractBackend(pOSEvents) {
+}
+
 ctResults ctInteractSDLKeyboardMouseBackend::Startup() {
    ZoneScoped;
    ctDebugLog("Starting SDL Keyboard and Mouse...");
    keyStates = (uint8_t*)SDL_GetKeyboardState(NULL);
-   Engine->OSEventManager->MiscEventHandlers.Append({SDLKeyboardMouseOnEvent, this});
+   pOSEvents->MiscEventHandlers.Append({SDLKeyboardMouseOnEvent, this});
    return CT_SUCCESS;
 }
 
@@ -88,7 +93,8 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
 }
 
 ctResults
-ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) {
+ctInteractSDLKeyboardMouseBackend::Update(double deltaTime,
+                                          ctInteractDirectorySystem& directory) {
    ZoneScoped;
    int x, y;
    uint32_t mouseFlags = SDL_GetRelativeMouseState(&x, &y);
@@ -105,9 +111,8 @@ ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) 
    SDL_Window* pWindow = SDL_GetMouseFocus();
    SDL_GetWindowSize(pWindow, &w, &h);
    const float aspect = (float)w / (float)h;
-   const float time = Engine->FrameTime.GetDeltaTimeFloat();
-   mouseAxisStates[0] = ((float)x / (float)w) / time;
-   mouseAxisStates[1] = ((float)y * aspect / (float)h) / time;
+   mouseAxisStates[0] = ((float)x / (float)w) / (float)deltaTime;
+   mouseAxisStates[1] = ((float)y * aspect / (float)h) / (float)deltaTime;
    return CT_SUCCESS;
 }
 

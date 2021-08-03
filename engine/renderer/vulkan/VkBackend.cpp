@@ -602,8 +602,6 @@ void vFreeFunction(void* pUserData, void* pMemory) {
 
 ctResults ctVkBackend::Startup() {
    ZoneScoped;
-   if (!Engine->WindowManager->isStarted()) { return CT_FAILURE_DEPENDENCY_NOT_MET; }
-   if (!Engine->OSEventManager->isStarted()) { return CT_FAILURE_DEPENDENCY_NOT_MET; }
 
    ctDebugLog("Starting Vulkan Backend...");
    /* Fill in AppInfo */

@@ -17,11 +17,15 @@
 #include "InteractionEngine.hpp"
 #include "backends/BackendManifest.hpp"
 
+ctInteractionEngine::ctInteractionEngine(ctOSEventManager* _pOSEvents) {
+   pOSEvents = _pOSEvents;
+}
+
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
-   CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(Engine, pBackends));
+   CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(pOSEvents, pBackends));
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->Register(Directory);
    }
@@ -33,10 +37,10 @@ ctResults ctInteractionEngine::Shutdown() {
    return ctShutdownInteractBackends();
 }
 
-ctResults ctInteractionEngine::PumpInput() {
+ctResults ctInteractionEngine::PumpInput(double deltaTime) {
    ZoneScoped;
    for (int i = 0; i < pBackends.Count(); i++) {
-      pBackends[i]->Update(Directory);
+      pBackends[i]->Update(deltaTime, Directory);
    }
    return CT_SUCCESS;
 }

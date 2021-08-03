@@ -34,15 +34,15 @@
 #include "EngineCore.hpp"
 #include "Settings.hpp"
 
-ctJobSystem::ctJobSystem(int32_t _threadReserve) {
+ctJobSystem::ctJobSystem(int32_t _threadReserve, class ctSettings* _pSettings) {
+   pSettings = pSettings;
    threadReserve = _threadReserve;
    threadCount = -1;
 }
 
 ctResults ctJobSystem::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings =
-     Engine->Settings->CreateSection("JobSystem", 1);
+   ctSettingsSection* settings = pSettings->CreateSection("JobSystem", 1);
    settings->BindInteger(&threadCount,
                          true,
                          true,
@@ -59,8 +59,7 @@ ctResults ctJobSystem::Startup() {
    }
    pool = cute_threadpool_create(finalThreadCount, NULL);
    if (pool == NULL) {
-      ctFatalError(
-        -1, CT_NC("Failed to create threadpool!"));
+      ctFatalError(-1, CT_NC("Failed to create threadpool!"));
       return CT_FAILURE_UNSUPPORTED_HARDWARE;
    }
    ctDebugLog("Thread Pool: Reserved %d threads...", finalThreadCount);
@@ -77,9 +76,8 @@ ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
    return CT_SUCCESS;
 }
 
-ctResults ctJobSystem::PushJobs(size_t count,
-                                void (**pfpFunction)(void*),
-                                void** ppData) {
+ctResults
+ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
    for (size_t i = 0; i < count; i++) {
       PushJob(pfpFunction[i], ppData[i]);
    }

@@ -21,11 +21,12 @@
 
 class CT_API ctInteractSDLKeyboardMouseBackend : public ctInteractAbstractBackend {
 public:
+    ctInteractSDLKeyboardMouseBackend(class ctOSEventManager* pOSEvents);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
    virtual ctResults Register(class ctInteractDirectorySystem& directory);
-   virtual ctResults Update(class ctInteractDirectorySystem& directory);
+   virtual ctResults Update(double deltaTime, class ctInteractDirectorySystem& directory);
    virtual ctResults DebugImGui();
 
    uint8_t* keyStates;

@@ -26,8 +26,12 @@
 
 #define CITRUS_SCENE_ENGINE_CLASS ctHoneybellSceneEngine
 
+class ctEngineCore;
+
 class CT_API ctHoneybellSceneEngine : public ctSceneEngineBase {
 public:
+   inline ctHoneybellSceneEngine(class ctEngineCore* _pEngine) :
+       ctSceneEngineBase(_pEngine) {};
    ctResults Startup();
    ctResults Shutdown();
 

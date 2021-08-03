@@ -36,10 +36,25 @@ void sendResizeSignal(SDL_Event* event, void* pData) {
    }
 }
 
+ctVkKeyLimeCore::ctVkKeyLimeCore(ctWindowManager* _pWindowManager,
+                                 class ctOSEventManager* pOSEventManager,
+#if CITRUS_INCLUDE_AUDITION
+                                 class ctHotReloadDetection* _pHotReload,
+#endif
+                                 class ctSettings* _pSettings,
+                                 class ctImguiIntegration* _pImguiIntegration,
+                                 class ctIm3dIntegration* _pIm3dIntegration) {
+   pHotReload = _pHotReload;
+   pSettings = _pSettings;
+   pWindowManager = _pWindowManager;
+   pImguiIntegration = _pImguiIntegration;
+   pIm3dIntegration = _pIm3dIntegration;
+}
+
 ctResults ctVkKeyLimeCore::Startup() {
    ZoneScoped;
    vkBackend.preferredDevice = -1;
-   vkBackend.vsync = Engine->WindowManager->mainWindowVSync;
+   vkBackend.vsync = pWindowManager->mainWindowVSync;
    vkBackend.nextFrameTimeout = INT32_MAX;
 #ifndef NDEBUG
    vkBackend.validationEnabled = 1;
@@ -52,11 +67,11 @@ ctResults ctVkKeyLimeCore::Startup() {
    vkBackend.maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
 
    int w, h;
-   Engine->WindowManager->GetMainWindowDrawableSize(&w, &h);
+   pWindowManager->GetMainWindowDrawableSize(&w, &h);
    internalResolutionWidth = w;
    internalResolutionHeight = h;
 
-   ctSettingsSection* vkSettings = Engine->Settings->CreateSection("VulkanBackend", 32);
+   ctSettingsSection* vkSettings = pSettings->CreateSection("VulkanBackend", 32);
    vkSettings->BindInteger(&vkBackend.preferredDevice,
                            false,
                            true,
@@ -100,16 +115,16 @@ ctResults ctVkKeyLimeCore::Startup() {
                            "Amount of time until timeout.",
                            CT_SETTINGS_BOUNDS_BOOL);
 
-   ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
-   Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
+   ctSettingsSection* settings = pSettings->CreateSection("KeyLimeRenderer", 32);
+   pOSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
 #if CITRUS_INCLUDE_AUDITION
    ShaderHotReload.RegisterPath("core/shaders/im3d_vert.spv");
    ShaderHotReload.RegisterPath("core/shaders/im3d_frag.spv");
-   Engine->HotReload->RegisterAssetCategory(&ShaderHotReload);
+   pHotReload->RegisterAssetCategory(&ShaderHotReload);
 #endif
 
-   vkBackend.ModuleStartup(Engine);
+   vkBackend.ModuleStartup();
    /* Commands and Sync */
    {
       /* Graphics Commands */
@@ -308,7 +323,7 @@ ctResults ctVkKeyLimeCore::Render() {
    ZoneScoped;
 
    /* View Projection */
-   ctCameraInfo camera = Engine->SceneEngine->GetCameraInfo(NULL);
+   ctCameraInfo camera = ctCameraInfo();  // Engine->SceneEngine->GetCameraInfo(NULL);
    ctMat4 viewMatrix = ctMat4(1);
    ctMat4 projMatrix = ctMat4(1);
    ctMat4Rotate(viewMatrix, -camera.rotation);
@@ -321,7 +336,7 @@ ctResults ctVkKeyLimeCore::Render() {
 
    /* Build Debug Internals */
    vkIm3d.BuildDrawLists();
-   Engine->Im3dIntegration->DrawImguiText(ctMat4());
+   if (pIm3dIntegration) { pIm3dIntegration->DrawImguiText(ctMat4()); }
    vkImgui.BuildDrawLists();
 
    if (vkBackend.mainScreenResources.HandleResizeIfNeeded(&vkBackend)) {

@@ -39,11 +39,14 @@ uint32_t windowModeFlags(const ctStringUtf8& windowMode) {
    return 0;
 }
 
-ctWindowManager::ctWindowManager() {
+ctWindowManager::ctWindowManager(const char* _appTitle,
+                                 class ctSettings* _pSettings) {
+   pSettings = _pSettings;
    mainDesiredWindowWidth = 640;
    mainDesiredWindowHeight = 480;
    mainWindowMonitorIdx = 0;
    mainWindowVSync = 1;
+   windowTitle = _appTitle;
 #ifdef NDEBUG
    mainWindowMode = "Borderless";
 #else
@@ -54,7 +57,7 @@ ctWindowManager::ctWindowManager() {
 
 ctResults ctWindowManager::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings = Engine->Settings->CreateSection("Window", 4);
+   ctSettingsSection* settings = pSettings->CreateSection("Window", 4);
    settings->BindInteger(&mainDesiredWindowWidth,
                          true,
                          true,
@@ -100,12 +103,8 @@ ctResults ctWindowManager::Startup() {
       windowDim.w = mainDesiredWindowWidth;
       windowDim.h = mainDesiredWindowHeight;
    }
-   SDL_Window* window = SDL_CreateWindow(Engine->App->GetAppName(),
-                                         windowDim.x,
-                                         windowDim.y,
-                                         windowDim.w,
-                                         windowDim.h,
-                                         flags);
+   SDL_Window* window = SDL_CreateWindow(
+     windowTitle.CStr(), windowDim.x, windowDim.y, windowDim.w, windowDim.h, flags);
    if (!window) { return CT_FAILURE_UNKNOWN; }
    SDL_SetWindowMinimumSize(window, 640, 480);
    mainWindow.pSDLWindow = window;
