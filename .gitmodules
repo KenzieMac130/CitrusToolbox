@@ -1,6 +1,3 @@
 [submodule "tools/tracy"]
 	path = tools/tracy
 	url = https://github.com/wolfpld/tracy.git
-[submodule "tools/quickguitool/DearImGuiSDL"]
-	path = tools/quickguitool/DearImGuiSDL
-	url = https://github.com/KenzieMac130/DearImGuiSDL
