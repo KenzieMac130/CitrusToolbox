@@ -38,6 +38,7 @@ public:
    virtual void SetWorldTransform(ctTransform& v);
    virtual ctBoundBox GetWorldBounds();
 
+   ctQuat rotation;
    PxController* pPxController;
    PxMaterial* pPxMaterialStorage;
 };

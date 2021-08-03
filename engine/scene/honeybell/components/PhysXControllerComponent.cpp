@@ -24,6 +24,7 @@ ctHoneybell::PhysXControllerComponent::PhysXControllerComponent(
     ComponentBase::ComponentBase(_factory, _toy) {
    pPxController = NULL;
    pPxMaterialStorage = NULL;
+   rotation = ctQuat();
 }
 
 ctHoneybell::PhysXControllerComponent::~PhysXControllerComponent() {
@@ -55,11 +56,12 @@ bool ctHoneybell::PhysXControllerComponent::hasTransform() const {
 
 ctTransform ctHoneybell::PhysXControllerComponent::GetWorldTransform() {
    if (!pPxController) { return ctTransform(); }
-   return ctTransform(ctVec3FromPxExt(pPxController->getPosition());
+   return ctTransform(ctVec3FromPxExt(pPxController->getPosition(), rotation);
 }
 
 void ctHoneybell::PhysXControllerComponent::SetWorldTransform(ctTransform& v) {
    if (!pPxController) { return; }
+   rotation = v.rotation;
    pPxController->setPosition(ctVec3ToPxExt(v.position));
 }
 
@@ -79,6 +81,7 @@ ctResults ctHoneybell::PhysXControllerComponent::InitController(PxControllerDesc
       desc.stepOffset = 0.1f;
       desc.position = ctVec3ToPxExt(xform.position);
       desc.material = pPxMaterialStorage;
+      desc.upDirection = ctVec3ToPx(rotation.getUp());
       pPxController = ctrlFactory->pControllerManager->createController(desc);
    } else {
       pPxController = ctrlFactory->pControllerManager->createController(*pDesc);
