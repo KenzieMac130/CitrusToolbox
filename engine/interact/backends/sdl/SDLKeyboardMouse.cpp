@@ -92,6 +92,10 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    Engine->FileSystem->OpenAssetFile(file, "input/mouse.json", CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
+#if CITRUS_INCLUDE_AUDITION
+   directory.configHotReload.RegisterPath("input/keyboard.json");
+   directory.configHotReload.RegisterPath("input/mouse.json");
+#endif
 
    return CT_SUCCESS;
 }

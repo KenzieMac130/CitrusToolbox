@@ -17,18 +17,16 @@
 #include "InteractionEngine.hpp"
 #include "backends/BackendManifest.hpp"
 
+/* Todo: Signal filtering (inverter, pulse, on-release, smoothing, etc)*/
+/* Todo: Input buffering to avoid dropped inputs at high framerates */
+
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
-   ctFile file;
-   Engine->FileSystem->OpenAssetFile(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
-   Directory.CreateActionSetsFromFile(file);
-   file.Close();
+   Engine->HotReload->RegisterAssetCategory(&Directory.configHotReload);
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
    CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(Engine, pBackends));
-   for (int i = 0; i < pBackends.Count(); i++) {
-      pBackends[i]->Register(Directory);
-   }
+   RegisterAll();
    return CT_SUCCESS;
 }
 
@@ -37,8 +35,30 @@ ctResults ctInteractionEngine::Shutdown() {
    return ctShutdownInteractBackends();
 }
 
+ctResults ctInteractionEngine::RegisterAll() {
+   ctFile file;
+   Engine->FileSystem->OpenAssetFile(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
+   Directory.CreateActionSetsFromFile(file);
+#if CITRUS_INCLUDE_AUDITION
+   Directory.configHotReload.RegisterPath("input/actions.json");
+#endif
+   file.Close();
+   for (int i = 0; i < pBackends.Count(); i++) {
+      pBackends[i]->Register(Directory);
+   }
+   return CT_SUCCESS;
+}
+
 ctResults ctInteractionEngine::PumpInput() {
    ZoneScoped;
+#if CITRUS_INCLUDE_AUDITION
+   if (Directory.configHotReload.isContentUpdated()) {
+      Directory.configHotReload.ClearChanges();
+      Directory._ReloadClear();
+      RegisterAll();
+      ctDebugLog("Reloaded Interact Configs...");
+   }
+#endif
    isFrameActive = true;
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->Update(Directory);
@@ -76,6 +96,15 @@ ctInteractPath::ctInteractPath(const char* ptr) {
 
 ctInteractPath::ctInteractPath(const ctStringUtf8& ctStr) {
    *this = ctInteractPath(ctStr.CStr());
+}
+
+ctInteractDirectorySystem::~ctInteractDirectorySystem() {
+   for (auto it = nodes.GetIterator(); it; it++) {
+      if (it.Value().type == CT_INTERACT_NODETYPE_BINDING ||
+          it.Value().type == CT_INTERACT_NODETYPE_ACTIONSET) {
+         if (it.Value().pData) { delete it.Value().pData; }
+      }
+   }
 }
 
 ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
@@ -232,11 +261,13 @@ ctResults ctInteractDirectorySystem::RemoveNode(ctInteractPath& path) {
 }
 
 void ctInteractDirectorySystem::EnableActionSet(ctInteractPath& path) {
-   activeActionSets.Append(path);
+   if (!activeActionSets.Exists(path)) { activeActionSets.Append(path); }
 }
 
 void ctInteractDirectorySystem::DisableActionSet(ctInteractPath& path) {
-   activeActionSets.Remove(path);
+   while (activeActionSets.Exists(path)) {
+      activeActionSets.Remove(path);
+   }
 }
 
 ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path,
@@ -300,6 +331,16 @@ void ctInteractDirectorySystem::DebugImGui() {
          ImGui::Text("%s: %f", it.Value(), it.Value().GetScalar());
       }
    }
+}
+
+void ctInteractDirectorySystem::_ReloadClear() {
+   for (auto it = nodes.GetIterator(); it; it++) {
+      if (it.Value().type == CT_INTERACT_NODETYPE_BINDING ||
+          it.Value().type == CT_INTERACT_NODETYPE_ACTIONSET) {
+         if (it.Value().pData) { delete it.Value().pData; }
+      }
+   }
+   nodes.Clear();
 }
 
 float ctInteractNode::GetScalar() {

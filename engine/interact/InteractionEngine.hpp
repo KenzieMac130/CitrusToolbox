@@ -20,6 +20,10 @@
 #include "core/ModuleBase.hpp"
 #include "DeviceBackendLayer.hpp"
 
+#if CITRUS_INCLUDE_AUDITION
+#include "audition/HotReloadDetection.hpp"
+#endif
+
 /* --------------------------- Virtual Directory --------------------------- */
 
 enum ctInteractionNodeType {
@@ -61,6 +65,7 @@ struct CT_API ctInteractNode {
 
 class CT_API ctInteractDirectorySystem {
 public:
+   ~ctInteractDirectorySystem();
    ctResults CreateActionSetsFromFile(ctFile& file);
    ctResults CreateBindingsFromFile(ctFile& file);
    ctResults Update();
@@ -76,6 +81,11 @@ public:
                     void* userdata = NULL);
    void LogContents();
    void DebugImGui();
+   void _ReloadClear();
+
+#if CITRUS_INCLUDE_AUDITION
+   ctHotReloadCategory configHotReload;
+#endif
 
 private:
    ctDynamicArray<ctInteractPath> activeActionSets;
@@ -112,6 +122,8 @@ class CT_API ctInteractionEngine : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+
+   ctResults RegisterAll();
 
    ctResults PumpInput();
    void DebugImGui();
