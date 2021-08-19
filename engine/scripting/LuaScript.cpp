@@ -83,6 +83,7 @@ ctResults ctLuaContext::OpenEngineLibrary(const char* name) {
 ctResults ctLuaContext::LoadFromBuffer(const char* data, size_t size, const char* name) {
    ZoneScoped;
    if (!L) { return CT_FAILURE_NOT_UPDATABLE; }
+   if (!data || !size) { return CT_FAILURE_INVALID_PARAMETER; }
    int result = luaL_loadbuffer(L, data, size, name);
    if (!result) {
       return CT_SUCCESS;

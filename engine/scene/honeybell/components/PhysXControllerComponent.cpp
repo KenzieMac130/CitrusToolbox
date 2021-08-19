@@ -19,9 +19,9 @@
 
 #include "PxScene.h"
 
-ctHoneybell::PhysXControllerComponent::PhysXControllerComponent(
-  class ComponentFactoryBase* _factory, class ToyBase* _toy) :
-    ComponentBase::ComponentBase(_factory, _toy) {
+ctHoneybell::PhysXControllerComponent::PhysXControllerComponent(ConstructContext& ctx,
+                                                                class ToyBase* _toy) :
+    ComponentBase::ComponentBase(ctx, _toy) {
    pPxController = NULL;
    pPxMaterialStorage = NULL;
    rotation = ctQuat();
@@ -32,29 +32,11 @@ ctHoneybell::PhysXControllerComponent::~PhysXControllerComponent() {
    if (pPxMaterialStorage) { pPxMaterialStorage->release(); }
 }
 
-ctResults ctHoneybell::PhysXControllerComponentFactory::Startup() {
-   if (pPxScene) {
-      pControllerManager = PxCreateControllerManager(*pPxScene);
-      return CT_SUCCESS;
-   }
-   return CT_FAILURE_MODULE_NOT_INITIALIZED;
-}
-
-ctResults ctHoneybell::PhysXControllerComponentFactory::Shutdown() {
-   if (pControllerManager) { pControllerManager->release(); }
-   return CT_SUCCESS;
-}
-
-ctHoneybell::ComponentBase*
-ctHoneybell::PhysXControllerComponentFactory::NewComponent(ToyBase* _owner) {
-   return new PhysXControllerComponent(this, _owner);
-}
-
 bool ctHoneybell::PhysXControllerComponent::hasTransform() const {
    return true;
 }
 
-ctTransform ctHoneybell::PhysXControllerComponent::GetWorldTransform() {
+ctTransform ctHoneybell::PhysXControllerComponent::GetWorldTransform() const {
    if (!pPxController) { return ctTransform(); }
    return ctTransform(ctVec3FromPxExt(pPxController->getPosition()), rotation);
 }
@@ -65,27 +47,20 @@ void ctHoneybell::PhysXControllerComponent::SetWorldTransform(ctTransform& v) {
    pPxController->setPosition(ctVec3ToPxExt(v.position));
 }
 
-ctResults ctHoneybell::PhysXControllerComponent::InitController(PxControllerDesc* pDesc) {
-   if (!pFactory) { return CT_FAILURE_MODULE_NOT_INITIALIZED; }
-   const PhysXControllerComponentFactory* ctrlFactory =
-     (PhysXControllerComponentFactory*)pFactory;
-   if (!pDesc) {
-      if (!pPxMaterialStorage) {
-         pPxMaterialStorage =
-           ctrlFactory->pPxScene->getPhysics().createMaterial(0.5f, 0.5f, 0.6f);
-      }
-      ctTransform xform = GetWorldTransform();
-      PxCapsuleControllerDesc desc = PxCapsuleControllerDesc();
-      desc.height = 1.0f;
-      desc.radius = 0.25f;
-      desc.stepOffset = 0.1f;
-      desc.position = ctVec3ToPxExt(xform.position);
-      desc.material = pPxMaterialStorage;
-      desc.upDirection = ctVec3ToPx(rotation.getUp());
-      pPxController = ctrlFactory->pControllerManager->createController(desc);
-   } else {
-      pPxController = ctrlFactory->pControllerManager->createController(*pDesc);
+ctResults ctHoneybell::PhysXControllerComponent::Begin(BeginContext& ctx) {
+   if (!pPxMaterialStorage) {
+      pPxMaterialStorage = ctx.pPxScene->getPhysics().createMaterial(0.5f, 0.5f, 0.6f);
    }
+   ctTransform xform = GetWorldTransform();
+   PxCapsuleControllerDesc desc = PxCapsuleControllerDesc();
+   desc.height = 1.0f;
+   desc.radius = 0.25f;
+
+   desc.stepOffset = 0.1f;
+   desc.position = ctVec3ToPxExt(xform.position);
+   desc.material = pPxMaterialStorage;
+   desc.upDirection = ctVec3ToPx(rotation.getUp());
+   pPxController = ctx.pPxControllerManager->createController(desc);
    if (!pPxController) { return CT_FAILURE_INVALID_PARAMETER; }
    return CT_SUCCESS;
 }
@@ -94,4 +69,8 @@ ctBoundBox ctHoneybell::PhysXControllerComponent::GetWorldBounds() {
    PxRigidDynamic* actor = pPxController->getActor();
    if (!actor) { return ctBoundBox(); }
    return ctBoundBoxFromPx(actor->getWorldBounds());
+}
+
+const char* ctHoneybell::PhysXControllerComponent::GetTypeName() {
+   return "PhysXControllerComponent";
 }

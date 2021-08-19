@@ -20,21 +20,22 @@
 /* ---------------- Toy Includes ---------------- */
 #include "toys/TestShape.hpp"
 #include "toys/GroundPlane.hpp"
+#include "toys/SceneChunk.hpp"
 
 namespace ctHoneybell {
 
 /* ---------------- Builtin Toys Defined Here ---------------- */
 /* clang-format off */
 #define HB_TOY_REGISTRIES() \
-HB_TOY_REGISTER_ENTRY("citrus/testShape", TestShape)\
-HB_TOY_REGISTER_ENTRY("citrus/groundPlane", GroundPlane)
-
+HB_TOY_REGISTER_ENTRY(SceneChunk)\
+HB_TOY_REGISTER_ENTRY(TestShape)\
+HB_TOY_REGISTER_ENTRY(GroundPlane)
 /* clang-format on */
 
 /* ---------------- Internals ---------------- */
 
 #undef HB_TOY_REGISTER_ENTRY
-#define HB_TOY_REGISTER_ENTRY(_PATH, _CLASS)                                             \
+#define HB_TOY_REGISTER_ENTRY(_CLASS)                                                    \
    ToyBase* toyNewFunc_##_CLASS(ConstructContext& ctx) {                                 \
       return new _CLASS(ctx);                                                            \
    };
@@ -42,8 +43,8 @@ HB_TOY_REGISTER_ENTRY("citrus/groundPlane", GroundPlane)
 HB_TOY_REGISTRIES()
 
 #undef HB_TOY_REGISTER_ENTRY
-#define HB_TOY_REGISTER_ENTRY(_PATH, _CLASS)                                             \
-   registry.RegisterToyType(_PATH, toyNewFunc_##_CLASS);
+#define HB_TOY_REGISTER_ENTRY(_CLASS)                                                    \
+   registry.RegisterToyType(_CLASS::GetTypePath(), toyNewFunc_##_CLASS);
 
 void RegisterBuiltinToys(ToyTypeRegistry& registry) {
    ZoneScoped;

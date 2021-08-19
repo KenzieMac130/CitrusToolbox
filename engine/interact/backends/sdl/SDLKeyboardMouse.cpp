@@ -53,16 +53,16 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
       node.accessible = true;
       node.pData = &keyStates[i];
       snprintf(
-        node.path.str, CT_MAX_INTERACT_PATH_SIZE, "/dev/keyboard/input/scancode/%d", i);
+        node.path.str, CT_MAX_INTERACT_PATH_SIZE, "dev/keyboard/input/scancode/%d", i);
       directory.AddNode(node);
    }
 
    /* Add mouse inputs */
-   char* mouseButtonPaths[] = {"/dev/mouse/input/button/left",
-                               "/dev/mouse/input/button/right",
-                               "/dev/mouse/input/button/middle",
-                               "/dev/mouse/input/button/x1",
-                               "/dev/mouse/input/button/x2"};
+   char* mouseButtonPaths[] = {"dev/mouse/input/button/left",
+                               "dev/mouse/input/button/right",
+                               "dev/mouse/input/button/middle",
+                               "dev/mouse/input/button/x1",
+                               "dev/mouse/input/button/x2"};
    for (int i = 0; i < 5; i++) {
       ctInteractNode node = ctInteractNode();
       node.type = CT_INTERACT_NODETYPE_BOOL;
@@ -72,10 +72,10 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
       directory.AddNode(node);
    }
 
-   char* mouseAxisPaths[] = {"/dev/mouse/input/relative_move/x",
-                             "/dev/mouse/input/relative_move/y",
-                             "/dev/mouse/input/scroll/x",
-                             "/dev/mouse/input/scroll/y"};
+   char* mouseAxisPaths[] = {"dev/mouse/input/relative_move/x",
+                             "dev/mouse/input/relative_move/y",
+                             "dev/mouse/input/scroll/x",
+                             "dev/mouse/input/scroll/y"};
    for (int i = 0; i < 4; i++) {
       ctInteractNode node = ctInteractNode();
       node.type = CT_INTERACT_NODETYPE_SCALAR;
@@ -84,6 +84,15 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
       node.pData = &mouseAxisStates[i];
       directory.AddNode(node);
    }
+
+   ctFile file;
+   Engine->FileSystem->OpenAssetFile(file, "input/keyboard.json", CT_FILE_OPEN_READ_TEXT);
+   directory.CreateBindingsFromFile(file);
+   file.Close();
+   Engine->FileSystem->OpenAssetFile(file, "input/mouse.json", CT_FILE_OPEN_READ_TEXT);
+   directory.CreateBindingsFromFile(file);
+   file.Close();
+
    return CT_SUCCESS;
 }
 

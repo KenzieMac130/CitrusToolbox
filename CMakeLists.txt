@@ -43,6 +43,7 @@ set (CITRUS_ENGINE_PRAGMAS
 
 # ---------- Limits ----------
 set(CT_MAX_SMALL_STRING 40)
+set(CT_MAX_SPACIAL_QUERY_ENTRIES_PER_CELL 16)
 set(CT_MAX_FILE_PATH_LENGTH 4096)
 set(CT_MAX_LOG_LENGTH 4096)
 set(CT_MAX_SETTINGS_SECTIONS 64)
@@ -51,6 +52,7 @@ set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
 set(CT_MAX_GFX_STORAGE_IMAGES 64)
 set(CT_MAX_GFX_STORAGE_BUFFERS 4096)
 set(CT_MAX_INFLIGHT_FRAMES 3)
+set(CT_MAX_INTERACT_PATH_SIZE 1024)
 set(CT_MAX_INTERACT_PATH_SIZE 1024)
 
 # ---------- Alignment ----------
@@ -70,6 +72,7 @@ set(CITRUS_USE_STDOUT 1)
 else()
 set(CITRUS_USE_STDOUT 0)
 endif()
+option(IS_PRODUCTION_BUILD "Production Build" OFF)
 
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
@@ -226,9 +229,9 @@ else()
 endif()
 
 # ---------- Add Subdirectories ----------
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/assets)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/game)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/assets)

@@ -15,13 +15,18 @@
 */
 
 #include "DebugShapeComponent.hpp"
-
+#include "scene/honeybell/Scene.hpp"
 #include "im3d/im3d.h"
 
-ctHoneybell::DebugShapeComponent::DebugShapeComponent(ComponentFactoryBase* _factory,
-                                                      ToyBase* _toy) :
-    ComponentBase::ComponentBase(_factory, _toy) {
+ctHoneybell::DebugShapeComponent::DebugShapeComponent(struct ConstructContext ctx,
+                                                      class ToyBase* _toy) :
+    ComponentBase::ComponentBase(ctx, _toy) {
    rgba = CT_COLOR_WHITE;
+}
+
+ctResults ctHoneybell::DebugShapeComponent::Begin(BeginContext& ctx) {
+   ctx.pOwningScene->debugShapes.shapes.Append(this);
+   return CT_SUCCESS;
 }
 
 bool ctHoneybell::DebugShapeComponent::hasTransform() const {
@@ -44,18 +49,11 @@ ctBoundBox ctHoneybell::DebugShapeComponent::GetLocalBounds() const {
    return bounds;
 }
 
-ctHoneybell::ComponentBase*
-ctHoneybell::DebugShapeComponentFactory::NewComponent(ToyBase* _owner) {
-   ctHoneybell::ComponentBase* result = new DebugShapeComponent(this, _owner);
-   shapes.Append((DebugShapeComponent*)result);
-   return result;
+const char* ctHoneybell::DebugShapeComponent::GetTypeName() {
+   return "DebugShapeComponent";
 }
 
-void ctHoneybell::DebugShapeComponentFactory::DeleteComponent(ComponentBase* _component) {
-   shapes.Remove((DebugShapeComponent*)_component);
-}
-
-void ctHoneybell::DebugShapeComponentFactory::Im3dDrawAll() {
+void ctHoneybell::DebugShapeManager::Im3dDrawAll() {
 #if CITRUS_IM3D
    Im3d::PushDrawState();
    for (size_t i = 0; i < shapes.Count(); i++) {

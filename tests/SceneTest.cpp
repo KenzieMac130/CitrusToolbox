@@ -17,6 +17,7 @@
 #include "core/Application.hpp"
 #include "scene/SceneEngineBase.hpp"
 #include "imgui/imgui.h"
+#include "interact/InteractionEngine.hpp"
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
@@ -41,7 +42,7 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
-   Engine->SceneEngine->LoadScene("test");
+   Engine->SceneEngine->LoadScene("game/scene/test/test.wad");
    return CT_SUCCESS;
 }
 
@@ -51,6 +52,10 @@ ctResults TestApp::OnTick(const float deltatime) {
 
 ctResults TestApp::OnUIUpdate() {
    ImGui::ShowDemoWindow();
+   if (ImGui::Begin("Interact")) {
+      Engine->Interact->DebugImGui();
+      ImGui::End();
+   }
    return CT_SUCCESS;
 }
 

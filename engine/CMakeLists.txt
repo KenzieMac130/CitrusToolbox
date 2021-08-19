@@ -125,6 +125,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.cpp
 set(ENGINE_HEADER_FILES_UTILITIES
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/BloomFilter.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandleManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
@@ -135,6 +136,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Meta.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/SpacialQuery.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
@@ -189,6 +191,14 @@ ${CMAKE_CURRENT_SOURCE_DIR}/wad/WADCore.c
 
 set(ENGINE_HEADER_FILES_WAD
 ${CMAKE_CURRENT_SOURCE_DIR}/wad/WADCore.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/WADCore.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/Header.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/Bones.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/Camera.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/Light.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/Material.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/RenderMesh.h
+${CMAKE_CURRENT_SOURCE_DIR}/wad/prototypes/Spawner.h
 )
 
 # ---------- Renderer Frontend ---------- 
@@ -196,32 +206,36 @@ set(ENGINE_SOURCE_FILES_RENDERER)
 
 set(ENGINE_HEADER_FILES_RENDERER
 ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeDataTypes.hpp
 )
 
 # ---------- Scene Engine ---------- 
 
 set(CITRUS_SCENE_ENGINE_HEADER
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
 )
 
 set(ENGINE_SOURCE_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Signal.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/TypeRegistration.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/BuiltinToys.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/SceneChunk.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellScene.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Signal.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.hpp
@@ -229,6 +243,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/SceneChunk.hpp
 )
 
 # ---------- Third Party Implementation ---------- 
@@ -329,11 +344,15 @@ endif()
 set(ENGINE_SOURCE_FILES_ASSET_SYSTEM
 ${CMAKE_CURRENT_SOURCE_DIR}/asset/AssetManager.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/asset/types/WAD.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/asset/types/Mesh.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/asset/types/Texture.cpp
 )
 
 set(ENGINE_HEADER_FILES_ASSET_SYSTEM
 ${CMAKE_CURRENT_SOURCE_DIR}/asset/AssetManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/asset/types/WAD.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/asset/types/Mesh.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/asset/types/Texture.hpp
 )
 
 # ---------- All Engine Files ----------

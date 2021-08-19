@@ -29,7 +29,7 @@ namespace Game {
 /* ---------------- Game Toys Defined Here ---------------- */
 /* clang-format off */
 #define HB_TOY_REGISTRIES() \
-HB_TOY_REGISTER_ENTRY("fps/player", FPSPlayer)
+HB_TOY_REGISTER_ENTRY(FPSPlayer)
 /* clang-format on */
 
 class GAME_API GameCore : public ctGameLayer {

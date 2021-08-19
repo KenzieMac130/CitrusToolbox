@@ -26,7 +26,7 @@ enum ctResults ctWADReaderBind(struct ctWADReader* pReader, uint8_t* blob, size_
    if (size < tableOffset + sizeof(struct ctWADLump) * numLumps) {
       return CT_FAILURE_OUT_OF_BOUNDS;
    }
-   pReader->pLumps = (struct ctWADLump*)blob + tableOffset;
+   pReader->pLumps = (struct ctWADLump*)(blob + tableOffset);
    return CT_SUCCESS;
 }
 
@@ -34,6 +34,7 @@ enum ctResults ctWADFindLump(struct ctWADReader* pReader,
                              const char* name,
                              void** ppDataOut,
                              int32_t* ppSizeOut) {
+   if (!pReader->pInfo) { return CT_FAILURE_INACCESSIBLE; }
    const int32_t numlumps = pReader->pInfo->numlumps;
    for (int32_t i = 0; i < numlumps; i++) {
       const struct ctWADLump lump = pReader->pLumps[i];
@@ -44,4 +45,13 @@ enum ctResults ctWADFindLump(struct ctWADReader* pReader,
       }
    }
    return CT_FAILURE_NOT_FOUND;
+}
+
+const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset) {
+   if (!pReader) { return NULL; }
+   if (!pReader->pInfo) { return NULL; }
+   if (!pReader->pInfo->numlumps) { return NULL; }
+   const struct ctWADLump lump = pReader->pLumps[pReader->pInfo->numlumps - 1];
+   if (!ctCStrNEql(lump.name, "STRINGS", 8)) { return NULL; }
+   return pReader->blob + lump.filepos + offset;
 }

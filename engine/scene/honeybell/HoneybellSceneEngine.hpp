@@ -36,7 +36,11 @@ public:
    void SetCameraInfo(ctCameraInfo camera, const char* cameraId = NULL);
    ctCameraInfo GetCameraInfo(const char* cameraId) final;
    ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
-   ctResults LoadScene(const char* name) final;
+   ctResults LoadScene(const char* path, const char* message = NULL) final;
+   ctResults PossessToy(ctHandle handle,
+                        bool wantCamera = true,
+                        int32_t playerIdx = 0,
+                        const char* message = NULL);
 
    int32_t pauseSim;
    int32_t simSingleShots;
@@ -48,9 +52,10 @@ private:
 #endif
 
    ctStringUtf8 activeSceneName;
-   ctLuaContext levelScript;
    ctHoneybell::Scene mainScene;
    ctHoneybell::ToyTypeRegistry toyRegistry;
+
+   ctHandle possessedToy;
 
    ctCameraInfo LastCamera;
    ctCameraInfo CurrentCamera;

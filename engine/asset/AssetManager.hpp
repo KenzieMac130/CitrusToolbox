@@ -42,6 +42,8 @@ public:
    bool isUnreferenced();
    int32_t GetReferenceCount();
 
+   bool LoadAndWait();
+
 private:
    class ctAssetManager* pManager;
    ctStringUtf8 relativePath;
@@ -64,6 +66,7 @@ public:
    class ctWADAsset* GetWADAsset(const char* path);
 
    void _AddAssetToGC(ctAssetBase* pAsset);
+   bool _LoadSingleAsset(ctAssetBase* pAsset);
 
    int32_t gcAutoActive;
 

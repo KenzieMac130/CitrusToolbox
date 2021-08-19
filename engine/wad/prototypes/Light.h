@@ -18,13 +18,14 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
+enum ctWADProtoLightV1Flags {
+	CT_WADPROTO_LIGHTV1_SPOT = 0x0001
+};
 
-namespace ctHoneybell {
-
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+struct CT_API ctWADProtoLightV1 {
+   int32_t flags;
+   float color[3];
+   float coneInner;
+   float coneOuter;
+   float range;
+};

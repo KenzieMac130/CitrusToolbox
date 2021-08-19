@@ -19,14 +19,6 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
-struct CT_API ctCameraInfo {
-   ctVec3 position;
-   ctQuat rotation;
-   float fov;
-   ctVec3 cursorPosition;
-   ctVec3 cursorDirection;
-};
-
 class CT_API ctSceneEngineBase : public ctModuleBase {
 public:
    /* Called at the end of a frame */
@@ -37,5 +29,5 @@ public:
    /* Get ctCameraInfo from the previous frame (NULL must return the "main camera")*/
    virtual ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) = 0;
    /* Load scene/level */
-   virtual ctResults LoadScene(const char* name) = 0;
+   virtual ctResults LoadScene(const char* name, const char* message = NULL) = 0;
 };

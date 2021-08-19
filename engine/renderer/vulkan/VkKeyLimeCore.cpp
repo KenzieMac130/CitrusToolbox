@@ -104,8 +104,8 @@ ctResults ctVkKeyLimeCore::Startup() {
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
 #if CITRUS_INCLUDE_AUDITION
-   ShaderHotReload.RegisterPath("core/shaders/im3d_vert.spv");
-   ShaderHotReload.RegisterPath("core/shaders/im3d_frag.spv");
+   ShaderHotReload.RegisterPath("shaders/im3d_vert.spv");
+   ShaderHotReload.RegisterPath("shaders/im3d_frag.spv");
    Engine->HotReload->RegisterAssetCategory(&ShaderHotReload);
 #endif
 

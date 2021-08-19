@@ -17,14 +17,15 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "asset/AssetManager.hpp"
 
-#include "../Component.hpp"
+class CT_API ctTextureAsset : public ctAssetBase {
+public:
+    ctTextureAsset(class ctAssetManager* manager, const char* relativePath);
+   virtual const char* GetAssetType();
 
-namespace ctHoneybell {
+   virtual bool isAvailible();
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+   virtual ctResults OnLoad(ctFile& file);
+   virtual ctResults OnRelease();
+};

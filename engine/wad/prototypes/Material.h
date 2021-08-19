@@ -18,13 +18,18 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
-
-namespace ctHoneybell {
-
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+struct CT_API ctWADProtoRenderMaterialV1 {
+   int32_t flags;
+   float baseColor[4];
+   float emissiveColor[3];
+   float roughness;
+   float metal;
+   
+   float normalFactor;
+   float aoFactor;
+   
+   int32_t baseTexture;
+   int32_t pbrTexture;
+   int32_t normalTexture;
+   int32_t emissiveTexture;
+};

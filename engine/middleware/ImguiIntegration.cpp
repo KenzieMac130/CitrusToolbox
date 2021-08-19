@@ -21,6 +21,7 @@
 #include "core/WindowManager.hpp"
 #include "core/OSEvents.hpp"
 #include "core/FileSystem.hpp"
+#include "interact/InteractionEngine.hpp"
 
 void processImguiEvent(SDL_Event* event, void* pData) {
    ctImguiIntegration* pIntegration = (ctImguiIntegration*)pData;
@@ -66,6 +67,9 @@ ctResults ctImguiIntegration::NextFrame() {
 #else
    ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow.pSDLWindow);
    ImGui::NewFrame();
+   if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+       Engine->Interact->isFrameActive = false;
+   }
 #endif
    return CT_SUCCESS;
 }

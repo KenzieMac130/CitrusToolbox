@@ -19,16 +19,19 @@
 
 #include "PxScene.h"
 
-ctHoneybell::PhysXActorComponent::PhysXActorComponent(
-  class ComponentFactoryBase* _factory, class ToyBase* _toy) :
-    ComponentBase::ComponentBase(_factory, _toy) {
+ctHoneybell::PhysXActorComponent::PhysXActorComponent(ConstructContext& ctx,
+                                                      class ToyBase* _toy) :
+    ComponentBase::ComponentBase(ctx, _toy) {
    pPxRigidActor = NULL;
 }
 
 ctHoneybell::PhysXActorComponent::~PhysXActorComponent() {
-   PhysXActorComponentFactory* pConcreteFactory = (PhysXActorComponentFactory*)(pFactory);
-   if (pConcreteFactory) { pConcreteFactory->pPxScene->removeActor(*pPxRigidActor); }
-   if (pPxRigidActor) { pPxRigidActor->release(); }
+   if (pPxRigidActor) {
+      if (pPxRigidActor->getScene()) {
+         pPxRigidActor->getScene()->removeActor(*pPxRigidActor);
+      }
+      pPxRigidActor->release();
+   }
    for (size_t i = 0; i < PxMaterialStorage.Count(); i++) {
       if (PxMaterialStorage[i]) { PxMaterialStorage[i]->release(); }
    }
@@ -37,24 +40,14 @@ ctHoneybell::PhysXActorComponent::~PhysXActorComponent() {
    }
 }
 
-ctHoneybell::ComponentBase*
-ctHoneybell::PhysXActorComponentFactory::NewComponent(ToyBase* _owner) {
-   return new PhysXActorComponent(this, _owner);
-}
-
-ctResults ctHoneybell::PhysXActorComponent::AddToScene() {
-   if (!pFactory) {
-      ctDebugError("PhysXActorComponent: Does not have a factory!");
-      return CT_FAILURE_MODULE_NOT_INITIALIZED;
-   }
+ctResults ctHoneybell::PhysXActorComponent::Begin(BeginContext& beginCtx) {
    if (!pPxRigidActor) {
       ctDebugError(
         "PhysXActorComponent: Attempted to add pPxRigidActor of NULL to the scene!");
       return CT_FAILURE_INVALID_PARAMETER;
    }
-   PhysXActorComponentFactory* pConcreteFactory = (PhysXActorComponentFactory*)(pFactory);
-   if (!pConcreteFactory->pPxScene) { return CT_FAILURE_MODULE_NOT_INITIALIZED; }
-   pConcreteFactory->pPxScene->addActor(*pPxRigidActor);
+   if (!beginCtx.pPxScene) { return CT_FAILURE_MODULE_NOT_INITIALIZED; }
+   beginCtx.pPxScene->addActor(*pPxRigidActor);
    return CT_SUCCESS;
 }
 
@@ -62,7 +55,7 @@ bool ctHoneybell::PhysXActorComponent::hasTransform() const {
    return true;
 }
 
-ctTransform ctHoneybell::PhysXActorComponent::GetWorldTransform() {
+ctTransform ctHoneybell::PhysXActorComponent::GetWorldTransform() const {
    if (!pPxRigidActor) { return ctTransform(); }
    return ctTransformFromPx(pPxRigidActor->getGlobalPose());
 }
@@ -74,4 +67,8 @@ void ctHoneybell::PhysXActorComponent::SetWorldTransform(ctTransform v) {
 
 ctBoundBox ctHoneybell::PhysXActorComponent::GetWorldBounds() {
    return ctBoundBoxFromPx(pPxRigidActor->getWorldBounds());
+}
+
+const char* ctHoneybell::PhysXActorComponent::GetTypeName() {
+   return "PhysXActorComponent";
 }

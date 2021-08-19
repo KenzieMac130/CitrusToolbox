@@ -16,28 +16,38 @@
 
 #pragma once
 
-/* API Main Goal: Keep the interface simple for non-graphics programmers! */
-
-#include "core/ModuleBase.hpp"
 #include "utilities/Common.h"
 
-#include "KeyLimeDataTypes.hpp"
-
-struct ctKeyLimeCameraDesc {
-   ctVec3 position;
-   ctQuat rotation;
-   float fov;
+struct CT_API ctKeyLimeStreamSubmesh {
+   int32_t idxOffset;
+   int32_t idxCount;
+   int32_t matIdx;
 };
 
-class CT_API ctKeyLimeRenderer : public ctModuleBase {
-public:
-   ctResults Startup() final;
-   ctResults Shutdown() final;
+struct CT_API ctKeyLimeStreamPosition {
+   float position[3];
+};
 
-   ctResults UpdateCamera(const ctKeyLimeCameraDesc& cameraDesc);
-   ctResults RenderFrame();
+struct CT_API ctKeyLimeStreamNormalTangent {
+   int32_t normal;
+   int32_t tangent;
+};
 
-#ifdef CITRUS_GFX_VULKAN
-   class ctVkKeyLimeCore* vkKeyLime;
-#endif
+struct CT_API ctKeyLimeStreamUV {
+   float uv[2];
+};
+
+struct CT_API ctKeyLimeStreamColor {
+   uint8_t color[4];
+};
+
+struct CT_API ctKeyLimeStreamSkin {
+   uint16_t weight[4];
+   uint16_t boneIdx[4];
+};
+
+struct CT_API ctKeyLimeStreamTransform {
+   float position[3];
+   float orientation[4];
+   float scale[3];
 };

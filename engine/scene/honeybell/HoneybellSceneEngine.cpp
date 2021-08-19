@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "HoneybellScene.hpp"
+#include "HoneybellSceneEngine.hpp"
 #include "imgui/imgui.h"
 
 #include "core/EngineCore.hpp"
@@ -66,9 +66,6 @@ ctResults ctHoneybellSceneEngine::Startup() {
 
    debugCamera = CurrentCamera;
 
-   levelScript.Startup(false);
-   levelScript.OpenEngineLibrary("scene");
-
 #if CITRUS_INCLUDE_AUDITION
    Engine->HotReload->RegisterAssetCategory(&hotReload);
 #endif
@@ -77,10 +74,21 @@ ctResults ctHoneybellSceneEngine::Startup() {
 
 ctResults ctHoneybellSceneEngine::Shutdown() {
    ZoneScoped;
-   levelScript.Shutdown();
-
    mainScene.ModuleShutdown();
    return CT_SUCCESS;
+}
+
+struct HBUserInputCtx {
+   ctHandle toyHandle;
+   ctHoneybell::SignalManager* pSignalManager;
+};
+void HBHandleUserInput(const char* path, float value, void* userData) {
+   HBUserInputCtx* pCtx = (HBUserInputCtx*)userData;
+   ctHoneybell::SignalDesc desc = ctHoneybell::SignalDesc();
+   desc.value = value;
+   desc.path = path;
+   desc.deltaTime = 1.0f / 60;
+   pCtx->pSignalManager->BroadcastTargetedSignal(desc, pCtx->toyHandle);
 }
 
 ctResults ctHoneybellSceneEngine::NextFrame() {
@@ -97,12 +105,29 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       LoadScene(activeSceneName.CStr());
    }
 
-   float deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
+   if (!debugCameraActive) {
+      HBUserInputCtx ctx = HBUserInputCtx();
+      ctx.toyHandle = possessedToy;
+      ctx.pSignalManager = &mainScene.signalManager;
+      Engine->Interact->Directory.FireActions(HBHandleUserInput, &ctx);
+   }
 
+   float deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
    if (!pauseSim || simSingleShots) {
       mainScene.Simulate(deltaTime, Engine->JobSystem);
       if (simSingleShots > 0) { simSingleShots--; }
    }
+
+   if (!debugCameraActive) {
+      ctHoneybell::ToyBase* pToy = mainScene.FindToyByHandle(possessedToy);
+      if (pToy) {
+         ctHoneybell::PointOfViewContext ctx;
+         ctx.cameraInfo = ctCameraInfo();
+         pToy->GetPointOfView(ctx);
+         CurrentCamera = ctx.cameraInfo;
+      }
+   }
+
    mainScene.NextFrame();
 
    /* Lastly apply the debug camera */
@@ -132,11 +157,12 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       float lookSpeed = 2.0f * deltaTime;
 
       /* Look */
-      if (Engine->Interact->GetSignal(ctInteractPath("/dev/mouse/input/button/right"))) {
-         float horizontalMove = Engine->Interact->GetSignal(
-           ctInteractPath("/dev/mouse/input/relative_move/x"));
-         float verticalMove = Engine->Interact->GetSignal(
-           ctInteractPath("/dev/mouse/input/relative_move/y"));
+      if (Engine->Interact->Directory.GetSignal(
+            ctInteractPath("actions/debug/lookEnable"))) {
+         float horizontalMove = Engine->Interact->Directory.GetSignal(
+           ctInteractPath("actions/debug/lookRight"));
+         float verticalMove =
+           Engine->Interact->Directory.GetSignal(ctInteractPath("actions/debug/lookUp"));
          camYaw += horizontalMove * lookSpeed;
          camPitch += verticalMove * lookSpeed;
          if (camPitch < -CT_PI / 2.0f + 0.05f) { camPitch = -CT_PI / 2.0f + 0.05f; }
@@ -145,50 +171,31 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       debugCamera.rotation = ctQuat(CT_VEC3_UP, camYaw) * ctQuat(CT_VEC3_RIGHT, camPitch);
 
       /* Speedup */
-      if (Engine->Interact->GetSignal(
-            ctInteractPath("/dev/keyboard/input/scancode/225"))) {
+      if (Engine->Interact->Directory.GetSignal(
+            ctInteractPath("actions/debug/moveFaster"))) {
          speed *= 4.0f;
       }
 
       /* Forward */
-      if (Engine->Interact->GetSignal(
-            ctInteractPath("/dev/keyboard/input/scancode/26"))) {
-         debugCamera.position =
-           debugCamera.position + (debugCamera.rotation.getForward() * speed);
-      }
-      /* Back */
-      if (Engine->Interact->GetSignal(
-            ctInteractPath("/dev/keyboard/input/scancode/22"))) {
-         debugCamera.position =
-           debugCamera.position + (debugCamera.rotation.getBack() * speed);
-      }
-      /* Left */
-      if (Engine->Interact->GetSignal(ctInteractPath("/dev/keyboard/input/scancode/4"))) {
-         debugCamera.position =
-           debugCamera.position + (debugCamera.rotation.getLeft() * speed);
-      }
+      const float moveForward = Engine->Interact->Directory.GetSignal(
+        ctInteractPath("actions/debug/moveForward"));
+      debugCamera.position =
+        debugCamera.position + (debugCamera.rotation.getForward() * moveForward * speed);
       /* Right */
-      if (Engine->Interact->GetSignal(ctInteractPath("/dev/keyboard/input/scancode/7"))) {
-         debugCamera.position =
-           debugCamera.position + (debugCamera.rotation.getRight() * speed);
-      }
+      const float moveRight =
+        Engine->Interact->Directory.GetSignal(ctInteractPath("actions/debug/moveRight"));
+      debugCamera.position =
+        debugCamera.position + (debugCamera.rotation.getRight() * moveRight * speed);
       /* Up */
-      if (Engine->Interact->GetSignal(ctInteractPath("/dev/keyboard/input/scancode/8"))) {
-         debugCamera.position =
-           debugCamera.position + (debugCamera.rotation.getUp() * speed);
-      }
-      /* Down */
-      if (Engine->Interact->GetSignal(
-            ctInteractPath("/dev/keyboard/input/scancode/20"))) {
-         debugCamera.position =
-           debugCamera.position + (debugCamera.rotation.getDown() * speed);
-      }
+      const float moveUp =
+        Engine->Interact->Directory.GetSignal(ctInteractPath("actions/debug/moveUp"));
+      debugCamera.position =
+        debugCamera.position + (debugCamera.rotation.getUp() * moveUp * speed);
 
+      /* Override camera */
       CurrentCamera = debugCamera;
-   } else if (Engine->Interact->GetSignal(
-                ctInteractPath("/dev/keyboard/input/scancode/53")) &&
-              Engine->Interact->GetSignal(
-                ctInteractPath("/dev/keyboard/input/scancode/224"))) {
+   } else if (Engine->Interact->Directory.GetSignal(
+                ctInteractPath("actions/debug/enable"))) {
       debugCameraActive = true;
    }
 
@@ -208,28 +215,34 @@ ctCameraInfo ctHoneybellSceneEngine::GetCameraInfoLastFrame(const char* cameraId
    return LastCamera;
 }
 
-ctResults ctHoneybellSceneEngine::LoadScene(const char* name) {
-   ZoneScoped;
-   ctStringUtf8 str = Engine->FileSystem->GetAssetPath();
-   str += "scene/";
-   str += name;
-   str += "/scene.lua";
-   str.FilePathLocalize();
-   CT_RETURN_FAIL(levelScript.LoadFromFile(str.CStr()));
-   CT_RETURN_FAIL(levelScript.RunScript());
+ctResults ctHoneybellSceneEngine::LoadScene(const char* path, const char* message) {
    mainScene.ClearScene();
-   activeSceneName = name;
-
-#if CITRUS_INCLUDE_AUDITION
-   str.Clear();
-   str.Printf(24 + strlen(name), "scene/%s/scene.lua", name);
-   hotReload.Reset();
-   hotReload.RegisterPath(str.CStr());
-#endif
-
-   int returnValue = -1;
-   ctScriptTypedLightData loaderData = {CT_SCRIPTOBTYPE_HBSCENE, &mainScene};
-   CT_RETURN_FAIL(
-     levelScript.CallFunction("loadScene", "u:i", &loaderData, &returnValue));
+   mainScene.SpawnToy("citrus/groundPlane", ctTransform(ctVec3(0.0f, -1.0f, 0.0f)));
+   ctHandle fpsHandle;
+   mainScene.SpawnToy("fps/player", ctTransform(ctVec3(0.0f)), "", "", &fpsHandle);
+   PossessToy(fpsHandle);
+   for (int i = 0; i < 1000; i++) {
+      mainScene.SpawnToy(
+        "citrus/testShape", ctTransform(ctVec3(0.0f, (float)i, 1 * 2)), "1 0 0 1");
+   }
    return CT_SUCCESS;
+}
+
+ctResults ctHoneybellSceneEngine::PossessToy(ctHandle handle,
+                                             bool wantCamera,
+                                             int32_t playerIdx,
+                                             const char* message) {
+   ctHoneybell::ToyBase* toy = mainScene.FindToyByHandle(handle);
+   if (toy) {
+      ctHoneybell::PossessionContext ctx = ctHoneybell::PossessionContext();
+      ctx.playerIdx = 0; /* Todo: multi-player support */
+      ctx.wantsCameraControl = true;
+      ctx.pSignalManager = &mainScene.signalManager;
+      if (toy->OnTryPossess(ctx) == CT_SUCCESS) {
+         possessedToy = handle;
+         return CT_SUCCESS;
+      };
+      return CT_FAILURE_INACCESSIBLE;
+   }
+   return CT_FAILURE_NOT_FOUND;
 }

@@ -28,28 +28,20 @@ namespace ctHoneybell {
 
 class CT_API PhysXControllerComponent : public ComponentBase {
 public:
-   PhysXControllerComponent(class ComponentFactoryBase* _factory, class ToyBase* _toy);
+   PhysXControllerComponent(ConstructContext& ctx, class ToyBase* _toy);
    ~PhysXControllerComponent();
 
-   ctResults InitController(PxControllerDesc* pDesc = NULL);
+   virtual ctResults Begin(BeginContext& ctx);
 
    virtual bool hasTransform() const;
-   virtual ctTransform GetWorldTransform();
+   virtual ctTransform GetWorldTransform() const;
    virtual void SetWorldTransform(ctTransform& v);
    virtual ctBoundBox GetWorldBounds();
+
+   virtual const char* GetTypeName();
 
    ctQuat rotation;
    PxController* pPxController;
    PxMaterial* pPxMaterialStorage;
-};
-
-/* Boilerplate */
-class CT_API PhysXControllerComponentFactory : public ComponentFactoryBase {
-public:
-   virtual ctResults Startup();
-   virtual ctResults Shutdown();
-   virtual ComponentBase* NewComponent(class ToyBase* _owner);
-   PxScene* pPxScene;
-   PxControllerManager* pControllerManager;
 };
 }

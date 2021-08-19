@@ -24,9 +24,11 @@ namespace ctHoneybell {
 
 class CT_API DebugShapeComponent : public ComponentBase {
 public:
-   DebugShapeComponent(class ComponentFactoryBase* _factory, class ToyBase* _toy);
+   DebugShapeComponent(struct ConstructContext ctx, class ToyBase* _toy);
    ctVec4 rgba;
    ctStringUtf8 text;
+
+   virtual ctResults Begin(struct BeginContext& ctx);
 
    virtual bool hasTransform() const;
    virtual void SetWorldTransform(ctTransform& v);
@@ -35,16 +37,16 @@ public:
    virtual void SetLocalBounds(ctBoundBox& v);
    virtual ctBoundBox GetLocalBounds() const;
 
+   virtual const char* GetTypeName();
+
 private:
    ctTransform transform;
    ctBoundBox bounds;
 };
 
-class CT_API DebugShapeComponentFactory : public ComponentFactoryBase {
+class CT_API DebugShapeManager {
 public:
    ctDynamicArray<DebugShapeComponent*> shapes;
-   virtual ComponentBase* NewComponent(class ToyBase* _owner);
-   virtual void DeleteComponent(ComponentBase* _component);
    void Im3dDrawAll();
 };
 }

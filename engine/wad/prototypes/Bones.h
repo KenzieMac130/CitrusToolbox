@@ -18,13 +18,18 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
+struct CT_API ctWADProtoRigSignature {
+   uint32_t boneCount;
+   uint32_t identifier;
+};
 
-namespace ctHoneybell {
+struct CT_API ctWADProtoBoneTransform {
+   float position[3];
+   float rotation[4];
+   float scale[3];
+};
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+struct CT_API ctWADProtoBoneNameEntry {
+   int32_t strOffset;
+   uint32_t hash;
+};

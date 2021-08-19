@@ -15,13 +15,3 @@
 */
 
 #include "CameraComponent.hpp"
-
-ctHoneybell::CameraComponent::CameraComponent(class ComponentFactoryBase* _factory,
-                                              class ToyBase* _toy) :
-    ComponentBase::ComponentBase(_factory, _toy) {
-}
-
-ctHoneybell::ComponentBase*
-ctHoneybell::CameraComponentFactory::NewComponent(ToyBase* _owner) {
-   return new CameraComponent(this, _owner);
-}

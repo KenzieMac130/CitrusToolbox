@@ -14,17 +14,24 @@
    limitations under the License.
 */
 
-#pragma once
+#include "Mesh.hpp"
 
-#include "utilities/Common.h"
+ctMeshAsset::ctMeshAsset(class ctAssetManager* _manager, const char* _relativePath) :
+    ctAssetBase(_manager, _relativePath) {
+}
 
-#include "../Component.hpp"
+const char* ctMeshAsset::GetAssetType() {
+   return "mesh";
+}
 
-namespace ctHoneybell {
+bool ctMeshAsset::isAvailible() {
+   return false;
+}
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
+ctResults ctMeshAsset::OnLoad(ctFile& file) {
+   return CT_SUCCESS;
+}
+
+ctResults ctMeshAsset::OnRelease() {
+   return CT_SUCCESS;
 }

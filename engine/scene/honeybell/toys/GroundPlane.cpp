@@ -17,8 +17,8 @@
 #include "GroundPlane.hpp"
 
 ctHoneybell::GroundPlane::GroundPlane(ConstructContext& ctx) : ToyBase(ctx) {
-   PhysicsPlane = ctx.pComponentRegistry->NewComponent<PhysXActorComponent>(this);
-   if (PhysicsPlane.isValid()) {
+   PhysicsPlane = new PhysXActorComponent(ctx, this);
+   if (PhysicsPlane) {
       PhysicsPlane->PxMaterialStorage.Append(
         ctx.pPhysics->createMaterial(0.5f, 0.5f, 0.6f));
       PhysicsPlane->pPxRigidActor =
@@ -29,6 +29,6 @@ ctHoneybell::GroundPlane::GroundPlane(ConstructContext& ctx) : ToyBase(ctx) {
 }
 
 ctResults ctHoneybell::GroundPlane::OnBegin(BeginContext& ctx) {
-   if (PhysicsPlane.isValid()) { PhysicsPlane->AddToScene(); }
+   BeginComponents(ctx);
    return CT_SUCCESS;
 }

@@ -29,10 +29,18 @@
 #include <stdlib.h>
 
 #include "types/WAD.hpp"
+#include "types/Mesh.hpp"
+#include "types/Texture.hpp"
 
 ctAssetBase*
 newAssetOfType(class ctAssetManager* manager, const char* path, const char* type) {
-   if (ctCStrEql(type, "wad")) { new ctWADAsset(manager, path); }
+   if (ctCStrEql(type, "wad")) {
+      return new ctWADAsset(manager, path);
+   } else if (ctCStrEql(type, "mesh")) {
+      return new ctMeshAsset(manager, path);
+   } else if (ctCStrEql(type, "texture")) {
+      return new ctTextureAsset(manager, path);
+   }
    return NULL;
 }
 
@@ -41,42 +49,27 @@ uint64_t hashAssetPathAndType(const char* assetPath, const char* assetType) {
       uint64_t ah;
       uint64_t th;
    } combo;
-   combo.ah = ctxxHash64(assetPath);
-   combo.th = ctxxHash64(assetType);
-   return ctxxHash64(&combo, sizeof(combo), CT_HASH_RESEED_ASSET_PATH);
+   combo.ah = ctXXHash64(assetPath);
+   combo.th = ctXXHash64(assetType);
+   return ctXXHash64(&combo, sizeof(combo), CT_HASH_RESEED_ASSET_PATH);
 }
 
 ctAssetManager::ctAssetManager(ctFileSystem* _pFileSystem) {
    pFileSystem = _pFileSystem;
    gcAutoActive = true;
    assetsByHash.Reserve(1024);
-   // pAssetSystem = NULL;
 }
 
 ctResults ctAssetManager::Startup() {
    ZoneScoped;
    ctDebugLog("Starting Asset Manager...");
-   // pAssetSystem = assetsys_create(NULL);
-   // if (!pAssetSystem) { return CT_FAILURE_UNKNOWN; }
-   // ctStringUtf8 dataPath = pFileSystem->GetDataPath();
-   // ctStringUtf8 prefPath = pFileSystem->GetPreferencesPath();
-   // ctStringUtf8 assetPath = pFileSystem->GetAssetPath();
-   // dataPath.FilePathUnify();
-   // dataPath.FilePathRemoveTrailingSlash();
-   // prefPath.FilePathUnify();
-   // prefPath.FilePathRemoveTrailingSlash();
-   // assetPath.FilePathUnify();
-   // assetPath.FilePathRemoveTrailingSlash();
-   // MountDirectory(dataPath.CStr(), "/${EXE}");
-   // MountDirectory(prefPath.CStr(), "/${CFG}");
-   // MountDirectory(assetPath.CStr(), "/${ASSET}");
    gcAutoActive = true;
    return CT_SUCCESS;
 }
 
 ctResults ctAssetManager::Shutdown() {
    ZoneScoped;
-   // if (pAssetSystem) { assetsys_destroy(pAssetSystem); }
+   GarbageCollect(Engine->JobSystem);
    return CT_SUCCESS;
 }
 
@@ -102,35 +95,25 @@ ctResults ctAssetManager::GarbageCollect(ctJobSystem* jobs) {
    return CT_SUCCESS;
 }
 
-// ctResults ctAssetManager::MountDirectory(const char* path, const char* virtualPath) {
-//   ZoneScoped;
-//   assetsys_error_t err = assetsys_mount(pAssetSystem, path, virtualPath);
-//   if (err != ASSETSYS_SUCCESS) {
-//      ctDebugError("Mounting %s as %s failed with %d...", path, virtualPath, err);
-//      return CT_FAILURE_INACCESSIBLE;
-//   };
-//   ctDebugLog("Mounted %s : %s", path, virtualPath);
-//   return CT_SUCCESS;
-//}
-
-// ctResults ctAssetManager::DismountDirectory(const char* path, const char* virtualPath)
-// {
-//   ZoneScoped;
-//   assetsys_error_t err = assetsys_dismount(pAssetSystem, path, virtualPath);
-//   if (err != ASSETSYS_SUCCESS) {
-//      ctDebugError("Dismounting %s as %s failed with %d...", path, virtualPath, err);
-//      return CT_FAILURE_INACCESSIBLE;
-//   };
-//   ctDebugLog("Dismounted %s : %s", path, virtualPath);
-//   return CT_SUCCESS;
-//}
-
 ctWADAsset* ctAssetManager::GetWADAsset(const char* path) {
    return (ctWADAsset*)FindOrReferenceAsset(path, "wad");
 }
 
 void ctAssetManager::_AddAssetToGC(ctAssetBase* pAsset) {
    assetsToGC.Append(pAsset);
+}
+
+bool ctAssetManager::_LoadSingleAsset(ctAssetBase* pAsset) {
+   /* Immediately load and login the file (this will do for now) */
+   ctFile file;
+   if (Engine->FileSystem->OpenAssetFile(file, pAsset->GetRelativePath()) == CT_SUCCESS) {
+      pAsset->OnLoad(file);
+      pAsset->OnLogin();
+      file.Close();
+      return true;
+   }
+   ctDebugError("Failed to load asset: %s", pAsset->GetRelativePath());
+   return false;
 }
 
 ctAssetBase* ctAssetManager::FindOrReferenceAsset(const char* path, const char* type) {
@@ -150,26 +133,12 @@ ctAssetBase* ctAssetManager::FindOrReferenceAsset(const char* path, const char* 
       (*ppFoundEntry)->Reference();
       return *ppFoundEntry;
    }
-   /*assetsys_file_t f;
-   assetsys_error_t err = assetsys_file(pAssetSystem, path, &f);
-   if (err != ASSETSYS_SUCCESS) {
-      ctDebugError("Failed to open asset %s of %s", path, type);
-      return NULL;
-   }*/
    ctAssetBase* newAsset = newAssetOfType(this, path, type);
    if (!newAsset) {
-      ctDebugError("Failed to create asset %s of %s", path, type);
+      ctDebugError("Failed to create asset \"%s\" of type: \"%s\"", path, type);
       return NULL;
    }
    newAsset->Reference();
-
-   /* Immediately load and login the file (this will do for now) */
-   ctFile file;
-   if (Engine->FileSystem->OpenAssetFile(file, path) == CT_SUCCESS) {
-      newAsset->OnLoad(file);
-      newAsset->OnLogin();
-   }
-   file.Close();
 
    assetsByHash.Insert(combinedHash, newAsset);
    return newAsset;
@@ -178,6 +147,7 @@ ctAssetBase* ctAssetManager::FindOrReferenceAsset(const char* path, const char* 
 ctAssetBase::ctAssetBase(class ctAssetManager* _manager, const char* _relativePath) {
    pManager = _manager;
    relativePath = _relativePath;
+   references = 0;
 }
 
 ctAssetBase::~ctAssetBase() {
@@ -193,6 +163,13 @@ bool ctAssetBase::isUnreferenced() {
 
 int32_t ctAssetBase::GetReferenceCount() {
    return references;
+}
+
+bool ctAssetBase::LoadAndWait() {
+   if (isIdeal()) { return true; }
+   if (isUnreferenced()) { return false; }
+   if (!pManager) { return false; }
+   return pManager->_LoadSingleAsset(this);
 }
 
 const char* ctAssetBase::GetRelativePath() {

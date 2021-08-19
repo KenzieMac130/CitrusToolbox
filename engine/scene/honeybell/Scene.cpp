@@ -22,6 +22,7 @@
 
 #include "asset/AssetManager.hpp"
 #include "asset/types/WAD.hpp"
+#include "wad/prototypes/Header.h"
 
 #if CITRUS_PHYSX
 #define PHYSX_SCRATCH_MEMORY_AMOUNT 0
@@ -41,10 +42,16 @@ ctHandle ctHoneybell::Scene::_RegisterToy(ToyBase* toy) {
    CT_PANIC_UNTRUE(toys.Insert(toyHandle, toy),
                    "Internal scene error: Failed to add toy");
    BeginContext ctx = BeginContext();
+   ctx.pOwningScene = this;
+   ctx.pSignalManager = &signalManager;
+   ctx.pPxScene = pPxScene;
+   ctx.pPxControllerManager = pPxControllerManager;
+   toy->_SetIdentifier(toyHandle);
    toy->OnBegin(ctx);
    if (ctx.canTickSerial) { toys_TickSerial.Append(toy); }
    if (ctx.canTickParallel) { toys_TickParallel.Append(toy); }
    if (ctx.canFrameUpdate) { toys_FrameUpdate.Append(toy); }
+   if (ctx.canHandleSignals) { signalManager.AddToy(toy); }
    return toyHandle;
 }
 
@@ -55,6 +62,7 @@ void ctHoneybell::Scene::_UnregisterToy(ctHandle hndl) {
       toys_TickSerial.Remove(*toy);
       toys_TickParallel.Remove(*toy);
       toys_FrameUpdate.Remove(*toy);
+      signalManager.RemoveToy(*toy);
       toyHandleManager.FreeHandle(hndl);
       toys.Remove(hndl);
    }
@@ -72,7 +80,6 @@ void doParallelTickJob(void* pData) {
 
 ctResults ctHoneybell::Scene::Startup() {
    ZoneScoped;
-
 #if CITRUS_PHYSX
    globalGravity = ctVec3(0.0f, -9.81f, 0.0f);
    PxSceneDesc sceneDesc = PxSceneDesc(Engine->PhysXIntegration->toleranceScale);
@@ -82,43 +89,23 @@ ctResults ctHoneybell::Scene::Startup() {
    sceneDesc.gravity = ctVec3ToPx(globalGravity);
    physMemory = ctAlignedMalloc(PHYSX_SCRATCH_MEMORY_AMOUNT, 16);
    pPxScene = Engine->PhysXIntegration->pPhysics->createScene(sceneDesc);
-   componentFactory_PhysXActor.pPxScene = pPxScene;
-   componentFactory_PhysXController.pPxScene = pPxScene;
+   pPxControllerManager = PxCreateControllerManager(*pPxScene);
 #endif
-
-   /* Startup component factories */
-   componentFactory_Camera.ModuleStartup(Engine);
-   componentFactory_DebugShape.ModuleStartup(Engine);
-   componentFactory_PhysXActor.ModuleStartup(Engine);
-   componentFactory_PhysXController.ModuleStartup(Engine);
-
-   /* Register component factories */
-   componentRegistry.RegisterComponentFactory<CameraComponent>(&componentFactory_Camera);
-   componentRegistry.RegisterComponentFactory<DebugShapeComponent>(
-     &componentFactory_DebugShape);
-   componentRegistry.RegisterComponentFactory<PhysXActorComponent>(
-     &componentFactory_PhysXActor);
-   componentRegistry.RegisterComponentFactory<PhysXControllerComponent>(
-     &componentFactory_PhysXController);
-
    return CT_SUCCESS;
 }
 
 ctResults ctHoneybell::Scene::Shutdown() {
    ZoneScoped;
-   /* Shutdown component factories */
-   componentFactory_Camera.ModuleShutdown();
-   componentFactory_DebugShape.ModuleShutdown();
-   componentFactory_PhysXActor.ModuleShutdown();
-   componentFactory_PhysXController.ModuleShutdown();
+   ClearScene();
+   pPxControllerManager->release();
+   pPxScene->release();
    ctAlignedFree(physMemory);
    return CT_SUCCESS;
 }
 
 void ctHoneybell::Scene::NextFrame() {
    ZoneScoped;
-   /* Draw debug shapes */
-   componentFactory_DebugShape.Im3dDrawAll();
+   debugShapes.Im3dDrawAll();
 }
 
 void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
@@ -133,6 +120,7 @@ void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
       struct TickContext tickCtx = TickContext();
       tickCtx.deltaTime = tickInterval;
       tickCtx.gravity = globalGravity;
+      tickCtx.pSignalManager = &signalManager;
 
       /* Tick Parallel */
       parallelJobData.Resize(toys_TickParallel.Count());
@@ -150,6 +138,8 @@ void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
          ToyBase* pToy = toys_TickSerial[i];
          if (pToy) { pToy->OnTickSerial(tickCtx); }
       }
+
+      signalManager.DispatchSignals();
 
 #if CITRUS_PHYSX
       /*Todo: scratch buffer*/
@@ -186,10 +176,12 @@ void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
    FrameUpdateContext updateCtx = FrameUpdateContext();
    updateCtx.deltaTime = deltaTime;
    updateCtx.gravity = globalGravity;
+   updateCtx.pSignalManager = &signalManager;
    for (int i = 0; i < toys_FrameUpdate.Count(); i++) {
       ToyBase* pToy = toys_FrameUpdate[i];
       if (pToy) { pToy->OnFrameUpdate(updateCtx); }
    }
+   signalManager.DispatchSignals();
 }
 
 void ctHoneybell::Scene::ClearScene() {
@@ -203,84 +195,60 @@ void ctHoneybell::Scene::ClearScene() {
    toys_FrameUpdate.Clear();
    toys_TickParallel.Clear();
    toys_TickSerial.Clear();
+   debugShapes.shapes.Clear();
 }
 
-ctResults ctHoneybell::Scene::SpawnToy(const char* prefabPath,
+ctResults ctHoneybell::Scene::SpawnToy(const char* toyType,
                                        ctTransform& transform,
-                                       const char* message) {
+                                       const char* message,
+                                       const char* prefabWadPath,
+                                       ctHandle* pResultHandle) {
    ZoneScoped;
-   ctWADAsset* pWadAsset = Engine->AssetManager->GetWADAsset(prefabPath);
-   if (!pWadAsset) {
-      ctDebugWarning("Failed to spawn %s at (%f,%f,%f)",
-                     prefabPath,
-                     transform.position.x,
-                     transform.position.y,
-                     transform.position.z);
-      SpawnErrorToy(transform);
-      return CT_FAILURE_FILE_NOT_FOUND;
+
+   ctWADAsset* pWadAsset = NULL;
+   if (prefabWadPath) {
+      pWadAsset = Engine->AssetManager->GetWADAsset(prefabWadPath);
+      pWadAsset->LoadAndWait();
    }
 
-   char* pTypePath = NULL;
-   int32_t typePathSize = 0;
-   ctStringUtf8 sanitizedPath;
-   ctWADFindLump(&pWadAsset->wadReader, "TOYTYPE", (void**)&pTypePath, &typePathSize);
-   if (!pTypePath) {
-      ctDebugWarning("Failed to spawn %s: No toy type!", prefabPath);
-      SpawnErrorToy(transform);
-      return CT_FAILURE_CORRUPTED_CONTENTS;
+   if (pWadAsset) {
+      ctWADProtoHeader* pWadHeader;
+      ctWADFindLump(&pWadAsset->wadReader, "CITRUS", (void**)&pWadHeader, NULL);
+      if (!pWadHeader) {
+         ctDebugWarning("Failed to spawn %s: No citrus header!", prefabWadPath);
+         return CT_FAILURE_CORRUPTED_CONTENTS;
+      }
    }
-   sanitizedPath = ctStringUtf8(pTypePath, typePathSize);
 
    ctHoneybell::SpawnData spawnData = ctHoneybell::SpawnData();
    spawnData.transform = transform;
    spawnData.message = message;
    ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
-   prefabData.wadReader = pWadAsset->wadReader;
+   if (pWadAsset) { prefabData.wadReader = pWadAsset->wadReader; }
    ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
    constructCtx.pOwningScene = this;
-   constructCtx.pComponentRegistry = &componentRegistry;
-   constructCtx.pPhysics = Engine->PhysXIntegration->pPhysics;
-   constructCtx.spawn = spawnData;
-   constructCtx.prefab = prefabData;
-   constructCtx.typePath = sanitizedPath.CStr();
-   ctHoneybell::ToyBase* newToy = pToyRegistry->NewToy(constructCtx);
-   if (newToy) {
-      newToy->_SetIdentifier(_RegisterToy(newToy));
-      toysLinear.Append(newToy);
-   }
-   pWadAsset->Dereferene();
-   return CT_SUCCESS;
-}
-
-ctResults ctHoneybell::Scene::SpawnInternalToy(const char* toyType,
-                                               ctTransform& transform,
-                                               const char* message) {
-   ZoneScoped;
-   ctHoneybell::SpawnData spawnData = ctHoneybell::SpawnData();
-   spawnData.transform = transform;
-   spawnData.message = message;
-   ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
-   ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
-   constructCtx.pOwningScene = this;
-   constructCtx.pComponentRegistry = &componentRegistry;
    constructCtx.pPhysics = Engine->PhysXIntegration->pPhysics;
    constructCtx.spawn = spawnData;
    constructCtx.prefab = prefabData;
    constructCtx.typePath = toyType;
    ctHoneybell::ToyBase* newToy = pToyRegistry->NewToy(constructCtx);
    if (newToy) {
-      newToy->_SetIdentifier(_RegisterToy(newToy));
+      ctHandle hndl = _RegisterToy(newToy);
+      if (pResultHandle) { *pResultHandle = hndl; }
       toysLinear.Append(newToy);
    }
+   if (pWadAsset) { pWadAsset->Dereferene(); }
    return CT_SUCCESS;
 }
 
-ctResults ctHoneybell::Scene::SpawnErrorToy(ctTransform& transform) {
-   return SpawnInternalToy("citrus/testShape", transform, "");
+ctHoneybell::ToyBase* ctHoneybell::Scene::FindToyByHandle(ctHandle handle) {
+   ToyBase** ppToy = toys.FindPtr(handle);
+   if (ppToy) { return *ppToy; }
+   return NULL;
 }
 
 int ctScriptApi::Honeybell::spawnToy(ctScriptTypedLightData* ldata,
-                                     const char* path,
+                                     const char* type,
                                      float x,
                                      float y,
                                      float z,
@@ -288,24 +256,10 @@ int ctScriptApi::Honeybell::spawnToy(ctScriptTypedLightData* ldata,
                                      float pitch,
                                      float roll,
                                      float scale,
-                                     const char* message) {
+                                     const char* message,
+                                     const char* prefabPath) {
    ctTransform transform =
      ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
-   ((ctHoneybell::Scene*)(ldata->ptr))->SpawnToy(path, transform, message);
-   return 0;
-}
-
-int ctScriptApi::Honeybell::spawnInternalToy(ctScriptTypedLightData* ldata,
-                                             const char* type,
-                                             float x,
-                                             float y,
-                                             float z,
-                                             float yaw,
-                                             float pitch,
-                                             float roll,
-                                             float scale,
-                                             const char* message) {
-   ctTransform transform = ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
-   ((ctHoneybell::Scene*)(ldata->ptr))->SpawnInternalToy(type, transform, message);
+   ((ctHoneybell::Scene*)(ldata->ptr))->SpawnToy(type, transform, message, prefabPath);
    return 0;
 }

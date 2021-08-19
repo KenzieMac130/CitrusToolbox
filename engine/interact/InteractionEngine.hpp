@@ -20,14 +20,14 @@
 #include "core/ModuleBase.hpp"
 #include "DeviceBackendLayer.hpp"
 
-/* ---------------------------------- Virtual Directory ----------------------------------
- */
+/* --------------------------- Virtual Directory --------------------------- */
 
 enum ctInteractionNodeType {
    CT_INTERACT_NODETYPE_NULL = 0,
-   CT_INTERACT_NODETYPE_SCALAR = 1, /* Data points to a float */
-   CT_INTERACT_NODETYPE_BOOL = 2,   /* Data points to a boolean */
-   CT_INTERACT_NODETYPE_MERGER = 8, /* Data points to a value merger structure */
+   CT_INTERACT_NODETYPE_SCALAR = 1,      /* Data points to a float */
+   CT_INTERACT_NODETYPE_BOOL = 2,        /* Data points to a boolean */
+   CT_INTERACT_NODETYPE_BINDING = 127,   /* Data points to a binding structure */
+   CT_INTERACT_NODETYPE_ACTIONSET = 128, /* Data points to an action set */
    CT_INTERACT_NODETYPE_MAX = UINT8_MAX
 };
 
@@ -37,7 +37,7 @@ struct CT_API ctInteractPath {
    ctInteractPath(const char* ptr);
    ctInteractPath(const ctStringUtf8& ctStr);
    bool operator==(const ctInteractPath other) {
-       return ctCStrEql(str, other.str);
+      return ctCStrEql(str, other.str);
    }
    char str[CT_MAX_INTERACT_PATH_SIZE];
 };
@@ -49,6 +49,10 @@ struct CT_API ctInteractNode {
       accessible = true;
       pData = NULL;
    }
+   float GetScalar();
+   bool SetScalar(float value);
+   class ctInteractBinding* GetAsBinding();
+   class ctInteractActionSet* GetAsActionSet();
    ctInteractPath path;
    ctInteractionNodeType type;
    bool accessible;
@@ -57,28 +61,49 @@ struct CT_API ctInteractNode {
 
 class CT_API ctInteractDirectorySystem {
 public:
+   ctResults CreateActionSetsFromFile(ctFile& file);
+   ctResults CreateBindingsFromFile(ctFile& file);
+   ctResults Update();
    ctResults AddNode(ctInteractNode& node);
    ctResults RemoveNode(ctInteractPath& path);
+   void EnableActionSet(ctInteractPath& path);
+   void DisableActionSet(ctInteractPath& path);
    ctResults SetNodeAccessible(ctInteractPath& path, bool accessible);
    ctResults
    GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false);
+   float GetSignal(ctInteractPath& path);
+   void FireActions(void (*callback)(const char* path, float value, void* user),
+                    void* userdata = NULL);
    void LogContents();
+   void DebugImGui();
 
 private:
+   ctDynamicArray<ctInteractPath> activeActionSets;
    ctHashTable<ctInteractNode, uint64_t> nodes;
 };
 
-/* ---------------------------------- Value Merger ---------------------------------- */
+/* --------------------------- Bindings --------------------------- */
 
-class CT_API ctInteractMergeOp {
+struct ctInteractBindingEntry {
+   ctInteractPath path;
+   float scale;
    bool required;
-   ctInteractPath sourcePath;
 };
 
-class CT_API ctInteractMerger {
+class CT_API ctInteractBinding {
 public:
-   ctInteractPath targetPath;
-   ctDynamicArray<ctInteractMergeOp> mergeOps;
+   float value;
+   void Process(ctInteractDirectorySystem& dir);
+   ctDynamicArray<ctInteractBindingEntry> inputs;
+   ctInteractPath output;
+};
+
+/* --------------------------- Action Sets --------------------------- */
+class CT_API ctInteractActionSet {
+public:
+   ctDynamicArray<ctInteractPath> bindings;
+   ctDynamicArray<ctInteractPath> actions;
+   ctDynamicArray<float> actionOutputs;
 };
 
 /* ---------------------------------- Engine ---------------------------------- */
@@ -89,11 +114,10 @@ public:
    ctResults Shutdown() final;
 
    ctResults PumpInput();
-   ctResults DebugImGui();
-
-   float GetSignal(ctInteractPath& path);
+   void DebugImGui();
 
    ctInteractDirectorySystem Directory;
+   bool isFrameActive;
 
 protected:
    ctDynamicArray<class ctInteractAbstractBackend*> pBackends;

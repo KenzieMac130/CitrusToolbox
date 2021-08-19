@@ -15,17 +15,28 @@
 */
 
 #include "Toy.hpp"
-
+#include "Component.hpp"
 #include "Scene.hpp"
 
 ctHoneybell::ToyBase::ToyBase(ConstructContext& ctx) {
+   identifier = 0;
    transform.position = ctx.spawn.transform.position;
    transform.rotation = ctx.spawn.transform.rotation;
    transform.scale = ctx.spawn.transform.scale;
    aabb = ctBoundBox();
+   pFirstComponent = NULL;
 }
 
 ctHoneybell::ToyBase::~ToyBase() {
+   /* Auto destruct all components */
+   ComponentBase* nextComponent = pFirstComponent;
+   if (!nextComponent) { return; }
+   while (nextComponent->pNextSiblingComponent) {
+      ComponentBase* lastComponent = nextComponent;
+      nextComponent = nextComponent->pNextSiblingComponent;
+      delete lastComponent;
+   }
+   delete nextComponent;
 }
 
 ctResults ctHoneybell::ToyBase::OnBegin(BeginContext& ctx) {
@@ -44,16 +55,29 @@ ctResults ctHoneybell::ToyBase::OnFrameUpdate(FrameUpdateContext& ctx) {
    return CT_SUCCESS;
 }
 
-ctResults ctHoneybell::ToyBase::OnSignal(SignalContext& ctx) {
-   return CT_SUCCESS;
-}
-
 ctResults ctHoneybell::ToyBase::OnTryPossess(PossessionContext& ctx) {
    return CT_FAILURE_INACCESSIBLE;
 }
 
+/* Default point of view handling */
+ctResults ctHoneybell::ToyBase::GetPointOfView(PointOfViewContext& ctx) {
+   ctTransform transform = GetWorldTransform();
+   float radius = ctBoundSphere(GetAABB()).radius;
+   if (radius < 0.0f) { radius = 1.0f; }
+   ctx.cameraInfo.rotation = transform.rotation;
+   ctx.cameraInfo.position = transform.position +
+                             (transform.rotation.getBack() * radius * 10.0f) +
+                             transform.rotation.getUp() * 2.0f;
+   return CT_SUCCESS;
+}
+
 void ctHoneybell::ToyBase::SetWorldTransform(ctTransform v) {
    transform = v;
+}
+
+void ctHoneybell::ToyBase::CopyComponentTransform(ComponentBase* pComponent) {
+   if (!pComponent) { return; }
+   SetWorldTransform(pComponent->GetWorldTransform());
 }
 
 ctTransform ctHoneybell::ToyBase::GetWorldTransform() {
@@ -68,8 +92,34 @@ void ctHoneybell::ToyBase::SetAABB(ctBoundBox v) {
    aabb = v;
 }
 
+void ctHoneybell::ToyBase::BeginComponents(BeginContext& ctx) {
+   if (!pFirstComponent) { return; }
+   ComponentBase* nextComponent = pFirstComponent;
+   while (nextComponent->pNextSiblingComponent) {
+      nextComponent->Begin(ctx);
+      nextComponent = nextComponent->pNextSiblingComponent;
+   }
+   nextComponent->Begin(ctx);
+}
+
 ctHandle ctHoneybell::ToyBase::GetIdentifier() {
    return identifier;
+}
+
+ctResults ctHoneybell::ToyBase::_CallSignal(SignalContext& ctx) {
+   return CT_FAILURE_INACCESSIBLE;
+}
+
+void ctHoneybell::ToyBase::_RegisterComponent(ComponentBase* v) {
+   if (!pFirstComponent) {
+      pFirstComponent = v;
+   } else {
+      ComponentBase* nextComponent = pFirstComponent;
+      while (nextComponent->pNextSiblingComponent) {
+         nextComponent = nextComponent->pNextSiblingComponent;
+      }
+      nextComponent->pNextSiblingComponent = v;
+   }
 }
 
 void ctHoneybell::ToyBase::_SetIdentifier(ctHandle hndl) {
@@ -78,17 +128,20 @@ void ctHoneybell::ToyBase::_SetIdentifier(ctHandle hndl) {
 
 ctHoneybell::ToyBase* ctHoneybell::ToyTypeRegistry::NewToy(ConstructContext& ctx) {
    ZoneScoped;
-   uint64_t typeHash = ctxxHash64(ctx.typePath);
+   uint64_t typeHash = ctXXHash64(ctx.typePath);
    ctAssert(typeHash != 0);
    ToyNewFunction* pCallback = _callbacks.FindPtr(typeHash);
-   if (!pCallback) { return NULL; }
+   if (!pCallback) {
+      ctDebugError("Failed to spawn toy of type: %s", ctx.typePath);
+      return NULL;
+   }
    return (*pCallback)(ctx);
 }
 
 ctResults ctHoneybell::ToyTypeRegistry::RegisterToyType(const char* typePath,
                                                         ToyNewFunction toyNewFunction) {
    ZoneScoped;
-   uint64_t typeHash = ctxxHash64(typePath);
+   uint64_t typeHash = ctXXHash64(typePath);
    ctAssert(typeHash != 0);
    if (!_callbacks.Insert(typeHash, toyNewFunction)) { return CT_FAILURE_UNKNOWN; }
    return CT_SUCCESS;

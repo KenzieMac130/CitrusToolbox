@@ -18,13 +18,11 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
-
-namespace ctHoneybell {
-
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+struct CT_API ctWADProtoSpawner {
+	int32_t flags;
+	int32_t pathStrOffset;
+	float position[3];
+	float rotation[4];
+	float scale[3];
+	int32_t commandStrOffset;
+};

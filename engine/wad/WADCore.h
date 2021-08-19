@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 struct CT_API ctWADInfo {
-   char identification[4]; /* CITR */
+   char identification[4];
    int32_t numlumps;
    int32_t infotableofs;
 };
@@ -46,6 +46,8 @@ enum ctResults ctWADFindLump(struct ctWADReader* pReader,
                              const char* name,
                              void** ppDataOut,
                              int32_t* ppSizeOut);
+
+const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset);
 
 #ifdef __cplusplus
 }

@@ -22,17 +22,13 @@
 
 #include "scripting/api/HoneybellScript.hpp"
 #include "Toy.hpp"
-#include "Component.hpp"
-
-/* All component types */
-#include "components/CameraComponent.hpp"
-#include "components/DebugShapeComponent.hpp"
-#include "components/PhysXActorComponent.hpp"
-#include "components/PhysXControllerComponent.hpp"
 
 #if CITRUS_PHYSX
 #include "PxScene.h"
+#include "characterkinematic/PxControllerManager.h"
 #endif
+
+#include "components/DebugShapeComponent.hpp"
 
 namespace ctHoneybell {
 
@@ -45,13 +41,12 @@ public:
    virtual ctResults Shutdown();
 
    void ClearScene();
-   ctResults SpawnToy(const char* prefabPath,
+   ctResults SpawnToy(const char* toyType,
                       ctTransform& transform = ctTransform(),
-                      const char* message = NULL);
-   ctResults SpawnInternalToy(const char* toyType,
-                              ctTransform& transform = ctTransform(),
-                              const char* message = NULL);
-   ctResults SpawnErrorToy(ctTransform& transform);
+                      const char* message = NULL,
+                      const char* prefabWadPath = NULL,
+                      ctHandle* pResultHandle = ctHandle());
+   ToyBase* FindToyByHandle(ctHandle handle);
 
    void Simulate(double deltaTime, ctJobSystem* pJobSystem);
    void NextFrame();
@@ -61,13 +56,16 @@ public:
    ctHandle _RegisterToy(ToyBase* toy);
    void _UnregisterToy(ctHandle hndl);
 
-   ComponentRegistry componentRegistry;
    ToyTypeRegistry* pToyRegistry;
+   SignalManager signalManager;
 
 #if CITRUS_PHYSX
    physx::PxScene* pPxScene;
+   physx::PxControllerManager* pPxControllerManager;
    void* physMemory;
 #endif
+
+   DebugShapeManager debugShapes;
 
 private:
    ctVec3 globalGravity;
@@ -79,12 +77,6 @@ private:
    ctDynamicArray<ToyBase*> toys_TickSerial;
    ctDynamicArray<ToyBase*> toys_TickParallel;
    ctDynamicArray<ToyBase*> toys_FrameUpdate;
-
-   /* Component factories */
-   CameraComponentFactory componentFactory_Camera;
-   DebugShapeComponentFactory componentFactory_DebugShape;
-   PhysXActorComponentFactory componentFactory_PhysXActor;
-   PhysXControllerComponentFactory componentFactory_PhysXController;
 
    double tickTimer;
 

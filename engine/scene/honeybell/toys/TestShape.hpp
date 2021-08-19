@@ -26,6 +26,8 @@ namespace ctHoneybell {
 
 class CT_API TestShape : public ToyBase {
 public:
+   TOY_INFO("citrus/testShape");
+
    TestShape(ConstructContext& ctx);
    virtual ~TestShape();
 
@@ -35,7 +37,8 @@ public:
 
 private:
    float angle;
-   ComponentPtr<PhysXActorComponent> physxComp;
-   ComponentPtr<DebugShapeComponent> debugShape;
+   PhysXActorComponent* physxComp;
+   DebugShapeComponent* debugShape;
 };
+
 }

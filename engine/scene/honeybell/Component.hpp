@@ -18,22 +18,21 @@
 
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
+#include "Toy.hpp"
 
 namespace ctHoneybell {
 
-/* Base class for a component which can be used by a toy
- * Components should contain internal data, the results of queries and any external
- * state updates MUST (by gameplay assumption) be performed in a threadsafe manner.
- * Wherever possible try to deffer external state updates to factory updates. */
 class CT_API ComponentBase {
 public:
-   ComponentBase(class ComponentFactoryBase* _factory, class ToyBase* _toy);
+   friend class ToyBase;
+   ComponentBase(ConstructContext& ctx, class ToyBase* _toy);
    virtual ~ComponentBase();
+
+   /* Called when the component becomes an active participant in the scene */
+   virtual ctResults Begin(BeginContext& beginCtx);
 
    /* Pointer to the tow which owns the component */
    class ToyBase* GetToyPtr();
-   /* Pointer to the factory which created the component */
-   class ComponentFactoryBase* GetFactoryPtr();
 
    /* ---- Component World Transforms ---- */
    /* Does the component have transforms? */
@@ -48,87 +47,15 @@ public:
    /* Get the bounds of the component (if applicable) */
    virtual ctBoundBox GetWorldBounds() const;
 
+   /* Get the name of the component type */
+   virtual const char* GetTypeName() = 0;
+
+   /* Overload for component allocator */
+   // void* operator new(size_t size);
+   // void operator delete(void* ptr);
+
 protected:
+   ComponentBase* pNextSiblingComponent;
    class ToyBase* pToy;
-   class ComponentFactoryBase* pFactory;
 };
-
-/* Base class for which all components of a given type can be created from.
- * Factories can manage batch updates of components and their memory allocation.
- * Major rule is that memory allocation should prevent false sharing and never relocate.
- */
-class CT_API ComponentFactoryBase : public ctModuleBase {
-public:
-   virtual ctResults Startup();
-   virtual ctResults Shutdown();
-
-   virtual ComponentBase* NewComponent(class ToyBase* _owner);
-   virtual void DeleteComponent(ComponentBase* _component);
-};
-
-/* A toy can use this to reference components and auto cleanup */
-template<class T>
-class CT_API ComponentPtr {
-public:
-   ComponentPtr() {
-      ptr = NULL;
-   }
-   inline bool isValid() {
-      return ptr != NULL;
-   }
-   inline void operator=(T* _ptr) {
-      ptr = _ptr;
-   }
-   inline T* operator->() {
-      return ptr;
-   }
-   inline ~ComponentPtr() {
-      ZoneScoped;
-      if (ptr) {
-         ComponentFactoryBase* pFactory = ptr->GetFactoryPtr();
-         if (pFactory) {}
-         pFactory->DeleteComponent(ptr);
-         ptr = NULL;
-      }
-   }
-
-private:
-   T* ptr;
-};
-
-/* Registers all component factory instances, this is handled by the scene */
-class CT_API ComponentRegistry {
-public:
-   /* Create a new component of a given type */
-   template<class CMPTYPE>
-   inline CMPTYPE* NewComponent(class ToyBase* _owner);
-
-   /* Register a new component factory with this registry */
-   template<class CMPTYPE>
-   inline ctResults RegisterComponentFactory(ComponentFactoryBase* pComponentFactory);
-
-private:
-   ctHashTable<ComponentFactoryBase*, size_t> _factoriesTyped;
-};
-
-template<class CMPTYPE>
-inline ctResults
-ComponentRegistry::RegisterComponentFactory(ComponentFactoryBase* pComponentFactory) {
-   ZoneScoped;
-   size_t typeHash = typeid(CMPTYPE).hash_code();
-   ctAssert(typeHash != 0);
-   _factoriesTyped.Insert(typeHash, pComponentFactory);
-   return CT_SUCCESS;
-}
-
-template<class CMPTYPE>
-inline CMPTYPE* ComponentRegistry::NewComponent(ToyBase* _owner) {
-   ZoneScoped;
-   size_t typeHash = typeid(CMPTYPE).hash_code();
-   ctAssert(typeHash != 0);
-   ComponentFactoryBase** ppFactory = _factoriesTyped.FindPtr(typeHash);
-   if (!ppFactory) { return NULL; }
-   if (!*ppFactory) { return NULL; }
-   return (CMPTYPE*)((*ppFactory)->NewComponent(_owner));
-}
 }

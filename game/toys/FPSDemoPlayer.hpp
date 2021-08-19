@@ -26,17 +26,32 @@ using namespace ctHoneybell;
 
 namespace Game {
 
-class GAME_API FPSPlayer : public ctHoneybell::ToyBase {
+class GAME_API FPSPlayer : public ToyBase {
 public:
-   FPSPlayer(ctHoneybell::ConstructContext& ctx);
+   TOY_INFO("fps/player");
+   TOY_HAS_SIGNALS();
+   FPSPlayer(ConstructContext& ctx);
    ~FPSPlayer();
-   virtual ctResults OnBegin(ctHoneybell::BeginContext& ctx);
-   virtual ctResults OnTickSerial(ctHoneybell::TickContext& ctx);
-   virtual ctResults OnFrameUpdate(ctHoneybell::FrameUpdateContext& ctx);
+   virtual ctResults OnBegin(BeginContext& ctx);
+   virtual ctResults OnTickSerial(TickContext& ctx);
+   virtual ctResults OnTryPossess(PossessionContext& ctx);
+
+   ctResults OnMoveForward(SignalContext& ctx);
+   ctResults OnMoveRight(SignalContext& ctx);
+   ctResults OnLookUp(SignalContext& ctx);
+   ctResults OnLookRight(SignalContext& ctx);
+   ctResults OnJump(SignalContext& ctx);
 
 private:
-   ComponentPtr<PhysXControllerComponent> Controller;
-   ComponentPtr<DebugShapeComponent> DebugShape;
+   float lookSpeed = 8.0f;
+   float moveSpeed = 6.0f;
+   float jumpStrength = 15.0f;
+   bool isJumping = false;
+   float yaw = 0.0f;
+   float pitch = 0.0f;
+   ctVec3 moveTarget = ctVec3();
+   PhysXControllerComponent* Controller;
+   DebugShapeComponent* DebugShape;
 };
 
 }

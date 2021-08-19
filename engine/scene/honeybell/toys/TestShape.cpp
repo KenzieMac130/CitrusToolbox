@@ -21,7 +21,7 @@
 
 ctHoneybell::TestShape::TestShape(ConstructContext& ctx) : ToyBase(ctx) {
    /* Setup Debug Shape */
-   debugShape = ctx.pComponentRegistry->NewComponent<DebugShapeComponent>(this);
+   debugShape = new DebugShapeComponent(ctx, this);
    ctBoundBox aabb = ctBoundBox();
    aabb.AddPoint(ctVec3(-0.5f));
    aabb.AddPoint(ctVec3(0.5f));
@@ -39,7 +39,7 @@ ctHoneybell::TestShape::TestShape(ConstructContext& ctx) : ToyBase(ctx) {
    angle = 0.0f;
 
    /* Setup Physics */
-   physxComp = ctx.pComponentRegistry->NewComponent<PhysXActorComponent>(this);
+   physxComp = new PhysXActorComponent(ctx, this);
    physxComp->pPxRigidActor =
      ctx.pPhysics->createRigidDynamic(ctTransformToPx(GetWorldTransform()));
    physxComp->PxMaterialStorage.Append(ctx.pPhysics->createMaterial(0.5f, 0.5f, 0.6f));
@@ -52,9 +52,9 @@ ctHoneybell::TestShape::~TestShape() {
 }
 
 ctResults ctHoneybell::TestShape::OnBegin(BeginContext& ctx) {
-   if (physxComp.isValid()) { physxComp->AddToScene(); }
    ctx.canFrameUpdate = false;
    ctx.canTickSerial = true;
+   BeginComponents(ctx);
    return CT_SUCCESS;
 }
 
@@ -66,8 +66,8 @@ ctResults ctHoneybell::TestShape::OnTickSerial(TickContext& ctx) {
    angle = ctSin(angle);
    if (physx.isValid()) {}
    SetWorldTransform(xform);*/
-   if (physxComp.isValid()) { SetWorldTransform(physxComp->GetWorldTransform()); }
-   if (debugShape.isValid()) { debugShape->CopyOwnerTransform(); }
+   if (physxComp) { SetWorldTransform(physxComp->GetWorldTransform()); }
+   if (debugShape) { debugShape->CopyOwnerTransform(); }
    return CT_SUCCESS;
 }
 

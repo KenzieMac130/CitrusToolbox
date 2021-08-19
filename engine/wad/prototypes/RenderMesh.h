@@ -18,13 +18,23 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
+struct CT_API ctWADProtoRenderMeshInstance {
+   int32_t boneIdx;
+   int32_t meshIdx;
+};
 
-namespace ctHoneybell {
+struct CT_API ctWADProtoRenderMesh {
+   int32_t flags;
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+   uint32_t submeshCount;
+   uint32_t vertexCount;
+   uint32_t indexCount;
+
+   int64_t submeshStreamOffset;
+   int64_t indexStreamOffset;
+   int64_t positionStreamOffset;
+   int64_t normalTangentStreamOffset;
+   int64_t skinStreamOffset;
+   int64_t uvStreamOffsets[4];
+   int64_t colorStreamOffsets[4];
+};

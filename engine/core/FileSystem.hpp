@@ -75,8 +75,12 @@ public:
    const ctResults OpenPreferencesFile(ctFile& file,
                                        const ctStringUtf8& relativePath,
                                        const ctFileOpenMode mode);
-   const ctResults OpenExeRelativeFile(ctFile& file, const ctStringUtf8& relativePath);
-   const ctResults OpenAssetFile(ctFile& file, const ctStringUtf8& relativePath);
+   const ctResults OpenExeRelativeFile(ctFile& file,
+                                       const ctStringUtf8& relativePath,
+                                       const ctFileOpenMode mode = CT_FILE_OPEN_READ);
+   const ctResults OpenAssetFile(ctFile& file,
+                                 const ctStringUtf8& relativePath,
+                                 const ctFileOpenMode mode = CT_FILE_OPEN_READ);
 
    const ctResults MakePreferencesDirectory(const ctStringUtf8& relativePath);
 

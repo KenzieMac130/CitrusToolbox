@@ -18,21 +18,21 @@
 
 #include "Toy.hpp"
 
-ctHoneybell::ComponentBase::ComponentBase(ComponentFactoryBase* _factory,
-                                          class ToyBase* _toy) {
+ctHoneybell::ComponentBase::ComponentBase(ConstructContext& ctx, class ToyBase* _toy) {
    pToy = _toy;
-   pFactory = _factory;
+   pNextSiblingComponent = NULL;
+   _toy->_RegisterComponent(this);
 }
 
 ctHoneybell::ComponentBase::~ComponentBase() {
 }
 
-class ctHoneybell::ToyBase* ctHoneybell::ComponentBase::GetToyPtr() {
-   return pToy;
+ctResults ctHoneybell::ComponentBase::Begin(BeginContext& beginCtx) {
+   return CT_SUCCESS;
 }
 
-class ctHoneybell::ComponentFactoryBase* ctHoneybell::ComponentBase::GetFactoryPtr() {
-   return pFactory;
+class ctHoneybell::ToyBase* ctHoneybell::ComponentBase::GetToyPtr() {
+   return pToy;
 }
 
 bool ctHoneybell::ComponentBase::hasTransform() const {
@@ -58,23 +58,4 @@ ctBoundBox ctHoneybell::ComponentBase::GetWorldBounds() const {
    } else {
       return ctBoundBox(); /* Invalid bounds */
    }
-}
-
-ctResults ctHoneybell::ComponentFactoryBase::Startup() {
-   return CT_SUCCESS;
-}
-
-ctResults ctHoneybell::ComponentFactoryBase::Shutdown() {
-   return CT_SUCCESS;
-}
-
-ctHoneybell::ComponentBase*
-ctHoneybell::ComponentFactoryBase::NewComponent(class ToyBase* _owner) {
-   /* If this ever get's called you probably messed up */
-   ctDebugWarning("Pure component base class created.");
-   return new ComponentBase(this, _owner);
-}
-
-void ctHoneybell::ComponentFactoryBase::DeleteComponent(ComponentBase* _component) {
-   delete _component;
 }

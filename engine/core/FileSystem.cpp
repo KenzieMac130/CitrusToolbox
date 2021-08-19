@@ -170,22 +170,30 @@ const ctResults ctFileSystem::OpenPreferencesFile(ctFile& file,
                                                   const ctStringUtf8& relativePath,
                                                   const ctFileOpenMode mode) {
    ctStringUtf8 finalPath = _prefPath;
-   finalPath += relativePath;
+   finalPath.FilePathAppend(relativePath);
    return file.Open(finalPath, mode);
 }
 
 const ctResults ctFileSystem::OpenExeRelativeFile(ctFile& file,
-                                                  const ctStringUtf8& relativePath) {
+                                                  const ctStringUtf8& relativePath,
+                                                  const ctFileOpenMode mode) {
+   if (mode != CT_FILE_OPEN_READ && mode != CT_FILE_OPEN_READ_TEXT) {
+      return CT_FAILURE_INACCESSIBLE;
+   }
    ctStringUtf8 finalPath = _dataPath;
-   finalPath += relativePath;
-   return file.Open(finalPath, CT_FILE_OPEN_READ);
+   finalPath.FilePathAppend(relativePath);
+   return file.Open(finalPath, mode);
 }
 
 const ctResults ctFileSystem::OpenAssetFile(ctFile& file,
-                                            const ctStringUtf8& relativePath) {
+                                            const ctStringUtf8& relativePath,
+                                            const ctFileOpenMode mode) {
+   if (mode != CT_FILE_OPEN_READ && mode != CT_FILE_OPEN_READ_TEXT) {
+      return CT_FAILURE_INACCESSIBLE;
+   }
    ctStringUtf8 finalPath = _assetPath;
-   finalPath += relativePath;
-   return file.Open(finalPath, CT_FILE_OPEN_READ);
+   finalPath.FilePathAppend(relativePath);
+   return file.Open(finalPath, mode);
 }
 
 const ctResults ctFileSystem::MakePreferencesDirectory(const ctStringUtf8& relativePath) {

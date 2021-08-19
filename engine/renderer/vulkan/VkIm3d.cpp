@@ -68,8 +68,8 @@ ctResults ctVkIm3d::LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass) {
    ZoneScoped;
    VkShaderModule vertShader;
    VkShaderModule fragShader;
-   _pBackend->CreateShaderModuleFromAsset(vertShader, "core/shaders/im3d_vert.spv");
-   _pBackend->CreateShaderModuleFromAsset(fragShader, "core/shaders/im3d_frag.spv");
+   _pBackend->CreateShaderModuleFromAsset(vertShader, "shaders/im3d_vert.spv");
+   _pBackend->CreateShaderModuleFromAsset(fragShader, "shaders/im3d_frag.spv");
 
    if (pipeline != VK_NULL_HANDLE) {
       vkDestroyPipeline(_pBackend->vkDevice, pipeline, &_pBackend->vkAllocCallback);

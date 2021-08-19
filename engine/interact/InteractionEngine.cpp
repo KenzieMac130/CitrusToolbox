@@ -19,6 +19,10 @@
 
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
+   ctFile file;
+   Engine->FileSystem->OpenAssetFile(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
+   Directory.CreateActionSetsFromFile(file);
+   file.Close();
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
    CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(Engine, pBackends));
@@ -35,30 +39,20 @@ ctResults ctInteractionEngine::Shutdown() {
 
 ctResults ctInteractionEngine::PumpInput() {
    ZoneScoped;
+   isFrameActive = true;
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->Update(Directory);
    }
+   Directory.Update();
    return CT_SUCCESS;
 }
 
-ctResults ctInteractionEngine::DebugImGui() {
+void ctInteractionEngine::DebugImGui() {
    ZoneScoped;
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->DebugImGui();
    }
-   return CT_SUCCESS;
-}
-
-float ctInteractionEngine::GetSignal(ctInteractPath& path) {
-   ctInteractNode* pNode;
-   CT_RETURN_ON_FAIL(Directory.GetNode(path, pNode), 0.0f);
-   CT_RETURN_ON_NULL(pNode->pData, 0.0f);
-   if (pNode->type == CT_INTERACT_NODETYPE_SCALAR) {
-      return *(float*)pNode->pData;
-   } else if (pNode->type == CT_INTERACT_NODETYPE_BOOL) {
-      return *(bool*)pNode->pData ? 1.0f : 0.0f;
-   }
-   return 0.0f;
+   Directory.DebugImGui();
 }
 
 ctInteractPath::ctInteractPath() {
@@ -73,6 +67,10 @@ ctInteractPath::ctInteractPath(const char* ptr, size_t count) {
 }
 
 ctInteractPath::ctInteractPath(const char* ptr) {
+   if (!ptr) {
+      memset(str, 0, CT_MAX_INTERACT_PATH_SIZE);
+      return;
+   }
    *this = ctInteractPath(ptr, strlen(ptr));
 }
 
@@ -80,9 +78,142 @@ ctInteractPath::ctInteractPath(const ctStringUtf8& ctStr) {
    *this = ctInteractPath(ctStr.CStr());
 }
 
+ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
+   ctDebugLog("Loading Action Sets...");
+   size_t fileSize = file.GetFileSize();
+   char* fileData = (char*)ctMalloc(fileSize + 1);
+   memset(fileData, 0, fileSize + 1);
+   file.ReadRaw(fileData, 1, fileSize);
+   ctJSONReader json;
+   CT_RETURN_FAIL_CLEAN(json.BuildJsonForPtr(fileData, fileSize), ctFree(fileData);
+                        ctDebugError("ACTION SET FILE INVALID!");)
+   ctJSONReadEntry jsonRoot = ctJSONReadEntry();
+   json.GetRootEntry(jsonRoot);
+
+   int numSets = jsonRoot.GetObjectEntryCount();
+   for (int i = 0; i < numSets; i++) {
+      ctStringUtf8 setName;
+      ctJSONReadEntry jsonActionSet = ctJSONReadEntry();
+      jsonRoot.GetObjectEntry(i, jsonActionSet, &setName);
+
+      /* Create Action Set */
+      ctInteractNode node = ctInteractNode();
+      ctInteractActionSet* pActionSet = new ctInteractActionSet();
+      node.type = CT_INTERACT_NODETYPE_ACTIONSET;
+      node.pData = pActionSet;
+      node.path = setName;
+      AddNode(node);
+      EnableActionSet(ctInteractPath(setName.CStr()));
+
+      const int numActions = jsonActionSet.GetObjectEntryCount();
+      pActionSet->actionOutputs.Resize(numActions);
+      pActionSet->actionOutputs.Memset(0);
+      for (int j = 0; j < numActions; j++) {
+         ctStringUtf8 actionName;
+         ctJSONReadEntry jsonAction = ctJSONReadEntry();
+         jsonActionSet.GetObjectEntry(j, jsonAction, &actionName);
+
+         ctInteractNode node = ctInteractNode();
+         node.type = CT_INTERACT_NODETYPE_SCALAR;
+         node.pData = &pActionSet->actionOutputs[j];
+         node.path = actionName;
+         AddNode(node);
+
+         pActionSet->actions.Append(actionName.CStr());
+      }
+   }
+   ctFree(fileData);
+   return CT_SUCCESS;
+}
+
+ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
+   size_t fileSize = file.GetFileSize();
+   char* fileData = (char*)ctMalloc(fileSize + 1);
+   memset(fileData, 0, fileSize + 1);
+   file.ReadRaw(fileData, 1, fileSize);
+   ctJSONReader json;
+   CT_RETURN_FAIL_CLEAN(json.BuildJsonForPtr(fileData, fileSize), ctFree(fileData);
+                        ctDebugError("BINDING FILE INVALID!");)
+   ctJSONReadEntry jsonRoot = ctJSONReadEntry();
+   json.GetRootEntry(jsonRoot);
+
+   int numBinds = jsonRoot.GetObjectEntryCount();
+   for (int i = 0; i < numBinds; i++) {
+      ctStringUtf8 bindName;
+      ctJSONReadEntry jsonBind = ctJSONReadEntry();
+      jsonRoot.GetObjectEntry(i, jsonBind, &bindName);
+
+      ctInteractNode node = ctInteractNode();
+      ctInteractBinding* pBinding = new ctInteractBinding();
+      node.type = CT_INTERACT_NODETYPE_BINDING;
+      node.pData = pBinding;
+      node.path = bindName;
+      AddNode(node);
+
+      ctJSONReadEntry output = ctJSONReadEntry();
+      ctJSONReadEntry inputs = ctJSONReadEntry();
+      jsonBind.GetObjectEntry("output", output);
+      jsonBind.GetObjectEntry("inputs", inputs);
+
+      ctStringUtf8 outputPath;
+      output.GetString(outputPath);
+      pBinding->output = outputPath;
+      ctInteractNode* pSetNode = NULL;
+      outputPath.FilePathPop();
+      GetNode(ctInteractPath(outputPath), pSetNode);
+      if (pSetNode) {
+         ctInteractActionSet* actionSet = pSetNode->GetAsActionSet();
+         if (actionSet) { actionSet->bindings.Append(node.path); }
+      }
+
+      int numInputs = inputs.GetArrayLength();
+      for (int j = 0; j < numInputs; j++) {
+         ctInteractBindingEntry bindEntry = ctInteractBindingEntry();
+         ctJSONReadEntry jsonEntry = ctJSONReadEntry();
+         ctJSONReadEntry path = ctJSONReadEntry();
+         ctJSONReadEntry scale = ctJSONReadEntry();
+         ctJSONReadEntry required = ctJSONReadEntry();
+         inputs.GetArrayEntry(j, jsonEntry);
+         jsonEntry.GetObjectEntry("path", path);
+         jsonEntry.GetObjectEntry("scale", scale);
+         jsonEntry.GetObjectEntry("required", required);
+
+         ctStringUtf8 pathStr;
+         path.GetString(pathStr);
+         bindEntry.path = pathStr.CStr();
+         scale.GetNumber(bindEntry.scale);
+         required.GetBool(bindEntry.required);
+         pBinding->inputs.Append(bindEntry);
+      }
+   }
+   ctFree(fileData);
+   return CT_SUCCESS;
+}
+
+ctResults ctInteractDirectorySystem::Update() {
+   ZoneScoped;
+   for (size_t i = 0; i < activeActionSets.Count(); i++) {
+      ctInteractNode* pSetNode = NULL;
+      GetNode(activeActionSets[i], pSetNode);
+      if (!pSetNode) { continue; }
+      ctInteractActionSet* pActionSet = pSetNode->GetAsActionSet();
+      if (!pActionSet) { continue; }
+      for (size_t j = 0; j < pActionSet->bindings.Count(); j++) {
+         ctInteractNode* pBindNode = NULL;
+         GetNode(pActionSet->bindings[j], pBindNode);
+         if (!pBindNode) { continue; }
+         ctInteractBinding* pBinding = pBindNode->GetAsBinding();
+         if (!pBinding) { continue; }
+         pBinding->Process(*this);
+      }
+   }
+   return CT_SUCCESS;
+}
+
 ctResults ctInteractDirectorySystem::AddNode(ctInteractNode& node) {
    ZoneScoped;
-   uint64_t hash = ctxxHash64(node.path.str);
+   ctAssert(!ctCStrNEql(node.path.str, "", CT_MAX_INTERACT_PATH_SIZE));
+   uint64_t hash = ctXXHash64(node.path.str);
    ctAssert(!nodes.Exists(hash)); /* Catch duplicate on debug builds */
    CT_RETURN_ON_NULL(nodes.Insert(hash, node), CT_FAILURE_INVALID_PARAMETER);
    return CT_SUCCESS;
@@ -92,11 +223,20 @@ ctResults ctInteractDirectorySystem::RemoveNode(ctInteractPath& path) {
    ZoneScoped;
    ctInteractNode* result;
    CT_RETURN_FAIL(GetNode(path, result, true));
-   if (result->type == CT_INTERACT_NODETYPE_MERGER) {
+   if (result->type == CT_INTERACT_NODETYPE_BINDING ||
+       result->type == CT_INTERACT_NODETYPE_ACTIONSET) {
       if (result->pData) { delete result->pData; }
    }
-   nodes.Remove(ctxxHash64(path.str));
+   nodes.Remove(ctXXHash64(path.str));
    return CT_SUCCESS;
+}
+
+void ctInteractDirectorySystem::EnableActionSet(ctInteractPath& path) {
+   activeActionSets.Append(path);
+}
+
+void ctInteractDirectorySystem::DisableActionSet(ctInteractPath& path) {
+   activeActionSets.Remove(path);
 }
 
 ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path,
@@ -112,7 +252,7 @@ ctResults ctInteractDirectorySystem::GetNode(ctInteractPath& path,
                                              ctInteractNode*& pOutNode,
                                              bool forceAccess) {
    ZoneScoped;
-   ctInteractNode* result = nodes.FindPtr(ctxxHash64(path.str));
+   ctInteractNode* result = nodes.FindPtr(ctXXHash64(path.str));
    CT_RETURN_ON_NULL(result, CT_FAILURE_DATA_DOES_NOT_EXIST);
    ctAssert(result->path == path);
    CT_RETURN_ON_UNTRUE(result->path == path, CT_FAILURE_CORRUPTED_CONTENTS);
@@ -121,8 +261,97 @@ ctResults ctInteractDirectorySystem::GetNode(ctInteractPath& path,
    return CT_SUCCESS;
 }
 
+float ctInteractDirectorySystem::GetSignal(ctInteractPath& path) {
+   ctInteractNode* pNode;
+   CT_RETURN_ON_FAIL(GetNode(path, pNode), 0.0f);
+   return pNode->GetScalar();
+}
+
+void ctInteractDirectorySystem::FireActions(
+  void (*callback)(const char* path, float value, void* user), void* userdata) {
+   ZoneScoped;
+   for (size_t i = 0; i < activeActionSets.Count(); i++) {
+      ctInteractNode* pSetNode = NULL;
+      GetNode(activeActionSets[i], pSetNode);
+      ctInteractActionSet* pActionSet = pSetNode->GetAsActionSet();
+      if (!pActionSet) { continue; }
+      for (size_t j = 0; j < pActionSet->actions.Count(); j++) {
+         ctInteractNode* pActionNode = NULL;
+         GetNode(pActionSet->actions[j], pActionNode);
+         if (!pActionNode) { continue; }
+         float value = pActionNode->GetScalar();
+         if (value) { callback(pActionSet->actions[j].str, value, userdata); }
+      }
+   }
+}
+
 void ctInteractDirectorySystem::LogContents() {
+   ZoneScoped;
    for (auto it = nodes.GetIterator(); it; it++) {
       ctDebugLog("%" PRIu64 ": %s", it.Key(), it.Value().path.str);
    }
+}
+
+#include "imgui/imgui.h"
+
+void ctInteractDirectorySystem::DebugImGui() {
+   for (auto it = nodes.GetIterator(); it; it++) {
+      if (it.Value().GetScalar()) {
+         ImGui::Text("%s: %f", it.Value(), it.Value().GetScalar());
+      }
+   }
+}
+
+float ctInteractNode::GetScalar() {
+   CT_RETURN_ON_NULL(pData, 0.0f);
+   if (type == CT_INTERACT_NODETYPE_SCALAR) {
+      return *(float*)pData;
+   } else if (type == CT_INTERACT_NODETYPE_BOOL) {
+      return *(bool*)pData ? 1.0f : 0.0f;
+   } else if (type == CT_INTERACT_NODETYPE_BINDING) {
+      return GetAsBinding()->value;
+   }
+   return 0.0f;
+}
+
+bool ctInteractNode::SetScalar(float value) {
+   CT_RETURN_ON_NULL(pData, false);
+   if (type == CT_INTERACT_NODETYPE_SCALAR) {
+      (*(float*)pData) = value;
+      return true;
+   } else if (type == CT_INTERACT_NODETYPE_BOOL) {
+      value ? (*(bool*)pData) = true : (*(bool*)pData) = false;
+      return true;
+   }
+   return false;
+}
+
+ctInteractBinding* ctInteractNode::GetAsBinding() {
+   if (type == CT_INTERACT_NODETYPE_BINDING) { return (ctInteractBinding*)pData; }
+   return NULL;
+}
+
+ctInteractActionSet* ctInteractNode::GetAsActionSet() {
+   if (type == CT_INTERACT_NODETYPE_ACTIONSET) { return (ctInteractActionSet*)pData; }
+   return NULL;
+}
+
+void ctInteractBinding::Process(ctInteractDirectorySystem& dir) {
+   value = 0.0f;
+   for (size_t i = 0; i < inputs.Count(); i++) {
+      ctInteractBindingEntry entry = inputs[i];
+      ctInteractNode* pNode = NULL;
+      dir.GetNode(entry.path, pNode);
+      if (!pNode) { continue; }
+      const float entryValue = pNode->GetScalar();
+      if (entry.required) {
+         value *= entry.scale * entryValue;
+      } else {
+         value += entry.scale * entryValue;
+      }
+   }
+   ctInteractNode* pNode = NULL;
+   dir.GetNode(output, pNode);
+   if (!pNode) { return; }
+   pNode->SetScalar(value);
 }

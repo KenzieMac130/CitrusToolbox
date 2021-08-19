@@ -14,17 +14,25 @@
    limitations under the License.
 */
 
-#pragma once
+#include "Texture.hpp"
 
-#include "utilities/Common.h"
+ctTextureAsset::ctTextureAsset(class ctAssetManager* _manager,
+                               const char* _relativePath) :
+    ctAssetBase(_manager, _relativePath) {
+}
 
-#include "../Component.hpp"
+const char* ctTextureAsset::GetAssetType() {
+   return "texture";
+}
 
-namespace ctHoneybell {
+bool ctTextureAsset::isAvailible() {
+   return false;
+}
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
+ctResults ctTextureAsset::OnLoad(ctFile& file) {
+   return CT_SUCCESS;
+}
+
+ctResults ctTextureAsset::OnRelease() {
+   return CT_SUCCESS;
 }

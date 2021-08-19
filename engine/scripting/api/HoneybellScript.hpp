@@ -21,7 +21,7 @@
 namespace ctScriptApi {
 namespace Honeybell {
    int spawnToy(ctScriptTypedLightData* scene,
-                const char* path,
+                const char* type,
                 float x,
                 float y,
                 float z,
@@ -29,16 +29,7 @@ namespace Honeybell {
                 float pitch,
                 float roll,
                 float scale,
-                const char* message);
-   int spawnInternalToy(ctScriptTypedLightData* scene,
-                        const char* type,
-                        float x,
-                        float y,
-                        float z,
-                        float yaw,
-                        float pitch,
-                        float roll,
-                        float scale,
-                        const char* message);
+                const char* message,
+                const char* prefabPath);
 }
 }

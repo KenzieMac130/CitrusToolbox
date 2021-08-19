@@ -15,12 +15,16 @@
 */
 
 #include "utilities/Common.h"
+#include "utilities/SpacialQuery.hpp"
+#include "utilities/BloomFilter.hpp"
+#include "utilities/SpacialQuery.hpp"
 
 int life_notifier_comp(const int* A, const int* B) {
    return *A - *B;
 }
 
 int dynamic_array_test() {
+   ZoneScoped;
    ctDebugLog("Dynamic Array");
    ctDebugWarning("Warning test");
    {
@@ -74,6 +78,7 @@ int dynamic_array_test() {
 }
 
 int static_array_test() {
+   ZoneScoped;
    ctStaticArray<int, 32> arr;
    arr.SetBytes(0);
    for (int i = 0; i < 32; i++) {
@@ -88,6 +93,7 @@ int static_array_test() {
 }
 
 int dynamic_string_test() {
+   ZoneScoped;
    ctStringUtf8 mystring = ctStringUtf8("Hello world!");
    if (mystring.Cmp("Hello world!") == 0) { ctDebugLog("Cmp 0"); }
    if (mystring == "Hello world!") { ctDebugLog("Compare"); };
@@ -96,7 +102,7 @@ int dynamic_string_test() {
    mystring += ' ';
    ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
    mystring += str2;
-   mystring.Printf(32, "The lucky number is: %u", ctxxHash32("LUCKY", 0));
+   mystring.Printf(32, "The lucky number is: %u", ctXXHash32("LUCKY", 0));
    ctStringUtf8 secondstring = mystring;
    mystring.ToUpper();
    mystring += "!!!";
@@ -105,7 +111,67 @@ int dynamic_string_test() {
    return 0;
 }
 
+int file_path_test() {
+   ZoneScoped;
+   ctDebugLog("File path...");
+   ctStringUtf8 path = "C:\\test\\bin\\cfg.ini";
+   ctDebugLog("Path is %s", path.CStr());
+   ctDebugLog("Name is %s", path.FilePathGetName().CStr());
+   ctDebugLog("No extension is %s", path.FilePathRemoveExtension().CStr());
+   ctDebugLog("Pop is %s", path.FilePathPop().CStr());
+   ctDebugLog("Append is %s", path.FilePathAppend("/test.cfg").CStr());
+   ctDebugLog("Local is %s", path.FilePathLocalize().CStr());
+   return 0;
+}
+
+int bloom_filter_test() {
+   ZoneScoped;
+   ctDebugLog("Bloom filter...");
+   const int numTests = 500;
+   ctBloomFilter<int32_t, 2048, 10> bloom;
+   for (int32_t i = 0; i < numTests; i++) {
+      bloom.Insert(i);
+   }
+   ctDebugLog("These must all exist!");
+   for (int32_t i = 0; i < numTests; i++) {
+      if (bloom.MightExist(i)) {
+      } else {
+         ctDebugError("A ENTRY WHICH EXISTS WAS NOT FOUND!!!");
+         return -1;
+      }
+   }
+   ctDebugLog("The less of these exist the better!");
+   int32_t falsePositives = 0;
+   for (int32_t i = numTests; i < numTests + numTests; i++) {
+      if (bloom.MightExist(i)) { falsePositives++; }
+   }
+   ctDebugLog("Bloom filter test:"
+              "\n\tCorrectly Found: %d"
+              "\n\tFalse Negatives: %d"
+              "\n\tFalse Positives: %d",
+              numTests,
+              0,
+              falsePositives);
+   return 0;
+}
+
+int spacial_query_test() {
+   ZoneScoped;
+   ctDebugLog("Spacial query...");
+   ctDebugLog("Size of key %d", sizeof(ctSpacialCellKey));
+   ctSpacialQuery spacial;
+   ctHandle hndl = ctHandle();
+   for (int i = 0; i < 1024; i++) {
+      spacial.Add(hndl, ctSpacialCellKey(ctVec3((float)i, 0, 0)));
+   }
+   spacial.Remove(hndl, ctSpacialCellKey(ctVec3(2, 0, 0)));
+   ctDebugLog("Lookup...");
+   ctDebugLog("Bucket count %d", spacial.GetBucketCount(ctVec3(0, 0, 0)));
+   return 0;
+}
+
 int hash_table_test() {
+   ZoneScoped;
    ctDebugLog("Hash Table (POD)...");
    {
       ctHashTable<int, uint32_t> hashTable = ctHashTable<int, uint32_t>(600000);
@@ -120,42 +186,39 @@ int hash_table_test() {
    }
    ctDebugLog("Hash Table (Iterate)...");
    {
-       ctHashTable<char, uint32_t> hashTable =
-           ctHashTable<char, uint32_t>(0);
-       hashTable.Insert(1, 'A');
-       hashTable.Insert(2, 'B');
-       hashTable.Insert(3, 'C');
-       hashTable.Insert(4, 'D');
-       hashTable.Insert(5, 'E');
-       hashTable.Insert(6, 'F');
-       hashTable.Insert(7, 'G');
+      ctHashTable<char, uint32_t> hashTable = ctHashTable<char, uint32_t>(0);
+      hashTable.Insert(1, 'A');
+      hashTable.Insert(2, 'B');
+      hashTable.Insert(3, 'C');
+      hashTable.Insert(4, 'D');
+      hashTable.Insert(5, 'E');
+      hashTable.Insert(6, 'F');
+      hashTable.Insert(7, 'G');
 
-       for (auto itt = hashTable.GetIterator(); itt; itt++) {
-           ctDebugLog("Key: %d - Value: %c", itt.Key(), itt.Value());
-       }
+      for (auto itt = hashTable.GetIterator(); itt; itt++) {
+         ctDebugLog("Key: %d - Value: %c", itt.Key(), itt.Value());
+      }
    }
-   ctDebugLog("Hash Table (Worst Case Dynamic String)...");
+   /*ctDebugLog("Hash Table (Worst Case Dynamic String)...");
    {
       ctHashTable<ctStringUtf8, uint32_t> hashTable =
         ctHashTable<ctStringUtf8, uint32_t>(0);
       uint32_t findhash = 0;
       for (int i = 1; i < 500000; i++) {
          ctStringUtf8 result;
-         result.Printf(
-           64,
-           "Number %d",
-           i);
+         result.Printf(64, "Number %d", i);
          uint32_t hash = result.xxHash32();
          if (i == 156) { findhash = hash; }
          hashTable.Insert(hash, result);
       }
       ctStringUtf8* strptr = hashTable.FindPtr(findhash);
       if (strptr) { ctDebugLog("%s", strptr->CStr()); }
-   }
+   }*/
    return 0;
 }
 
 int json_test() {
+   ZoneScoped;
    ctJSONWriter jsonOut;
    ctStringUtf8 str = "";
    jsonOut.SetStringPtr(&str);
@@ -267,15 +330,29 @@ int json_test() {
 }
 
 int math_3d_test() {
-    return 0;
+   return 0;
+}
+
+void debugCallback(int level, const char* format, va_list args) {
+   char tmp[CT_MAX_LOG_LENGTH];
+   memset(tmp, 0, CT_MAX_LOG_LENGTH);
+   vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
+   TracyMessage(tmp, strlen(tmp));
+   // vprintf(format, args);
+   // putchar('\n');
 }
 
 int main(int argc, char* argv[]) {
+   ZoneScoped;
+   _ctDebugLogSetCallback(debugCallback);
    dynamic_array_test();
    static_array_test();
    dynamic_string_test();
    hash_table_test();
    json_test();
    math_3d_test();
+   file_path_test();
+   bloom_filter_test();
+   spacial_query_test();
    return 0;
 }

@@ -18,13 +18,17 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
+enum ctWADProtoHeaderFlags {
+	CT_WADPROTO_HEADER_FLAG_HAS_GPU_FILE = 0x001
+};
 
-namespace ctHoneybell {
+#define CT_WADPROTO_NAME_HEADER {'C','I','T','R','U','S'}
+#define CT_WADPROTO_HEADER_MAGIC 0x52544943
+#define CT_WADPROTO_HEADER_INTERNAL_REV 1
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
-}
+struct CT_API ctWADProtoHeader {
+	int32_t magic;
+	int32_t revision;
+	int32_t flags;
+	int32_t gpuFilePath;
+};

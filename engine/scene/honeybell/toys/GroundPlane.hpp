@@ -26,11 +26,13 @@ namespace ctHoneybell {
 
 class CT_API GroundPlane : public ToyBase {
 public:
+   TOY_INFO("citrus/groundPlane");
+
    GroundPlane(ConstructContext& ctx);
 
    virtual ctResults OnBegin(BeginContext& ctx);
 
 private:
-   ComponentPtr<PhysXActorComponent> PhysicsPlane;
+   PhysXActorComponent* PhysicsPlane;
 };
 }

@@ -42,8 +42,7 @@ ctResults ctInteractSDLGamepadBackend::Startup() {
    ZoneScoped;
    ctDebugLog("Starting SDL Gamepad...");
    SDL_Init(SDL_INIT_GAMECONTROLLER);
-   Engine->OSEventManager->MiscEventHandlers.Append(
-     {SDLGamecontrollerOnEvent, this});
+   Engine->OSEventManager->MiscEventHandlers.Append({SDLGamecontrollerOnEvent, this});
    return CT_SUCCESS;
 }
 
@@ -85,13 +84,17 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
          node.accessible = true;
          snprintf(node.path.str,
                   CT_MAX_INTERACT_PATH_SIZE,
-                  "/dev/gamepad/%d%s",
+                  "dev/gamepad/%d%s",
                   c,
                   inputPaths[i]);
          node.pData = &gamepads[c].data[i];
          directory.AddNode(node);
       }
    }
+   ctFile file;
+   Engine->FileSystem->OpenAssetFile(file, "input/gamepad.json", CT_FILE_OPEN_READ_TEXT);
+   directory.CreateBindingsFromFile(file);
+   file.Close();
    return CT_SUCCESS;
 }
 

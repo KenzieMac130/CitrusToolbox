@@ -18,13 +18,23 @@
 
 #include "utilities/Common.h"
 
-#include "../Component.hpp"
+#include "../Toy.hpp"
+#include "scripting/LuaScript.hpp"
 
 namespace ctHoneybell {
 
-//class CT_API CameraComponent : public ComponentBase {
-//public:
-//    CameraComponent(struct ConstructContext ctx, class ToyBase* _toy);
-//   //Todo...
-//};
+class CT_API SceneChunk : public ToyBase {
+public:
+   TOY_INFO("citrus/sceneChunk");
+
+   SceneChunk(ConstructContext& ctx);
+   virtual ~SceneChunk();
+
+   virtual ctResults OnBegin(BeginContext& ctx);
+   virtual ctResults OnTickSerial(TickContext& ctx);
+   virtual ctResults OnFrameUpdate(FrameUpdateContext& ctx);
+
+private:
+   ctLuaContext sceneScript;
+};
 }

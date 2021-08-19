@@ -18,6 +18,8 @@
 #include "core/Translation.hpp"
 #include "im3d/im3d.h"
 #include "imgui/imgui.h"
+#include "core/FileSystem.hpp"
+#include "interact/InteractionEngine.hpp"
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
