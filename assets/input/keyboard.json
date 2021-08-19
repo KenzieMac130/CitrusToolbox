@@ -3,7 +3,7 @@
 		"output": "actions/debug/enable",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/53",
-			"scale": 1.0
+			"scale": 1.0,
 			"required": true
 		},
 		{
@@ -23,14 +23,14 @@
 		"output": "actions/debug/moveForward",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/26",
-			"scale": 1.0
+			"scale": 12.0
 		},{
 			"path": "dev/keyboard/input/scancode/22",
 			"scale": -1.0
 		}]
 	},
 	"dev/keyboard/bind/actions/debug/moveRight": {
-		"output": "actions/debug/moveForward",
+		"output": "actions/debug/moveRight",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/7",
 			"scale": 1.0
@@ -40,12 +40,12 @@
 		}]
 	},
 	"dev/keyboard/bind/actions/debug/moveUp": {
-		"output": "actions/debug/moveForward",
+		"output": "actions/debug/moveUp",
 		"inputs": [{
-			"path": "dev/keyboard/input/scancode/7",
+			"path": "dev/keyboard/input/scancode/8",
 			"scale": 1.0
 		},{
-			"path": "dev/keyboard/input/scancode/4",
+			"path": "dev/keyboard/input/scancode/20",
 			"scale": -1.0
 		}]
 	},
@@ -60,7 +60,7 @@
 		}]
 	},
 	"dev/keyboard/bind/actions/player/moveRight": {
-		"output": "actions/player/moveForward",
+		"output": "actions/player/moveRight",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/7",
 			"scale": 1.0

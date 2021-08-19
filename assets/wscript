@@ -115,16 +115,24 @@ def build(ctx):
 		outWad = ctx.path.find_or_declare(wadName)
 		task = CompilePrefab(env=ctx.env)
 		defFile = ctx.path.make_node(file.relpath() + '.pdef')
+		inputs = [file, defFile]
+		basePath = os.path.dirname(file.relpath())
 		if not defFile.exists():
 			defFile.write('')
-		# Todo: Find embeds in pdef and add to inputs
-		task.set_inputs([file, defFile])
+		else:
+			defContents = defFile.read()
+			embeds = re.findall(r'(-embp)\s*"([^"]*)"',defContents)
+			for embed in embeds:
+				embedName = basePath + '/' + embed[1]
+				embedFile = ctx.path.make_node(embedName)
+				inputs.append(embedFile)
+		task.set_inputs(inputs)
 		task.set_outputs([outWad])
 		ctx.add_to_group(task)
 	
 	# Define textures to compile
 	ctx.set_group('Textures')
-	for file in ctx.path.ant_glob(['**/*.png', '**/*.jpg']):
+	for file in ctx.path.ant_glob(['**/*.png', '**/*.jpg', '**/*.jpeg']):
 		fileName = file.relpath().split('.', 1)[0] + '.ktx'
 		outFile = ctx.path.find_or_declare(fileName)
 		task = CompileTexture(env=ctx.env)
