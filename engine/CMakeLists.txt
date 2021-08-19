@@ -222,7 +222,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Signal.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/BuiltinToys.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.cpp
@@ -237,7 +236,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Signal.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/CameraComponent.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.hpp
