@@ -1,0 +1,37 @@
+{
+	"dev/mouse/bind/actions/debug/lookRight": {
+		"output": "actions/debug/lookRight",
+		"inputs": [{
+			"path": "dev/mouse/input/relative_move/x",
+			"scale": 1.0
+		}]
+	},
+	"dev/mouse/bind/actions/debug/lookUp": {
+		"output": "actions/debug/lookUp",
+		"inputs": [{
+			"path": "dev/mouse/input/relative_move/y",
+			"scale": 1.0
+		}]
+	},
+	"dev/mouse/bind/actions/debug/lookEnable": {
+		"output": "actions/debug/lookEnable",
+		"inputs": [{
+			"path": "dev/mouse/input/button/right",
+			"scale": 1.0
+		}]
+	},
+	"dev/mouse/bind/actions/player/lookRight": {
+		"output": "actions/player/lookRight",
+		"inputs": [{
+			"path": "dev/mouse/input/relative_move/x",
+			"scale": 1.0
+		}]
+	},
+	"dev/mouse/bind/actions/player/lookUp": {
+		"output": "actions/player/lookUp",
+		"inputs": [{
+			"path": "dev/mouse/input/relative_move/y",
+			"scale": 1.0
+		}]
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"/dev/DEVICE/bind/ACTIONSETNAME/ACTIONNAME": {
+		"output": "actions/ACTIONSETNAME/ACTIONNAME",
+		"inputs": [{
+			"path": "/dev/DEVICE/input/...",
+			"scale": 1.0,
+			"required": false
+			"filters": [{
+				"name": "FILTERNAME",
+				"...": null
+			}]
+		}]
+	}
+}

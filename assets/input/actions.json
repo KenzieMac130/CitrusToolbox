@@ -1,0 +1,42 @@
+ {
+ 	"actions/debug": {
+		"actions/debug/enable":{
+			"type": "value"
+		},
+		"actions/debug/moveFaster":{
+			"type": "value"
+		},
+		"actions/debug/moveForward":{
+			"type": "value"
+		},
+		"actions/debug/moveRight":{
+			"type": "value"
+		},
+		"actions/debug/moveUp":{
+			"type": "value"
+		},
+		"actions/debug/lookUp":{
+			"type": "value"
+		},
+		"actions/debug/lookRight":{
+			"type": "value"
+		}
+	},
+	"actions/player": {
+		"actions/player/moveForward":{
+			"type": "value"
+		},
+		"actions/player/moveRight":{
+			"type": "value"
+		},
+		"actions/player/lookUp":{
+			"type": "value"
+		},
+		"actions/player/lookRight":{
+			"type": "value"
+		},
+		"actions/player/jump":{
+			"type": "value"
+		}
+	}
+}

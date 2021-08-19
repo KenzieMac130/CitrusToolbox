@@ -14,13 +14,6 @@
 #   limitations under the License.
 #
 
-# Configure asset build system
-message("-------Configuring Asset Build System-------")
-execute_process(
-COMMAND python waf configure -o ${CMAKE_BINARY_DIR}/output/assets --libs ${BASE_LIBRARY_DIRECTORY}
-WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-message("--------------------------------------------")
-
 # Get core assets to add to IDE
 set(ASSET_CORE_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/common.glsl
@@ -29,11 +22,35 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/portability.glsl
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/im3d_vert.vert
 ${CMAKE_CURRENT_SOURCE_DIR}/core/shaders/im3d_frag.frag
 )
+
+# Configure asset build system
+message("-------Configuring Asset Build System-------")
+execute_process(
+COMMAND python waf configure 
+--final ${IS_PRODUCTION_BUILD}
+-o ${CMAKE_BINARY_DIR}/output/assets
+--libs ${BASE_LIBRARY_DIRECTORY}
+--build ${CMAKE_BINARY_DIR}
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+message("--------------------------------------------")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ASSET_CORE_FILES})
 
 # Add asset build system as target
-add_custom_target(assets 
+add_custom_target(assets_build 
 COMMAND python waf build -v
-DEPENDS ${ASSET_CORE_FILES}
-SOURCES ${ASSET_CORE_FILES}
+DEPENDS ${ASSET_CORE_FILES} assets_configure
+SOURCES wscript ${ASSET_CORE_FILES}
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_custom_target(assets_configure 
+COMMAND python waf configure 
+--final ${IS_PRODUCTION_BUILD}
+-o ${CMAKE_BINARY_DIR}/output/assets
+--libs ${BASE_LIBRARY_DIRECTORY}
+--build ${CMAKE_BINARY_DIR}
+DEPENDS Gltf2Citrus
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_custom_target(assets_clean 
+COMMAND python waf distclean
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

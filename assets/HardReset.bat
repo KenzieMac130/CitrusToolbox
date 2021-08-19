@@ -1,0 +1,2 @@
+python waf distclean
+pause

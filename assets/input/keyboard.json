@@ -1,0 +1,79 @@
+{
+	"dev/keyboard/bind/actions/debug/enable": {
+		"output": "actions/debug/enable",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/53",
+			"scale": 1.0
+			"required": true
+		},
+		{
+			"path": "dev/keyboard/input/scancode/225",
+			"scale": 1.0,
+			"required": true
+		}]
+	},
+	"dev/keyboard/bind/actions/debug/moveFaster": {
+		"output": "actions/debug/moveFaster",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/225",
+			"scale": 1.0
+		}]
+	},
+	"dev/keyboard/bind/actions/debug/moveForward": {
+		"output": "actions/debug/moveForward",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/26",
+			"scale": 1.0
+		},{
+			"path": "dev/keyboard/input/scancode/22",
+			"scale": -1.0
+		}]
+	},
+	"dev/keyboard/bind/actions/debug/moveRight": {
+		"output": "actions/debug/moveForward",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/7",
+			"scale": 1.0
+		},{
+			"path": "dev/keyboard/input/scancode/4",
+			"scale": -1.0
+		}]
+	},
+	"dev/keyboard/bind/actions/debug/moveUp": {
+		"output": "actions/debug/moveForward",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/7",
+			"scale": 1.0
+		},{
+			"path": "dev/keyboard/input/scancode/4",
+			"scale": -1.0
+		}]
+	},
+	"dev/keyboard/bind/actions/player/moveForward": {
+		"output": "actions/player/moveForward",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/26",
+			"scale": 1.0
+		},{
+			"path": "dev/keyboard/input/scancode/22",
+			"scale": -1.0
+		}]
+	},
+	"dev/keyboard/bind/actions/player/moveRight": {
+		"output": "actions/player/moveForward",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/7",
+			"scale": 1.0
+		},{
+			"path": "dev/keyboard/input/scancode/4",
+			"scale": -1.0
+		}]
+	},
+	"dev/keyboard/bind/actions/player/jump": {
+		"output": "actions/player/jump",
+		"inputs": [{
+			"path": "dev/keyboard/input/scancode/44",
+			"scale": 1.0
+		}]
+	}
+}
