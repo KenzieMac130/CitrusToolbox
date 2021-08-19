@@ -67,7 +67,7 @@ ctResults ctHoneybell::ToyBase::GetPointOfView(PointOfViewContext& ctx) {
    ctx.cameraInfo.rotation = transform.rotation;
    ctx.cameraInfo.position = transform.position +
                              (transform.rotation.getBack() * radius * 10.0f) +
-                             transform.rotation.getUp() * 2.0f;
+                             transform.rotation.getUp() * radius * 2.0f;
    return CT_SUCCESS;
 }
 
