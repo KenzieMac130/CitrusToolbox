@@ -18,13 +18,11 @@
 
 #include "Common.h"
 
-#define CT_PI  3.141592653589793238462643383279f
+#define CT_PI   3.141592653589793238462643383279f
 #define CT_PI_D 3.141592653589793238462643383279
 
 /* Float Compare */
-inline bool ctFloatCompare(const float a,
-                    const float b,
-                    const float threshold = 0.001f);
+inline bool ctFloatCompare(const float a, const float b, const float threshold = 0.001f);
 
 /* Lerp */
 inline float ctLerp(const float a, const float b, const float factor);
@@ -103,119 +101,121 @@ inline bool ctIsPrime(const size_t x);
 inline size_t ctNextPrime(size_t x);
 
 inline bool ctFloatCompare(const float a, const float b, const float threshold) {
-    return ctAbs(a - b) < threshold;
+   return ctAbs(a - b) < threshold;
 }
 
 inline float ctLerp(const float a, const float b, const float t) {
-    return (1.0f - t) * a + t * b;
+   return (1.0f - t) * a + t * b;
 }
 
 inline float ctSmoothStep(const float a, const float b, const float t) {
-    const float c = ctSaturate((t - a) / (b - a));
-    return c * c * (3.0f - 2.0f * c);
+   const float c = ctSaturate((t - a) / (b - a));
+   return c * c * (3.0f - 2.0f * c);
 }
 
 inline float ctPow(const float a, const float b) {
-    return powf(a, b);
+   return powf(a, b);
 }
 
 inline float ctLog(const float a) {
-    return logf(a);
+   return logf(a);
 }
 
 inline float ctSqrt(const float a) {
-    return sqrtf(a);
+   return sqrtf(a);
 }
 
 inline float ctAbs(const float a) {
-    return fabsf(a);
+   return fabsf(a);
 }
 
 inline float ctExp(const float a) {
-    return expf(a);
+   return expf(a);
 }
 
 inline float ctMax(const float a, const float b) {
-    return a > b ? a : b;
+   return a > b ? a : b;
 }
 
 inline float ctMin(const float a, const float b) {
-    return a < b ? a : b;
+   return a < b ? a : b;
 }
 
 inline float ctClamp(const float a, const float min, const float max) {
-    return ctMin(ctMax(a, min), max);
+   return ctMin(ctMax(a, min), max);
 }
 
 inline float ctSaturate(const float a) {
-    return ctClamp(a, 0.0f, 1.0f);
+   return ctClamp(a, 0.0f, 1.0f);
 }
 
 inline float ctFloor(const float a) {
-    return floorf(a);
+   return floorf(a);
 }
 
 inline float ctCeil(const float a) {
-    return ceilf(a);
+   return ceilf(a);
 }
 
 inline float ctRound(const float a) {
-    return roundf(a);
+   return roundf(a);
 }
 
 inline float ctFrac(const float a) {
-    return a - ctFloor(a);
+   return a - ctFloor(a);
 }
 
 inline float ctRad2Deg(const float a) {
-    return a * 57.29578f;
+   return a * 57.29578f;
 }
 
 inline float ctDeg2Rad(const float a) {
-    return a * 0.01745329f;
+   return a * 0.01745329f;
 }
 
 inline float ctSin(const float a) {
-    return sinf(a);
+   return sinf(a);
 }
 
 inline float ctCos(const float a) {
-    return cosf(a);
+   return cosf(a);
 }
 
 inline float ctTan(const float a) {
-    return tanf(a);
+   return tanf(a);
 }
 
 inline float ctArcSin(const float a) {
-    return asinf(a);
+   return asinf(a);
 }
 
 inline float ctArcCos(const float a) {
-    return acosf(a);
+   return acosf(a);
 }
 
 inline float ctArcTan(const float a) {
-    return atanf(a);
+   return atanf(a);
 }
 
 inline float ctArcTan2(const float a, const float b) {
-    return atan2f(a, b);
+   return atan2f(a, b);
 }
 
 inline bool ctIsPrime(const size_t x) {
-    if (x < 2) { return false; /*actually undefined*/ }
-    if (x < 4) { return true; }
-    if ((x % 2) == 0) { return false; }
-    for (size_t i = 3; i <= (size_t)ctFloor(ctSqrt((float)x)); i += 2) {
-        if ((x % i) == 0) { return false; }
-    }
-    return true;
+   ZoneScoped;
+   if (x < 2) { return false; /*actually undefined*/ }
+   if (x < 4) { return true; }
+   if ((x % 2) == 0) { return false; }
+   for (size_t i = 3; i <= (size_t)ctFloor(ctSqrt((float)x)); i += 2) {
+      if ((x % i) == 0) { return false; }
+   }
+   return true;
 }
 
 inline size_t ctNextPrime(size_t x) {
-    while (!ctIsPrime(x)) {
-        x++;
-    }
-    return x;
+   ZoneScoped;
+   while (!ctIsPrime(x)) {
+      x++;
+   }
+   return x;
 }

@@ -46,6 +46,10 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC2) ctVec2 {
       x = 0.0f;
       y = 0.0f;
    }
+   inline ctVec2(const float* _p) {
+      x = _p[0];
+      y = _p[1];
+   }
    inline ctVec2(float _v) {
       x = _v;
       y = _v;
@@ -150,6 +154,11 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC3) ctVec3 {
       x = 0.0f;
       y = 0.0f;
       z = 0.0f;
+   }
+   inline ctVec3(const float* _p) {
+      x = _p[0];
+      y = _p[1];
+      z = _p[2];
    }
    inline ctVec3(float _v) {
       x = _v;
@@ -275,6 +284,12 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC4) ctVec4 {
       y = 0.0f;
       z = 0.0f;
       w = 0.0f;
+   }
+   inline ctVec4(const float* _p) {
+      x = _p[0];
+      y = _p[1];
+      z = _p[2];
+      w = _p[3];
    }
    inline ctVec4(float _x, float _y, float _z, float _w) {
       x = _x;
@@ -437,6 +452,50 @@ struct CT_API ctBoundBox {
    ctVec3 max;
 };
 
+/* --- Sphere --- */
+
+struct CT_API ctBoundSphere {
+   inline ctBoundSphere() {
+      position = ctVec3();
+      radius = -FLT_MAX;
+   }
+   inline ctBoundSphere(ctVec3 p, float r) {
+      position = p;
+      radius = r;
+   }
+   inline ctBoundSphere(ctBoundBox box) {
+      if (!box.isValid()) {
+         position = ctVec3();
+         radius = -FLT_MAX;
+         return;
+      }
+      position = box.min + (box.max * 0.5f);
+      AddBox(box);
+   }
+   inline void AddPoint(ctVec3 pt) {
+      const float dist = distance(pt, position);
+      if (dist > radius) { radius = dist; }
+   }
+   inline void AddBox(ctBoundBox box) {
+      if (!box.isValid()) { return; };
+      AddPoint(box.min);
+      AddPoint(box.max);
+   }
+
+   inline ctBoundBox ToBox() {
+      const ctVec3 bmin = {position.x - radius, position.y - radius, position.z - radius};
+      const ctVec3 bmax = {position.x + radius, position.y + radius, position.z + radius};
+      return ctBoundBox(bmin, bmax);
+   }
+
+   inline bool isValid() {
+      return radius >= 0.0f;
+   }
+
+   ctVec3 position;
+   float radius;
+};
+
 /* --- Quaternion --- */
 
 struct CT_API CT_ALIGN(CT_ALIGNMENT_QUAT) ctQuat {
@@ -445,6 +504,12 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_QUAT) ctQuat {
       y = 0.0f;
       z = 0.0f;
       w = 1.0f;
+   }
+   inline ctQuat(const float* _p) {
+      x = _p[0];
+      y = _p[1];
+      z = _p[2];
+      w = _p[3];
    }
    inline ctQuat(float _x, float _y, float _z, float _w) {
       x = _x;
@@ -660,6 +725,22 @@ inline ctMat4 ctMat4FromQuat(ctQuat q) {
    return mat;
 }
 
+/* --- Camera --- */
+struct CT_API ctCameraInfo {
+   inline ctCameraInfo() {
+      position = ctVec3();
+      rotation = ctQuat();
+      fov = 0.785f;
+      cursorPosition = ctVec3();
+      cursorDirection = CT_VEC3_FORWARD;
+   }
+   ctVec3 position;
+   ctQuat rotation;
+   float fov;
+   ctVec3 cursorPosition;
+   ctVec3 cursorDirection;
+};
+
 /* --- Narrowing/Widening --- */
 inline ctVec2::ctVec2(struct ctVec3 _v) {
    x = _v.x;
@@ -779,8 +860,8 @@ struct CT_API ctTransform {
 #define ctBoundBoxToPx(v)  PxBounds3(ctVec3ToPx(v.min), ctVec3ToPx(v.max))
 #define ctMat4ToPx(v)      PxMat44(&v.data[0][0])
 
-#define ctVec2FromPx(v) ctVec2(v.x, v.y)
-#define ctVec3FromPx(v) ctVec3(v.x, v.y, v.z)
+#define ctVec2FromPx(v)      ctVec2(v.x, v.y)
+#define ctVec3FromPx(v)      ctVec3(v.x, v.y, v.z)
 #define ctVec3FromPxExt(v)   ctVec3((float)v.x, (float)v.y, (float)v.z)
 #define ctVec4FromPx(v)      ctVec4(v.x, v.y, v.z, v.w)
 #define ctQuatFromPx(v)      ctQuat(v.x, v.y, v.z, v.w)

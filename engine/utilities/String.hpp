@@ -72,6 +72,11 @@ public:
    ctStringUtf8& FilePathUnify();
    ctStringUtf8& FilePathLocalize();
    ctStringUtf8& FilePathRemoveTrailingSlash();
+   ctStringUtf8& FilePathRemoveExtension();
+   ctStringUtf8& FilePathPop();
+   ctStringUtf8& FilePathAppend(const char* path);
+   ctStringUtf8& FilePathAppend(const ctStringUtf8& path);
+   ctStringUtf8 FilePathGetName() const;
 
    uint32_t xxHash32(const int seed) const;
    uint32_t xxHash32() const;

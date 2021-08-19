@@ -209,6 +209,88 @@ ctStringUtf8& ctStringUtf8::FilePathRemoveTrailingSlash() {
    return *this;
 }
 
+ctStringUtf8& ctStringUtf8::FilePathRemoveExtension() {
+   const size_t length = ByteLength();
+   if (length < 1) { return *this; }
+   size_t lastDot;
+   bool foundDot = false;
+   for (lastDot = length - 1; lastDot > 0; lastDot--) {
+      if (_data[lastDot] == '.') {
+         foundDot = true;
+         break;
+      }
+   }
+   if (!foundDot) { return *this; }
+   for (size_t i = length - 1; i >= lastDot; i--) {
+      if (_data[i] == '/' || _data[i] == '\\') { break; }
+      _data[i] = '\0';
+      _data.RemoveLast();
+   }
+   return *this;
+}
+
+ctStringUtf8& ctStringUtf8::FilePathPop() {
+   const size_t length = ByteLength();
+   if (length < 1) { return *this; }
+   for (size_t i = length - 1; i > 0; i--) {
+      if (_data[i] == '/' || _data[i] == '\\') {
+         _data[i] = '\0';
+         _data.RemoveLast();
+         break;
+      }
+      _data[i] = '\0';
+      _data.RemoveLast();
+   }
+   return *this;
+}
+
+ctStringUtf8& ctStringUtf8::FilePathAppend(const char* path) {
+   if (!path) { return *this; }
+   if (path[0] == '/' || path[0] == '\\') {
+      FilePathRemoveTrailingSlash();
+   } else {
+      const size_t length = ByteLength();
+      if (length) {
+         if (_data[length - 1] != '/' && _data[length - 1] != '\\') { *this += "/"; }
+      }
+   }
+   return *this += path;
+}
+
+ctStringUtf8& ctStringUtf8::FilePathAppend(const ctStringUtf8& path) {
+   return FilePathAppend(path.CStr());
+}
+
+ctStringUtf8 ctStringUtf8::FilePathGetName() const {
+   const size_t length = ByteLength();
+   if (length < 1) { return ""; }
+   size_t lastSlash;
+   size_t lastDot;
+   bool foundSlash = false;
+   bool foundDot = false;
+   for (lastSlash = length - 1; lastSlash > 0; lastSlash--) {
+      if (_data[lastSlash] == '/' || _data[lastSlash] == '\\') {
+         foundSlash = true;
+         break;
+      }
+   }
+   for (lastDot = length - 1; lastDot > 0; lastDot--) {
+      if (_data[lastDot] == '.') {
+         foundDot = true;
+         break;
+      }
+   }
+   /* No extension */
+   if (lastSlash > lastDot || !foundDot && foundSlash) {
+      return ctStringUtf8(&CStr()[lastSlash + 1], length - (lastSlash + 1));
+   }
+   /* Extension */
+   else if (foundDot && foundSlash) {
+      return ctStringUtf8(&CStr()[lastSlash + 1], lastDot - (lastSlash + 1));
+   }
+   return "";
+}
+
 uint32_t ctStringUtf8::xxHash32(const int seed) const {
    if (isEmpty()) { return 0; }
    return XXH32(_dataVoid(), ByteLength(), seed);

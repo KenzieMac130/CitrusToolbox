@@ -33,6 +33,7 @@ public:
    /* Key must never be 0! */
    T* Insert(const K key, T&& value);
    T* FindPtr(const K key) const;
+   T* FindPtr(const K key, const int occurance) const;
    /* Does not call destructor or free for value! */
    void Remove(const K key);
    void Clear();
@@ -108,6 +109,7 @@ inline ctHashTable<T, K>::ctHashTable(const size_t baseSize) {
 
 template<class T, class K>
 inline T* ctHashTable<T, K>::Insert(const K key, const T& value) {
+   ZoneScoped;
    if (key == 0) { return NULL; }
    if (!_pKeys || !_pValues) { Reserve(31); }
 
@@ -138,10 +140,20 @@ inline T* ctHashTable<T, K>::Insert(const K key, T&& value) {
 
 template<class T, class K>
 inline T* ctHashTable<T, K>::FindPtr(const K key) const {
+   return FindPtr(key, 0);
+}
+
+template<class T, class K>
+inline T* ctHashTable<T, K>::FindPtr(const K key, const int occuranceTarget) const {
+   ZoneScoped;
    if (key == 0) { return NULL; }
    if (!_pKeys || !_pValues) { return NULL; }
+   int occurance = 0;
    _HASH_LOOP_BEGIN(Capacity()) {
-      if (_pKeys[idx] == key) { return &_pValues[idx]; }
+      if (_pKeys[idx] == key) {
+         if (occurance == occuranceTarget) { return &_pValues[idx]; }
+         occurance++;
+      }
       _HASH_LOOP_END
    }
    return NULL;
@@ -149,6 +161,7 @@ inline T* ctHashTable<T, K>::FindPtr(const K key) const {
 
 template<class T, class K>
 inline void ctHashTable<T, K>::Remove(const K key) {
+   ZoneScoped;
    if (key == 0) { return; }
    if (!_pKeys || !_pValues) { return; }
    _HASH_LOOP_BEGIN(Capacity()) {
@@ -239,6 +252,7 @@ inline const K& ctHashTable<T, K>::Iterator::Key() const {
 
 template<class T, class K>
 inline void ctHashTable<T, K>::Iterator::findNextValid() {
+   ZoneScoped;
    if (currentIdx < pTable->_Capacity) {
       while (pTable->_pKeys[currentIdx] == 0) {
          currentIdx++;

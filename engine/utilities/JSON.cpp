@@ -153,11 +153,11 @@ void ctJSONWriter::_finishLastEntry() {
 }
 
 void ctJSONWriter::_unmarkFirst() {
-    _jsonStack[_jsonStackCt - 1].isFirst = false;
+   _jsonStack[_jsonStackCt - 1].isFirst = false;
 }
 
 void ctJSONWriter::_setDefinition(bool val) {
-    _jsonStack[_jsonStackCt - 1].isDefinition = val;
+   _jsonStack[_jsonStackCt - 1].isDefinition = val;
 }
 
 void ctJSONWriter::_pushStack(bool isArray) {
@@ -166,7 +166,7 @@ void ctJSONWriter::_pushStack(bool isArray) {
    state.isFirst = true;
    state.isDefinition = false;
    state.isArray = isArray;
-   _jsonStack[_jsonStackCt]= state;
+   _jsonStack[_jsonStackCt] = state;
    _jsonStackCt++;
 }
 
@@ -186,7 +186,7 @@ ctResults ctJSONReader::BuildJsonForPtr(const char* pData, size_t length) {
    jsmn_parser parser;
    jsmn_init(&parser);
    int tokenCount = jsmn_parse(&parser, pData, length, NULL, 0);
-   if (tokenCount == 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (tokenCount < 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    _tokens.Resize(tokenCount);
    jsmn_init(&parser);
    jsmn_parse(&parser, pData, length, _tokens.Data(), tokenCount);
@@ -271,7 +271,15 @@ ctResults ctJSONReadEntry::GetObjectEntry(int index,
 
 ctResults ctJSONReadEntry::GetArrayEntry(int index, ctJSONReadEntry& entry) const {
    if (index < 0 || index > GetArrayLength()) { return CT_FAILURE_OUT_OF_BOUNDS; }
-   return _getEntry(_tokenPos + 1 + index, entry);
+   if (!isArray()) { return CT_FAILURE_PARSE_ERROR; }
+   int occurrance = 0;
+   for (int i = _tokenPos; i < _tokenCount; i++) {
+      const jsmntok_t tok = _pTokens[i];
+      if (tok.parent != _tokenPos) { continue; }
+      if (occurrance == index) { return _getEntry(i, entry); }
+      occurrance++;
+   }
+   return CT_FAILURE_DATA_DOES_NOT_EXIST;
 }
 
 int ctJSONReadEntry::GetArrayLength() const {

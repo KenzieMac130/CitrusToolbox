@@ -19,12 +19,34 @@
 #include "Common.h"
 #include "xxhash/xxhash.h"
 
-CT_API uint32_t ctxxHash32(const void* pData, const size_t size, int seed);
-CT_API uint32_t ctxxHash32(const char* pStr, int seed);
-CT_API uint32_t ctxxHash32(const void* pData, const size_t size);
-CT_API uint32_t ctxxHash32(const char* pStr);
+/* https://xueyouchao.github.io/2016/11/16/CompileTimeString/ */
+template<size_t N>
+constexpr inline size_t
+CT_COMPILE_HORNER_HASH_CONSTEXPR(size_t prime, const char (&str)[N], size_t Len = N - 1) {
+   return (Len <= 1) ? str[0]
+                     : (prime * CT_COMPILE_HORNER_HASH_CONSTEXPR(prime, str, Len - 1) +
+                        str[Len - 1]);
+}
+#define CT_COMPILE_HORNER_HASH(_STR) (CT_COMPILE_HORNER_HASH_CONSTEXPR(31, _STR))
 
-CT_API uint64_t ctxxHash64(const void* pData, const size_t size, int seed);
-CT_API uint64_t ctxxHash64(const char* pStr, int seed);
-CT_API uint64_t ctxxHash64(const void* pData, const size_t size);
-CT_API uint64_t ctxxHash64(const char* pStr);
+inline size_t ctHornerHash(const char* pStr, size_t prime) {
+    if (pStr == NULL) return 0;
+    size_t hash = *pStr;
+    for (; *(pStr + 1) != '\0'; pStr++) {
+        hash = prime * hash + *(pStr + 1);
+    }
+    return hash;
+}
+inline size_t ctHornerHash(const char* pStr) {
+   return ctHornerHash(pStr, 31);
+};
+
+CT_API uint32_t ctXXHash32(const void* pData, const size_t size, uint32_t seed);
+CT_API uint32_t ctXXHash32(const char* pStr, int seed);
+CT_API uint32_t ctXXHash32(const void* pData, const size_t size);
+CT_API uint32_t ctXXHash32(const char* pStr);
+
+CT_API uint64_t ctXXHash64(const void* pData, const size_t size, uint64_t seed);
+CT_API uint64_t ctXXHash64(const char* pStr, int seed);
+CT_API uint64_t ctXXHash64(const void* pData, const size_t size);
+CT_API uint64_t ctXXHash64(const char* pStr);
