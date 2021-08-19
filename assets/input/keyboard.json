@@ -23,7 +23,7 @@
 		"output": "actions/debug/moveForward",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/26",
-			"scale": 12.0
+			"scale": 1.0
 		},{
 			"path": "dev/keyboard/input/scancode/22",
 			"scale": -1.0
