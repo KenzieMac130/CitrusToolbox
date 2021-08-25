@@ -125,6 +125,7 @@ bool ctEngineCore::isExitRequested() {
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
+   AssetManager->Update(JobSystem);
    App->OnTick(deltatime);
    SceneEngine->NextFrame();
    App->OnUIUpdate();
@@ -156,7 +157,7 @@ ctResults ctEngineCore::Shutdown() {
    WindowManager->ModuleShutdown();
 #endif
    OSEventManager->ModuleShutdown();
-   AssetManager->Shutdown();
+   AssetManager->ModuleShutdown();
    JobSystem->ModuleShutdown();
    Translation->ModuleShutdown();
 #if CITRUS_INCLUDE_AUDITION
