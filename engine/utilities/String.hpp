@@ -65,6 +65,7 @@ public:
 
    ctStringUtf8& ToUpper();
    ctStringUtf8& ToLower();
+   ctStringUtf8& ProcessEscapeCodes();
 
    bool isNumber() const;
    bool isInteger() const;
@@ -77,6 +78,7 @@ public:
    ctStringUtf8& FilePathAppend(const char* path);
    ctStringUtf8& FilePathAppend(const ctStringUtf8& path);
    ctStringUtf8 FilePathGetName() const;
+   ctStringUtf8 FilePathGetExtension() const;
 
    uint32_t xxHash32(const int seed) const;
    uint32_t xxHash32() const;

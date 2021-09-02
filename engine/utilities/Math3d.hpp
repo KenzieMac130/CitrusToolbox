@@ -38,6 +38,10 @@
 #define CT_VEC3_RIGHT   ctVec3(CT_RIGHT)
 #define CT_VEC3_LEFT    ctVec3(CT_LEFT)
 
+#define CT_VEC3_FROM_2D_GROUND(v) ctVec3(v.x, 0.0f, v.y)
+#define CT_VEC3_FROM_2D_FRONT(v)  ctVec3(v.x, v.y, 0.0f)
+#define CT_VEC3_FROM_2D_SIDE(v)   ctVec3(0.0f, v.y, v.x)
+
 #define CT_AXIS_VERTICAL y
 
 /* --- Vec2 --- */
@@ -144,6 +148,10 @@ inline ctVec2 normalize(const ctVec2& v) {
    return v / length(v);
 }
 
+inline ctVec2 saturate(const ctVec2& v) {
+   return ctVec2(ctSaturate(v.x), ctSaturate(v.y));
+}
+
 inline ctVec2 lerp(const ctVec2& a, const ctVec2& b, float t) {
    return ctVec2(ctLerp(a.x, b.x, t), ctLerp(a.y, b.y, t));
 }
@@ -170,7 +178,7 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC3) ctVec3 {
       y = _y;
       z = _z;
    }
-   inline ctVec3(struct ctVec2 _v);
+   inline ctVec3(struct ctVec2 _v, float z = 0.0f);
    inline ctVec3(struct ctVec4 _v);
 
    inline ctVec3& operator+=(const ctVec3& v);
@@ -262,6 +270,10 @@ inline ctVec3 normalize(const ctVec3& v) {
    return v / length(v);
 }
 
+inline ctVec3 saturate(const ctVec3& v) {
+   return ctVec3(ctSaturate(v.x), ctSaturate(v.y), ctSaturate(v.z));
+}
+
 inline ctVec3 cross(const ctVec3& a, const ctVec3& b) {
    // clang-format off
     return ctVec3(
@@ -303,8 +315,8 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC4) ctVec4 {
       z = _v;
       w = _v;
    }
-   inline ctVec4(struct ctVec2 _v);
-   inline ctVec4(struct ctVec3 _v);
+   inline ctVec4(struct ctVec2 _v, float z = 0.0f, float w = 0.0f);
+   inline ctVec4(struct ctVec3 _v, float w = 0.0f);
 
    inline ctVec4& operator+=(const ctVec4& v);
    inline ctVec4& operator-=(const ctVec4& v);
@@ -397,6 +409,10 @@ inline ctVec4 normalize(const ctVec4& v) {
    return v / length(v);
 }
 
+inline ctVec4 saturate(const ctVec4& v) {
+   return ctVec4(ctSaturate(v.x), ctSaturate(v.y), ctSaturate(v.z), ctSaturate(v.w));
+}
+
 inline ctVec4 lerp(const ctVec4& a, const ctVec4& b, float t) {
    return ctVec4(
      ctLerp(a.x, b.x, t), ctLerp(a.y, b.y, t), ctLerp(a.z, b.z, t), ctLerp(a.w, b.w, t));
@@ -448,6 +464,8 @@ struct CT_API ctBoundBox {
       return min.x <= max.x && min.y <= max.y && min.z <= max.z;
    }
 
+   inline struct ctBoundSphere ToSphere();
+
    ctVec3 min;
    ctVec3 max;
 };
@@ -469,7 +487,7 @@ struct CT_API ctBoundSphere {
          radius = -FLT_MAX;
          return;
       }
-      position = box.min + (box.max * 0.5f);
+      position = (box.min + box.max) / 2.0f;
       AddBox(box);
    }
    inline void AddPoint(ctVec3 pt) {
@@ -495,6 +513,10 @@ struct CT_API ctBoundSphere {
    ctVec3 position;
    float radius;
 };
+
+inline struct ctBoundSphere ctBoundBox::ToSphere() {
+   return ctBoundSphere(*this);
+}
 
 /* --- Quaternion --- */
 
@@ -750,27 +772,27 @@ inline ctVec2::ctVec2(struct ctVec4 _v) {
    x = _v.x;
    y = _v.y;
 }
-inline ctVec3::ctVec3(struct ctVec2 _v) {
+inline ctVec3::ctVec3(struct ctVec2 _v, float _z) {
    x = _v.x;
    y = _v.y;
-   z = 0.0f;
+   z = _z;
 }
 inline ctVec3::ctVec3(struct ctVec4 _v) {
    x = _v.x;
    y = _v.y;
    z = _v.z;
 }
-inline ctVec4::ctVec4(struct ctVec2 _v) {
+inline ctVec4::ctVec4(struct ctVec2 _v, float _z, float _w) {
    x = _v.x;
    y = _v.y;
-   z = 0.0f;
-   w = 0.0f;
+   z = _z;
+   w = _w;
 }
-inline ctVec4::ctVec4(struct ctVec3 _v) {
+inline ctVec4::ctVec4(struct ctVec3 _v, float _w) {
    x = _v.x;
    y = _v.y;
    z = _v.z;
-   w = 0.0f;
+   w = _w;
 }
 inline ctQuat::ctQuat(struct ctVec4 _v) {
    x = _v.x;
@@ -809,9 +831,10 @@ struct CT_API ctTransform {
 };
 
 /* --- Middleware Conversion --- */
-#define ctVec2ToIm3d(v) Im3d::Vec2(v.x, v.y)
-#define ctVec3ToIm3d(v) Im3d::Vec3(v.x, v.y, v.z)
-#define ctVec4ToIm3d(v) Im3d::Vec4(v.x, v.y, v.z, v.w)
+#define ctVec2ToIm3d(v)      Im3d::Vec2(v.x, v.y)
+#define ctVec3ToIm3d(v)      Im3d::Vec3(v.x, v.y, v.z)
+#define ctVec4ToIm3d(v)      Im3d::Vec4(v.x, v.y, v.z, v.w)
+#define ctVec4ToIm3dColor(v) Im3d::Color(v.r, v.g, v.b, v.a)
 #define ctMat4ToIm3d(v)                                                                  \
    Im3d::Mat4(v.data[0][0],                                                              \
               v.data[1][0],                                                              \
@@ -830,9 +853,10 @@ struct CT_API ctTransform {
               v.data[2][3],                                                              \
               v.data[3][3])
 
-#define ctVec2FromIm3d(v) ctVec2(v.x, v.y)
-#define ctVec3FromIm3d(v) ctVec3(v.x, v.y, v.z)
-#define ctVec4FromIm3d(v) ctVec4(v.x, v.y, v.z, v.w)
+#define ctVec2FromIm3d(v)      ctVec2(v.x, v.y)
+#define ctVec3FromIm3d(v)      ctVec3(v.x, v.y, v.z)
+#define ctVec4FromIm3d(v)      ctVec4(v.x, v.y, v.z, v.w)
+#define ctVec4FromIm3dColor(v) ctVec4(v.r, v.g, v.b, v.a)
 #define ctMat4FromIm3d(v)                                                                \
    ctMat4(v(0, 0),                                                                       \
           v(0, 1),                                                                       \

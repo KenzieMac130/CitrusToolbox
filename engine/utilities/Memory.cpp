@@ -16,28 +16,16 @@
 
 #include "Common.h"
 
-void* ctMalloc(size_t size) {
-   ZoneScoped;
-   void* ptr = malloc(size);
-   TracyAlloc(ptr, size);
-   return ptr;
-}
-
-void ctFree(void* block) {
-   ZoneScoped;
-   TracyFree(block);
-   free(block);
-}
-
 struct alignedAllocTracker {
    void* rawMemory;
-   size_t allocSize;
+   size_t originalSize;
 };
 
 void* ctAlignedMalloc(size_t size, size_t alignment) {
    ZoneScoped;
-   char* rawMemory =
-     (char*)ctMalloc(size + alignment + sizeof(alignedAllocTracker));
+   const size_t allocSize = size + alignment + sizeof(alignedAllocTracker);
+   char* rawMemory = (char*)malloc(allocSize);
+   TracyAlloc(rawMemory, allocSize);
    alignedAllocTracker* ptr =
      (alignedAllocTracker*)((uintptr_t)(rawMemory + alignment +
                                         sizeof(alignedAllocTracker)) &
@@ -49,7 +37,7 @@ void* ctAlignedMalloc(size_t size, size_t alignment) {
 void* ctAlignedRealloc(void* block, size_t size, size_t alignment) {
    ZoneScoped;
    void* pNew = ctAlignedMalloc(size, alignment);
-   memcpy(pNew, block, ((alignedAllocTracker*)block)[-1].allocSize);
+   memcpy(pNew, block, ((alignedAllocTracker*)block)[-1].originalSize);
    ctAlignedFree(block);
    return pNew;
 }
@@ -57,7 +45,24 @@ void* ctAlignedRealloc(void* block, size_t size, size_t alignment) {
 void ctAlignedFree(void* block) {
    ZoneScoped;
    if (!block) { return; }
-   ctFree(((alignedAllocTracker*)block)[-1].rawMemory);
+   void* pFinal = ((alignedAllocTracker*)block)[-1].rawMemory;
+   TracyFree(pFinal);
+   free(pFinal);
+}
+
+void* ctMalloc(size_t size) {
+   ZoneScoped;
+   return ctAlignedMalloc(size, CT_ALIGNMENT_ALLOCATIONS);
+}
+
+CT_API void* ctRealloc(void* old, size_t size) {
+   ZoneScoped;
+   return ctAlignedRealloc(old, size, CT_ALIGNMENT_ALLOCATIONS);
+}
+
+void ctFree(void* block) {
+   ZoneScoped;
+   return ctAlignedFree(block);
 }
 
 void* operator new(size_t size) {

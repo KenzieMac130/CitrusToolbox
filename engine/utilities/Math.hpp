@@ -54,6 +54,10 @@ inline float ctMin(const float a, const float b);
 /* Clamp */
 inline float ctClamp(const float a, const float min, const float max);
 
+/* Remapping */
+inline float ctRemap(
+  const float v, const float in_min, const float in_max, float out_min, float out_max);
+
 /* Saturate */
 inline float ctSaturate(const float a);
 
@@ -100,6 +104,8 @@ inline float ctArcTan2(const float a, const float b);
 inline bool ctIsPrime(const size_t x);
 inline size_t ctNextPrime(size_t x);
 
+/* ------------------ Implementations ------------------ */
+
 inline bool ctFloatCompare(const float a, const float b, const float threshold) {
    return ctAbs(a - b) < threshold;
 }
@@ -143,6 +149,11 @@ inline float ctMin(const float a, const float b) {
 
 inline float ctClamp(const float a, const float min, const float max) {
    return ctMin(ctMax(a, min), max);
+}
+
+inline float ctRemap(
+  const float v, const float in_min, const float in_max, float out_min, float out_max) {
+   return out_min + (v - in_min) * (out_max - out_min) / (in_max - in_min);
 }
 
 inline float ctSaturate(const float a) {

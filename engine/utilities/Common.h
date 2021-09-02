@@ -134,7 +134,7 @@ enum ctResults {
 #define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 #define ctCStrEql(a, b)         strcmp(a, b) == 0
 #define ctCStrNEql(a, b, n)     strncmp(a, b, n) == 0
-#define ctCFlagCheck(v,f) ((v) & (1<<(f)))
+#define ctCFlagCheck(v, f)      ((v) & (1 << (f)))
 
 /*Assert*/
 #define ctAssert(e) assert(e)
@@ -145,6 +145,10 @@ enum ctResults {
  * @brief should behave just like malloc but with messages to track leaks
  */
 CT_API void* ctMalloc(size_t size);
+/**
+ * @brief should behave just like realloc but with messages to track leaks
+ */
+CT_API void* ctRealloc(void* old, size_t size);
 /**
  * @brief should behave just like free
  */
@@ -183,4 +187,6 @@ CT_API void ctAlignedFree(void* block);
 #include "Sync.hpp"
 #include "JSON.hpp"
 #include "Time.hpp"
+#include "File.hpp"
+#include "Random.hpp"
 #endif

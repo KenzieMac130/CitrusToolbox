@@ -36,11 +36,13 @@ private:
 
 template<class T, size_t TBYTECOUNT, int THASHCOUNT>
 inline void ctBloomFilter<T, TBYTECOUNT, THASHCOUNT>::Reset() {
+   ZoneScoped;
    memset(bytes, 0, TBYTECOUNT);
 }
 
 template<class T, size_t TBYTECOUNT, int THASHCOUNT>
 inline void ctBloomFilter<T, TBYTECOUNT, THASHCOUNT>::Insert(const T& val) {
+   ZoneScoped;
    for (int i = 0; i < THASHCOUNT; i++) {
       SetBit(ctXXHash32(&val, sizeof(val), i) % (TBYTECOUNT * 8));
    }
@@ -48,6 +50,7 @@ inline void ctBloomFilter<T, TBYTECOUNT, THASHCOUNT>::Insert(const T& val) {
 
 template<class T, size_t TBYTECOUNT, int THASHCOUNT>
 inline bool ctBloomFilter<T, TBYTECOUNT, THASHCOUNT>::MightExist(const T& val) const {
+   ZoneScoped;
    for (int i = 0; i < THASHCOUNT; i++) {
       if (!GetBit(ctXXHash32(&val, sizeof(val), i) % (TBYTECOUNT * 8))) { return false; }
    }

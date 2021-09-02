@@ -17,3 +17,35 @@
 #pragma once
 
 #include "utilities/Common.h"
+
+#include "mattias/rnd.h"
+
+class ctRandomGenerator {
+public:
+   ctRandomGenerator();
+   ctRandomGenerator(uint32_t seed);
+
+   void SetSeed(uint32_t seed);
+
+   float GetFloatUNorm();
+   float GetFloat();
+   float GetFloat(float min, float max);
+
+   int32_t GetInt();
+   int32_t GetInt(int32_t min, int32_t max);
+
+   ctVec2 GetVec2();
+   ctVec3 GetVec3();
+   ctVec4 GetVec4();
+   ctVec2 GetVec2(ctVec2 min, ctVec2 max);
+   ctVec3 GetVec3(ctVec3 min, ctVec3 max);
+   ctVec4 GetVec4(ctVec4 min, ctVec4 max);
+
+   float GetGaussian(float mean, float standardDeviation);
+   ctVec2 GetGaussian2D(ctVec2 mean, float standardDeviation);
+   ctVec3 GetOnSphere(float radius = 1.0f);
+   ctVec4 GetColor(float alpha = 1.0f);
+
+private:
+   rnd_pcg_t rnd;
+};

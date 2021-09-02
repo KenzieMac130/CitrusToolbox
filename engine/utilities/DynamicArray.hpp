@@ -137,24 +137,28 @@ inline ctDynamicArray<T>::~ctDynamicArray() {
 template<class T>
 inline T& ctDynamicArray<T>::operator[](const size_t index) {
    ctAssert(index < Count());
+   ctAssert(_pData);
    return _pData[index];
 }
 
 template<class T>
 inline T ctDynamicArray<T>::operator[](const size_t index) const {
    ctAssert(index < Count());
+   ctAssert(_pData);
    return _pData[index];
 }
 
 template<class T>
 inline T& ctDynamicArray<T>::First() {
    ctAssert(Count() > 0);
+   ctAssert(_pData);
    return _pData[0];
 }
 
 template<class T>
 inline T ctDynamicArray<T>::First() const {
    ctAssert(Count() > 0);
+   ctAssert(_pData);
    return _pData[0];
 }
 
@@ -162,6 +166,7 @@ template<class T>
 inline T& ctDynamicArray<T>::Last() {
    size_t idx = Count() - 1 > 0 ? Count() - 1 : 0;
    ctAssert(Count() > 0);
+   ctAssert(_pData);
    return _pData[idx];
 }
 
@@ -169,6 +174,7 @@ template<class T>
 inline T ctDynamicArray<T>::Last() const {
    size_t idx = Count() - 1 > 0 ? Count() - 1 : 0;
    ctAssert(Count() > 0);
+   ctAssert(_pData);
    return _pData[idx];
 }
 
@@ -229,6 +235,7 @@ inline size_t ctDynamicArray<T>::Capacity() const {
 
 template<class T>
 inline ctDynamicArray<T>& ctDynamicArray<T>::operator=(const ctDynamicArray<T>& arr) {
+   if (arr.isEmpty()) { return *this; }
    const size_t inputcount = arr.Count();
    Resize(inputcount);
    for (size_t i = 0; i < inputcount; i++) {

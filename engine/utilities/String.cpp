@@ -105,6 +105,7 @@ ctStringUtf8& ctStringUtf8::operator+=(const char* str) {
 }
 
 ctStringUtf8& ctStringUtf8::operator+=(const ctStringUtf8& str) {
+   if (str.isEmpty()) { return *this; }
    return Append(str.CStr(), str.ByteLength());
 }
 
@@ -162,6 +163,40 @@ ctStringUtf8& ctStringUtf8::ToUpper() {
 ctStringUtf8& ctStringUtf8::ToLower() {
    if (isEmpty()) { return *this; }
    utf8lwr(_dataVoid());
+   return *this;
+}
+
+ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
+   const size_t len = ByteLength();
+   size_t outIdx = 0;
+   bool escapeEntered = false;
+   for (size_t inIdx = 0; inIdx < len; inIdx++) {
+      if (escapeEntered) {
+         escapeEntered = false;
+         switch (_data[inIdx]) {
+            case '\'': _data[outIdx] = '\''; break;
+            case '\"': _data[outIdx] = '\"'; break;
+            case '?': _data[outIdx] = '\?'; break;
+            case '\\': _data[outIdx] = '\\'; break;
+            case 'a': continue;
+            case 'b': continue;
+            case 'f': _data[outIdx] = '\f'; break;
+            case 'n': _data[outIdx] = '\n'; break;
+            case 'r': _data[outIdx] = '\r'; break;
+            case 't': _data[outIdx] = '\t'; break;
+            case 'v': _data[outIdx] = '\v'; break;
+            default: continue;
+         }
+      } else if (_data[inIdx] == '\\') {
+         escapeEntered = true;
+         continue;
+      } else {
+         _data[outIdx] = _data[inIdx];
+      }
+      outIdx++;
+   }
+   _data.Resize(outIdx);
+   _nullTerminate();
    return *this;
 }
 
@@ -288,6 +323,21 @@ ctStringUtf8 ctStringUtf8::FilePathGetName() const {
    else if (foundDot && foundSlash) {
       return ctStringUtf8(&CStr()[lastSlash + 1], lastDot - (lastSlash + 1));
    }
+   return "";
+}
+
+ctStringUtf8 ctStringUtf8::FilePathGetExtension() const {
+   const size_t length = ByteLength();
+   if (length < 1) { return ""; }
+   size_t lastDot;
+   bool foundDot = false;
+   for (lastDot = length - 1; lastDot > 0; lastDot--) {
+      if (_data[lastDot] == '.') {
+         foundDot = true;
+         break;
+      }
+   }
+   if (foundDot) { return &CStr()[lastDot]; }
    return "";
 }
 

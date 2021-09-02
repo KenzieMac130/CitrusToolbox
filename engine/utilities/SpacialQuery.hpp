@@ -25,16 +25,19 @@
  * hash map for the key (K) with (N) number of retries for hash collisions */
 
 /*
- *        X Coord             Y Coord             Z Coord         1
- * XXXXXXXXXXXXXXXXXXXXXYYYYYYYYYYYYYYYYYYYYYZZZZZZZZZZZZZZZZZZZZZ1
+ *           X Coord                  Y Coord                  Z Coord           1
+ * XXXX XXXX XXXX XXXX XXXX XYYY YYYY YYYY YYYY YYYY YYZZ ZZZZ ZZZZ ZZZZ ZZZZ ZZZ1
  *
  * 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0001 1
- * 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0011 1111 1111 1111 1111 1110 Z
- * 0000 0000 0000 0000 0000 0111 1111 1111 1111 1111 1100 0000 0000 0000 0000 0000 Y
- * 1111 1111 1111 1111 1111 1000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 X
+ * 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 00ZZ ZZZZ ZZZZ ZZZZ ZZZZ ZZZ0 Z
+ * 0000 0000 0000 0000 0000 0YYY YYYY YYYY YYYY YYYY YY00 0000 0000 0000 0000 0000 Y
+ * XXXX XXXX XXXX XXXX XXXX X000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 X
  */
 
 struct CT_API ctSpacialCellKey {
+   inline ctSpacialCellKey() {
+      memset(this, 0, sizeof(*this));
+   }
    inline ctSpacialCellKey(ctVec3 v) {
       const unsigned int x = ((unsigned int)v.x + 1048575) % 2097152;
       const unsigned int y = ((unsigned int)v.y + 1048575) % 2097152;
@@ -48,6 +51,10 @@ struct CT_API ctSpacialCellKey {
    }
    uint64_t data;
 };
+
+inline bool operator==(const ctSpacialCellKey a, const ctSpacialCellKey b) {
+   return memcmp(&a, &b, sizeof(ctSpacialCellKey)) == 0;
+}
 
 struct CT_API ctSpacialCellBucket {
    inline ctSpacialCellBucket() {
@@ -78,6 +85,7 @@ struct CT_API ctSpacialCellBucket {
 class CT_API ctSpacialQuery {
 public:
    inline uint32_t GetBucketCount(ctSpacialCellKey k) const;
+   inline uint32_t GetBucketCount(ctSpacialCellKey k);
    inline ctSpacialCellBucket* GetBucket(const ctSpacialCellKey k,
                                          const uint32_t i) const;
 
@@ -87,16 +95,37 @@ public:
    inline void Reset();
 
 private:
+   inline bool FindFalsePositive(ctSpacialCellKey k) const;
    ctBloomFilter<ctSpacialCellKey, 8096, 4> bloom;
+   // ctBloomFilter<ctSpacialCellKey, 1024, 4> potentialFalsePositive;
+   // ctDynamicArray<ctSpacialCellKey> falsePositives;
    ctHashTable<uint32_t, uint64_t> counts;
    ctHashTable<ctSpacialCellBucket, uint64_t> buckets;
 };
 
+inline bool ctSpacialQuery::FindFalsePositive(ctSpacialCellKey k) const {
+   // if (!potentialFalsePositive.MightExist(k)) { return false; }
+   // if (falsePositives.FindIndex(k) >= 0) { return true; }
+   return false;
+}
+
 inline uint32_t ctSpacialQuery::GetBucketCount(ctSpacialCellKey k) const {
    ZoneScoped;
    if (!bloom.MightExist(k)) { return 0; }
+   if (FindFalsePositive(k)) { return 0; }
    const uint32_t* pNum = counts.FindPtr(k.data);
    if (pNum) { return *pNum; }
+   return 0;
+}
+
+inline uint32_t ctSpacialQuery::GetBucketCount(ctSpacialCellKey k) {
+   ZoneScoped;
+   if (!bloom.MightExist(k)) { return 0; }
+   if (FindFalsePositive(k)) { return 0; }
+   const uint32_t* pNum = counts.FindPtr(k.data);
+   if (pNum) { return *pNum; }
+   // potentialFalsePositive.Insert(k);
+   // falsePositives.Append(k);
    return 0;
 }
 
@@ -113,6 +142,10 @@ inline void ctSpacialQuery::Reserve(size_t amount) {
 
 inline void ctSpacialQuery::Add(ctHandle v, ctSpacialCellKey k) {
    ZoneScoped;
+   // if (!falsePositives.isEmpty()) {
+   //   falsePositives.Clear();
+   //   potentialFalsePositive.Reset();
+   //}
    uint32_t* pBucketCount = NULL;
    if (bloom.MightExist(k)) { pBucketCount = counts.FindPtr(k.data); }
    if (pBucketCount) {
@@ -147,6 +180,8 @@ inline void ctSpacialQuery::Remove(ctHandle v, ctSpacialCellKey k) {
 
 inline void ctSpacialQuery::Reset() {
    ZoneScoped;
+   // falsePositives.Clear();
+   // potentialFalsePositive.Reset();
    bloom.Reset();
    counts.Clear();
    buckets.Clear();
