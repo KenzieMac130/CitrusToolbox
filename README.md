@@ -21,6 +21,5 @@
  
 ## Areas of interest:
   * [Code Style](/docs/CodeStyleGuide.md)
-  * [Rendering Architecture Presentation](/docs/MovingToGpuDrivenRendering.odp)
   * [Vulkan Backend](/engine/renderer/vulkan/VkBackend.cpp)
   * ["Interact" Design](/docs/InteractNotes.md)
