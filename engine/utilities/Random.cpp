@@ -36,7 +36,7 @@ float ctRandomGenerator::GetFloatUNorm() {
 }
 
 float ctRandomGenerator::GetFloat() {
-   return GetFloatUNorm() * 2.0f + 1.0f;
+   return GetFloatUNorm() * 2.0f - 1.0f;
 }
 
 float ctRandomGenerator::GetFloat(float min, float max) {
