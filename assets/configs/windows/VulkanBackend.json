@@ -1,0 +1,9 @@
+{
+	"PreferredDevice": -1,
+	"ValidationEnabled": true,
+	"MaxSamplers": 8,
+	"MaxSampledImages": 2048,
+	"MaxStorageImages": 256,
+	"MaxStorageBuffers": 4096,
+	"NextFrameTimeout": 100000
+}

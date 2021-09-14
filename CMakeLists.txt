@@ -50,12 +50,13 @@ set(CT_MAX_SETTINGS_SECTIONS 64)
 set(CT_MAX_GFX_SAMPLERS 8)
 set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
 set(CT_MAX_GFX_STORAGE_IMAGES 64)
-set(CT_MAX_GFX_STORAGE_BUFFERS 4096)
+set(CT_MAX_GFX_STORAGE_BUFFERS 16192)
 set(CT_MAX_INFLIGHT_FRAMES 3)
 set(CT_MAX_INTERACT_PATH_SIZE 1024)
-set(CT_MAX_INTERACT_PATH_SIZE 1024)
+set(CT_MAX_JOB_GROUPS 1024)
 
 # ---------- Alignment ----------
+set(CT_ALIGNMENT_ALLOCATIONS 64)
 set(CT_ALIGNMENT_VEC2 8)
 set(CT_ALIGNMENT_VEC3 16)
 set(CT_ALIGNMENT_VEC4 16)
@@ -92,15 +93,14 @@ set(CITRUS_ASSET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(CITRUS_ASSET_BUILD_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
 
 #---------- Point to Libraries ----------
-if(WIN32)
-   set(BASE_LIBRARY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libs/Win64)
-   set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
-   set(SHARED_LIBRARY_FORMAT ".dll")
-   set(EXECUTABLE_FORMAT ".exe")
-   set(NATIVE_SOURCE_FILES)
-else()
-   message(FATAL_ERROR "Currently unsupported platform!")
-endif()
+# The following should be set up per-platform in CMakePresets.json
+#"BASE_LIBRARY_DIRECTORY": "${CMAKE_CURRENT_SOURCE_DIR}/libs/Win64"
+#"SHARED_LIBRARY_FORMAT": ".dll"
+#"EXECUTABLE_FORMAT": ".exe"
+#"ASSET_BUILD_PLATFORM": "windows"
+#"NATIVE_SOURCE_FILES": "path/XXX.c path/YYY.c path/ZZZ.c ..."
+
+set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
 set(TOOLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 set(THIRD_PARTY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
@@ -137,8 +137,14 @@ if(CITRUS_GFX_VULKAN)
       set(Vulkan_INCLUDE_DIR ${Vulkan_INCLUDE_DIRS}/vulkan)
       set(Vulkan_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Vulkan/Lib/vulkan-1.lib)
       set(Vulkan_LIBRARIES ${Vulkan_LIBRARY})
-      set(Vulkan_GLSLC_EXECUTABLE ${BASE_LIBRARY_DIRECTORY}/Vulkan/Bin/glslc${EXECUTABLE_FORMAT})
    endif()
+endif()
+
+# ---------- Find Shaderc ----------
+set(CITRUS_SHADERC 1)
+if(CITRUS_SHADERC)
+   set(SHADERC_INCLUDE_DIRS ${BASE_LIBRARY_DIRECTORY}/Shaderc/Include)
+   set(SHADERC_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Shaderc/Lib/shaderc_shared.lib)
 endif()
 
 # ---------- Find PhysX ----------
@@ -202,7 +208,7 @@ endif()
 # ---------- Interaction Backends ----------
 set(CITRUS_INTERACT_INPUT_SDL 1)
 
-# ---------- ImGui ----------
+# ---------- ImGui/Im3d ----------
 set(CITRUS_IMGUI 1)
 set(CITRUS_IM3D 1)
 

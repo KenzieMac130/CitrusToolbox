@@ -98,14 +98,13 @@ ctResults ctVkKeyLimeCore::Startup() {
                            true,
                            "NextFrameTimeout",
                            "Amount of time until timeout.",
-                           CT_SETTINGS_BOUNDS_BOOL);
+                           CT_SETTINGS_BOUNDS_UINT);
 
-   ctSettingsSection* settings = Engine->Settings->CreateSection("KeyLimeRenderer", 32);
+   ctSettingsSection* settings = Engine->Settings->CreateSection("Renderer", 32);
    Engine->OSEventManager->WindowEventHandlers.Append({sendResizeSignal, this});
 
 #if CITRUS_INCLUDE_AUDITION
-   ShaderHotReload.RegisterPath("shaders/im3d_vert.spv");
-   ShaderHotReload.RegisterPath("shaders/im3d_frag.spv");
+   ShaderHotReload.RegisterPath("shaders/im3d.wad");
    Engine->HotReload->RegisterAssetCategory(&ShaderHotReload);
 #endif
 
@@ -165,19 +164,19 @@ ctResults ctVkKeyLimeCore::Startup() {
       vkQueueWaitIdle(vkBackend.transferQueue);
    }
    /* Setup Im3d */
-   {
-      /*vkIm3d.SetDisplaySize(vkBackend.mainScreenResources.extent.width,
-                            vkBackend.mainScreenResources.extent.height,
-                            internalResolutionWidth,
-                            internalResolutionHeight);*/
-      vkIm3d.Startup(&vkBackend, forwardRenderPass, 0);
-   }
+   { vkIm3d.Startup(*Engine->FileSystem, &vkBackend, forwardRenderPass, 0); }
    return CT_SUCCESS;
 }
 
 ctResults ctVkKeyLimeCore::Shutdown() {
    ZoneScoped;
    vkDeviceWaitIdle(vkBackend.vkDevice);
+   for (auto it = geometries.GetIterator(); it; it++) {
+      DestroyGeometry(it.Key());
+   }
+   for (auto it = textures.GetIterator(); it; it++) {
+      DestroyTexture(it.Key());
+   }
    vkDestroyCommandPool(vkBackend.vkDevice, gfxCommandPool, &vkBackend.vkAllocCallback);
    vkDestroyCommandPool(
      vkBackend.vkDevice, transferCommandPool, &vkBackend.vkAllocCallback);
@@ -186,6 +185,157 @@ ctResults ctVkKeyLimeCore::Shutdown() {
    DestroyScreenResources();
    vkBackend.ModuleShutdown();
    return CT_SUCCESS;
+}
+
+ctResults ctVkKeyLimeCore::CreateGeometry(ctHandle* pHandleOut,
+                                          const ctKeyLimeCreateGeometryDesc& desc) {
+   ctVkKeyLimeGeometry geometry = {};
+   const ctKeyLimeGeometryHeader header = desc.header;
+   if (desc.header.alignment %
+       vkBackend.vPhysicalDeviceProperties.limits.minStorageBufferOffsetAlignment) {
+      ctDebugError(
+        "Geometry with %d alignment was not sufficient for the users device which "
+        "requires at minimum: %d bytes",
+        desc.header.alignment,
+        vkBackend.vPhysicalDeviceProperties.limits.minStorageBufferOffsetAlignment);
+      return CT_FAILURE_UNSUPPORTED_HARDWARE;
+   }
+   vkBackend.CreateCompleteBuffer(geometry.buffer,
+                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                  0,
+                                  desc.blobSize);
+   if (header.submeshOffset != UINT32_MAX) {
+      vkBackend.ExposeBindlessStorageBuffer(geometry.streamSubmeshIdx,
+                                            geometry.buffer.buffer,
+                                            header.submeshCount *
+                                              sizeof(ctKeyLimeStreamSubmesh),
+                                            header.submeshOffset);
+   }
+   if (header.indexOffset != UINT32_MAX) {
+      vkBackend.ExposeBindlessStorageBuffer(geometry.streamIndexIdx,
+                                            geometry.buffer.buffer,
+                                            header.indexCount *
+                                              sizeof(ctKeyLimeMeshIndex),
+                                            header.indexOffset);
+   }
+   if (header.positionOffset != UINT32_MAX) {
+      vkBackend.ExposeBindlessStorageBuffer(geometry.streamPositionIdx,
+                                            geometry.buffer.buffer,
+                                            header.vertexCount *
+                                              sizeof(ctKeyLimeStreamPosition),
+                                            header.positionOffset);
+   }
+   if (header.tangentNormalOffset != UINT32_MAX) {
+      vkBackend.ExposeBindlessStorageBuffer(geometry.streamPositionIdx,
+                                            geometry.buffer.buffer,
+                                            header.vertexCount *
+                                              sizeof(ctKeyLimeStreamNormalTangent),
+                                            header.tangentNormalOffset);
+   }
+   if (header.skinOffset != UINT32_MAX) {
+      vkBackend.ExposeBindlessStorageBuffer(geometry.streamSkinIdx,
+                                            geometry.buffer.buffer,
+                                            header.vertexCount *
+                                              sizeof(ctKeyLimeStreamSkin),
+                                            header.skinOffset);
+   }
+   for (uint32_t i = 0; i < header.uvChannelCount; i++) {
+      if (header.uvOffsets[i] != UINT32_MAX) {
+         vkBackend.ExposeBindlessStorageBuffer(geometry.streamUVIdx[i],
+                                               geometry.buffer.buffer,
+                                               header.vertexCount *
+                                                 sizeof(ctKeyLimeStreamUV),
+                                               header.uvOffsets[i]);
+      }
+   }
+   for (uint32_t i = 0; i < header.colorChannelCount; i++) {
+      if (header.colorOffsets[i] != UINT32_MAX) {
+         vkBackend.ExposeBindlessStorageBuffer(geometry.streamColorIdx[i],
+                                               geometry.buffer.buffer,
+                                               header.vertexCount *
+                                                 sizeof(ctKeyLimeStreamColor),
+                                               header.colorOffsets[i]);
+      }
+   }
+   *pHandleOut = geometryHandleManager.GetNewHandle();
+   geometries.Insert(*pHandleOut, geometry);
+   return CT_SUCCESS;
+}
+
+ctResults ctVkKeyLimeCore::UpdateGeometry(ctHandle handle) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::DestroyGeometry(ctHandle handle) {
+   ctVkKeyLimeGeometry* pGeo = geometries.FindPtr(handle);
+   if (!pGeo) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
+   vkBackend.TryDestroyCompleteBuffer(pGeo->buffer);
+   vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamSubmeshIdx);
+   vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamIndexIdx);
+   vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamPositionIdx);
+   vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamPositionIdx);
+   for (int i = 0; i < 4; i++) {
+      vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamUVIdx[i]);
+   }
+   for (int i = 0; i < 4; i++) {
+      vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamColorIdx[i]);
+   }
+   vkBackend.ReleaseBindlessStorageBuffer(pGeo->streamSkinIdx);
+   geometries.Remove(handle);
+   geometryHandleManager.FreeHandle(handle);
+   return CT_SUCCESS;
+}
+
+ctResults ctVkKeyLimeCore::CreateMaterial(ctHandle* pHandleOut,
+                                          const ctKeyLimeMaterialDesc& desc) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::UpdateMaterial(ctHandle handle,
+                                          const ctKeyLimeMaterialDesc& desc) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::DestroyMaterial(ctHandle handle) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::CreateTransforms(ctHandle* pHandleOut,
+                                            const ctKeyLimeTransformsDesc& pDesc) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::UpdateTransforms(ctHandle handle,
+                                            const ctKeyLimeTransformsDesc& desc) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::DestroyTransforms(ctHandle handle) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::CreateGeoInstance(ctHandle* pHandleOut,
+                                             const ctKeyLimeInstanceDesc& desc) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::UpdateGeoInstance(ctHandle handle,
+                                             const ctKeyLimeInstanceDesc& desc) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::DestroyGeoInstance(ctHandle handle) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::LoadTextureKtx(ctHandle* pHandleOut,
+                                          const char* resolvedPath) {
+   return ctResults();
+}
+
+ctResults ctVkKeyLimeCore::DestroyTexture(ctHandle handle) {
+   return ctResults();
 }
 
 ctResults ctVkKeyLimeCore::CreateScreenResources() {
@@ -234,7 +384,8 @@ ctResults ctVkKeyLimeCore::CreateScreenResources() {
                                      &createInfo,
                                      &vkBackend.vkAllocCallback,
                                      &forwardRenderPass),
-                  CT_NC("vkCreateRenderPass() failed to create gui renderpass"));
+                  CT_NCT("FAIL:vkGuiRenderpass",
+                         "vkCreateRenderPass() failed to create gui renderpass"));
    }
    /* Depth/Composite and Framebuffers */
    {
@@ -246,7 +397,7 @@ ctResults ctVkKeyLimeCore::CreateScreenResources() {
                     VK_IMAGE_ASPECT_COLOR_BIT,
                     internalResolutionWidth,
                     internalResolutionHeight),
-                  CT_NC("Failed to create composite buffer."));
+                  CT_NCT("FAIL:vkGuiRenderpass", "Failed to create composite buffer."));
       CT_VK_CHECK(
         vkBackend.CreateCompleteImage(depthBuffer,
                                       depthFormat,
@@ -255,7 +406,7 @@ ctResults ctVkKeyLimeCore::CreateScreenResources() {
                                       VK_IMAGE_ASPECT_DEPTH_BIT,
                                       internalResolutionWidth,
                                       internalResolutionHeight),
-        CT_NC("Failed to create depth buffer."));
+        CT_NCT("FAIL:depthbuffer", "Failed to create depth buffer."));
    }
    /* Render to image finished */
    {
@@ -281,7 +432,8 @@ ctResults ctVkKeyLimeCore::CreateScreenResources() {
                                       &framebufferInfo,
                                       &vkBackend.vkAllocCallback,
                                       &forwardFramebuffer),
-                  CT_NC("vkCreateFramebuffer() failed to create gui framebuffer."));
+                  CT_NCT("FAIL:vkGuiFramebuffer",
+                         "vkCreateFramebuffer() failed to create gui framebuffer."));
    }
    return CT_SUCCESS;
 }
@@ -299,7 +451,7 @@ ctResults ctVkKeyLimeCore::DestroyScreenResources() {
    return CT_SUCCESS;
 }
 
-ctResults ctVkKeyLimeCore::UpdateCamera(ctKeyLimeCameraDesc cameraDesc) {
+ctResults ctVkKeyLimeCore::UpdateCamera(const ctKeyLimeCameraDesc cameraDesc) {
    ctAssert(viewBufferCount >= 1);
    return CT_SUCCESS;
 }
@@ -319,8 +471,7 @@ ctResults ctVkKeyLimeCore::Render() {
                                (float)vkBackend.mainScreenResources.extent.height,
                              0.01f);
 
-   /* Build Debug Internals */
-   vkIm3d.BuildDrawLists();
+   /* Build Imgui Internals */
    Engine->Im3dIntegration->DrawImguiText(ctMat4());
    vkImgui.BuildDrawLists();
 
@@ -334,16 +485,18 @@ ctResults ctVkKeyLimeCore::Render() {
                              internalResolutionWidth,
                              internalResolutionHeight);
       vkBackend.RecreateSync();
-      VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
    }
    if (vkBackend.WaitForFrameAvailible() != VK_SUCCESS) { return CT_SUCCESS; };
+
+   /* Build Im3d Internals */
+   vkIm3d.BuildDrawLists();
 
 #if CITRUS_INCLUDE_AUDITION
    /* Check if shaders have been updated */
    if (ShaderHotReload.isContentUpdated()) {
       ctDebugLog("Shaders Updated...");
       vkDeviceWaitIdle(vkBackend.vkDevice);
-      vkIm3d.LoadShaders(forwardRenderPass, 0);
+      vkIm3d.LoadShaders(*Engine->FileSystem, forwardRenderPass, 0);
       ShaderHotReload.ClearChanges();
    }
 #endif

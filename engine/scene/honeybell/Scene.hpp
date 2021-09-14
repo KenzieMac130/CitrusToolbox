@@ -32,11 +32,12 @@
 
 namespace ctHoneybell {
 
-class CT_API Scene : public ctModuleBase {
+class CT_API Scene {
 public:
    Scene();
    ~Scene();
 
+   ctEngineCore* Engine;
    virtual ctResults Startup();
    virtual ctResults Shutdown();
 

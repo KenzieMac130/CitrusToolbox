@@ -60,7 +60,8 @@ private:
    ctCameraInfo LastCamera;
    ctCameraInfo CurrentCamera;
 
-   int32_t debugCameraActive = true;
+   int32_t debugCameraAllowed = false;
+   int32_t debugCameraActive = false;
    ctCameraInfo debugCamera;
    float camYaw;
    float camPitch;

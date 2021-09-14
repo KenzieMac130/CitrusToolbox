@@ -22,19 +22,36 @@
 #include "utilities/Common.h"
 
 #include "KeyLimeDataTypes.hpp"
-
-struct ctKeyLimeCameraDesc {
-   ctVec3 position;
-   ctQuat rotation;
-   float fov;
-};
+#include "TextureLoad.h"
 
 class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
+   ctResults CreateGeometry(ctKeyLimeGeometryHandle* pHandleOut, const char* resolvedPath);
+   ctResults CreateGeometry(ctKeyLimeGeometryHandle* pHandleOut, const ctKeyLimeCreateGeometryDesc& desc);
+   ctResults UpdateGeometry(ctKeyLimeGeometryHandle handle, const ctKeyLimeCreateGeometryDesc& desc);
+   ctResults DestroyGeometry(ctKeyLimeGeometryHandle handle);
+
+   ctResults CreateMaterial(ctKeyLimeMaterialHandle* pHandleOut, const ctKeyLimeMaterialDesc& desc);
+   ctResults UpdateMaterial(ctKeyLimeMaterialHandle handle, const ctKeyLimeMaterialDesc& desc);
+   ctResults DestroyMaterial(ctKeyLimeMaterialHandle handle);
+
+   ctResults CreateTransformPool(ctKeyLimeTransformPoolHandle* pHandleOut, const ctKeyLimeTransformsDesc& desc);
+   ctResults UpdateTransformPool(ctKeyLimeTransformPoolHandle handle, const ctKeyLimeTransformsDesc& desc);
+   ctResults DestroyTransformPool(ctKeyLimeTransformPoolHandle handle);
+
+   ctResults CreateGeoInstance(ctKeyLimeGeoInstanceHandle* pHandleOut, const ctKeyLimeInstanceDesc& desc);
+   ctResults UpdateGeoInstance(ctKeyLimeGeoInstanceHandle handle, const ctKeyLimeInstanceDesc& desc);
+   ctResults DestroyGeoInstance(ctKeyLimeGeoInstanceHandle handle);
+
+   ctResults CreateTexture(ctKeyLimeTextureHandle* pHandleOut, const char* resolvedPath);
+   ctResults CreateTexture(ctKeyLimeTextureHandle* pHandleOut, const ctTextureLoadCtx& loadCtx);
+   ctResults DestroyTexture(ctKeyLimeTextureHandle handle);
+
    ctResults UpdateCamera(const ctKeyLimeCameraDesc& cameraDesc);
+
    ctResults RenderFrame();
 
 #ifdef CITRUS_GFX_VULKAN

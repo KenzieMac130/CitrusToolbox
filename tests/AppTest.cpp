@@ -20,6 +20,9 @@
 #include "imgui/imgui.h"
 #include "core/FileSystem.hpp"
 #include "interact/InteractionEngine.hpp"
+#include "renderer/KeyLime.hpp"
+#include "core/AsyncTasks.hpp"
+#include "core/JobSystem.hpp"
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
@@ -33,6 +36,17 @@ class TestApp : public ctApplication {
    float rad = 5.0f;
    float phase = 0;
    float diskPos[2] = {0};
+
+   int gausPts = 256;
+   int gausSeed = 0;
+
+   int spherePts = 0;
+   int sphereSeed = 0;
+   float sphereRad = 1.0f;
+
+   ctHandle geoHandle;
+   ctAsyncTaskHandle tasks[32];
+   ctJobGroupHandle jobGroups[12];
 };
 
 const char* TestApp::GetAppName() {
@@ -47,12 +61,40 @@ ctAppVersion TestApp::GetAppVersion() {
    return {1, 0, 0};
 }
 
+ctResults testTask(void*) {
+   ZoneScoped;
+   ctDebugLog("Testing Async...");
+   ctWait(500);
+   return CT_SUCCESS;
+}
+
+void testJob(void*) {
+   ZoneScoped;
+   ctDebugLog("Testing Job...");
+   int value = ctNextPrime(5834);
+}
+
 ctResults TestApp::OnStartup() {
    ctDebugLog(CT_NC("Translation Test"));
    Engine->FileSystem->MakePreferencesDirectory("Test");
    ctDebugLog("---------------------- Dumping paths ----------------------");
    Engine->Interact->Directory.LogContents();
    ctDebugLog("-----------------------------------------------------------");
+   ctStringUtf8 assetPath = Engine->FileSystem->GetAssetPath();
+   assetPath += "game/scene/test/test.gpu";
+   Engine->Renderer->CreateGeometry(&geoHandle, assetPath.CStr());
+
+   for (int i = 31; i > 0; i--) {
+      ctStringUtf8 str = ctStringUtf8();
+      str.Printf(32, "Test Task: %d", i);
+      tasks[i] = ctGetAsyncManager()->CreateTask(str.CStr(), testTask, NULL, i);
+   }
+
+   for (int i = 0; i < 12; i++) {
+      jobGroups[i] = ctGetJobSystem()->CreateGroup("Test Group");
+   }
+   // ctGetJobSystem()->Wait(jobGroups[11]);
+
    return CT_SUCCESS;
 }
 
@@ -67,59 +109,105 @@ ctResults TestApp::OnTick(const float deltatime) {
    return CT_SUCCESS;
 }
 
+void (*pfpFunction[32])(void*);
+void* datas[32];
+
 ctResults TestApp::OnUIUpdate() {
    ImGui::ShowDemoWindow();
-   ImGui::Begin("Interact");
-   Engine->Interact->DebugImGui();
+   if (ImGui::Begin("Interact")) { Engine->Interact->DebugImGui(); }
+   ImGui::End();
+
+   if (ImGui::Begin("Async")) {
+      Engine->JobSystem->DebugImGui();
+      Engine->AsyncTasks->DebugImGui();
+   }
    ImGui::End();
 
    phase += Engine->FrameTime.GetDeltaTimeFloat();
    diskPos[0] = ctSin(phase) * rad;
    diskPos[1] = ctCos(phase) * rad;
 
+   for (int i = 0; i < 12; i++) {
+      ctGetJobSystem()->Wait(jobGroups[i]);
+   }
+
+   for (int i = 0; i < 32; i++) {
+      pfpFunction[i] = testJob;
+      datas[i] = NULL;
+   }
+
+   for (int i = 0; i < 12; i++) {
+      ctGetJobSystem()->Wait(jobGroups[i]);
+      ctGetJobSystem()->PushJobs(jobGroups[i], 32, pfpFunction, datas);
+   }
+
    // clang-format off
-   Im3d::Text(Im3d::Vec3(0, 1, 0), 1.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "Red");
-   Im3d::Text(Im3d::Vec3(1, -1, 0), 1.0f, Im3d::Color_Green, Im3d::TextFlags_Default, "Green");
-   Im3d::Text(Im3d::Vec3(-1, -1, 0), 1.0f, Im3d::Color_Blue, Im3d::TextFlags_Default, "Blue");
+   //Im3d::Text(Im3d::Vec3(0, 1, 0), 1.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "Red");
+   //Im3d::Text(Im3d::Vec3(1, -1, 0), 1.0f, Im3d::Color_Green, Im3d::TextFlags_Default, "Green");
+   //Im3d::Text(Im3d::Vec3(-1, -1, 0), 1.0f, Im3d::Color_Blue, Im3d::TextFlags_Default, "Blue");
 
-   Im3d::Text(Im3d::Vec3(-1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "0");
-   Im3d::Text(Im3d::Vec3(1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "1");
-   Im3d::Text(Im3d::Vec3(-1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "2");
-   Im3d::Text(Im3d::Vec3(1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "3");
-   Im3d::Text(Im3d::Vec3(1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "4");
-   Im3d::Text(Im3d::Vec3(-1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "5");
-   Im3d::Text(Im3d::Vec3(1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "6");
-   Im3d::Text(Im3d::Vec3(-1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "7");
+   //Im3d::Text(Im3d::Vec3(-1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "0");
+   //Im3d::Text(Im3d::Vec3(1, -1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "1");
+   //Im3d::Text(Im3d::Vec3(-1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "2");
+   //Im3d::Text(Im3d::Vec3(1, -1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "3");
+   //Im3d::Text(Im3d::Vec3(1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "4");
+   //Im3d::Text(Im3d::Vec3(-1, 1, 1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "5");
+   //Im3d::Text(Im3d::Vec3(1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "6");
+   //Im3d::Text(Im3d::Vec3(-1, 1, -1), 2.0f, Im3d::Color_White, Im3d::TextFlags_Default, "7");
 
-   Im3d::PushColor(Im3d::Color_Blue);
-   Im3d::PushAlpha(1.0f);
-   Im3d::DrawCircleFilled(Im3d::Vec3(diskPos[0], 0, diskPos[1]), Im3d::Vec3(0, 1, 0), 1.0f);
-   Im3d::DrawCircle(Im3d::Vec3(-diskPos[0], 0, -diskPos[1]), Im3d::Vec3(0, 1, 0), 1.0f);
-   Im3d::PopAlpha();
-   Im3d::PopColor();
+   //Im3d::PushColor(Im3d::Color_Blue);
+   //Im3d::PushAlpha(1.0f);
+   //Im3d::DrawCircleFilled(Im3d::Vec3(diskPos[0], 0, diskPos[1]), Im3d::Vec3(0, 1, 0), 1.0f);
+   //Im3d::DrawCircle(Im3d::Vec3(-diskPos[0], 0, -diskPos[1]), Im3d::Vec3(0, 1, 0), 1.0f);
+   //Im3d::PopAlpha();
+   //Im3d::PopColor();
 
-   Im3d::PushColor(Im3d::Color_Red);
-   Im3d::PushAlpha(1.0f);
-   Im3d::DrawAlignedBoxFilled(Im3d::Vec3(-0.5f, -0.5f, -0.5f), Im3d::Vec3(0.5f, 0.5f, 0.5f));
-   Im3d::DrawPoint(Im3d::Vec3(-5.0, 0, 0), 16.0f, Im3d::Color_Green);
-   Im3d::DrawPoint(Im3d::Vec3(-5.0, 1, 0), 16.0f, Im3d::Color_Green);
-   Im3d::DrawPoint(Im3d::Vec3(-5.0, 2, 0), 16.0f, Im3d::Color_Green);
-   Im3d::DrawPoint(Im3d::Vec3(-5.0, 3, 0), 16.0f, Im3d::Color_Green);
-   Im3d::PopAlpha();
-   Im3d::PopColor();
+   //Im3d::PushColor(Im3d::Color_Red);
+   //Im3d::PushAlpha(1.0f);
+   //Im3d::DrawAlignedBoxFilled(Im3d::Vec3(-0.5f, -0.5f, -0.5f), Im3d::Vec3(0.5f, 0.5f, 0.5f));
+   //Im3d::DrawPoint(Im3d::Vec3(-5.0, 0, 0), 16.0f, Im3d::Color_Green);
+   //Im3d::DrawPoint(Im3d::Vec3(-5.0, 1, 0), 16.0f, Im3d::Color_Green);
+   //Im3d::DrawPoint(Im3d::Vec3(-5.0, 2, 0), 16.0f, Im3d::Color_Green);
+   //Im3d::DrawPoint(Im3d::Vec3(-5.0, 3, 0), 16.0f, Im3d::Color_Green);
+   //Im3d::PopAlpha();
+   //Im3d::PopColor();
 
-   Im3d::PushColor(Im3d::Color_Red);
-   Im3d::PushAlpha(1.0f);
-   Im3d::PushSize(16.0f);
-   Im3d::PushMatrix();
-   Im3d::Translate(Im3d::Vec3(5.0, 0, 0));
-   Im3d::DrawXyzAxes();
-   Im3d::PopMatrix();
-   Im3d::PopSize();
-   Im3d::PopAlpha();
-   Im3d::PopColor();
-
+   //Im3d::PushColor(Im3d::Color_Red);
+   //Im3d::PushAlpha(1.0f);
+   //Im3d::PushSize(16.0f);
+   //Im3d::PushMatrix();
+   //Im3d::Translate(Im3d::Vec3(5.0, 0, 0));
+   //Im3d::DrawXyzAxes();
+   //Im3d::PopMatrix();
+   //Im3d::PopSize();
+   //Im3d::PopAlpha();
+   //Im3d::PopColor();
    // clang-format on
+
+   if (ImGui::Begin("3D Math")) {
+      ImGui::DragInt("Gaussian Points", &gausPts, 1.0f, 0, 4096);
+      ImGui::DragInt("Gaussian Seed", &gausSeed);
+      ImGui::Separator();
+      ImGui::DragInt("Sphere Points", &spherePts, 1.0f, 0, 4096);
+      ImGui::DragFloat("Sphere Radius", &sphereRad, 0.05f, 0.0f);
+      ImGui::DragInt("Sphere Seed", &sphereSeed);
+   }
+   ImGui::End();
+
+   ctRandomGenerator rng = ctRandomGenerator(gausSeed);
+   for (int i = 0; i < gausPts; i++) {
+      ctVec3 pt = CT_VEC3_FROM_2D_GROUND(rng.GetGaussian2D(ctVec2(0.0f), 1));
+      Im3d::DrawPoint(ctVec3ToIm3d(pt), 8.0f, ctVec4ToIm3dColor(rng.GetColor()));
+   }
+
+   rng.SetSeed(sphereSeed);
+   for (int i = 0; i < spherePts; i++) {
+      ctVec3 pt = rng.GetOnSphere(sphereRad);
+      ctVec4 color = ctVec4(saturate(normalize(pt)), 1.0f);
+      // color = ctVec4(ctVec3(ctSaturate(ctAbs(ctNoiseImprovedPerlin(pt)))), 1.0f);
+      Im3d::DrawPoint(ctVec3ToIm3d(pt), 8.0f, ctVec4ToIm3dColor(color));
+   }
+
    return CT_SUCCESS;
 }
 

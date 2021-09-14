@@ -21,24 +21,24 @@
 class CT_API ctEngineCore {
 public:
    /* Initialize the engine and all subsystems */
-   ctResults Ignite(class ctApplication* pApp);
+   ctResults Ignite(class ctApplication* pApp, int argc, char* argv[]);
    /* Enter the game loop (returns on shutdown) */
    ctResults EnterLoop();
    /* Exit */
    void Exit();
    /* Is Running */
-   bool isExitRequested();
+   bool isExitRequested() const;
    /* Single shot the game loop (returns after frame) */
    ctResults LoopSingleShot(const float deltatime);
    ctResults Shutdown();
 
    class ctApplication* App;
+   class ctAsyncManager* AsyncTasks;
    class ctJobSystem* JobSystem;
    class ctOSEventManager* OSEventManager;
    class ctTranslation* Translation;
    class ctFileSystem* FileSystem;
-   class ctAssetManager* AssetManager;
-   class ctSettings* Settings;
+   class ctSettingsManager* Settings;
 #if CITRUS_INCLUDE_AUDITION
    class ctHotReloadDetection* HotReload;
 #endif

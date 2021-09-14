@@ -11,15 +11,15 @@ class CompilePrefab(Task):
 	def run(self):
 		params = self.inputs[1].read()
 		return self.exec_command('"%s" %s "%s" "%s"' % (self.env['GLTF2Citrus'][0], params, self.inputs[0].abspath(), self.outputs[0].abspath()))
-		
+
 	def scan(self): #Find all output files
 		return (self.inputs, time.time())
-		
+
 	def runnable_status(self):
 		ret = super(CompilePrefab, self).runnable_status()
 		bld = self.generator.bld
 		return ret
-		
+
 # Compile a texture
 class CompileTexture(Task):
 	def run(self):
@@ -28,37 +28,37 @@ class CompileTexture(Task):
 			params += ' -EncodeWith GPU' # Quickly build textures with lesser formats
 			print("Encoding with GPU (not all formats availible)")
 		return self.exec_command('"%s" %s "%s" "%s"' % (self.env['Compressonator'][0], params, self.inputs[0].abspath(), self.outputs[0].abspath()))
-		
+
 	def scan(self): #Find all output files
 		return (self.inputs, time.time())
-		
+
 	def runnable_status(self):
 		ret = super(CompileTexture, self).runnable_status()
 		bld = self.generator.bld
 		return ret
-		
+
 # Compile a shader
 class CompileShader(Task):
 	def run(self):
-		return self.exec_command('"%s" "%s" -o "%s" -std=450' % (self.env['GLSLC'][0], self.inputs[0].abspath(), self.outputs[0].abspath()))
-		
+		return self.exec_command('"%s" "%s" "%s"' % (self.env['GLSL2Citrus'][0], self.inputs[0].abspath(), self.outputs[0].abspath()))
+
 	def scan(self): #Find all output files
 		return (self.inputs, time.time())
-		
+
 	def runnable_status(self):
 		ret = super(CompileShader, self).runnable_status()
 		bld = self.generator.bld
 		return ret
-		
+
 # Compile a shader
 class InstallFile(Task):
 	def run(self):
 		shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
 		return 0;
-		
+
 	def scan(self): #Find all output files
 		return (self.inputs, time.time())
-		
+
 	def runnable_status(self):
 		ret = super(InstallFile, self).runnable_status()
 		bld = self.generator.bld
@@ -72,42 +72,71 @@ def options(ctx):
 	ctx.add_option('--final', default=False, action='store', help='is production build')
 	ctx.add_option('--libs', default='', action='store', help='path to platform libs')
 	ctx.add_option('--build', default='', action='store', help='path to build dir')
+	ctx.add_option('--platform', default='shared', action='store', help='target platform')
 
 # On environment configure
 def configure(ctx):
-	try:
-		ctx.find_program("glslc", path_list=ctx.options.libs + '/Vulkan/Bin/', var='GLSLC')
-	except:
-		raise ValueError("Could not find glslc!")
+	outPathList = [ctx.options.libs,ctx.options.build+'/output/',ctx.options.build+'/output/Release',ctx.options.build+'/output/Debug',ctx.options.build]
 	try:
 		ctx.find_program("compressonatorcli", path_list=ctx.options.libs+ '/Compressonator/', var='Compressonator')
 	except:
 		raise ValueError("Could not find Compressonator!")
 	try:
-		ctx.find_program("Gltf2Citrus", path_list=[ctx.options.libs,ctx.options.build+'/output/',ctx.options.build+'/output/Release',ctx.options.build+'/output/Debug',ctx.options.build], var='GLTF2Citrus')
+		ctx.find_program("Glsl2Citrus", path_list=outPathList, var='GLSL2Citrus')
+	except:
+		raise ValueError("Could not find GLSL2Citrus! Please build tools and reconfigure")
+	try:
+		ctx.find_program("Gltf2Citrus", path_list=outPathList, var='GLTF2Citrus')
 	except:
 		raise ValueError("Could not find Gltf2Citrus! Please build tools and reconfigure")
+	ctx.env.platform = ctx.options.platform
+	ctx.env.final = ctx.options.final
 
 # On asset processing build
 def build(ctx):
 	print('Building: ' + ctx.path.abspath())
-	
+
 	# Define parallel build groups
-	ctx.add_group('InputConfig')
+	ctx.add_group('Text')
+	ctx.add_group('Configs')
 	ctx.add_group('Shaders')
 	ctx.add_group('Textures')
 	ctx.add_group('Prefabs')
-	
-	# Define input configs to install
-	ctx.set_group('InputConfig')
-	for file in ctx.path.ant_glob(['input/*.json']):
+
+
+	# Define text files to install
+	ctx.set_group('Text')
+	for file in ctx.path.ant_glob(['input/*.json', 'text/*.json']):
 		fileName = file.relpath()
 		outFile = ctx.path.find_or_declare(fileName)
 		task = InstallFile(env=ctx.env)
 		task.set_inputs(file);
 		task.set_outputs(outFile)
 		ctx.add_to_group(task)
-	
+		
+	# Define configs to install
+	ctx.set_group('Configs')
+	configPaths = ['configs/' + ctx.env.platform + '/*.json', 'configs/shared/*.json']
+	processedFiles = {}
+	for file in ctx.path.ant_glob(configPaths):
+		fileName = os.path.basename(file.relpath())
+		filePath = os.path.dirname(file.relpath())
+		if 'shared' in filePath and fileName in processedFiles:
+			continue
+			
+		processedFiles[fileName] = file
+		#outFile = ctx.path.find_or_declare(fileName)
+		#task = InstallFile(env=ctx.env)
+		#task.set_inputs(file);
+		#task.set_outputs(outFile)
+		#ctx.add_to_group(task)
+	for file in processedFiles.items():
+		outFile = ctx.path.find_or_declare('defaults/' + file[0])
+		task = InstallFile(env=ctx.env)
+		task.set_inputs(file[1]);
+		task.set_outputs(outFile)
+		ctx.add_to_group(task)
+
 	# Define prefabs to compile
 	ctx.set_group('Prefabs')
 	for file in ctx.path.ant_glob(['**/*.gltf']):
@@ -129,7 +158,7 @@ def build(ctx):
 		task.set_inputs(inputs)
 		task.set_outputs([outWad])
 		ctx.add_to_group(task)
-	
+
 	# Define textures to compile
 	ctx.set_group('Textures')
 	for file in ctx.path.ant_glob(['**/*.png', '**/*.jpg', '**/*.jpeg']):
@@ -143,14 +172,16 @@ def build(ctx):
 		task.set_inputs([file, defFile])
 		task.set_outputs(outFile)
 		ctx.add_to_group(task)
-	
+
 	# Define shaders to compile
 	ctx.set_group('Shaders')
-	for file in ctx.path.ant_glob(['**/*.vert', '**/*.frag', '**/*.comp']):
-		fileName = file.relpath().split('.', 1)[0] + '.spv'
+	for file in ctx.path.ant_glob(['**/*.glsl']):
+		fileContents = file.read()
+		if 'CT_IMPLEMENTATION' not in fileContents:
+			continue
+		fileName = file.relpath().split('.', 1)[0] + '.wad'
 		outFile = ctx.path.find_or_declare(fileName)
 		task = CompileShader(env=ctx.env)
 		task.set_inputs(file);
 		task.set_outputs(outFile)
 		ctx.add_to_group(task)
-	

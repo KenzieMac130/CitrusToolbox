@@ -19,13 +19,26 @@
 #include "Common.h"
 
 typedef SDL_mutex* ctMutex;
-
 CT_API ctMutex ctMutexCreate();
 CT_API void ctMutexDestroy(ctMutex mutex);
-
 CT_API bool ctMutexLock(ctMutex mutex);
 CT_API bool ctMutexTryLock(ctMutex mutex);
 CT_API bool ctMutexUnlock(ctMutex mutex);
+
+typedef SDL_SpinLock ctSpinLock;
+inline void ctSpinLockEnterCritical(ctSpinLock val) {
+   SDL_AtomicLock(&val);
+};
+inline void ctSpinLockExitCritical(ctSpinLock val) {
+   SDL_AtomicUnlock(&val);
+};
+
+typedef SDL_cond* ctConditional;
+CT_API ctConditional ctConditionalCreate();
+CT_API void ctConditionalDestroy(ctConditional cond);
+CT_API void ctConditionalWait(ctConditional cond, ctMutex lock);
+CT_API void ctConditionalSignalOne(ctConditional cond);
+CT_API void ctConditionalSignalAll(ctConditional cond);
 
 typedef struct SDL_Thread* ctThread;
 CT_API ctThread ctThreadCreate(int (*func)(void*), void* data, const char* name);

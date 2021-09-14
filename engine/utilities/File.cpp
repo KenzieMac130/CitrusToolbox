@@ -28,9 +28,7 @@ ctFile::ctFile(FILE* fp, const ctFileOpenMode mode) : ctFile() {
    FromCStream(fp, mode);
 };
 
-ctFile::ctFile(const ctStringUtf8& filePath,
-               const ctFileOpenMode mode,
-               bool silent) :
+ctFile::ctFile(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent) :
     ctFile() {
    Open(filePath, mode, silent);
 }
@@ -136,6 +134,14 @@ int64_t ctFile::VPrintf(const char* format, va_list va) {
    ZoneScoped;
    if (!_fp) { return 0; }
    return vfprintf(_fp, format, va);
+}
+
+void ctFile::Flush() {
+   fflush(_fp);
+}
+
+bool ctFile::isEndOfFile() {
+   return feof(_fp);
 }
 
 FILE* ctFile::CFile() const {

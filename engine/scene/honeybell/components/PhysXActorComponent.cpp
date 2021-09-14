@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include "CameraComponent.hpp"
 #include "PhysXActorComponent.hpp"
 
 #include "PxScene.h"

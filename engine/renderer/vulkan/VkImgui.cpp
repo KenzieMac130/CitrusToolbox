@@ -19,8 +19,8 @@
 
 #include "imgui/backends/imgui_impl_vulkan.h"
 
-void checkVkResult(VkResult err) {
-  CT_VK_CHECK(err, CT_NC("DearImgui Vulkan backend encountered an error."))}
+void checkVkResult(VkResult err) {CT_VK_CHECK(
+  err, CT_NCT("FAIL:VkDearImgui", "DearImgui Vulkan backend encountered an error."))}
 
 ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
                              VkCommandBuffer textureUploadCmd,
@@ -38,7 +38,8 @@ ctResults ctVkImgui::Startup(ctVkBackend* pBackend,
    CT_VK_CHECK(
      vkCreateDescriptorPool(
        pBackend->vkDevice, &poolInfo, &pBackend->vkAllocCallback, &_vkDescriptorPool),
-     CT_NC("vkCreateDescriptorPool() could not create descriptor set for DearImgui."));
+     CT_NCT("FAIL:vkCreateDescriptorPool",
+            "vkCreateDescriptorPool() could not create descriptor set."));
 
    ImGui_ImplVulkan_InitInfo initInfo = {};
    initInfo.Instance = pBackend->vkInstance;

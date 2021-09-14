@@ -18,6 +18,12 @@
 
 #include "utilities/Common.h"
 
+typedef ctHandle ctKeyLimeGeometryHandle;
+typedef ctHandle ctKeyLimeMaterialHandle;
+typedef ctHandle ctKeyLimeTransformPoolHandle;
+typedef ctHandle ctKeyLimeGeoInstanceHandle;
+typedef ctHandle ctKeyLimeTextureHandle;
+
 struct CT_API ctKeyLimeStreamSubmesh {
    int32_t idxOffset;
    int32_t idxCount;
@@ -29,8 +35,8 @@ struct CT_API ctKeyLimeStreamPosition {
 };
 
 struct CT_API ctKeyLimeStreamNormalTangent {
-   int32_t normal;
-   int32_t tangent;
+   float tangent[4];
+   float normal[3];
 };
 
 struct CT_API ctKeyLimeStreamUV {
@@ -50,4 +56,82 @@ struct CT_API ctKeyLimeStreamTransform {
    float position[3];
    float orientation[4];
    float scale[3];
+};
+
+typedef uint32_t ctKeyLimeMeshIndex;
+
+struct ctKeyLimeCameraDesc {
+   ctVec3 position;
+   ctQuat rotation;
+   float fov;
+};
+
+struct ctKeyLimeGeometryHeader {
+   char magic[4];
+   int32_t flags;
+   int32_t alignment;
+
+   float cener[3];
+   float radius;
+
+   uint32_t submeshCount;
+   uint32_t indexCount;
+   uint32_t vertexCount;
+   uint32_t uvChannelCount;
+   uint32_t colorChannelCount;
+
+   uint64_t submeshOffset;
+   uint64_t indexOffset;
+   uint64_t positionOffset;
+   uint64_t tangentNormalOffset;
+   uint64_t skinOffset;
+   uint64_t uvOffsets[4];
+   uint64_t colorOffsets[4];
+};
+
+struct ctKeyLimeCreateGeometryDesc {
+   ctKeyLimeGeometryHeader header;
+   void* blob;
+   size_t blobSize;
+};
+
+struct ctKeyLimeMaterialScalarDesc {
+   const char* name;
+   float value;
+};
+
+struct ctKeyLimeMaterialVectorDesc {
+   const char* name;
+   float value[4];
+};
+
+struct ctKeyLimeMaterialTextureDesc {
+   const char* name;
+   ctKeyLimeTextureHandle textureHandle;
+};
+
+struct ctKeyLimeMaterialDesc {
+   int32_t flags;
+   const char* shaderType;
+
+   size_t scalarCount;
+   ctKeyLimeMaterialScalarDesc* pScalars;
+   size_t vectorCount;
+   ctKeyLimeMaterialVectorDesc* pVectors;
+   size_t textureCount;
+   ctKeyLimeMaterialTextureDesc* pTextures;
+};
+
+struct ctKeyLimeTransformsDesc {
+   int32_t flags;
+   size_t transformCount;
+   ctKeyLimeStreamTransform* pTransforms;
+};
+
+struct ctKeyLimeInstanceDesc {
+   int32_t flags;
+   ctHandle transformsHandle;
+   size_t materialCount;
+   ctHandle* pMaterialHandles;
+   ctHandle geometryHandle;
 };

@@ -20,14 +20,16 @@
 
 class CT_API ctStopwatch {
 public:
-    ctStopwatch();
-    void NextLap();
+   ctStopwatch();
+   void NextLap();
 
-    float GetDeltaTimeFloat();
-    double GetDeltaTime();
+   float GetDeltaTimeFloat();
+   double GetDeltaTime();
 
 private:
-    uint64_t freq;
-    uint64_t lastTick;
-    uint64_t currentTick;
+   uint64_t freq;
+   uint64_t lastTick;
+   uint64_t currentTick;
 };
+
+void ctWait(uint32_t ms);

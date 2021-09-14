@@ -21,15 +21,16 @@
 #include "../thirdparty/cgltf/cgltf.h"
 #pragma warning(pop)
 
-#include "../engine/wad/WADCore.h"
+#include "../engine/formats/wad/WADCore.h"
 
-#include "../engine/wad/prototypes/Header.h"
-#include "../engine/wad/prototypes/Spawner.h"
-#include "../engine/wad/prototypes/Bones.h"
-#include "../engine/wad/prototypes/Material.h"
-#include "../engine/wad/prototypes/RenderMesh.h"
-#include "../engine/wad/prototypes/Camera.h"
-#include "../engine/wad/prototypes/Light.h"
+#include "../engine/formats/wad/prototypes/MarkersAndBlobs.h"
+#include "../engine/formats/wad/prototypes/Header.h"
+#include "../engine/formats/wad/prototypes/Spawner.h"
+#include "../engine/formats/wad/prototypes/Bones.h"
+#include "../engine/formats/wad/prototypes/Material.h"
+#include "../engine/formats/wad/prototypes/RenderMesh.h"
+#include "../engine/formats/wad/prototypes/Camera.h"
+#include "../engine/formats/wad/prototypes/Light.h"
 
 #include "../engine/renderer/KeyLimeDataTypes.hpp"
 
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]) {
    ctWADProtoHeader header = ctWADProtoHeader();
    header.magic = CT_WADPROTO_HEADER_MAGIC;
    header.revision = CT_WADPROTO_HEADER_INTERNAL_REV;
-   MakeSection("CITRUS", sizeof(header), &header);
+   MakeSection(CT_WADPROTO_NAME_HEADER, sizeof(header), &header);
 
    /* Lua Script */
    ctDynamicArray<char> lua;
@@ -147,7 +148,9 @@ int main(int argc, char* argv[]) {
             lua.Resize(fsize);
             fread(lua.Data(), 1, fsize, pFile);
             fclose(pFile);
-            if (!lua.isEmpty()) { MakeSection("LUA", lua.Count(), lua.Data()); }
+            if (!lua.isEmpty()) {
+               MakeSection(CT_WADBLOB_NAME_LUA, lua.Count(), lua.Data());
+            }
          }
       }
    }
@@ -155,13 +158,15 @@ int main(int argc, char* argv[]) {
    /* Spawners */
    ctDynamicArray<ctWADProtoSpawner> spawners;
    {
-      if (!spawners.isEmpty()) { MakeSection("SPAWNER", sizeof(header), &header); }
+      if (!spawners.isEmpty()) {
+         MakeSection(CT_WADPROTO_NAME_SPAWNER, sizeof(header), &header);
+      }
    }
 
    /* Bones */
    ctWADProtoRigSignature rigSignature = ctWADProtoRigSignature();
    ctDynamicArray<ctWADProtoBoneTransform> boneXfwd;
-   ctDynamicArray<int16_t> boneParents;
+   ctDynamicArray<ctWADProtoBoneParentIdx> boneParents;
    ctDynamicArray<ctWADProtoBoneNameEntry> boneNameOffs;
    ctDynamicArray<cgltf_node*> outGltfNodes;
    {
@@ -229,25 +234,28 @@ int main(int argc, char* argv[]) {
 
       rigSignature.boneCount = (uint32_t)boneXfwd.Count();
 
-      MakeSection("RIGSIGN", sizeof(rigSignature), &rigSignature);
-      MakeSection(
-        "BONEXFWD", boneXfwd.Count() * sizeof(ctWADProtoBoneTransform), boneXfwd.Data());
-      MakeSection(
-        "BONEPIDX", boneParents.Count() * sizeof(boneParents[0]), boneParents.Data());
-      MakeSection(
-        "BONENAME", boneNameOffs.Count() * sizeof(boneNameOffs[0]), boneNameOffs.Data());
+      MakeSection(CT_WADPROTO_NAME_RIG_SIGNATURE, sizeof(rigSignature), &rigSignature);
+      MakeSection(CT_WADPROTO_NAME_BONE_TRANSFORM,
+                  boneXfwd.Count() * sizeof(ctWADProtoBoneTransform),
+                  boneXfwd.Data());
+      MakeSection(CT_WADPROTO_NAME_BONE_PARENT,
+                  boneParents.Count() * sizeof(boneParents[0]),
+                  boneParents.Data());
+      MakeSection(CT_WADPROTO_NAME_BONE_NAME,
+                  boneNameOffs.Count() * sizeof(boneNameOffs[0]),
+                  boneNameOffs.Data());
    }
 
    /* Lights */
-   ctDynamicArray<ctWADProtoLightV1> lights;
+   ctDynamicArray<ctWADProtoLight> lights;
    {
       if (gltf->lights_count) {
          for (size_t i = 0; i < gltf->lights_count; i++) {
             const cgltf_light light = gltf->lights[i];
-            ctWADProtoLightV1 outLight = ctWADProtoLightV1();
+            ctWADProtoLight outLight = ctWADProtoLight();
 
             if (light.type == cgltf_light_type_spot) {
-               outLight.flags |= CT_WADPROTO_LIGHTV1_SPOT;
+               outLight.flags |= CT_WADPROTO_LIGHT_SPOT;
             }
             outLight.color[0] = light.color[0] * light.intensity;
             outLight.color[1] = light.color[1] * light.intensity;
@@ -257,7 +265,8 @@ int main(int argc, char* argv[]) {
             lights.Append(outLight);
          }
          if (!lights.isEmpty()) {
-            MakeSection("LIGHTV1", lights.Count() * sizeof(lights[0]), lights.Data());
+            MakeSection(
+              CT_WADPROTO_NAME_LIGHT, lights.Count() * sizeof(lights[0]), lights.Data());
          }
       }
    }
@@ -275,84 +284,137 @@ int main(int argc, char* argv[]) {
             }
          }
          if (!cameras.isEmpty()) {
-            MakeSection("CAMERA", cameras.Count() * sizeof(cameras[0]), cameras.Data());
+            MakeSection(CT_WADPROTO_NAME_CAMERA,
+                        cameras.Count() * sizeof(cameras[0]),
+                        cameras.Data());
          }
       }
    }
 
    /* Materials */
-   ctDynamicArray<ctWADProtoRenderMaterialV1> materials;
-   ctDynamicArray<int32_t> matNameOffsets;
+   ctDynamicArray<ctWADProtoRenderMaterialScalar> matScalars;
+   ctDynamicArray<ctWADProtoRenderMaterialVector> matVectors;
+   ctDynamicArray<ctWADProtoRenderMaterialTexture> matTextures;
+   ctDynamicArray<ctWADProtoRenderMaterialEntry> materials;
    {
       for (size_t i = 0; i < gltf->materials_count; i++) {
          const cgltf_material mat = gltf->materials[i];
 
-         /* Name */
-         matNameOffsets.Append(SaveString(mat.name));
+         ctWADProtoRenderMaterialEntry matOut = {0};
 
-         ctWADProtoRenderMaterialV1 matOut = ctWADProtoRenderMaterialV1();
+         /* Name */
+         matOut.nameStr = SaveString(mat.name);
+         matOut.scalarBegin = (int32_t)matScalars.Count();
+         matOut.vectorBegin = (int32_t)matVectors.Count();
+         matOut.textureBegin = (int32_t)matTextures.Count();
+
+         if (mat.unlit) {
+            matOut.shaderNameStr = SaveString("defaultsurfaceunlit");
+         } else {
+            matOut.shaderNameStr = SaveString("defaultsurface");
+         }
+
+#define ADD_MAT_SCALAR(name, value)                                                      \
+   {                                                                                     \
+      ctWADProtoRenderMaterialScalar val = {0};                                          \
+      val.nameStr = SaveString(name);                                                    \
+      val.scalar = value;                                                                \
+      matScalars.Append(val);                                                            \
+   }
+
+#define ADD_MAT_VEC4(name, value)                                                        \
+   {                                                                                     \
+      ctWADProtoRenderMaterialVector val = {0};                                          \
+      val.nameStr = SaveString(name);                                                    \
+      memcpy(val.vector, value, sizeof(float) * 4);                                      \
+      matVectors.Append(val);                                                            \
+   }
+
+#define ADD_MAT_VEC3(name, value, w)                                                     \
+   {                                                                                     \
+      ctWADProtoRenderMaterialVector val = {0};                                          \
+      val.nameStr = SaveString(name);                                                    \
+      memcpy(val.vector, value, sizeof(float) * 3);                                      \
+      matVectors.Append(val, w);                                                         \
+   }
+
+#define ADD_MAT_TEXTURE(name, value, w)                                                  \
+   {                                                                                     \
+      ctWADProtoRenderMaterialTexture val = {0};                                         \
+      val.nameStr = SaveString(name);                                                    \
+      val.xform = {1.0f, 1.0f, 0.0f, 0.0f};                                              \
+      val.textureStr = SaveString(value);                                                \
+   }
+
          if (mat.has_pbr_metallic_roughness) {
             /* Base Color and Alpha */
-            memcpy(matOut.baseColor,
-                   mat.pbr_metallic_roughness.base_color_factor,
-                   sizeof(float) * 4);
-            if (mat.alpha_mode == cgltf_alpha_mode_mask) {
-               matOut.baseColor[3] = mat.alpha_cutoff;
-            }
+            ADD_MAT_VEC4("BaseColor", mat.pbr_metallic_roughness.base_color_factor);
+         } else {
+            ctDebugWarning("%s does not have base color!", mat.name);
+            float defaultColor[] = {0.5f, 0.5f, 0.5f, 1.0f};
+            ADD_MAT_VEC4("BaseColor", defaultColor);
+         }
+         if (mat.alpha_mode == cgltf_alpha_mode_mask) {
+            ADD_MAT_SCALAR("AlphaCutoff", mat.alpha_cutoff);
          }
          /* Emission */
-         memcpy(matOut.emissiveColor, mat.emissive_factor, sizeof(float) * 3);
+         ADD_MAT_VEC3("EmissionColor", mat.emissive_factor, 1);
          /* Roughness */
          if (mat.has_pbr_metallic_roughness) {
-            matOut.roughness = mat.pbr_metallic_roughness.roughness_factor;
-            matOut.metal = mat.pbr_metallic_roughness.metallic_factor;
+            ADD_MAT_SCALAR("Roughness", mat.pbr_metallic_roughness.roughness_factor);
+         } else {
+            ctDebugWarning("%s does not have roughness!", mat.name);
+            ADD_MAT_SCALAR("Roughness", 0.5f);
          }
-         matOut.normalFactor = mat.normal_texture.scale;
-         matOut.aoFactor = mat.occlusion_texture.scale;
+
+         if (mat.normal_texture.texture) {
+            ADD_MAT_SCALAR("NormalMapStrength", mat.normal_texture.scale);
+         }
+         if (mat.occlusion_texture.texture) {
+            ADD_MAT_SCALAR("OcclusionMapStrength", mat.occlusion_texture.scale);
+         }
 
          /* Base Color Texture */
-         if (mat.has_pbr_metallic_roughness) {
-            if (mat.pbr_metallic_roughness.base_color_texture.texture) {
-               if (mat.pbr_metallic_roughness.base_color_texture.texture->image) {
-                  matOut.baseTexture = SaveString(
-                    ConvertImagePath(
-                      mat.pbr_metallic_roughness.base_color_texture.texture->image->uri)
-                      .CStr());
-               }
-            }
-            /* PBR Texture */
-            if (mat.pbr_metallic_roughness.metallic_roughness_texture.texture) {
-               if (mat.pbr_metallic_roughness.metallic_roughness_texture.texture->image) {
-                  matOut.pbrTexture = SaveString(
-                    ConvertImagePath(mat.pbr_metallic_roughness.metallic_roughness_texture
-                                       .texture->image->uri)
-                      .CStr());
-               }
-            }
-         }
-         /* Normal Texture */
-         if (mat.normal_texture.texture) {
-            if (mat.normal_texture.texture->image) {
-               matOut.normalTexture = SaveString(
-                 ConvertImagePath(mat.normal_texture.texture->image->uri).CStr());
-            }
-         }
-         /* Emissive Texture */
-         if (mat.emissive_texture.texture) {
-            if (mat.emissive_texture.texture->image) {
-               matOut.emissiveTexture = SaveString(
-                 ConvertImagePath(mat.emissive_texture.texture->image->uri).CStr());
-            }
-         }
+         // if (mat.has_pbr_metallic_roughness) {
+         //   if (mat.pbr_metallic_roughness.base_color_texture.texture) {
+         //      if (mat.pbr_metallic_roughness.base_color_texture.texture->image) {
+         //         matOut.baseTexture = SaveString(
+         //           ConvertImagePath(
+         //             mat.pbr_metallic_roughness.base_color_texture.texture->image->uri)
+         //             .CStr());
+         //      }
+         //   }
+         //   /* PBR Texture */
+         //   if (mat.pbr_metallic_roughness.metallic_roughness_texture.texture) {
+         //      if (mat.pbr_metallic_roughness.metallic_roughness_texture.texture->image)
+         //      {
+         //         matOut.pbrTexture = SaveString(
+         //           ConvertImagePath(mat.pbr_metallic_roughness.metallic_roughness_texture
+         //                              .texture->image->uri)
+         //             .CStr());
+         //      }
+         //   }
+         //}
+         ///* Normal Texture */
+         // if (mat.normal_texture.texture) {
+         //   if (mat.normal_texture.texture->image) {
+         //      matOut.normalTexture =
+         //        SaveString(ConvertImagePath(mat.normal_texture.texture->image->uri).CStr());
+         //   }
+         //}
+         ///* Emissive Texture */
+         // if (mat.emissive_texture.texture) {
+         //   if (mat.emissive_texture.texture->image) {
+         //      matOut.emissiveTexture = SaveString(
+         //        ConvertImagePath(mat.emissive_texture.texture->image->uri).CStr());
+         //   }
+         //}
 
-         materials.Append(matOut);
+         // materials.Append(matOut);
       }
       if (gltf->materials_count) {
          MakeSection(
            "RMATV1", materials.Count() * sizeof(materials[0]), materials.Data());
-         MakeSection("RMATNAME",
-                     matNameOffsets.Count() * sizeof(matNameOffsets[0]),
-                     matNameOffsets.Data());
       }
    }
 
@@ -360,7 +422,6 @@ int main(int argc, char* argv[]) {
    ctDynamicArray<ctWADProtoRenderMesh> renderMeshes;
    ctDynamicArray<cgltf_mesh*> outGltfMeshes;
    if (gltf->meshes_count) {
-      header.flags |= CT_WADPROTO_HEADER_FLAG_HAS_GPU_FILE;
       ctStringUtf8 meshOutPath = outPath;
       meshOutPath.FilePathRemoveExtension();
       meshOutPath += ".gpu";
@@ -380,8 +441,11 @@ int main(int argc, char* argv[]) {
 
          const cgltf_mesh mesh = gltf->meshes[meshIdx];
 
-         ctWADProtoRenderMesh renderMesh = ctWADProtoRenderMesh();
-         renderMesh.flags = 0;
+#define GPU_ALIGNMENT 64
+
+         ctKeyLimeGeometryHeader geoHeader = {};
+         memcpy(geoHeader.magic, "GPU0", 4);
+         geoHeader.alignment = GPU_ALIGNMENT;
 
          /* For each primitive */
          for (size_t primIdx = 0; primIdx < mesh.primitives_count; primIdx++) {
@@ -459,11 +523,18 @@ int main(int argc, char* argv[]) {
             }
 
             /* Position Data */
+            ctBoundBox bbox = ctBoundBox();
             for (size_t i = 0; i < pPositionAccessor->count; i++) {
                ctKeyLimeStreamPosition entry = {0};
                cgltf_accessor_read_float(pPositionAccessor, i, entry.position, 3);
                positionData.Append(entry);
+               bbox.AddPoint(entry.position);
             }
+            ctBoundSphere bsphere = bbox;
+            geoHeader.cener[0] = bsphere.position.x;
+            geoHeader.cener[1] = bsphere.position.y;
+            geoHeader.cener[2] = bsphere.position.z;
+            geoHeader.radius = bsphere.radius;
 
             /* UV Data */
             for (int aidx = 0; aidx < 4; aidx++) {
@@ -473,6 +544,7 @@ int main(int argc, char* argv[]) {
                      cgltf_accessor_read_float(pTexcoordAccessors[aidx], i, entry.uv, 2);
                      uvData[aidx].Append(entry);
                   }
+                  geoHeader.uvChannelCount++;
                }
             }
 
@@ -488,51 +560,82 @@ int main(int argc, char* argv[]) {
                      }
                      colorData[aidx].Append(entry);
                   }
+                  geoHeader.colorChannelCount++;
                }
             }
 
-            renderMesh.submeshCount++;
-            renderMesh.indexCount += (uint32_t)prim.indices->count;
-            renderMesh.vertexCount += (uint32_t)pPositionAccessor->count;
+            geoHeader.submeshCount++;
+            geoHeader.indexCount += (uint32_t)prim.indices->count;
+            geoHeader.vertexCount += (uint32_t)pPositionAccessor->count;
          }
 
          /* Write data and build offsets */
 #define WRITE_DYN_ARRAY(_arr)                                                            \
    if (!_arr.isEmpty()) { fwrite(_arr.Data(), sizeof(_arr[0]), _arr.Count(), pFile); }
 
+         int _pad = 0;
+#define WRITE_PADDING()                                                                  \
+   {                                                                                     \
+      long amount = GPU_ALIGNMENT - (ftell(pFile) % GPU_ALIGNMENT);                      \
+      for (long i = 0; i < amount; i++) {                                                \
+         fwrite(&_pad, 1, 1, pFile);                                                     \
+      }                                                                                  \
+   }
+
+         uint64_t _bOffset =
+           sizeof(ctKeyLimeGeometryHeader) +
+           (GPU_ALIGNMENT - (sizeof(ctKeyLimeGeometryHeader) % GPU_ALIGNMENT));
 #define GET_OFFSET(_var, _arr)                                                           \
    if (_arr.isEmpty()) {                                                                 \
-      _var = -1;                                                                         \
+      _var = UINT32_MAX;                                                                 \
    } else {                                                                              \
-      _var = (int64_t)ftell(pFile);                                                      \
+      _var = _bOffset;                                                                   \
+      _bOffset += sizeof(_arr[0]) * _arr.Count();                                        \
+      _bOffset += GPU_ALIGNMENT - (_bOffset % GPU_ALIGNMENT);                            \
    }
-         GET_OFFSET(renderMesh.submeshStreamOffset, submeshes);
+         GET_OFFSET(geoHeader.submeshOffset, submeshes);
+         GET_OFFSET(geoHeader.indexOffset, indexData);
+         GET_OFFSET(geoHeader.positionOffset, positionData);
+         GET_OFFSET(geoHeader.tangentNormalOffset, normalTangentData);
+         GET_OFFSET(geoHeader.skinOffset, skinData);
+         for (int i = 0; i < 4; i++) {
+            GET_OFFSET(geoHeader.uvOffsets[i], uvData[i]);
+         }
+         for (int i = 0; i < 4; i++) {
+            GET_OFFSET(geoHeader.colorOffsets[i], uvData[i]);
+         }
+
+         fwrite(&geoHeader, sizeof(geoHeader), 1, pFile);
+         WRITE_PADDING();
          WRITE_DYN_ARRAY(submeshes);
-         GET_OFFSET(renderMesh.indexStreamOffset, submeshes);
+         WRITE_PADDING();
          WRITE_DYN_ARRAY(indexData);
-         GET_OFFSET(renderMesh.positionStreamOffset, positionData);
+         WRITE_PADDING();
          WRITE_DYN_ARRAY(positionData);
-         GET_OFFSET(renderMesh.normalTangentStreamOffset, normalTangentData);
+         WRITE_PADDING();
          WRITE_DYN_ARRAY(normalTangentData);
-         for (int i = 0; i < 4; i++) {
-            GET_OFFSET(renderMesh.uvStreamOffsets[i], uvData[i]);
-            WRITE_DYN_ARRAY(uvData[i]);
-         }
-         for (int i = 0; i < 4; i++) {
-            GET_OFFSET(renderMesh.colorStreamOffsets[i], colorData[i]);
-            WRITE_DYN_ARRAY(colorData[i]);
-         }
-         GET_OFFSET(renderMesh.skinStreamOffset, skinData);
+         WRITE_PADDING();
          WRITE_DYN_ARRAY(skinData);
+         WRITE_PADDING();
+         for (int i = 0; i < 4; i++) {
+            WRITE_DYN_ARRAY(uvData[i]);
+            WRITE_PADDING();
+         }
+         for (int i = 0; i < 4; i++) {
+            WRITE_DYN_ARRAY(colorData[i]);
+            WRITE_PADDING();
+         }
 #undef WRITE_DYN_ARRAY
 #undef GET_OFFSET
 
+         ctWADProtoRenderMesh renderMesh = {};
+         renderMesh.filePath = SaveString("gpu");
          renderMeshes.Append(renderMesh);
          outGltfMeshes.Append(&gltf->meshes[meshIdx]);
       }
       fclose(pFile);
 
-      MakeSection("RMESH",
+      MakeSection(CT_WADPROTO_NAME_RENDER_MESH,
                   renderMeshes.Count() * sizeof(ctWADProtoRenderMesh),
                   renderMeshes.Data());
    }
@@ -549,7 +652,7 @@ int main(int argc, char* argv[]) {
             renderMeshInstances.Append(inst);
          }
       }
-      MakeSection("RINST",
+      MakeSection(CT_WADPROTO_NAME_RENDER_MESH_INSTANCE,
                   renderMeshInstances.Count() * sizeof(ctWADProtoRenderMeshInstance),
                   renderMeshInstances.Data());
    }
@@ -583,13 +686,13 @@ int main(int argc, char* argv[]) {
          ctFatalError(-1, "PxInitExtensions failed!");
       }
 
-      MakeSection("PXCOOK", 0, NULL);
+      MakeSection(CT_WADBLOB_NAME_PHYSX_COOK, 0, NULL);
    }
 
    /* Embedded Data */
    ctDynamicArray<void*> embeds;
    {
-      MakeSection("EM_START", 0, NULL);
+      MakeSection(CT_WADMARKER_NAME_EMBED_START, 0, NULL);
       int embedIdx = 0;
       const char* embedPath = "";
       const char* embedAlias = "";
@@ -614,11 +717,11 @@ int main(int argc, char* argv[]) {
             embedIdx++;
          }
       } while (embedPath && embedAlias);
-      MakeSection("EM_END", 0, NULL);
+      MakeSection(CT_WADMARKER_NAME_EMBED_END, 0, NULL);
    }
 
    /* Write Strings Section */
-   MakeSection("STRINGS", gStringsContent.Count(), gStringsContent.Data());
+   MakeSection(CT_WADBLOB_NAME_STRINGS, gStringsContent.Count(), gStringsContent.Data());
 
    /* Write WAD */
    {

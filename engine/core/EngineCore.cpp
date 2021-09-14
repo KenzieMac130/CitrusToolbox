@@ -21,6 +21,7 @@
 
 #include "gamelayer/GameLayer.hpp"
 
+#include "AsyncTasks.hpp"
 #include "JobSystem.hpp"
 #include "FileSystem.hpp"
 #include "Logging.hpp"
@@ -39,11 +40,10 @@
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLime.hpp"
 #include "scene/SceneEngineBase.hpp"
-#include "asset/AssetManager.hpp"
 
 #include CITRUS_SCENE_ENGINE_HEADER
 
-ctResults ctEngineCore::Ignite(ctApplication* pApp) {
+ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ZoneScoped;
    App = pApp;
 
@@ -53,16 +53,17 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
 #else
    SDL_Init(SDL_INIT_TIMER);
 #endif
+   ctAssert(SDL_GetCPUCacheLineSize() == CT_ALIGNMENT_ALLOCATIONS);
 
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
-   AssetManager = new ctAssetManager(FileSystem);
-   Settings = new ctSettings();
+   Settings = new ctSettingsManager(argc, argv);
    Debug = new ctDebugSystem(32, true);
 #if CITRUS_INCLUDE_AUDITION
    HotReload = new ctHotReloadDetection();
 #endif
    Translation = new ctTranslation(true);
+   AsyncTasks = new ctAsyncManager(true);
    JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
@@ -82,8 +83,8 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    HotReload->ModuleStartup(this);
 #endif
    FileSystem->LogPaths();
-   AssetManager->ModuleStartup(this);
    Translation->ModuleStartup(this);
+   AsyncTasks->ModuleStartup(this);
    JobSystem->ModuleStartup(this);
    OSEventManager->ModuleStartup(this);
 #if !CITRUS_HEADLESS
@@ -92,9 +93,9 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp) {
    Interact->ModuleStartup(this);
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
-   Renderer->ModuleStartup(this);
    PhysXIntegration->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
+   Renderer->ModuleStartup(this);
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
@@ -119,13 +120,13 @@ void ctEngineCore::Exit() {
    _isRunning = false;
 }
 
-bool ctEngineCore::isExitRequested() {
+bool ctEngineCore::isExitRequested() const {
    return !_isRunning;
 }
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
-   AssetManager->Update(JobSystem);
+   Translation->NextFrame();
    App->OnTick(deltatime);
    SceneEngine->NextFrame();
    App->OnUIUpdate();
@@ -157,8 +158,8 @@ ctResults ctEngineCore::Shutdown() {
    WindowManager->ModuleShutdown();
 #endif
    OSEventManager->ModuleShutdown();
-   AssetManager->ModuleShutdown();
    JobSystem->ModuleShutdown();
+   AsyncTasks->ModuleShutdown();
    Translation->ModuleShutdown();
 #if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleShutdown();
@@ -166,16 +167,20 @@ ctResults ctEngineCore::Shutdown() {
    Debug->ModuleShutdown();
    Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();
+   delete PhysXIntegration;
    delete Renderer;
+   delete Im3dIntegration;
    delete ImguiIntegration;
+   delete Interact;
    delete WindowManager;
    delete Debug;
-   delete AssetManager;
    delete FileSystem;
    delete Settings;
    delete OSEventManager;
    delete Translation;
    delete JobSystem;
+   delete AsyncTasks;
+   delete HotReload;
 
    /*SDL*/
    SDL_Quit();

@@ -16,22 +16,39 @@
 
 # Get core assets to add to IDE
 set(ASSET_CORE_FILES
-${CMAKE_CURRENT_SOURCE_DIR}/shaders/common.glsl
-${CMAKE_CURRENT_SOURCE_DIR}/shaders/bindless.glsl
-${CMAKE_CURRENT_SOURCE_DIR}/shaders/portability.glsl
-${CMAKE_CURRENT_SOURCE_DIR}/shaders/im3d_vert.vert
-${CMAKE_CURRENT_SOURCE_DIR}/shaders/im3d_frag.frag
+${CMAKE_CURRENT_SOURCE_DIR}/shaders/utilities/common.glsl
+${CMAKE_CURRENT_SOURCE_DIR}/shaders/utilities/bindless.glsl
+${CMAKE_CURRENT_SOURCE_DIR}/shaders/utilities/portability.glsl
+${CMAKE_CURRENT_SOURCE_DIR}/shaders/im3d.glsl
 ${CMAKE_CURRENT_SOURCE_DIR}/input/actions.json
-${CMAKE_CURRENT_SOURCE_DIR}/input/controller.json
+${CMAKE_CURRENT_SOURCE_DIR}/input/gamepad.json
 ${CMAKE_CURRENT_SOURCE_DIR}/input/keyboard.json
 ${CMAKE_CURRENT_SOURCE_DIR}/input/mouse.json
+${CMAKE_CURRENT_SOURCE_DIR}/text/english.json
+${CMAKE_CURRENT_SOURCE_DIR}/text/languages.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/Audition.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/DebugSystem.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/Honeybell.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/JobSystem.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/PhysX.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/Renderer.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/Translation.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/shared/Window.json
+${CMAKE_CURRENT_SOURCE_DIR}/configs/windows/VulkanBackend.json
 )
+
+if(${IS_PRODUCTION_BUILD})
+set(ASSET_IS_PRODUCTION True)
+else()
+set(ASSET_IS_PRODUCTION False)
+endif()
 
 # Configure asset build system
 message("-------Configuring Asset Build System-------")
 execute_process(
 COMMAND python waf configure 
---final ${IS_PRODUCTION_BUILD}
+--platform ${ASSET_BUILD_PLATFORM}
+--final ${ASSET_IS_PRODUCTION}
 -o ${CMAKE_BINARY_DIR}/output/assets
 --libs ${BASE_LIBRARY_DIRECTORY}
 --build ${CMAKE_BINARY_DIR}
@@ -48,7 +65,8 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(assets_configure 
 COMMAND python waf configure 
---final ${IS_PRODUCTION_BUILD}
+--platform ${ASSET_BUILD_PLATFORM}
+--final ${ASSET_IS_PRODUCTION}
 -o ${CMAKE_BINARY_DIR}/output/assets
 --libs ${BASE_LIBRARY_DIRECTORY}
 --build ${CMAKE_BINARY_DIR}

@@ -1,22 +1,24 @@
 {
 	"dev/keyboard/bind/actions/debug/enable": {
 		"output": "actions/debug/enable",
-		"inputs": [{
-			"path": "dev/keyboard/input/scancode/53",
-			"scale": 1.0,
-			"required": true
-		},
-		{
-			"path": "dev/keyboard/input/scancode/225",
-			"scale": 1.0,
-			"required": true
-		}]
+		"inputs": [
+			{
+				"path": "dev/keyboard/input/scancode/53",
+				"scale": 1.0,
+				"required": true
+			},
+			{
+				"path": "dev/keyboard/input/scancode/224",
+				"scale": 1.0,
+				"required": true
+			}
+		]
 	},
 	"dev/keyboard/bind/actions/debug/moveFaster": {
 		"output": "actions/debug/moveFaster",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/225",
-			"scale": 1.0
+			"scale": 1.0,
 		}]
 	},
 	"dev/keyboard/bind/actions/debug/moveForward": {

@@ -34,3 +34,7 @@ float ctStopwatch::GetDeltaTimeFloat() {
 double ctStopwatch::GetDeltaTime() {
    return ((double)(currentTick - lastTick) * 1000 / (double)freq) * 0.001;
 }
+
+void ctWait(uint32_t ms) {
+   SDL_Delay(ms);
+}

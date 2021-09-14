@@ -18,7 +18,7 @@
 
 #include "utilities/Common.h"
 #include "Signal.hpp"
-#include "wad/WADCore.h"
+#include "formats/wad/WADCore.h"
 
 /* Forward declaration for middleware */
 namespace physx {

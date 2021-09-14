@@ -30,6 +30,12 @@ struct _ctInternalHandleRep {
    };
 };
 
+inline uint32_t ctHandleGetIndex(ctHandle hndl) {
+   _ctInternalHandleRep rep;
+   rep.data = hndl;
+   return rep.idx;
+}
+
 class ctHandleManager {
 public:
    inline ctHandleManager() {

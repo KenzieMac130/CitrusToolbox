@@ -1,1 +1,2 @@
 add_subdirectory(gltf2citrus)
+add_subdirectory(glsl2citrus)

@@ -20,9 +20,8 @@
 #include "middleware/PhysXIntegration.hpp"
 #include "scripting/api/HoneybellScript.hpp"
 
-#include "asset/AssetManager.hpp"
-#include "asset/types/WAD.hpp"
-#include "wad/prototypes/Header.h"
+//#include "asset/types/WADAsset.hpp"
+#include "formats/wad/prototypes/Header.h"
 
 #if CITRUS_PHYSX
 #define PHYSX_SCRATCH_MEMORY_AMOUNT 0
@@ -37,7 +36,6 @@ ctHoneybell::Scene::~Scene() {
 
 ctHandle ctHoneybell::Scene::_RegisterToy(ToyBase* toy) {
    ZoneScoped;
-   /* Todo: Investigate hang up */
    ctHandle toyHandle = toyHandleManager.GetNewHandle();
    CT_PANIC_UNTRUE(toys.Insert(toyHandle, toy),
                    "Internal scene error: Failed to add toy");
@@ -128,10 +126,10 @@ void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
          ToyBase* pToy = toys_TickParallel[i];
          if (pToy) {
             parallelJobData[i] = {tickCtx, pToy};
-            pJobSystem->PushJob(doParallelTickJob, &parallelJobData[i]);
+            //pJobSystem->PushJob(doParallelTickJob, &parallelJobData[i]);
          }
       }
-      if (!parallelJobData.isEmpty()) { pJobSystem->RunAllJobs(); }
+      //if (!parallelJobData.isEmpty()) { pJobSystem->RunAllJobs(); }
 
       /* Tick Serial */
       for (int i = 0; i < toys_TickSerial.Count(); i++) {
@@ -205,26 +203,26 @@ ctResults ctHoneybell::Scene::SpawnToy(const char* toyType,
                                        ctHandle* pResultHandle) {
    ZoneScoped;
 
-   ctWADAsset* pWadAsset = NULL;
-   if (prefabWadPath) {
-      pWadAsset = Engine->AssetManager->GetWADAsset(prefabWadPath);
-      pWadAsset->LoadAndWait();
-   }
+   //ctWADAsset* pWadAsset = NULL;
+   //if (prefabWadPath && !ctCStrEql(prefabWadPath, "")) {
+   //   // pWadAsset = Engine->AssetManager->GetWADAsset(prefabWadPath);
+   //   // pWadAsset->WaitForLoad();
+   //}
 
-   if (pWadAsset) {
-      ctWADProtoHeader* pWadHeader;
-      ctWADFindLump(&pWadAsset->wadReader, "CITRUS", (void**)&pWadHeader, NULL);
-      if (!pWadHeader) {
-         ctDebugWarning("Failed to spawn %s: No citrus header!", prefabWadPath);
-         return CT_FAILURE_CORRUPTED_CONTENTS;
-      }
-   }
+   //if (pWadAsset) {
+   //   ctWADProtoHeader* pWadHeader;
+   //   ctWADFindLump(&pWadAsset->wadReader, "CITRUS", (void**)&pWadHeader, NULL);
+   //   if (!pWadHeader) {
+   //      ctDebugWarning("Failed to spawn %s: No citrus header!", prefabWadPath);
+   //      return CT_FAILURE_CORRUPTED_CONTENTS;
+   //   }
+   //}
 
    ctHoneybell::SpawnData spawnData = ctHoneybell::SpawnData();
    spawnData.transform = transform;
    spawnData.message = message;
    ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
-   if (pWadAsset) { prefabData.wadReader = pWadAsset->wadReader; }
+   //if (pWadAsset) { prefabData.wadReader = pWadAsset->wadReader; }
    ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
    constructCtx.pOwningScene = this;
    constructCtx.pPhysics = Engine->PhysXIntegration->pPhysics;
@@ -237,7 +235,7 @@ ctResults ctHoneybell::Scene::SpawnToy(const char* toyType,
       if (pResultHandle) { *pResultHandle = hndl; }
       toysLinear.Append(newToy);
    }
-   if (pWadAsset) { pWadAsset->Dereferene(); }
+   // if (pWadAsset) { pWadAsset->Dereferene(); }
    return CT_SUCCESS;
 }
 

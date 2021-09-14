@@ -191,26 +191,19 @@ VkResult ctVkBackend::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
      vmaAllocator, &bufferInfo, &allocInfo, &fullBuffer.buffer, &fullBuffer.alloc, NULL);
 }
 
-VkResult ctVkBackend::CreateShaderModuleFromAsset(VkShaderModule& shader,
-                                                  const char* path) {
+#include "formats/wad/WADCore.h"
+VkResult ctVkBackend::CreateShaderModuleFromWad(VkShaderModule& shader,
+                                                struct ctWADReader& reader,
+                                                int32_t fxIdx,
+                                                const char* name) {
    ZoneScoped;
-   ctStringUtf8 fullPath = Engine->FileSystem->GetAssetPath();
-   fullPath += path;
-   fullPath.FilePathLocalize();
-   uint32_t* shaderData = NULL;
-   ctFile shaderFile;
-   CT_RETURN_ON_FAIL(shaderFile.Open(fullPath.CStr(), CT_FILE_OPEN_READ),
-                     VK_ERROR_UNKNOWN);
-   size_t fSize = shaderFile.GetFileSize();
-   shaderData = (uint32_t*)ctMalloc(fSize);
-   CT_RETURN_ON_NULL(shaderData, VK_ERROR_UNKNOWN);
-   shaderFile.ReadRaw(shaderData, fSize, 1);
-   shaderFile.Close();
+   void* pData;
+   int32_t size;
+   ctWADFindLumpInMarker(&reader, fxIdx, "FX_START", "FX_END", name, &pData, &size);
    VkShaderModuleCreateInfo info = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-   info.codeSize = fSize;
-   info.pCode = shaderData;
+   info.codeSize = size;
+   info.pCode = (uint32_t*)pData;
    VkResult result = vkCreateShaderModule(vkDevice, &info, &vkAllocCallback, &shader);
-   ctFree(shaderData);
    return result;
 }
 
@@ -407,7 +400,7 @@ VkResult ctVkBackend::WaitForFrameAvailible() {
       VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
    }
    if (mainScreenResources.ShouldSkip()) {
-      SDL_Delay(10);
+      ctWait(10);
       return VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
    }
    VkResult result = vkWaitForFences(
@@ -627,20 +620,24 @@ ctResults ctVkBackend::Startup() {
       vkAllocCallback.pfnFree = (PFN_vkFreeFunction)vFreeFunction;
 
       validationLayers.Append("VK_LAYER_KHRONOS_validation");
+      validationLayers.Append("VK_LAYER_KHRONOS_synchronization2");
    }
    /* Create Instance */
    {
       ctDebugLog("Getting Extensions...");
       if (validationEnabled && !isValidationLayersAvailible()) {
-         ctFatalError(-1, CT_NC("Vulkan Validation layers requested but not avalible."));
+         ctFatalError(-1,
+                      CT_NCT("FAIL:NoValidation",
+                             "Vulkan Validation layers requested but not avalible."));
       }
 
       unsigned int sdlExtCount;
       if (!SDL_Vulkan_GetInstanceExtensions(
             Engine->WindowManager->mainWindow.pSDLWindow, &sdlExtCount, NULL)) {
          ctFatalError(-1,
-                      CT_NC("SDL_Vulkan_GetInstanceExtensions() Failed to get "
-                            "instance extensions."));
+                      CT_NCT("FAIL:SDL_Vulkan_GetInstanceExtensions",
+                             "SDL_Vulkan_GetInstanceExtensions() Failed to get "
+                             "instance extensions."));
       }
       instanceExtensions.Resize(sdlExtCount);
       SDL_Vulkan_GetInstanceExtensions(NULL, &sdlExtCount, instanceExtensions.Data());
@@ -678,10 +675,11 @@ ctResults ctVkBackend::Startup() {
       ctDebugLog("Creating Instance...");
       CT_VK_CHECK(
         vkCreateInstance(&instanceInfo, &vkAllocCallback, &vkInstance),
-        CT_NC("vkCreateInstance() Failed to create vulkan instance.\n"
-              "Please update the graphics drivers to the latest version available.\n"
-              "If this or other issues persist then upgrade the hardware or contact "
-              "support."));
+        CT_NCT("FAIL:vkCreateInstance",
+               "vkCreateInstance() Failed to create vulkan instance.\n"
+               "Please update the graphics drivers to the latest version available.\n"
+               "If this or other issues persist then upgrade the hardware or contact "
+               "support."));
    }
    /*Setup Validation Debug Callback*/
    if (validationEnabled) {
@@ -699,7 +697,9 @@ ctResults ctVkBackend::Startup() {
          vkCreateDebugReportCallback(
            vkInstance, &createInfo, &vkAllocCallback, &vkDebugCallback);
       } else {
-         ctFatalError(-1, CT_NC("Failed to find vkCreateDebugReportCallbackEXT()."));
+         ctFatalError(-1,
+                      CT_NCT("FAIL:vkCreateDebugReportCallbackEXT",
+                             "Failed to find vkCreateDebugReportCallbackEXT()."));
       }
    }
    /* Initialize a first surface to check for support */
@@ -711,11 +711,13 @@ ctResults ctVkBackend::Startup() {
       ctDebugLog("Finding GPU...");
       uint32_t gpuCount;
       CT_VK_CHECK(vkEnumeratePhysicalDevices(vkInstance, &gpuCount, NULL),
-                  CT_NC("Failed to find devices with vkEnumeratePhysicalDevices()."));
+                  CT_NCT("FAIL:vkEnumeratePhysicalDevices",
+                         "Failed to find devices with vkEnumeratePhysicalDevices()."));
       if (!gpuCount) {
          ctFatalError(-1,
-                      CT_NC("No supported Vulkan compatible rendering device found.\n"
-                            "Please upgrade the hardware."));
+                      CT_NCT("FAIL:VkNoGPU",
+                             "No supported Vulkan compatible rendering device found.\n"
+                             "Please upgrade the hardware."));
       }
       ctDynamicArray<VkPhysicalDevice> gpus;
       gpus.Resize(gpuCount);
@@ -723,20 +725,21 @@ ctResults ctVkBackend::Startup() {
       if (preferredDevice >= 0 && preferredDevice < (int32_t)gpuCount) {
          vkPhysicalDevice = gpus[preferredDevice];
 
-         VkPhysicalDeviceFeatures deviceFeatures;
-         VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures {
+         vDescriptorIndexingFeatures = {
            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES};
-         VkPhysicalDeviceFeatures2 deviceFeatures2 = {
-           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-         deviceFeatures2.pNext = &descriptorIndexingFeatures;
+         vPhysicalDeviceFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+         vPhysicalDeviceFeatures2.pNext = &vDescriptorIndexingFeatures;
 
-         vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &deviceFeatures);
-         vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &deviceFeatures2);
+         vkGetPhysicalDeviceProperties(vkPhysicalDevice, &vPhysicalDeviceProperties);
+         vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &vPhysicalDeviceFeatures);
+         vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &vPhysicalDeviceFeatures2);
 
-         if (!vDeviceHasRequiredFeatures(deviceFeatures, descriptorIndexingFeatures) ||
+         if (!vDeviceHasRequiredFeatures(vPhysicalDeviceFeatures, vDescriptorIndexingFeatures) ||
              !DeviceHasRequiredExtensions(vkPhysicalDevice) ||
              !vDeviceHasSwapChainSupport(vkPhysicalDevice, mainScreenResources.surface)) {
-            ctFatalError(-1, CT_NC("Rendering device does not meet requirements."));
+            ctFatalError(-1,
+                         CT_NCT("FAIL:GPUReqNotMet",
+                                "Rendering device does not meet requirements."));
          }
       } else {
          vkPhysicalDevice =
@@ -744,12 +747,23 @@ ctResults ctVkBackend::Startup() {
          if (vkPhysicalDevice == VK_NULL_HANDLE) {
             ctFatalError(
               -1,
-              CT_NC(
+              CT_NCT(
+                "FAIL:CouldNotFindGoodGPU",
                 "Could not find suitable rendering device.\n"
                 "Please update the graphics drivers to the latest version available.\n"
                 "If this or other issues persist then upgrade the hardware or contact "
                 "support."));
          }
+
+         /* Get Feature Support */
+         vDescriptorIndexingFeatures = {
+           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES};
+         vPhysicalDeviceFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+         vPhysicalDeviceFeatures2.pNext = &vDescriptorIndexingFeatures;
+
+         vkGetPhysicalDeviceProperties(vkPhysicalDevice, &vPhysicalDeviceProperties);
+         vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &vPhysicalDeviceFeatures);
+         vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &vPhysicalDeviceFeatures2);
       }
    }
    /* Queues and Device */
@@ -759,7 +773,9 @@ ctResults ctVkBackend::Startup() {
       /* Queue Creation */
       queueFamilyIndices = FindQueueFamilyIndices(vkPhysicalDevice);
       if (!vIsQueueFamilyComplete(queueFamilyIndices)) {
-         ctFatalError(-1, CT_NC("Device doesn't have the necessary queues."));
+         ctFatalError(-1,
+                      CT_NCT("FAIL:VkQueueFamilyIncomplete",
+                             "Device doesn't have the necessary queues."));
       }
 
       uint32_t uniqueIdxCount = 0;
@@ -836,7 +852,7 @@ ctResults ctVkBackend::Startup() {
       ctDebugLog("Creating Device...");
       CT_VK_CHECK(
         vkCreateDevice(vkPhysicalDevice, &deviceInfo, &vkAllocCallback, &vkDevice),
-        CT_NC("vkCreateDevice() failed to create the device."));
+        CT_NCT("FAIL:vkCreateDevice", "vkCreateDevice() failed to create the device."));
 
       ctDebugLog("Getting Queues...");
       /* Get Queues */
@@ -862,7 +878,8 @@ ctResults ctVkBackend::Startup() {
       allocatorInfo.instance = vkInstance;
 
       CT_VK_CHECK(vmaCreateAllocator(&allocatorInfo, &vmaAllocator),
-                  CT_NC("vmaCreateAllocator() failed to create allocator."));
+                  CT_NCT("FAIL:vmaCreateAllocator",
+                         "vmaCreateAllocator() failed to create allocator."));
    }
    /* Frame Sync */
    {
@@ -888,7 +905,8 @@ ctResults ctVkBackend::Startup() {
       cacheInfo.initialDataSize = cacheSize;
       CT_VK_CHECK(
         vkCreatePipelineCache(vkDevice, &cacheInfo, &vkAllocCallback, &vkPipelineCache),
-        CT_NC("vkCreatePipelineCache() failed to create cache."));
+        CT_NCT("FAIL:vkCreatePipelineCache",
+               "vkCreatePipelineCache() failed to create cache."));
       if (cacheData) { ctFree(cacheData); }
 
       // Todo: (maybe later inside of key lime) :)
@@ -957,7 +975,8 @@ ctResults ctVkBackend::Startup() {
       CT_VK_CHECK(
         vkCreateDescriptorSetLayout(
           vkDevice, &descSetLayoutInfo, &vkAllocCallback, &vkDescriptorSetLayout),
-        CT_NC("vkCreateDescriptorSetLayout() failed to create descriptor set layout."));
+        CT_NCT("FAIL:vkCreateDescriptorSetLayout",
+               "vkCreateDescriptorSetLayout() failed to create descriptor set layout."));
 
       VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
@@ -968,7 +987,8 @@ ctResults ctVkBackend::Startup() {
       poolInfo.maxSets = 1;
       CT_VK_CHECK(
         vkCreateDescriptorPool(vkDevice, &poolInfo, &vkAllocCallback, &vkDescriptorPool),
-        CT_NC("vkCreateDescriptorPool() failed to create descriptor pool."));
+        CT_NCT("FAIL:vkCreateDescriptorPool",
+               "vkCreateDescriptorPool() failed to create descriptor pool."));
 
       VkDescriptorSetAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
@@ -977,7 +997,8 @@ ctResults ctVkBackend::Startup() {
       allocInfo.pSetLayouts = &vkDescriptorSetLayout;
       CT_VK_CHECK(
         vkAllocateDescriptorSets(vkDevice, &allocInfo, &vkGlobalDescriptorSet),
-        CT_NC("vkAllocateDescriptorSets() failed to allocate global descriptor set."));
+        CT_NCT("FAIL:vkAllocateDescriptorSets",
+               "vkAllocateDescriptorSets() failed to allocate global descriptor set."));
 
       /* https://ourmachinery.com/post/moving-the-machinery-to-bindless/
        * https://roar11.com/2019/06/vulkan-textures-unbound/
@@ -1172,7 +1193,8 @@ ctResults ctVkScreenResources::CreateSwapchain(ctVkBackend* pBackend,
    CT_VK_CHECK(
      vkCreateSwapchainKHR(
        pBackend->vkDevice, &swapChainInfo, &pBackend->vkAllocCallback, &swapchain),
-     CT_NC("vkCreateSwapchainKHR() failed to create swapchain."));
+     CT_NCT("FAIL:vkCreateSwapchainKHR",
+            "vkCreateSwapchainKHR() failed to create swapchain."));
 
    /* Get images */
    vkGetSwapchainImagesKHR(pBackend->vkDevice, swapchain, &imageCount, NULL);
