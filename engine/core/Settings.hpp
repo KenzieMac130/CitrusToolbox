@@ -21,13 +21,18 @@
 #include "FileSystem.hpp"
 #include "Translation.hpp"
 
-#define CT_SETTINGS_BOUNDS_BOOL 0,1
-#define CT_SETTINGS_BOUNDS_UINT 0,UINT32_MAX
+#define CT_SETTINGS_BOUNDS_BOOL 0, 1
+#define CT_SETTINGS_BOUNDS_UINT 0, UINT32_MAX
 
 class CT_API ctSettingsSection {
 public:
+   friend class ctSettingsManager;
    ctSettingsSection();
-   ctSettingsSection(int max, ctTranslationCatagory translationCatagory);
+   ctSettingsSection(ctFileSystem* pFileSystem,
+                     ctSettingsManager* pManager,
+                     const char* name,
+                     int max,
+                     ctTranslationCatagory translationCatagory);
    ctResults BindInteger(int32_t* ptr,
                          bool save,
                          bool load,
@@ -35,8 +40,7 @@ public:
                          const char* help,
                          int32_t min = INT32_MIN,
                          int32_t max = INT32_MAX,
-                         void (*setCallback)(const char* value,
-                                             void* customData) = NULL,
+                         void (*setCallback)(const char* value, void* customData) = NULL,
                          void* customData = NULL);
    ctResults BindFloat(float* ptr,
                        bool save,
@@ -45,26 +49,30 @@ public:
                        const char* help,
                        float min = -FLT_MAX,
                        float max = FLT_MAX,
-                       void (*setCallback)(const char* value,
-                                           void* customData) = NULL,
+                       void (*setCallback)(const char* value, void* customData) = NULL,
                        void* customData = NULL);
    ctResults BindString(ctStringUtf8* ptr,
                         bool save,
                         bool load,
                         const char* name,
                         const char* help,
-                        void (*setCallback)(const char* value,
-                                            void* customData) = NULL,
+                        void (*setCallback)(const char* value, void* customData) = NULL,
                         void* customData = NULL);
    ctResults BindFunction(const char* name,
                           const char* help,
-                          void (*setCallback)(const char* value,
-                                              void* customData) = NULL,
+                          void (*setCallback)(const char* value, void* customData) = NULL,
                           void* customData = NULL);
 
-   ctResults ExecCommand(const char* name, const char* command);
+   ctResults GetFallbackInteger(const char* name, int32_t& out);
+   ctResults GetFallbackFloat(const char* name, float& out);
+   ctResults GetFallbackString(const char* name, ctStringUtf8& out);
+
+   ctResults ExecCommand(const char* name, const char* command, bool markChanged = true);
    ctResults GetValueStr(const char* name, ctStringUtf8& out);
    ctResults GetHelp(const char* name, ctStringUtf8& out);
+
+   ctResults LoadConfigs(ctFileSystem* pFileSystem);
+   ctResults SaveChanged(ctFileSystem* pFileSystem);
 
 private:
    enum _setting_type {
@@ -86,6 +94,7 @@ private:
                       double max = DBL_MAX);
 
    struct _setting {
+      bool changed;
       _setting_type type;
       bool save;
       bool load;
@@ -97,12 +106,20 @@ private:
       double minimum;
       double maximum;
    };
+   ctStringUtf8 _name;
    ctTranslationCatagory _translationCatagory;
    ctHashTable<_setting, uint32_t> _settings;
+   ctSettingsManager* _pManager;
+
+   ctDynamicArray<char> defaultJsonBytes;
+   ctDynamicArray<char> userJsonBytes;
+   ctJSONReader defaultJson;
+   ctJSONReader userJson;
 };
 
-class CT_API ctSettings : public ctModuleBase {
+class CT_API ctSettingsManager : public ctModuleBase {
 public:
+   ctSettingsManager(int argc, char** argv);
    ctSettingsSection* CreateSection(
      const char* name,
      int max,
@@ -112,6 +129,12 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
+   int FindArgIdx(const char* name);
+   const char* FindArgPairValue(const char* name);
+
+   int argc;
+   char** argv;
+
 private:
-   ctHashTable<ctSettingsSection, uint32_t> _sections;
+   ctHashTable<ctSettingsSection*, uint32_t> _sections;
 };

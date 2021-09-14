@@ -20,20 +20,40 @@ ctMutex ctMutexCreate() {
    return SDL_CreateMutex();
 }
 
-void ctMutexDestroy(ctMutex mutex) {
+CT_API void ctMutexDestroy(ctMutex mutex) {
    SDL_DestroyMutex(mutex);
 }
 
-bool ctMutexLock(ctMutex mutex) {
+CT_API bool ctMutexLock(ctMutex mutex) {
    return SDL_LockMutex(mutex) == 0;
 }
 
-bool ctMutexTryLock(ctMutex mutex) {
+CT_API bool ctMutexTryLock(ctMutex mutex) {
    return SDL_TryLockMutex(mutex) == 0;
 }
 
-bool ctMutexUnlock(ctMutex mutex) {
+CT_API bool ctMutexUnlock(ctMutex mutex) {
    return SDL_UnlockMutex(mutex) == 0;
+}
+
+CT_API ctConditional ctConditionalCreate() {
+   return SDL_CreateCond();
+}
+
+CT_API void ctConditionalDestroy(ctConditional cond) {
+   SDL_DestroyCond(cond);
+}
+
+CT_API void ctConditionalWait(ctConditional cond, ctMutex lock) {
+   SDL_CondWait(cond, lock);
+}
+
+CT_API void ctConditionalSignalOne(ctConditional cond) {
+   SDL_CondSignal(cond);
+}
+
+CT_API void ctConditionalSignalAll(ctConditional cond) {
+   SDL_CondBroadcast(cond);
 }
 
 CT_API ctThread ctThreadCreate(int (*func)(void*), void* data, const char* name) {

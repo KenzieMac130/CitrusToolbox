@@ -37,6 +37,12 @@ ctResults ctPhysXIntegration::Startup() {
    toleranceSpeed = 10.0f;
 
    ctSettingsSection* pSettings = Engine->Settings->CreateSection("PhysX", 32);
+   pSettings->BindInteger(&connectPvd,
+                          false,
+                          true,
+                          "ConnectPvd",
+                          "Connect to PhysX visual debugger",
+                          CT_SETTINGS_BOUNDS_BOOL);
    pSettings->BindString(&pvdHostAddress,
                          false,
                          true,
@@ -55,12 +61,6 @@ ctResults ctPhysXIntegration::Startup() {
                           true,
                           "RecordAllocations",
                           "Record memory allocations",
-                          CT_SETTINGS_BOUNDS_BOOL);
-   pSettings->BindInteger(&connectPvd,
-                          false,
-                          true,
-                          "ConnectPvd",
-                          "Connect to PhysX visual debugger",
                           CT_SETTINGS_BOUNDS_BOOL);
 
    pSettings->BindFloat(&toleranceLength,

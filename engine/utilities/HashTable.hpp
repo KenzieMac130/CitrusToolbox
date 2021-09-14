@@ -22,6 +22,7 @@
  In this implementation we use open addressing instead of double hashing.
  Containers use zipped arrays instead of linked lists for performance.
  Collisions are expected to be resolved offline or by the key being a mask.
+ Collision mitigation can also be done by the user with occurance retries.
  A key value of 0 is reserved for empty items, make sure keys are never 0! */
 template<class T, class K>
 class ctHashTable {

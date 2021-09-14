@@ -14,11 +14,12 @@
 #   limitations under the License.
 #
 
-if(WIN32)
+if(${LIBRARY_FETCH} STREQUAL "Win64")
 	if(NOT EXISTS ${CMAKE_SOURCE_DIR}/libs/Win64/.gitignore)
 		message("Getting Libraries...")
 		make_directory(${CMAKE_SOURCE_DIR}/libs)
 		make_directory(${CMAKE_SOURCE_DIR}/libs/Win64)
-		execute_process(COMMAND "git" "clone" "https://github.com/KenzieMac130/CitrusDeps-Win64.git" ${CMAKE_SOURCE_DIR}/libs/Win64)
 	endif()
+else()
+	message("Libraries for platform could not be downloaded...")
 endif()

@@ -22,7 +22,9 @@
 
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
+#if CITRUS_INCLUDE_AUDITION
    Engine->HotReload->RegisterAssetCategory(&Directory.configHotReload);
+#endif
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
    CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(Engine, pBackends));
@@ -134,21 +136,44 @@ ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
       AddNode(node);
       EnableActionSet(ctInteractPath(setName.CStr()));
 
-      const int numActions = jsonActionSet.GetObjectEntryCount();
+      const int numActions = (size_t)jsonActionSet.GetObjectEntryCount();
       pActionSet->actionOutputs.Resize(numActions);
       pActionSet->actionOutputs.Memset(0);
+      pActionSet->actionPrevious.Resize(numActions);
+      pActionSet->actionPrevious.Memset(0);
+      pActionSet->actionVelocities.Resize(numActions);
+      pActionSet->actionVelocities.Memset(0);
       for (int j = 0; j < numActions; j++) {
-         ctStringUtf8 actionName;
+         ctStringUtf8 actionPath;
+
+         ctStringUtf8 dispatchPhase;
          ctJSONReadEntry jsonAction = ctJSONReadEntry();
-         jsonActionSet.GetObjectEntry(j, jsonAction, &actionName);
+         jsonActionSet.GetObjectEntry(j, jsonAction, &actionPath);
+         if (actionPath.isEmpty()) { continue; }
+         ctStringUtf8 actionVelocityPath;
+         actionVelocityPath.Printf(1024, "%s/velocity", actionPath.CStr());
+         ctJSONReadEntry jsonActionDispatch = ctJSONReadEntry();
+         jsonAction.GetObjectEntry("dispatch", jsonActionDispatch);
+         jsonActionDispatch.GetString(dispatchPhase);
 
          ctInteractNode node = ctInteractNode();
          node.type = CT_INTERACT_NODETYPE_SCALAR;
          node.pData = &pActionSet->actionOutputs[j];
-         node.path = actionName;
+         node.path = actionPath;
+         AddNode(node);
+         node.pData = &pActionSet->actionVelocities[j];
+         node.path = actionVelocityPath;
          AddNode(node);
 
-         pActionSet->actions.Append(actionName.CStr());
+         ctInteractActionEntry actionEntry = ctInteractActionEntry();
+         actionEntry.path = actionPath;
+         actionEntry.velocityPath = actionVelocityPath;
+         if (dispatchPhase == "tick") {
+            actionEntry.phase = CT_INTERACT_ACTIONDISPATCH_TICK;
+         } else if (dispatchPhase == "update") {
+            actionEntry.phase = CT_INTERACT_ACTIONDISPATCH_UPDATE;
+         }
+         pActionSet->actions.Append(actionEntry);
       }
    }
    ctFree(fileData);
@@ -202,16 +227,25 @@ ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
          ctJSONReadEntry path = ctJSONReadEntry();
          ctJSONReadEntry scale = ctJSONReadEntry();
          ctJSONReadEntry required = ctJSONReadEntry();
+         ctJSONReadEntry invert = ctJSONReadEntry();
+         ctJSONReadEntry min = ctJSONReadEntry();
+         ctJSONReadEntry max = ctJSONReadEntry();
          inputs.GetArrayEntry(j, jsonEntry);
          jsonEntry.GetObjectEntry("path", path);
          jsonEntry.GetObjectEntry("scale", scale);
          jsonEntry.GetObjectEntry("required", required);
+         jsonEntry.GetObjectEntry("invert", invert);
+         jsonEntry.GetObjectEntry("min", min);
+         jsonEntry.GetObjectEntry("max", max);
 
          ctStringUtf8 pathStr;
          path.GetString(pathStr);
          bindEntry.path = pathStr.CStr();
          scale.GetNumber(bindEntry.scale);
+         min.GetNumber(bindEntry.clampMin);
+         max.GetNumber(bindEntry.clampMax);
          required.GetBool(bindEntry.required);
+         invert.GetBool(bindEntry.invert);
          pBinding->inputs.Append(bindEntry);
       }
    }
@@ -234,6 +268,13 @@ ctResults ctInteractDirectorySystem::Update() {
          ctInteractBinding* pBinding = pBindNode->GetAsBinding();
          if (!pBinding) { continue; }
          pBinding->Process(*this);
+      }
+      ctAssert(pActionSet->actionOutputs.Count() == pActionSet->actionOutputs.Count());
+      ctAssert(pActionSet->actionOutputs.Count() == pActionSet->actionVelocities.Count());
+      for (size_t j = 0; j < pActionSet->actionOutputs.Count(); j++) {
+         pActionSet->actionVelocities[j] =
+           pActionSet->actionOutputs[j] - pActionSet->actionPrevious[j];
+         pActionSet->actionPrevious[j] = pActionSet->actionOutputs[j];
       }
    }
    return CT_SUCCESS;
@@ -298,8 +339,11 @@ float ctInteractDirectorySystem::GetSignal(ctInteractPath& path) {
    return pNode->GetScalar();
 }
 
-void ctInteractDirectorySystem::FireActions(
-  void (*callback)(const char* path, float value, void* user), void* userdata) {
+void ctInteractDirectorySystem::FireActions(ctInteractActionDispatchPhase phase,
+                                            void (*callback)(const char* path,
+                                                             float value,
+                                                             void* user),
+                                            void* userdata) {
    ZoneScoped;
    for (size_t i = 0; i < activeActionSets.Count(); i++) {
       ctInteractNode* pSetNode = NULL;
@@ -307,11 +351,12 @@ void ctInteractDirectorySystem::FireActions(
       ctInteractActionSet* pActionSet = pSetNode->GetAsActionSet();
       if (!pActionSet) { continue; }
       for (size_t j = 0; j < pActionSet->actions.Count(); j++) {
+         // if (pActionSet->actions[j].phase != phase) { continue; }
          ctInteractNode* pActionNode = NULL;
-         GetNode(pActionSet->actions[j], pActionNode);
+         GetNode(pActionSet->actions[j].path, pActionNode);
          if (!pActionNode) { continue; }
          float value = pActionNode->GetScalar();
-         if (value) { callback(pActionSet->actions[j].str, value, userdata); }
+         if (value) { callback(pActionSet->actions[j].path.str, value, userdata); }
       }
    }
 }
@@ -384,9 +429,15 @@ void ctInteractBinding::Process(ctInteractDirectorySystem& dir) {
       ctInteractNode* pNode = NULL;
       dir.GetNode(entry.path, pNode);
       if (!pNode) { continue; }
-      const float entryValue = pNode->GetScalar();
+      float entryValue = pNode->GetScalar();
+      ctClamp(entryValue, entry.clampMin, entry.clampMax);
+      if (entry.invert) { entryValue = 1.0f - entryValue; }
       if (entry.required) {
-         value *= entry.scale * entryValue;
+         if (i) {
+            value *= entry.scale * entryValue;
+         } else {
+            value = entry.scale * entryValue;
+         }
       } else {
          value += entry.scale * entryValue;
       }

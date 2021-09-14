@@ -174,7 +174,10 @@ public:
                                  uint32_t queueFamilyIndexCount = 0,
                                  uint32_t* pQueueFamilyIndices = NULL);
 
-   VkResult CreateShaderModuleFromAsset(VkShaderModule& shader, const char* path);
+   VkResult CreateShaderModuleFromWad(VkShaderModule& shader,
+                                             struct ctWADReader& reader,
+                                             int32_t fxIdx,
+                                             const char* name);
    VkResult CreateBindlessPipelineLayout(VkPipelineLayout& layout,
                                          uint32_t pushConstantRangeCount = 0,
                                          VkPushConstantRange* pPushConstantRanges = NULL);
@@ -211,6 +214,11 @@ public:
    VkPhysicalDevice vkPhysicalDevice;
    VkDevice vkDevice;
    VmaAllocator vmaAllocator;
+
+   VkPhysicalDeviceProperties vPhysicalDeviceProperties;
+   VkPhysicalDeviceFeatures vPhysicalDeviceFeatures;
+   VkPhysicalDeviceDescriptorIndexingFeatures vDescriptorIndexingFeatures;
+   VkPhysicalDeviceFeatures2 vPhysicalDeviceFeatures2;
 
    ctVkQueueFamilyIndices queueFamilyIndices;
    VkQueue graphicsQueue;

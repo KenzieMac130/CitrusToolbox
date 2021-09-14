@@ -39,15 +39,49 @@ struct ctVkKeyLimeViewBufferData {
    ctMat4 inverseProjectionMatrix;
 };
 
+struct ctVkKeyLimeTexture {
+   ctVkCompleteImage image;
+};
+
+struct ctVkKeyLimeGeometry {
+   ctVkCompleteBuffer buffer;
+   uint32_t streamSubmeshIdx;
+   uint32_t streamIndexIdx;
+   uint32_t streamPositionIdx;
+   uint32_t streamTangentNormalIdx;
+   uint32_t streamSkinIdx;
+   uint32_t streamUVIdx[4];
+   uint32_t streamColorIdx[4];
+};
+
 class CT_API ctVkKeyLimeCore : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
+   ctResults CreateGeometry(ctHandle* pHandleOut, const ctKeyLimeCreateGeometryDesc& desc);
+   ctResults UpdateGeometry(ctHandle handle);
+   ctResults DestroyGeometry(ctHandle handle);
+
+   ctResults CreateMaterial(ctHandle* pHandleOut, const ctKeyLimeMaterialDesc& desc);
+   ctResults UpdateMaterial(ctHandle handle, const ctKeyLimeMaterialDesc& desc);
+   ctResults DestroyMaterial(ctHandle handle);
+
+   ctResults CreateTransforms(ctHandle* pHandleOut, const ctKeyLimeTransformsDesc& pDesc);
+   ctResults UpdateTransforms(ctHandle handle, const ctKeyLimeTransformsDesc& desc);
+   ctResults DestroyTransforms(ctHandle handle);
+
+   ctResults CreateGeoInstance(ctHandle* pHandleOut, const ctKeyLimeInstanceDesc& desc);
+   ctResults UpdateGeoInstance(ctHandle handle, const ctKeyLimeInstanceDesc& desc);
+   ctResults DestroyGeoInstance(ctHandle handle);
+
+   ctResults LoadTextureKtx(ctHandle* pHandleOut, const char* resolvedPath);
+   ctResults DestroyTexture(ctHandle handle);
+
    ctResults CreateScreenResources();
    ctResults DestroyScreenResources();
 
-   ctResults UpdateCamera(ctKeyLimeCameraDesc cameraDesc);
+   ctResults UpdateCamera(const ctKeyLimeCameraDesc cameraDesc);
    ctResults Render();
 
    VkFormat compositeFormat;
@@ -75,12 +109,16 @@ public:
    VkRenderPass forwardRenderPass;
    VkFramebuffer forwardFramebuffer;
 
-   /* Mapped buffer data, offsets into global upload */
-   ctVkCompleteBuffer frameDataUploadBuffer[CT_MAX_INFLIGHT_FRAMES];
-   void* frameDataUploadBaseMappings[CT_MAX_INFLIGHT_FRAMES];
+   ctHandleManager textureHandleManager;
+   ctHashTable<ctVkKeyLimeTexture, ctHandle> textures;
+   ctHandleManager geometryHandleManager;
+   ctHashTable<ctVkKeyLimeGeometry, ctHandle> geometries;
 
    ctVkKeyLimeGlobalBufferData* pGlobalBufferData;
 
    size_t viewBufferCount = 1;
    ctVkKeyLimeViewBufferData* pViewBufferData;
+
+   size_t transformsMax;
+   ctKeyLimeStreamTransform* pTransformsData;
 };

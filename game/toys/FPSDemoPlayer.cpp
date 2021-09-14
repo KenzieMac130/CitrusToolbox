@@ -46,7 +46,7 @@ ctResults Game::FPSPlayer::OnBegin(ctHoneybell::BeginContext& ctx) {
 }
 
 ctResults Game::FPSPlayer::OnTickSerial(ctHoneybell::TickContext& ctx) {
-   const ctVec3 moveto = (ctx.gravity + moveTarget) * ctx.deltaTime;
+   const ctVec3 moveto = (ctx.gravity + moveTarget) * (float)ctx.deltaTime;
    Controller->rotation = ctQuat(CT_VEC3_UP, yaw);
    Controller->pPxController->move(
      ctVec3ToPx(moveto), 0.01f, (float)ctx.deltaTime, PxControllerFilters());

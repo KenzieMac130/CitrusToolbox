@@ -17,31 +17,39 @@
 
 #include "Translation.hpp"
 #include "EngineCore.hpp"
+#include "FileSystem.hpp"
+#include "Settings.hpp"
 
 #ifdef _WIN32
 #include <Windows.h>
-#else
-#include <locale.h>
 #endif
+#include <locale.h>
 
 ctTranslation* mainTranslationSystem;
 
 ctTranslation::ctTranslation(bool shared) {
    if (shared) { mainTranslationSystem = this; }
    for (int i = 0; i < CT_TRANSLATION_CATAGORY_COUNT; i++) {
-       dictionaries.Append(ctTranslation::_dictionary());
+      dictionaries.Append(ctTranslation::_dictionary());
    }
+}
+
+void _setLanguageCb(const char* val, void* data) {
+   ctTranslation* pTranslation = (ctTranslation*)data;
+   pTranslation->LoadLanguage(val);
 }
 
 ctResults ctTranslation::Startup() {
    ZoneScoped;
+#if CITRUS_INCLUDE_AUDITION
+   Engine->HotReload->RegisterAssetCategory(&TextHotReload);
+#endif
 #if defined(_WIN32)
    wchar_t data[LOCALE_NAME_MAX_LENGTH];
-   GetLocaleInfoEx(
-     LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
-   language = ctStringUtf8(data);
+   GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
+   isoLanguage = ctStringUtf8(data);
 #elif defined(__linux__)
-   /* Try to extract a similar string off "setlocale" (tested only on Ubuntu) */
+   /* Try to extract a similar string off "setlocale" (tested only on some Debian distros) */
    const char* cbuf = setlocale(LC_ALL, "");
    size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
    char scratch[256];
@@ -56,13 +64,24 @@ ctResults ctTranslation::Startup() {
       }
       nextVal++;
    }
-   result = scratch;
-   if (result == "C") { result = "DEFAULT"; }
+   isoLanguage = scratch;
+   if (isoLanguage == "C") { isoLanguage = "DEFAULT"; }
 #else
-   language = "DEFAULT";
+   isoLanguage = "DEFAULT";
 #endif
    setlocale(LC_ALL, "C"); /* Unify C Locale */
-   ctDebugLog("Detected Language: %s", language.CStr());
+   fullLanguageName = "?";
+   ctDebugLog("OS Reported Language: %s", isoLanguage.CStr());
+
+   ctSettingsSection* settings = Engine->Settings->CreateSection("Translation", 1);
+   settings->BindString(&isoLanguage,
+                        true,
+                        true,
+                        "Language",
+                        "Code for the language to use in RFC 4646 format.");
+
+   SetDictionary(CT_TRANSLATION_CATAGORY_CORE, "text");
+   LoadLanguage(isoLanguage.CStr());
    return CT_SUCCESS;
 }
 
@@ -70,62 +89,146 @@ ctResults ctTranslation::Shutdown() {
    return CT_SUCCESS;
 }
 
+ctResults ctTranslation::NextFrame() {
+#if CITRUS_INCLUDE_AUDITION
+   if (TextHotReload.isContentUpdated()) {
+      LoadAll();
+      TextHotReload.ClearChanges();
+   }
+#endif
+   return CT_SUCCESS;
+}
+
 ctResults ctTranslation::SetDictionary(ctTranslationCatagory category,
                                        const char* basePath) {
    _dictionary& dict = dictionaries[category];
    dict.basePath = basePath;
-   dict.strings = ctHashTable<const char*, uint64_t>();
+   dict.strings = ctHashTable<ctStringUtf8, uint64_t>();
    return CT_SUCCESS;
 }
 
-ctResults ctTranslation::LoadLanguage(const char* languageName) {
-   language = languageName;
+bool languageCompare(const char* a, const char* b) {
+   const char* in = b;
+   if (!a || !b) { return false; }
+   while (*a && *b && (*a == *b || *b == '*')) {
+      a++;
+      b++;
+      if (!*b) { return true; }
+   }
+   return false;
+}
+
+ctResults ctTranslation::LoadLanguage(const char* isoCode) {
+   /* Find language file */
+   {
+      ctFile file;
+      ctDynamicArray<uint8_t> fileContents = {};
+      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFile(file, "text/languages.json"));
+      file.GetBytes(fileContents);
+      file.Close();
+      ctJSONReader jsonReader = ctJSONReader();
+      CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
+                                                fileContents.Count()));
+
+      ctJSONReadEntry languagesJson = ctJSONReadEntry();
+      jsonReader.GetRootEntry(languagesJson);
+      int languageEntryCount = languagesJson.GetObjectEntryCount();
+      bool found = false;
+      for (int i = 0; i < languageEntryCount; i++) {
+         ctJSONReadEntry entry = ctJSONReadEntry();
+         ctStringUtf8 name = ctStringUtf8();
+         languagesJson.GetObjectEntry(i, entry, &name);
+         if (name == "DEFAULT") { entry.GetString(fullLanguageName); }
+         if (languageCompare(isoCode, name.CStr())) {
+            entry.GetString(fullLanguageName);
+            found = true;
+         }
+      }
+      if (found) {
+         isoLanguage = isoCode;
+      } else {
+         ctDebugWarning("Could not find language: %s", isoCode);
+      }
+   }
    LoadAll();
    return CT_SUCCESS;
 }
 
 ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
    ZoneScoped;
-   /* Todo: Load from JSON */
-   /* dict.strings = ctHashTable<const char*, uint64_t>(count * 1.5);
-   for (int i = 0; i < count; i++) {
-       const char* str = nativeTexts[i];
-       const uint64_t hash = XXH64(str, strlen(str), 0);
-       dict.strings.Insert(hash, localTexts[i]);
-   }*/
+   /* Load strings */
+   {
+      ctStringUtf8 path;
+      path.Printf(4096,
+                  "%s/%s.json",
+                  dictionaries[category].basePath.CStr(),
+                  fullLanguageName.ToLower().CStr());
+#if CITRUS_INCLUDE_AUDITION
+      TextHotReload.RegisterPath(path.CStr());
+#endif
+      ctFile file;
+      ctDynamicArray<uint8_t> fileContents = {};
+      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFile(file, path.CStr()));
+      file.GetBytes(fileContents);
+      file.Close();
+      ctJSONReader jsonReader = ctJSONReader();
+      CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
+                                                fileContents.Count()));
+
+      dictionaries[category].bloom.Reset();
+      dictionaries[category].strings.Clear();
+
+      ctJSONReadEntry textJson = ctJSONReadEntry();
+      jsonReader.GetRootEntry(textJson);
+      int entryCount = textJson.GetObjectEntryCount();
+      dictionaries[category].strings.Reserve(entryCount);
+      for (int i = 0; i < entryCount; i++) {
+         ctJSONReadEntry entry = ctJSONReadEntry();
+         ctStringUtf8 name = ctStringUtf8();
+         ctStringUtf8 content = ctStringUtf8();
+         textJson.GetObjectEntry(i, entry, &name);
+         entry.GetString(content);
+         if (content.isEmpty()) { continue; }
+         content.ProcessEscapeCodes();
+         const uint64_t hash = name.xxHash64();
+         dictionaries[category].bloom.Insert(hash);
+         dictionaries[category].strings.Insert(hash, content);
+      }
+   }
    return CT_SUCCESS;
 }
 
 ctResults ctTranslation::LoadAll() {
    ZoneScoped;
    LoadDictionary(CT_TRANSLATION_CATAGORY_CORE);
-   LoadDictionary(CT_TRANSLATION_CATAGORY_APP);
-   LoadDictionary(CT_TRANSLATION_CATAGORY_GAME);
-   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK0);
-   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK1);
-   LoadDictionary(CT_TRANSLATION_CATAGORY_BANK2);
    return CT_SUCCESS;
 }
 
-ctStringUtf8 ctTranslation::GetUserOSLanguage() {
-   return language;
+ctStringUtf8 ctTranslation::GetISOLanguage() const {
+   return isoLanguage;
+}
+
+ctStringUtf8 ctTranslation::GetCurrentLanguage() const {
+   return fullLanguageName;
 }
 
 const char* ctTranslation::GetLocalString(ctTranslationCatagory category,
+                                          const char* tag,
                                           const char* nativeText) const {
    ZoneScoped;
    if (!isStarted()) { return nativeText; }
-   uint64_t hash = XXH64(nativeText, strlen(nativeText), 0);
-   /* Todo: use bloom filter to detect if translation exists */
-   const char** localText = dictionaries[category].strings.FindPtr(hash);
-   if (localText) { return *localText; }
+   uint64_t hash = ctXXHash64(tag);
+   if (!dictionaries[category].bloom.MightExist(hash)) { return nativeText; }
+   const ctStringUtf8* localText = dictionaries[category].strings.FindPtr(hash);
+   if (localText) { return localText->CStr(); }
    return nativeText;
 }
 
 const char* ctGetLocalString(ctTranslationCatagory category,
+                             const char* tag,
                              const char* nativeText) {
    if (mainTranslationSystem) {
-      mainTranslationSystem->GetLocalString(category, nativeText);
+      return mainTranslationSystem->GetLocalString(category, tag, nativeText);
    }
    return nativeText;
 }

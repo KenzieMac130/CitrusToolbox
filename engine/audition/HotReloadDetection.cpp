@@ -38,7 +38,7 @@ static void watch_callback(dmon_watch_id watch_id,
 
 ctResults ctHotReloadDetection::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings = Engine->Settings->CreateSection("HotReload", 1);
+   ctSettingsSection* settings = Engine->Settings->CreateSection("Audition", 1);
    watchEnable = 1;
    settings->BindInteger(&watchEnable,
                          false,
@@ -84,6 +84,7 @@ void ctHotReloadDetection::_PushPathUpdate(const char* path) {
 void ctHotReloadCategory::RegisterPath(const char* relativePath) {
    ZoneScoped;
    uint64_t hash = XXH64(relativePath, strlen(relativePath), 0);
+   if (watchedPathHashes.FindIndex(hash) >= 0) { return; }
    watchedPathHashes.Append(hash);
 }
 

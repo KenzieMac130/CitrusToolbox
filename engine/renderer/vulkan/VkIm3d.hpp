@@ -19,12 +19,17 @@
 #include "utilities/Common.h"
 #include "VkBackend.hpp"
 #include "im3d/im3d.h"
+#include "core/FileSystem.hpp"
 
 class CT_API ctVkIm3d {
 public:
-   ctResults Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass);
+   ctResults Startup(ctFileSystem& fileSystem,
+                     ctVkBackend* pBackend,
+                     VkRenderPass guiRenderpass,
+                     uint32_t subpass);
    ctResults Shutdown();
-   ctResults LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass);
+   ctResults
+   LoadShaders(ctFileSystem& fileSystem, VkRenderPass guiRenderpass, uint32_t subpass);
    void BuildDrawLists();
    void
    RenderCommands(VkCommandBuffer cmd, ctVec2 viewSize, ctMat4 view, ctMat4 projection);

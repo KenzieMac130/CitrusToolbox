@@ -224,6 +224,7 @@ int SignalDispatchSortCompareFunc(const ctHoneybell::SignalDispatchEntry* A,
 void ctHoneybell::SignalManager::ExecuteBuiltSignals() {
    dispatchEntries.QSort(SignalDispatchSortCompareFunc);
    for (size_t i = 0; i < dispatchEntries.Count(); i++) {
+      ctAssert(dispatchEntries[i].pToy);
       dispatchEntries[i].pToy->_CallSignal(outSignals[dispatchEntries[i].signalIdx]);
    }
 }

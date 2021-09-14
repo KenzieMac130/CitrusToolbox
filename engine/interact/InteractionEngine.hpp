@@ -77,7 +77,8 @@ public:
    ctResults
    GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false);
    float GetSignal(ctInteractPath& path);
-   void FireActions(void (*callback)(const char* path, float value, void* user),
+   void FireActions(enum ctInteractActionDispatchPhase phase,
+                    void (*callback)(const char* path, float value, void* user),
                     void* userdata = NULL);
    void LogContents();
    void DebugImGui();
@@ -97,7 +98,10 @@ private:
 struct ctInteractBindingEntry {
    ctInteractPath path;
    float scale;
+   float clampMin = -FLT_MAX;
+   float clampMax = FLT_MAX;
    bool required;
+   bool invert;
 };
 
 class CT_API ctInteractBinding {
@@ -108,12 +112,31 @@ public:
    ctInteractPath output;
 };
 
+/* --------------------------- Actions --------------------------- */
+
+enum ctInteractActionDispatchPhase {
+   CT_INTERACT_ACTIONDISPATCH_NONE,
+   CT_INTERACT_ACTIONDISPATCH_UPDATE,
+   CT_INTERACT_ACTIONDISPATCH_TICK,
+   CT_INTERACT_ACTIONDISPATCH_COUNT,
+   CT_INTERACT_ACTIONDISPATCH_MAX = UINT8_MAX
+};
+
+struct ctInteractActionEntry {
+   ctInteractPath path;
+   ctInteractPath velocityPath;
+   ctInteractActionDispatchPhase phase;
+};
+
 /* --------------------------- Action Sets --------------------------- */
+
 class CT_API ctInteractActionSet {
 public:
    ctDynamicArray<ctInteractPath> bindings;
-   ctDynamicArray<ctInteractPath> actions;
+   ctDynamicArray<ctInteractActionEntry> actions;
    ctDynamicArray<float> actionOutputs;
+   ctDynamicArray<float> actionPrevious;
+   ctDynamicArray<float> actionVelocities;
 };
 
 /* ---------------------------------- Engine ---------------------------------- */

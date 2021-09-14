@@ -22,6 +22,13 @@
 #ifdef __cplusplus
 #if CITRUS_TRACY
 #include "tracy/Tracy.hpp"
+#else
+#define ZoneScoped
+#define TracyAlloc(A,B)
+#define TracyFree(A)
+#define TracyMessage(A,B)
+#define TracyMessageC(A,B,C)
+#define FrameMark
 #endif
 #endif
 
@@ -180,6 +187,7 @@ CT_API void ctAlignedFree(void* block);
 #include "StaticArray.hpp"
 #include "Math.hpp"
 #include "Math3d.hpp"
+#include "Noise.hpp"
 #include "Hash.hpp"
 #include "String.hpp"
 #include "HashTable.hpp"

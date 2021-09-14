@@ -160,13 +160,18 @@ int spacial_query_test() {
    ctDebugLog("Spacial query...");
    ctDebugLog("Size of key %d", sizeof(ctSpacialCellKey));
    ctSpacialQuery spacial;
+   spacial.Reserve(50000);
    ctHandle hndl = ctHandle();
-   for (int i = 0; i < 1024; i++) {
+   ctDebugLog("Insert...");
+   for (int i = 0; i < 1000; i++) {
       spacial.Add(hndl, ctSpacialCellKey(ctVec3((float)i, 0, 0)));
    }
    spacial.Remove(hndl, ctSpacialCellKey(ctVec3(2, 0, 0)));
    ctDebugLog("Lookup...");
-   ctDebugLog("Bucket count %d", spacial.GetBucketCount(ctVec3(0, 0, 0)));
+   for (int i = 0; i < 1000; i++) {
+      spacial.GetBucketCount(ctSpacialCellKey(ctVec3((float)i, 0, 0)));
+   }
+   ctDebugLog("Finished!");
    return 0;
 }
 
@@ -199,7 +204,7 @@ int hash_table_test() {
          ctDebugLog("Key: %d - Value: %c", itt.Key(), itt.Value());
       }
    }
-   /*ctDebugLog("Hash Table (Worst Case Dynamic String)...");
+   ctDebugLog("Hash Table (Worst Case Dynamic String)...");
    {
       ctHashTable<ctStringUtf8, uint32_t> hashTable =
         ctHashTable<ctStringUtf8, uint32_t>(0);
@@ -213,7 +218,7 @@ int hash_table_test() {
       }
       ctStringUtf8* strptr = hashTable.FindPtr(findhash);
       if (strptr) { ctDebugLog("%s", strptr->CStr()); }
-   }*/
+   }
    return 0;
 }
 
@@ -338,8 +343,8 @@ void debugCallback(int level, const char* format, va_list args) {
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
    vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
    TracyMessage(tmp, strlen(tmp));
-   // vprintf(format, args);
-   // putchar('\n');
+   vprintf(format, args);
+   putchar('\n');
 }
 
 int main(int argc, char* argv[]) {

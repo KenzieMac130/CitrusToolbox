@@ -26,8 +26,10 @@ struct vkim3dPushConstant {
    uint32_t primType;
 };
 
-ctResults
-ctVkIm3d::Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t subpass) {
+ctResults ctVkIm3d::Startup(ctFileSystem& fileSystem,
+                            ctVkBackend* pBackend,
+                            VkRenderPass guiRenderpass,
+                            uint32_t subpass) {
    ZoneScoped;
    _pBackend = pBackend;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
@@ -45,7 +47,7 @@ ctVkIm3d::Startup(ctVkBackend* pBackend, VkRenderPass guiRenderpass, uint32_t su
    pushConstRange.size = sizeof(vkim3dPushConstant);
    pushConstRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
    _pBackend->CreateBindlessPipelineLayout(pipelineLayout, 1, &pushConstRange);
-   LoadShaders(guiRenderpass, subpass);
+   LoadShaders(fileSystem, guiRenderpass, subpass);
    return CT_SUCCESS;
 }
 
@@ -64,12 +66,22 @@ ctResults ctVkIm3d::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults ctVkIm3d::LoadShaders(VkRenderPass guiRenderpass, uint32_t subpass) {
+#include "formats/wad/WADCore.h"
+ctResults ctVkIm3d::LoadShaders(ctFileSystem& fileSystem,
+                                VkRenderPass guiRenderpass,
+                                uint32_t subpass) {
    ZoneScoped;
    VkShaderModule vertShader;
    VkShaderModule fragShader;
-   _pBackend->CreateShaderModuleFromAsset(vertShader, "shaders/im3d_vert.spv");
-   _pBackend->CreateShaderModuleFromAsset(fragShader, "shaders/im3d_frag.spv");
+
+   ctFile file;
+   fileSystem.OpenAssetFile(file, "shaders/im3d.wad");
+   ctDynamicArray<uint8_t> bytes;
+   file.GetBytes(bytes);
+   ctWADReader wad;
+   ctWADReaderBind(&wad, bytes.Data(), bytes.Count());
+   _pBackend->CreateShaderModuleFromWad(vertShader, wad, 0, "VERT_SPV");
+   _pBackend->CreateShaderModuleFromWad(fragShader, wad, 0, "FRAG_SPV");
 
    if (pipeline != VK_NULL_HANDLE) {
       vkDestroyPipeline(_pBackend->vkDevice, pipeline, &_pBackend->vkAllocCallback);
@@ -104,7 +116,7 @@ void ctVkIm3d::BuildDrawLists() {
    for (uint32_t i = 0; i < drawListCount; i++) {
       const uint32_t vertexCount = drawLists[i].m_vertexCount;
       if (nextVertex + vertexCount > CT_MAX_IM3D_VERTS) {
-         ctDebugWarning("Debug draw vertex budget blown");
+         ctDebugError("Debug draw vertex budget blown");
          break;
       }
       memcpy(vertexData[currentFrame] + nextVertex,

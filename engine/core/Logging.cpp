@@ -60,6 +60,12 @@ ctResults ctDebugSystem::Startup() {
                          "FlushAfter",
                          "Write the debug log contents after a certain amount of logs.",
                          CT_SETTINGS_BOUNDS_UINT);
+   settings->BindInteger(&_writeToConsole,
+                         false,
+                         true,
+                         "WriteConsole",
+                         "Write the debug log contents to the OS console.",
+                         CT_SETTINGS_BOUNDS_UINT);
 
    if (Engine->FileSystem->isStarted()) {
       Engine->FileSystem->OpenPreferencesFile(_logFile, "Log.txt", CT_FILE_OPEN_WRITE);
@@ -110,7 +116,7 @@ void ctDebugSystem::LogArgs(const char* format, va_list args) {
    ctMutexLock(_logLock);
    TracyMessage(tmp, strlen(tmp));
 #if CITRUS_USE_STDOUT
-   fprintf(stdout, "[LOG] %s\n", tmp);
+   if (_writeToConsole) { fprintf(stdout, "[LOG] %s\n", tmp); }
 #endif
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
@@ -135,7 +141,7 @@ void ctDebugSystem::WarningArgs(const char* format, va_list args) {
    ctMutexLock(_logLock);
    TracyMessageC(tmp, strlen(tmp), 0xE5A91A);
 #if CITRUS_USE_STDOUT
-   fprintf(stderr, "[WARNING] %s\n", tmp);
+   if (_writeToConsole) { fprintf(stderr, "[WARNING] %s\n", tmp); }
 #endif
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
@@ -160,7 +166,7 @@ void ctDebugSystem::ErrorArgs(const char* format, va_list args) {
    ctMutexLock(_logLock);
    TracyMessageC(tmp, strlen(tmp), 0xE51A1A);
 #if CITRUS_USE_STDOUT
-   fprintf(stderr, "[ERROR] %s\n", tmp);
+   if (_writeToConsole) { fprintf(stderr, "[ERROR] %s\n", tmp); }
 #endif
    _internalMessage msg;
    strncpy(msg.msg, tmp, CT_MAX_LOG_LENGTH);
@@ -201,7 +207,7 @@ void ctDebugSystem::_flushMessageQueue() {
       };
       _logFile.Printf(levelStr[msg.level], CT_MAX_LOG_LENGTH + 16, msg.msg);
    }
-   fflush(_logFile.CFile());
+   _logFile.Flush();
 }
 
 void ctDebugSystem::_addToMessageQueue(const _internalMessage msg) {

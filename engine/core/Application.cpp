@@ -18,7 +18,7 @@
 
 int ctApplication::Execute(int argc, char* argv[]) {
    Engine = new ctEngineCore();
-   Engine->Ignite(this);
+   Engine->Ignite(this, argc, argv);
    Engine->EnterLoop();
    delete Engine;
    return 0;

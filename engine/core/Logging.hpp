@@ -49,6 +49,7 @@ private:
    void _addToMessageQueue(const _internalMessage msg);
    ctDynamicArray<_internalMessage> _messageQueue;
    ctFile _logFile;
+   int32_t _writeToConsole;
    int32_t _flushAfter;
    ctMutex _logLock;
 };

@@ -27,19 +27,24 @@
 	},
 	"actions/player": {
 		"actions/player/moveForward":{
-			"type": "value"
+			"type": "value",
+			"dispatch": "tick"
 		},
 		"actions/player/moveRight":{
-			"type": "value"
+			"type": "value",
+			"dispatch": "tick"
 		},
 		"actions/player/lookUp":{
-			"type": "value"
+			"type": "value",
+			"dispatch": "update"
 		},
 		"actions/player/lookRight":{
-			"type": "value"
+			"type": "value",
+			"dispatch": "update"
 		},
 		"actions/player/jump":{
-			"type": "value"
+			"type": "value",
+			"dispatch": "tick"
 		}
 	}
 }

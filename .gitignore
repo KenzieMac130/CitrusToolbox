@@ -52,6 +52,7 @@ libs/
 *nintendo/
 
 # Build
+CMakeUserPresets.json
 build/
 tools/tracy
 *.dia~

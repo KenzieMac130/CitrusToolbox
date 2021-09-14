@@ -20,7 +20,7 @@
 
 enum ctFileSeekMode {
    CT_FILE_SEEK_SET = SEEK_SET,
-   CT_FILE_SEEK_CUT = SEEK_CUR,
+   CT_FILE_SEEK_CUR = SEEK_CUR,
    CT_FILE_SEEK_END = SEEK_END
 };
 
@@ -55,6 +55,8 @@ public:
    size_t WriteRaw(const void* pData, size_t size, const size_t count);
    int64_t Printf(const char* format, ...);
    int64_t VPrintf(const char* format, va_list va);
+   void Flush();
+   bool isEndOfFile();
 
    FILE* CFile() const;
 

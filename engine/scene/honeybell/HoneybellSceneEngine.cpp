@@ -39,6 +39,12 @@ ctResults ctHoneybellSceneEngine::Startup() {
    debugCameraActive = true;
 #endif
    ctSettingsSection* pSettings = Engine->Settings->CreateSection("Honeybell", 32);
+   pSettings->BindInteger(&debugCameraAllowed,
+                          true,
+                          true,
+                          "DebugCameraAllowed",
+                          "Allow debug fly camera",
+                          CT_SETTINGS_BOUNDS_BOOL);
    pSettings->BindInteger(&debugCameraActive,
                           true,
                           true,
@@ -56,7 +62,8 @@ ctResults ctHoneybellSceneEngine::Startup() {
 
    RegisterBuiltinToys(toyRegistry);
    ctGetGameLayer().HoneybellRegisterToys(toyRegistry);
-   mainScene.ModuleStartup(Engine);
+   mainScene.Engine = Engine;
+   mainScene.Startup();
    mainScene.pToyRegistry = &toyRegistry;
    mainScene.tickInterval = 1.0 / 30;
 
@@ -74,13 +81,14 @@ ctResults ctHoneybellSceneEngine::Startup() {
 
 ctResults ctHoneybellSceneEngine::Shutdown() {
    ZoneScoped;
-   mainScene.ModuleShutdown();
+   mainScene.Shutdown();
    return CT_SUCCESS;
 }
 
 struct HBUserInputCtx {
    ctHandle toyHandle;
    ctHoneybell::SignalManager* pSignalManager;
+   float deltaTime;
 };
 void HBHandleUserInput(const char* path, float value, void* userData) {
    HBUserInputCtx* pCtx = (HBUserInputCtx*)userData;
@@ -93,7 +101,7 @@ void HBHandleUserInput(const char* path, float value, void* userData) {
 
 ctResults ctHoneybellSceneEngine::NextFrame() {
    ZoneScoped;
-
+   float deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
 #if CITRUS_INCLUDE_AUDITION
    if (hotReload.isContentUpdated()) {
       sceneReload = true;
@@ -106,13 +114,15 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
    }
 
    if (!debugCameraActive) {
+      /* Todo: CRITICAL! needs to be moved inside tick to avoid tunneling on higher FPS */
       HBUserInputCtx ctx = HBUserInputCtx();
+      ctx.deltaTime = deltaTime;
       ctx.toyHandle = possessedToy;
       ctx.pSignalManager = &mainScene.signalManager;
-      Engine->Interact->Directory.FireActions(HBHandleUserInput, &ctx);
+      Engine->Interact->Directory.FireActions(
+        CT_INTERACT_ACTIONDISPATCH_UPDATE, HBHandleUserInput, &ctx);
    }
 
-   float deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
    if (!pauseSim || simSingleShots) {
       mainScene.Simulate(deltaTime, Engine->JobSystem);
       if (simSingleShots > 0) { simSingleShots--; }
@@ -146,8 +156,9 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
          }
          if (ImGui::Button(CT_NC("Single Shot"))) { simSingleShots++; }
          if (ImGui::Button(CT_NC("Reset Scene"))) { sceneReload = true; }
-         ImGui::Text(
-           "Fly: WASD\nUp/Down: EQ\nFaster: Shift\nLook: Right-click\nRe-open: Ctrl+'`'");
+         ImGui::Text(CT_NCT("HB_DEBUGCAM_HELP",
+                            "Fly: WASD\nUp/Down: EQ\nFaster: Shift\nLook: "
+                            "Right-click\nRe-open: Ctrl+'`'"));
       }
       ImGui::End();
       if (!debugCamWindowOpen) { debugCameraActive = false; }
@@ -194,8 +205,8 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
 
       /* Override camera */
       CurrentCamera = debugCamera;
-   } else if (Engine->Interact->Directory.GetSignal(
-                ctInteractPath("actions/debug/enable"))) {
+   } else if (debugCameraAllowed && Engine->Interact->Directory.GetSignal(
+                                      ctInteractPath("actions/debug/enable"))) {
       debugCameraActive = true;
    }
 

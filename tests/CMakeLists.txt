@@ -33,14 +33,3 @@ add_executable(Test_Scene SceneTest.cpp)
 set_property(TARGET Test_Scene PROPERTY FOLDER "tests")
 target_link_libraries(Test_Scene PUBLIC engine)
 target_link_libraries(Test_Scene PUBLIC game)
-
-if(WIN32)
-target_link_options(Test_App PUBLIC -mwindows)
-target_link_options(Test_Scene PUBLIC -mwindows)
-endif()
-
-#Interact Paths
-add_custom_target(Test_InteractPaths 
-   COMMAND python CheckInteractPaths.py
-   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/interactpaths
-   SOURCES interactpaths/CheckInteractPaths.py)

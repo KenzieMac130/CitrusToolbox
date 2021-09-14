@@ -85,7 +85,6 @@ struct CT_API ctSpacialCellBucket {
 class CT_API ctSpacialQuery {
 public:
    inline uint32_t GetBucketCount(ctSpacialCellKey k) const;
-   inline uint32_t GetBucketCount(ctSpacialCellKey k);
    inline ctSpacialCellBucket* GetBucket(const ctSpacialCellKey k,
                                          const uint32_t i) const;
 
@@ -115,17 +114,6 @@ inline uint32_t ctSpacialQuery::GetBucketCount(ctSpacialCellKey k) const {
    if (FindFalsePositive(k)) { return 0; }
    const uint32_t* pNum = counts.FindPtr(k.data);
    if (pNum) { return *pNum; }
-   return 0;
-}
-
-inline uint32_t ctSpacialQuery::GetBucketCount(ctSpacialCellKey k) {
-   ZoneScoped;
-   if (!bloom.MightExist(k)) { return 0; }
-   if (FindFalsePositive(k)) { return 0; }
-   const uint32_t* pNum = counts.FindPtr(k.data);
-   if (pNum) { return *pNum; }
-   // potentialFalsePositive.Insert(k);
-   // falsePositives.Append(k);
    return 0;
 }
 
