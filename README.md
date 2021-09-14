@@ -12,16 +12,14 @@
   * Prerequisites:
      *  CMake 3.10x
      *  C++ 14 Compiler
-     *  Git + LFS (with command line access)
+     *  Git + LFS
      *  Python 3
   * Clone the repository/submodules to your machine in a directory with sufficient priveleges.
      * `git clone --recurse-submodules https://github.com/KenzieMac130/CitrusToolbox/`
-  * Configure and Generate CMake 
-      * Make sure the target architecture is x64
-  * Compile the Generated Project
+  * Configure with CMake using one of the provided presets.
+  * Generate Compile the Project.
  
 ## Areas of interest:
   * [Code Style](/docs/CodeStyleGuide.md)
-  * [Rendering Architecture Presentation](/docs/MovingToGpuDrivenRendering.odp)
   * [Vulkan Backend](/engine/renderer/vulkan/VkBackend.cpp)
   * ["Interact" Design](/docs/InteractNotes.md)
