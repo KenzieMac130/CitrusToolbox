@@ -53,7 +53,11 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
 #else
    SDL_Init(SDL_INIT_TIMER);
 #endif
-   ctAssert(SDL_GetCPUCacheLineSize() == CT_ALIGNMENT_ALLOCATIONS);
+   if (SDL_GetCPUCacheLineSize() != CT_ALIGNMENT_CACHE) {
+      ctDebugError("Cache line mismatch! Expected %d got %d",
+                   CT_ALIGNMENT_CACHE,
+                   SDL_GetCPUCacheLineSize())
+   };
 
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
@@ -184,5 +188,9 @@ ctResults ctEngineCore::Shutdown() {
 
    /*SDL*/
    SDL_Quit();
+   size_t leakedAllocations = ctGetAliveAllocations();
+   if (leakedAllocations) {
+      ctDebugWarning("POSSIBLE LEAKED ALLOCATIONS %lu!", leakedAllocations);
+   }
    return CT_SUCCESS;
 }
