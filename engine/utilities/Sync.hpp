@@ -25,13 +25,30 @@ CT_API bool ctMutexLock(ctMutex mutex);
 CT_API bool ctMutexTryLock(ctMutex mutex);
 CT_API bool ctMutexUnlock(ctMutex mutex);
 
+#define CT_MEMORY_BARRIER_ACQUIRE SDL_MemoryBarrierRelease
+#define CT_MEMORY_BARRIER_RELEASE SDL_MemoryBarrierAcquire
+
 typedef SDL_SpinLock ctSpinLock;
-inline void ctSpinLockEnterCritical(ctSpinLock val) {
+inline void ctSpinLockInit(ctSpinLock& val) {
+   val = 0;
+};
+inline void ctSpinLockEnterCritical(ctSpinLock& val) {
    SDL_AtomicLock(&val);
 };
-inline void ctSpinLockExitCritical(ctSpinLock val) {
+inline void ctSpinLockExitCritical(ctSpinLock& val) {
    SDL_AtomicUnlock(&val);
 };
+
+typedef SDL_atomic_t ctAtomic;
+inline void ctAtomicAdd(ctAtomic& atomic, int val) {
+   SDL_AtomicAdd(&atomic, val);
+}
+inline int ctAtomicGet(ctAtomic& atomic) {
+   return SDL_AtomicGet(&atomic);
+}
+inline int ctAtomicSet(ctAtomic& atomic, int val) {
+   return SDL_AtomicSet(&atomic, val);
+}
 
 typedef SDL_cond* ctConditional;
 CT_API ctConditional ctConditionalCreate();
