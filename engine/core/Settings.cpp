@@ -19,22 +19,16 @@
 
 ctResults ctSettingsManager::Startup() {
    ZoneScoped;
-   _sections = ctHashTable<ctSettingsSection*, uint32_t>(CT_MAX_SETTINGS_SECTIONS);
    return CT_SUCCESS;
 }
 
 ctResults ctSettingsManager::Shutdown() {
-   for (auto it = _sections.GetIterator(); it; it++) {
-      if (it.Value()) { delete it.Value(); }
-   }
    return CT_SUCCESS;
 }
 
 int ctSettingsManager::FindArgIdx(const char* name) {
    for (int i = 1; i < argc; i++) {
-      if (ctCStrEql(argv[i], name)) { 
-          return i;
-      }
+      if (ctCStrEql(argv[i], name)) { return i; }
    }
    return -1;
 }
@@ -71,7 +65,6 @@ ctSettingsSection* ctSettingsManager::GetSection(const char* name) {
 }
 
 ctSettingsSection::ctSettingsSection() {
-   _settings = ctHashTable<_setting, uint32_t>();
 }
 
 ctSettingsSection::ctSettingsSection(ctFileSystem* pFileSystem,
@@ -80,7 +73,6 @@ ctSettingsSection::ctSettingsSection(ctFileSystem* pFileSystem,
                                      int max,
                                      ctTranslationCatagory translationCatagory) {
    _name = name;
-   _settings = ctHashTable<_setting, uint32_t>(max);
    _translationCatagory = translationCatagory;
    _pManager = pManager;
    LoadConfigs(pFileSystem);
