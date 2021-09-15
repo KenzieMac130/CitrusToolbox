@@ -92,9 +92,9 @@ inline ctResults ctDynamicArray<T>::_expand_size(size_t amount) {
    const size_t originalcapacity = Capacity();
    if (neededamount > originalcapacity) {
       size_t targetamount = Capacity();
-      if (targetamount <= 0) { targetamount = 1; }
+      if (targetamount <= 0) { targetamount = 32; }
       while (targetamount < neededamount) {
-         targetamount *= 2;
+         targetamount += 32;
       }
       return Reserve(targetamount);
    }
