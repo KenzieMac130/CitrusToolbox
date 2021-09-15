@@ -179,7 +179,7 @@ int hash_table_test() {
    ZoneScoped;
    ctDebugLog("Hash Table (POD)...");
    {
-      ctHashTable<int, uint32_t> hashTable = ctHashTable<int, uint32_t>(600000);
+      ctHashTable<int, uint32_t> hashTable;
       uint32_t findhash = 0;
       for (int i = 1; i < 500000; i++) {
          uint32_t hash = XXH32(&i, sizeof(int), 0);
@@ -191,7 +191,7 @@ int hash_table_test() {
    }
    ctDebugLog("Hash Table (Iterate)...");
    {
-      ctHashTable<char, uint32_t> hashTable = ctHashTable<char, uint32_t>(0);
+      ctHashTable<char, uint32_t> hashTable;
       hashTable.Insert(1, 'A');
       hashTable.Insert(2, 'B');
       hashTable.Insert(3, 'C');
@@ -206,8 +206,7 @@ int hash_table_test() {
    }
    ctDebugLog("Hash Table (Worst Case Dynamic String)...");
    {
-      ctHashTable<ctStringUtf8, uint32_t> hashTable =
-        ctHashTable<ctStringUtf8, uint32_t>(0);
+       ctHashTable<ctStringUtf8, uint32_t> hashTable;
       uint32_t findhash = 0;
       for (int i = 1; i < 500000; i++) {
          ctStringUtf8 result;
