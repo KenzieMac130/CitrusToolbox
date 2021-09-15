@@ -34,15 +34,24 @@
 #include "EngineCore.hpp"
 #include "Settings.hpp"
 
-ctJobSystem::ctJobSystem(int32_t _threadReserve) {
+ctJobSystem* gJobSystem = NULL;
+
+ctJobSystem::ctJobSystem(int32_t _threadReserve, bool shared) {
+   if (shared) { gJobSystem = this; }
    threadReserve = _threadReserve;
    threadCount = -1;
 }
 
+int ctJobWorker(void* data) {
+   ZoneScoped;
+   ctJobSystem* pJobSystem = (ctJobSystem*)data;
+   pJobSystem->WorkLoop();
+   return 0;
+}
+
 ctResults ctJobSystem::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings =
-     Engine->Settings->CreateSection("JobSystem", 1);
+   ctSettingsSection* settings = Engine->Settings->CreateSection("JobSystem", 1);
    settings->BindInteger(&threadCount,
                          true,
                          true,
@@ -57,38 +66,90 @@ ctResults ctJobSystem::Startup() {
    } else {
       finalThreadCount = threadCount;
    }
-   pool = cute_threadpool_create(finalThreadCount, NULL);
-   if (pool == NULL) {
-      ctFatalError(
-        -1, CT_NC("Failed to create threadpool!"));
-      return CT_FAILURE_UNSUPPORTED_HARDWARE;
+   ctAtomicSet(jobCountAtom, 0);
+   ctSpinLockInit(jobLock);
+   threadPool.Reserve(finalThreadCount);
+   jobQueue.Reserve(4096);
+   for (int i = 0; i < finalThreadCount; i++) {
+      ThreadInternal thread = ThreadInternal();
+      thread.thread = ctThreadCreate(ctJobWorker, this, "Job Thread");
+      threadPool.Append(thread);
    }
    ctDebugLog("Thread Pool: Reserved %d threads...", finalThreadCount);
    return CT_SUCCESS;
 }
 
 ctResults ctJobSystem::Shutdown() {
-   cute_threadpool_destroy(pool);
-   return CT_SUCCESS;
-}
-
-ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
-   cute_threadpool_add_task(pool, fpFunction, pData);
-   return CT_SUCCESS;
-}
-
-ctResults ctJobSystem::PushJobs(size_t count,
-                                void (**pfpFunction)(void*),
-                                void** ppData) {
-   for (size_t i = 0; i < count; i++) {
-      PushJob(pfpFunction[i], ppData[i]);
+   ZoneScoped;
+   wantsExit = true;
+   for (int i = 0; i < threadPool.Count(); i++) {
+      ctThreadWaitForExit(threadPool[i].thread);
    }
    return CT_SUCCESS;
 }
 
-ctResults ctJobSystem::RunAllJobs() {
+ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
    ZoneScoped;
-   /* Todo: investigate, it seems to fail on scene ticks */
-   cute_threadpool_kick_and_wait(pool);
+   return PushJobs(1, &fpFunction, &pData);
+}
+
+ctResults
+ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
+   ZoneScoped;
+   ctSpinLockEnterCritical(jobLock);
+   for (size_t i = 0; i < count; i++) {
+      JobInternal job = JobInternal();
+      job.fpFunction = pfpFunction[i];
+      job.pData = ppData[i];
+      jobQueue.Append(job);
+   }
+   ctSpinLockExitCritical(jobLock);
+   ctAtomicAdd(jobCountAtom, (int)count);
    return CT_SUCCESS;
+}
+
+void ctJobSystem::DebugImGui() {
+}
+
+bool ctJobSystem::isExiting() const {
+   return wantsExit;
+}
+
+bool ctJobSystem::isMoreWorkAvailible() {
+   const bool val = ctAtomicGet(jobCountAtom) > 0;
+   return val;
+}
+
+void ctJobSystem::WaitBarrier() {
+   ZoneScoped;
+   while (isMoreWorkAvailible()) {
+      DoMoreWork();
+   }
+}
+
+bool ctJobSystem::DoMoreWork() {
+   ZoneScoped;
+   ctSpinLockEnterCritical(jobLock);
+   if (jobQueue.isEmpty()) {
+      ctSpinLockExitCritical(jobLock);
+      return false;
+   }
+   JobInternal job = jobQueue.Last();
+   ctAtomicAdd(jobCountAtom, -1);
+   jobQueue.RemoveLast();
+   ctSpinLockExitCritical(jobLock);
+   job.fpFunction(job.pData);
+   return true;
+}
+
+void ctJobSystem::WorkLoop() {
+   while (!isExiting()) {
+      while (isMoreWorkAvailible()) {
+         DoMoreWork();
+      }
+   }
+}
+
+ctJobSystem* ctGetJobSystem() {
+   return gJobSystem;
 }

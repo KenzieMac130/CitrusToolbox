@@ -46,7 +46,6 @@ class TestApp : public ctApplication {
 
    ctHandle geoHandle;
    ctAsyncTaskHandle tasks[32];
-   ctJobGroupHandle jobGroups[12];
 };
 
 const char* TestApp::GetAppName() {
@@ -70,8 +69,9 @@ ctResults testTask(void*) {
 
 void testJob(void*) {
    ZoneScoped;
-   ctDebugLog("Testing Job...");
-   int value = ctNextPrime(5834);
+   for (int i = 0; i < 10000; i++) {
+      float j = 23 * i;
+   }
 }
 
 ctResults TestApp::OnStartup() {
@@ -90,11 +90,6 @@ ctResults TestApp::OnStartup() {
       tasks[i] = ctGetAsyncManager()->CreateTask(str.CStr(), testTask, NULL, i);
    }
 
-   for (int i = 0; i < 12; i++) {
-      jobGroups[i] = ctGetJobSystem()->CreateGroup("Test Group");
-   }
-   // ctGetJobSystem()->Wait(jobGroups[11]);
-
    return CT_SUCCESS;
 }
 
@@ -109,8 +104,8 @@ ctResults TestApp::OnTick(const float deltatime) {
    return CT_SUCCESS;
 }
 
-void (*pfpFunction[32])(void*);
-void* datas[32];
+void (*pfpFunction[1024])(void*);
+void* datas[1024];
 
 ctResults TestApp::OnUIUpdate() {
    ImGui::ShowDemoWindow();
@@ -127,19 +122,13 @@ ctResults TestApp::OnUIUpdate() {
    diskPos[0] = ctSin(phase) * rad;
    diskPos[1] = ctCos(phase) * rad;
 
-   for (int i = 0; i < 12; i++) {
-      ctGetJobSystem()->Wait(jobGroups[i]);
-   }
-
-   for (int i = 0; i < 32; i++) {
+   for (int i = 0; i < 1024; i++) {
       pfpFunction[i] = testJob;
       datas[i] = NULL;
    }
 
-   for (int i = 0; i < 12; i++) {
-      ctGetJobSystem()->Wait(jobGroups[i]);
-      ctGetJobSystem()->PushJobs(jobGroups[i], 32, pfpFunction, datas);
-   }
+   ctGetJobSystem()->PushJobs(1024, pfpFunction, datas);
+   ctGetJobSystem()->WaitBarrier();
 
    // clang-format off
    //Im3d::Text(Im3d::Vec3(0, 1, 0), 1.0f, Im3d::Color_Red, Im3d::TextFlags_Default, "Red");

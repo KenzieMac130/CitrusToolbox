@@ -27,19 +27,22 @@ ctAsyncManager::ctAsyncManager(bool shared) {
    if (shared) { gSharedAsync = this; }
 }
 
-int ctAsyncTaskThreadFn(void* data) {
+int ctAsyncWorker(void* data) {
+   ZoneScoped;
    ctAsyncManager* pManager = (ctAsyncManager*)data;
    return pManager->RunAsyncLoop();
 }
 
 ctResults ctAsyncManager::Startup() {
+   ZoneScoped;
    taskLock = ctMutexCreate();
    stateLock = ctMutexCreate();
-   asyncThread = ctThreadCreate(ctAsyncTaskThreadFn, this, "ctAsyncTasks");
+   asyncThread = ctThreadCreate(ctAsyncWorker, this, "ctAsyncTasks");
    return CT_SUCCESS;
 }
 
 ctResults ctAsyncManager::Shutdown() {
+   ZoneScoped;
    ctThreadWaitForExit(asyncThread);
    ctMutexDestroy(taskLock);
    ctMutexDestroy(stateLock);
@@ -50,6 +53,7 @@ ctAsyncTaskHandle ctAsyncManager::CreateTask(const char* name,
                                              ctAsyncTaskFunction fpTask,
                                              void* userdata,
                                              int32_t priority) {
+   ZoneScoped;
    ctMutexLock(stateLock);
    ctAsyncTaskHandle hndl = handleManager.GetNewHandle();
    states.Insert(hndl, TaskState());

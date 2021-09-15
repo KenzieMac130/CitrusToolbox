@@ -21,16 +21,45 @@
 
 class CT_API ctJobSystem : public ctModuleBase {
 public:
-   ctJobSystem(int32_t threadReserve);
+   ctJobSystem(int32_t threadReserve, bool shared = true);
    ctResults Startup() final;
    ctResults Shutdown() final;
 
    ctResults PushJob(void (*fpFunction)(void*), void* pData);
    ctResults PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData);
-   ctResults RunAllJobs();
+   void WaitBarrier();
+
+   void DebugImGui();
+
+   bool isMoreWorkAvailible();
+   bool DoMoreWork();
+   bool isExiting() const;
+   void WorkLoop();
 
 protected:
    int32_t threadReserve;
    int32_t threadCount;
-   struct cute_threadpool_t* pool;
+
+   struct JobInternal {
+      void (*fpFunction)(void*);
+      void* pData;
+      char _pad[CT_ALIGNMENT_CACHE - (sizeof(void*) * 2)];
+   };
+   static_assert(sizeof(JobInternal) == CT_ALIGNMENT_CACHE,
+                 "JobInternal does not fit cache boundary");
+   ctDynamicArray<JobInternal> jobQueue;
+   ctSpinLock jobLock;
+   ctAtomic jobCountAtom;
+
+   struct ThreadInternal {
+      ctThread thread;
+      char _pad[CT_ALIGNMENT_CACHE - (sizeof(ctThread))];
+   };
+   static_assert(sizeof(ThreadInternal) == CT_ALIGNMENT_CACHE,
+                 "ThreadInternal does not fit cache boundary");
+   ctDynamicArray<ThreadInternal> threadPool;
+
+   bool wantsExit = false;
 };
+
+ctJobSystem* ctGetJobSystem();
