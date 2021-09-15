@@ -24,10 +24,10 @@
 #include "tracy/Tracy.hpp"
 #else
 #define ZoneScoped
-#define TracyAlloc(A,B)
+#define TracyAlloc(A, B)
 #define TracyFree(A)
-#define TracyMessage(A,B)
-#define TracyMessageC(A,B,C)
+#define TracyMessage(A, B)
+#define TracyMessageC(A, B, C)
 #define FrameMark
 #endif
 #endif
@@ -174,6 +174,8 @@ CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
  * @brief should behave similarly to free with alignment
  */
 CT_API void ctAlignedFree(void* block);
+
+CT_API size_t ctGetAliveAllocations();
 
 #ifdef __cplusplus
 }
