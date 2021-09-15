@@ -21,11 +21,14 @@ struct alignedAllocTracker {
    size_t originalSize;
 };
 
+ctAtomic gAllocCount = ctAtomic();
+
 void* ctAlignedMalloc(size_t size, size_t alignment) {
    ZoneScoped;
    const size_t allocSize = size + alignment + sizeof(alignedAllocTracker);
    char* rawMemory = (char*)malloc(allocSize);
    TracyAlloc(rawMemory, allocSize);
+   ctAtomicAdd(gAllocCount, 1);
    alignedAllocTracker* ptr =
      (alignedAllocTracker*)((uintptr_t)(rawMemory + alignment +
                                         sizeof(alignedAllocTracker)) &
@@ -47,17 +50,22 @@ void ctAlignedFree(void* block) {
    if (!block) { return; }
    void* pFinal = ((alignedAllocTracker*)block)[-1].rawMemory;
    TracyFree(pFinal);
+   ctAtomicAdd(gAllocCount, -1);
    free(pFinal);
+}
+
+CT_API size_t ctGetAliveAllocations() {
+   return (size_t)ctAtomicGet(gAllocCount);
 }
 
 void* ctMalloc(size_t size) {
    ZoneScoped;
-   return ctAlignedMalloc(size, CT_ALIGNMENT_ALLOCATIONS);
+   return ctAlignedMalloc(size, CT_ALIGNMENT_CACHE);
 }
 
 CT_API void* ctRealloc(void* old, size_t size) {
    ZoneScoped;
-   return ctAlignedRealloc(old, size, CT_ALIGNMENT_ALLOCATIONS);
+   return ctAlignedRealloc(old, size, CT_ALIGNMENT_CACHE);
 }
 
 void ctFree(void* block) {
