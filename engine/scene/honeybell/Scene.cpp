@@ -126,10 +126,10 @@ void ctHoneybell::Scene::Simulate(double deltaTime, ctJobSystem* pJobSystem) {
          ToyBase* pToy = toys_TickParallel[i];
          if (pToy) {
             parallelJobData[i] = {tickCtx, pToy};
-            //pJobSystem->PushJob(doParallelTickJob, &parallelJobData[i]);
+            pJobSystem->PushJob(doParallelTickJob, &parallelJobData[i]);
          }
       }
-      //if (!parallelJobData.isEmpty()) { pJobSystem->RunAllJobs(); }
+      if (!parallelJobData.isEmpty()) { pJobSystem->WaitBarrier(); }
 
       /* Tick Serial */
       for (int i = 0; i < toys_TickSerial.Count(); i++) {
@@ -203,13 +203,13 @@ ctResults ctHoneybell::Scene::SpawnToy(const char* toyType,
                                        ctHandle* pResultHandle) {
    ZoneScoped;
 
-   //ctWADAsset* pWadAsset = NULL;
-   //if (prefabWadPath && !ctCStrEql(prefabWadPath, "")) {
+   // ctWADAsset* pWadAsset = NULL;
+   // if (prefabWadPath && !ctCStrEql(prefabWadPath, "")) {
    //   // pWadAsset = Engine->AssetManager->GetWADAsset(prefabWadPath);
    //   // pWadAsset->WaitForLoad();
    //}
 
-   //if (pWadAsset) {
+   // if (pWadAsset) {
    //   ctWADProtoHeader* pWadHeader;
    //   ctWADFindLump(&pWadAsset->wadReader, "CITRUS", (void**)&pWadHeader, NULL);
    //   if (!pWadHeader) {
@@ -222,7 +222,7 @@ ctResults ctHoneybell::Scene::SpawnToy(const char* toyType,
    spawnData.transform = transform;
    spawnData.message = message;
    ctHoneybell::PrefabData prefabData = ctHoneybell::PrefabData();
-   //if (pWadAsset) { prefabData.wadReader = pWadAsset->wadReader; }
+   // if (pWadAsset) { prefabData.wadReader = pWadAsset->wadReader; }
    ctHoneybell::ConstructContext constructCtx = ctHoneybell::ConstructContext();
    constructCtx.pOwningScene = this;
    constructCtx.pPhysics = Engine->PhysXIntegration->pPhysics;
