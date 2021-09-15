@@ -101,5 +101,5 @@ private:
    };
    ctStringUtf8 isoLanguage;
    ctStringUtf8 fullLanguageName;
-   ctStaticArray<_dictionary, CT_TRANSLATION_CATAGORY_COUNT> dictionaries;
+   ctStaticArray<_dictionary*, CT_TRANSLATION_CATAGORY_COUNT> dictionaries;
 };

@@ -30,7 +30,7 @@ ctTranslation* mainTranslationSystem;
 ctTranslation::ctTranslation(bool shared) {
    if (shared) { mainTranslationSystem = this; }
    for (int i = 0; i < CT_TRANSLATION_CATAGORY_COUNT; i++) {
-      dictionaries.Append(ctTranslation::_dictionary());
+      dictionaries.Append(new _dictionary());
    }
 }
 
@@ -49,7 +49,8 @@ ctResults ctTranslation::Startup() {
    GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
    isoLanguage = ctStringUtf8(data);
 #elif defined(__linux__)
-   /* Try to extract a similar string off "setlocale" (tested only on some Debian distros) */
+   /* Try to extract a similar string off "setlocale" (tested only on some Debian distros)
+    */
    const char* cbuf = setlocale(LC_ALL, "");
    size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
    char scratch[256];
@@ -86,6 +87,9 @@ ctResults ctTranslation::Startup() {
 }
 
 ctResults ctTranslation::Shutdown() {
+   for (size_t i = 0; i < dictionaries.Count(); i++) {
+      if (dictionaries[i]) { delete dictionaries[i]; }
+   }
    return CT_SUCCESS;
 }
 
@@ -101,9 +105,9 @@ ctResults ctTranslation::NextFrame() {
 
 ctResults ctTranslation::SetDictionary(ctTranslationCatagory category,
                                        const char* basePath) {
-   _dictionary& dict = dictionaries[category];
+   _dictionary& dict = *dictionaries[category];
    dict.basePath = basePath;
-   dict.strings = ctHashTable<ctStringUtf8, uint64_t>();
+   dict.strings.Clear();
    return CT_SUCCESS;
 }
 
@@ -161,7 +165,7 @@ ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
       ctStringUtf8 path;
       path.Printf(4096,
                   "%s/%s.json",
-                  dictionaries[category].basePath.CStr(),
+                  dictionaries[category]->basePath.CStr(),
                   fullLanguageName.ToLower().CStr());
 #if CITRUS_INCLUDE_AUDITION
       TextHotReload.RegisterPath(path.CStr());
@@ -175,13 +179,13 @@ ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
       CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
                                                 fileContents.Count()));
 
-      dictionaries[category].bloom.Reset();
-      dictionaries[category].strings.Clear();
+      dictionaries[category]->bloom.Reset();
+      dictionaries[category]->strings.Clear();
 
       ctJSONReadEntry textJson = ctJSONReadEntry();
       jsonReader.GetRootEntry(textJson);
       int entryCount = textJson.GetObjectEntryCount();
-      dictionaries[category].strings.Reserve(entryCount);
+      dictionaries[category]->strings.Reserve(entryCount);
       for (int i = 0; i < entryCount; i++) {
          ctJSONReadEntry entry = ctJSONReadEntry();
          ctStringUtf8 name = ctStringUtf8();
@@ -191,8 +195,8 @@ ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
          if (content.isEmpty()) { continue; }
          content.ProcessEscapeCodes();
          const uint64_t hash = name.xxHash64();
-         dictionaries[category].bloom.Insert(hash);
-         dictionaries[category].strings.Insert(hash, content);
+         dictionaries[category]->bloom.Insert(hash);
+         dictionaries[category]->strings.Insert(hash, content);
       }
    }
    return CT_SUCCESS;
@@ -218,8 +222,8 @@ const char* ctTranslation::GetLocalString(ctTranslationCatagory category,
    ZoneScoped;
    if (!isStarted()) { return nativeText; }
    uint64_t hash = ctXXHash64(tag);
-   if (!dictionaries[category].bloom.MightExist(hash)) { return nativeText; }
-   const ctStringUtf8* localText = dictionaries[category].strings.FindPtr(hash);
+   if (!dictionaries[category]->bloom.MightExist(hash)) { return nativeText; }
+   const ctStringUtf8* localText = dictionaries[category]->strings.FindPtr(hash);
    if (localText) { return localText->CStr(); }
    return nativeText;
 }
