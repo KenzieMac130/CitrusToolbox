@@ -39,6 +39,7 @@ public:
    void PopupErrorArgs(const char* format, va_list args);
 
    void _EmergencExit();
+
 private:
    struct _internalMessage {
       int level;
@@ -52,4 +53,5 @@ private:
    int32_t _writeToConsole;
    int32_t _flushAfter;
    ctMutex _logLock;
+   bool _isShared;
 };

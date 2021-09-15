@@ -45,9 +45,11 @@ ctDebugSystem::ctDebugSystem(uint32_t flushafter, bool shared_log) {
       mainDebugSystem = this;
       _ctDebugLogSetCallback(shared_callback);
    }
+   _isShared = shared_log;
 }
 
 ctDebugSystem::~ctDebugSystem() {
+   if (_isShared) { _ctDebugLogSetCallback(NULL); }
    ctMutexDestroy(_logLock);
 }
 
