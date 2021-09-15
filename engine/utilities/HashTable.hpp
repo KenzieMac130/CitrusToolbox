@@ -28,7 +28,9 @@ template<class T, class K>
 class ctHashTable {
 public:
    ctHashTable();
-   ctHashTable(const size_t baseSize);
+   ctHashTable(ctHashTable<T, K>& hmap);
+   ctHashTable(const ctHashTable<T, K>& hmap);
+   ~ctHashTable();
    /* Key must never be 0! */
    T* Insert(const K key, const T& value);
    /* Key must never be 0! */
@@ -92,15 +94,33 @@ inline ctHashTable<T, K>::ctHashTable() {
 }
 
 template<class T, class K>
-inline ctHashTable<T, K>::ctHashTable(const size_t baseSize) {
-   _baseSize = baseSize > 0 ? baseSize : 1;
+inline ctHashTable<T, K>::ctHashTable(ctHashTable<T, K>& hmap) {
+   const size_t inputcount = hmap.Count();
+   Reserve(inputcount);
+   for (size_t i = 0; i < inputcount; i++) {
+      _pKeys[i] = hmap._pKeys[i];
+   }
+   for (size_t i = 0; i < inputcount; i++) {
+      _pValues[i] = hmap._pValues[i];
+   }
+}
 
-   size_t capacity = ctNextPrime(_baseSize);
-   _pValues = new T[capacity];
-   _pKeys = new K[capacity];
-   memset(_pKeys, 0, sizeof(K) * capacity);
-   _Capacity = capacity;
-   _Count = 0;
+template<class T, class K>
+inline ctHashTable<T, K>::ctHashTable(const ctHashTable<T, K>& hmap) {
+   const size_t inputcount = hmap.Count();
+   Reserve(inputcount);
+   for (size_t i = 0; i < inputcount; i++) {
+      _pKeys[i] = hmap._pKeys[i];
+   }
+   for (size_t i = 0; i < inputcount; i++) {
+      _pValues[i] = hmap._pValues[i];
+   }
+}
+
+template<class T, class K>
+inline ctHashTable<T, K>::~ctHashTable() {
+   if (_pKeys) { delete[] _pKeys; }
+   if (_pValues) { delete[] _pValues; }
 }
 
 #define _HASH_LOOP_BEGIN(_capacity_)                                                     \
