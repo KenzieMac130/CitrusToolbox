@@ -24,17 +24,29 @@ void SDLKeyboardMouseOnEvent(SDL_Event* event, void* data) {
    ctInteractSDLKeyboardMouseBackend* pBackend = (ctInteractSDLKeyboardMouseBackend*)data;
    switch (event->type) {
       case SDL_MOUSEWHEEL: {
+         if (event->wheel.which == SDL_TOUCH_MOUSEID) { return; }
          pBackend->mouseAxisStates[2] = (float)event->wheel.x;
          pBackend->mouseAxisStates[3] = (float)event->wheel.y;
+         if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
+            pBackend->mouseAxisStates[2] *= -1.0f;
+            pBackend->mouseAxisStates[3] *= -1.0f;
+         }
       }
       default: break;
    }
+}
+
+void SDLKeyboardMouseOnPrePoll(void* data) {
+   ctInteractSDLKeyboardMouseBackend* pBackend = (ctInteractSDLKeyboardMouseBackend*)data;
+   pBackend->mouseAxisStates[2] = 0.0f;
+   pBackend->mouseAxisStates[3] = 0.0f;
 }
 
 ctResults ctInteractSDLKeyboardMouseBackend::Startup() {
    ZoneScoped;
    ctDebugLog("Starting SDL Keyboard and Mouse...");
    keyStates = (uint8_t*)SDL_GetKeyboardState(NULL);
+   Engine->OSEventManager->PrePollHandlers.Append({SDLKeyboardMouseOnPrePoll, this});
    Engine->OSEventManager->MiscEventHandlers.Append({SDLKeyboardMouseOnEvent, this});
    return CT_SUCCESS;
 }
@@ -86,10 +98,12 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    }
 
    ctFile file;
-   Engine->FileSystem->OpenAssetFile(file, "input/keyboard.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenAssetFileNamed(
+     file, "input/keyboard.json", CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
-   Engine->FileSystem->OpenAssetFile(file, "input/mouse.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenAssetFileNamed(
+     file, "input/mouse.json", CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
@@ -105,7 +119,6 @@ ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) 
    ZoneScoped;
    int x, y;
    uint32_t mouseFlags = SDL_GetRelativeMouseState(&x, &y);
-   memset(mouseAxisStates, 0, sizeof(mouseAxisStates));
    memset(mouseButtonStates, 0, sizeof(mouseButtonStates));
    if (mouseFlags & SDL_BUTTON(SDL_BUTTON_LEFT)) { mouseButtonStates[0] = true; }
    if (mouseFlags & SDL_BUTTON(SDL_BUTTON_RIGHT)) { mouseButtonStates[1] = true; }

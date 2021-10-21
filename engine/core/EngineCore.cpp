@@ -145,6 +145,9 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
 
 ctResults ctEngineCore::Shutdown() {
    ZoneScoped;
+   /* Kill all dangling tasks first */
+   AsyncTasks->ModuleShutdown();
+
    /*Shutdown application*/
    ctDebugLog("Application is Shutting Down...");
    App->OnShutdown();
@@ -163,7 +166,6 @@ ctResults ctEngineCore::Shutdown() {
 #endif
    OSEventManager->ModuleShutdown();
    JobSystem->ModuleShutdown();
-   AsyncTasks->ModuleShutdown();
    Translation->ModuleShutdown();
 #if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleShutdown();

@@ -16,44 +16,54 @@
 
 #pragma once
 
-/* API Main Goal: Keep the interface simple for non-graphics programmers! */
+/* API Main Goal: Keep the interface simple for non-graphics programmers!*/
 
 #include "core/ModuleBase.hpp"
 #include "utilities/Common.h"
 
 #include "KeyLimeDataTypes.hpp"
-#include "TextureLoad.h"
 
 class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
-   ctResults CreateGeometry(ctKeyLimeGeometryHandle* pHandleOut, const char* resolvedPath);
-   ctResults CreateGeometry(ctKeyLimeGeometryHandle* pHandleOut, const ctKeyLimeCreateGeometryDesc& desc);
-   ctResults UpdateGeometry(ctKeyLimeGeometryHandle handle, const ctKeyLimeCreateGeometryDesc& desc);
-   ctResults DestroyGeometry(ctKeyLimeGeometryHandle handle);
+   ctResults CreateGeometry(ctKeyLimeGeometryReference* pHandleOut,
+                            const ctKeyLimeGeometryDesc& desc);
+   ctResults GetGeometryState(ctKeyLimeGeometryReference handle);
+   ctResults DestroyGeometry(ctKeyLimeGeometryReference handle);
 
-   ctResults CreateMaterial(ctKeyLimeMaterialHandle* pHandleOut, const ctKeyLimeMaterialDesc& desc);
-   ctResults UpdateMaterial(ctKeyLimeMaterialHandle handle, const ctKeyLimeMaterialDesc& desc);
-   ctResults DestroyMaterial(ctKeyLimeMaterialHandle handle);
+   ctResults CreateTexture(ctKeyLimeTextureReference* pHandleOut,
+                           const ctKeyLimeTextureDesc& desc);
+   ctResults GetTextureState(ctKeyLimeTextureReference handle);
+   ctResults DestroyTexture(ctKeyLimeTextureReference handle);
 
-   ctResults CreateTransformPool(ctKeyLimeTransformPoolHandle* pHandleOut, const ctKeyLimeTransformsDesc& desc);
-   ctResults UpdateTransformPool(ctKeyLimeTransformPoolHandle handle, const ctKeyLimeTransformsDesc& desc);
-   ctResults DestroyTransformPool(ctKeyLimeTransformPoolHandle handle);
-
-   ctResults CreateGeoInstance(ctKeyLimeGeoInstanceHandle* pHandleOut, const ctKeyLimeInstanceDesc& desc);
-   ctResults UpdateGeoInstance(ctKeyLimeGeoInstanceHandle handle, const ctKeyLimeInstanceDesc& desc);
-   ctResults DestroyGeoInstance(ctKeyLimeGeoInstanceHandle handle);
-
-   ctResults CreateTexture(ctKeyLimeTextureHandle* pHandleOut, const char* resolvedPath);
-   ctResults CreateTexture(ctKeyLimeTextureHandle* pHandleOut, const ctTextureLoadCtx& loadCtx);
-   ctResults DestroyTexture(ctKeyLimeTextureHandle handle);
+   // ctResults CreateMaterial(ctKeyLimeMaterialReference* pHandleOut,
+   //                         const ctKeyLimeMaterialDesc& desc);
+   // ctResults GetMaterialState(ctKeyLimeMaterialReference handle);
+   // ctResults UpdateMaterial(ctKeyLimeMaterialReference handle,
+   //                         const ctKeyLimeMaterialDesc& desc);
+   // ctResults DestroyMaterial(ctKeyLimeMaterialReference handle);
+   //
+   // ctResults CreateTransformPool(ctKeyLimeTransformPoolReference* pHandleOut,
+   //                              const ctKeyLimeTransformsDesc& desc);
+   // ctResults GetTransformPoolState(ctKeyLimeTransformPoolReference handle);
+   // ctResults UpdateTransformPool(ctKeyLimeTransformPoolReference handle,
+   //                              const ctKeyLimeTransformsDesc& desc);
+   // ctResults DestroyTransformPool(ctKeyLimeTransformPoolReference handle);
+   //
+   // ctResults CreateGeoInstance(ctKeyLimeGeoInstanceReference* pHandleOut,
+   //                            const ctKeyLimeInstanceDesc& desc);
+   // ctResults GetGeoInstanceState(ctKeyLimeGeoInstanceReference handle);
+   // ctResults UpdateGeoInstance(ctKeyLimeGeoInstanceReference handle,
+   //                            const ctKeyLimeInstanceDesc& desc);
+   // ctResults DestroyGeoInstance(ctKeyLimeGeoInstanceReference handle);
 
    ctResults UpdateCamera(const ctKeyLimeCameraDesc& cameraDesc);
 
    ctResults RenderFrame();
 
+private:
 #ifdef CITRUS_GFX_VULKAN
    class ctVkKeyLimeCore* vkKeyLime;
 #endif

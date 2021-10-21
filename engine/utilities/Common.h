@@ -49,6 +49,7 @@ extern "C" {
 #include <stdarg.h>
 
 #if CITRUS_SDL
+#define HAVE_STDIO_H
 #include "SDL.h"
 #endif
 
@@ -99,7 +100,8 @@ enum ctResults {
    CT_FAILURE_NOT_FOUND = -18,
    CT_FAILURE_SYNTAX_ERROR = -19,
    CT_FAILURE_RUNTIME_ERROR = -19,
-   CT_FAILURE_TYPE_ERROR = -20
+   CT_FAILURE_TYPE_ERROR = -20,
+   CT_FAILURE_NOT_FINISHED = -21
 };
 
 #define CT_PANIC_FAIL(_arg, _message)                                                    \
@@ -114,13 +116,13 @@ enum ctResults {
 
 #define CT_RETURN_FAIL(_arg)                                                             \
    {                                                                                     \
-      ctResults __res = (_arg);                                                          \
+      enum ctResults __res = (_arg);                                                     \
       if (__res != CT_SUCCESS) { return __res; }                                         \
    }
 
 #define CT_RETURN_FAIL_CLEAN(_arg, _cleanup)                                             \
    {                                                                                     \
-      ctResults __res = (_arg);                                                          \
+      enum ctResults __res = (_arg);                                                     \
       if (__res != CT_SUCCESS) {                                                         \
          _cleanup;                                                                       \
          return __res;                                                                   \
@@ -174,6 +176,11 @@ CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
  * @brief should behave similarly to free with alignment
  */
 CT_API void ctAlignedFree(void* block);
+/**
+ * @brief should behave similarly to alloca
+ */
+#pragma warning(disable : 6255)
+#define ctStackAlloc(_SIZE) alloca(_SIZE)
 
 CT_API size_t ctGetAliveAllocations();
 
@@ -185,6 +192,7 @@ CT_API size_t ctGetAliveAllocations();
 #ifdef __cplusplus
 #include "SharedLogging.h"
 #include "DynamicArray.hpp"
+#include "GUID.hpp"
 #include "HandleManager.hpp"
 #include "StaticArray.hpp"
 #include "Math.hpp"

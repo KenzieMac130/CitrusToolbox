@@ -17,12 +17,6 @@
 #include "FileSystem.hpp"
 #include "EngineCore.hpp"
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <sys/stat.h>
-#endif
-
 ctFileSystem::ctFileSystem(const ctStringUtf8& appName,
                            const ctStringUtf8& organizationName) {
    _appName = appName;
@@ -52,6 +46,7 @@ ctResults ctFileSystem::Startup() {
    _assetPath += "assets/";
    _assetPath.FilePathLocalize();
    assetRedirectFile.Close();
+   if (BuildAssetManifest() != CT_SUCCESS) { ctFatalError(-1, "CORRUPTED ASSET SYSTEM"); }
    return CT_SUCCESS;
 }
 
@@ -69,6 +64,37 @@ const ctStringUtf8& ctFileSystem::GetDataPath() {
 
 const ctStringUtf8& ctFileSystem::GetAssetPath() {
    return _assetPath;
+}
+
+ctResults ctFileSystem::BuildAssetManifest() {
+   ctDebugLog("Building Manifest...");
+   assetsByGuidHash.Clear();
+   ctStringUtf8 finalPath = _assetPath;
+   finalPath.FilePathAppend("MANIFEST");
+   ctFile manifestFile = ctFile(finalPath, CT_FILE_OPEN_READ);
+   ctDynamicArray<char> manifestContents;
+   manifestFile.GetBytes(manifestContents);
+   ctJSONReader jsonReader = ctJSONReader();
+   CT_RETURN_FAIL(
+     jsonReader.BuildJsonForPtr(manifestContents.Data(), manifestContents.Count()));
+   ctJSONReadEntry jsonRoot;
+   jsonReader.GetRootEntry(jsonRoot);
+   int objCount = jsonRoot.GetObjectEntryCount();
+   for (int i = 0; i < objCount; i++) {
+      ctJSONReadEntry pathJson;
+      ctStringUtf8 guidStr;
+      ctStringUtf8 path;
+      CT_RETURN_FAIL(jsonRoot.GetObjectEntry(i, pathJson, &guidStr));
+      pathJson.GetString(path);
+      path.FilePathLocalize();
+      ctGUID guid = ctGUID(guidStr.CStr());
+      uint64_t hash = ctXXHash64(&guid, sizeof(guid));
+      AssetInfo info = {};
+      info.guid = guid;
+      path.CopyToArray(info.relativePath, sizeof(info.relativePath));
+      assetsByGuidHash.Insert(hash, info);
+   }
+   return CT_SUCCESS;
 }
 
 const void ctFileSystem::LogPaths() {
@@ -98,29 +124,35 @@ const ctResults ctFileSystem::OpenExeRelativeFile(ctFile& file,
    return file.Open(finalPath, mode, silent);
 }
 
-const ctResults ctFileSystem::OpenAssetFile(ctFile& file,
-                                            const ctStringUtf8& relativePath,
-                                            const ctFileOpenMode mode,
-                                            bool silent) const {
+const ctResults ctFileSystem::OpenAssetFileNamed(ctFile& file,
+                                                 const char* name,
+                                                 const ctFileOpenMode mode,
+                                                 bool silent) const {
    if (mode != CT_FILE_OPEN_READ && mode != CT_FILE_OPEN_READ_TEXT) {
       return CT_FAILURE_INACCESSIBLE;
    }
+
    ctStringUtf8 finalPath = _assetPath;
-   finalPath.FilePathAppend(relativePath);
+   finalPath.FilePathAppend(name);
    return file.Open(finalPath, mode, silent);
 }
 
-const ctResults ctFileSystem::MakePreferencesDirectory(const ctStringUtf8& relativePath) {
-   ctStringUtf8 finalPath = _prefPath;
-   finalPath += relativePath;
-#ifdef _WIN32
-   ctDynamicArray<char16_t> wfinalPath;
-   finalPath.MakeUTF16Array(wfinalPath);
-   LPSECURITY_ATTRIBUTES attr;
-   attr = NULL;
-   if (CreateDirectory((LPWSTR)wfinalPath.Data(), attr)) { return CT_SUCCESS; }
-#else
-   if (!mkdir(finalPath.CStr(), (S_IRUSR | S_IWUSR))) { return CT_SUCCESS; }
-#endif
-   return CT_FAILURE_UNKNOWN;
+const ctResults ctFileSystem::OpenAssetFileGUID(ctFile& file,
+                                                const ctGUID& guid,
+                                                const ctFileOpenMode mode,
+                                                bool silent) const {
+   if (mode != CT_FILE_OPEN_READ && mode != CT_FILE_OPEN_READ_TEXT) {
+      return CT_FAILURE_INACCESSIBLE;
+   }
+
+   AssetInfo* pInfo = NULL;
+   int occurance = 0;
+   do {
+      pInfo = assetsByGuidHash.FindPtr(ctXXHash64(&guid, sizeof(guid)), occurance);
+      if (!pInfo) { return CT_FAILURE_NOT_FOUND; }
+      occurance++;
+   } while (!(pInfo->guid == guid));
+   ctStringUtf8 finalPath = _assetPath;
+   finalPath.FilePathAppend(pInfo->relativePath);
+   return file.Open(finalPath, mode, silent);
 }

@@ -92,7 +92,7 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
       }
    }
    ctFile file;
-   Engine->FileSystem->OpenAssetFile(file, "input/gamepad.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenAssetFileNamed(file, "input/gamepad.json", CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
@@ -107,45 +107,46 @@ ctResults ctInteractSDLGamepadBackend::Update(ctInteractDirectorySystem& directo
 }
 
 void ctInteractSDLGamepadBackend::AddController(int32_t id) {
-   ZoneScoped;
+   // ZoneScoped;
    // if (SDL_IsGameController(id)) {
-   //   SDL_GameController* sdlController = SDL_GameControllerOpen(id);
-   //   int32_t insId = SDL_JoystickGetDeviceInstanceID(id);
-   //   ctDebugLog("Controller Added (%d)", insId);
-   //   int playerIdx = SDL_GameControllerGetPlayerIndex(sdlController);
-   //   /* Exceeds maximum*/
-   //   if (playerIdx >= 4) {
-   //      SDL_GameControllerClose(sdlController);
-   //      return;
-   //   }
-   //   /* Unknown bind (find empty slot) */
-   //   if (playerIdx < 0) {
-   //      for (int i = 0; i < 4; i++) {
-   //         if (gamepads[i].controller == NULL) {
-   //            playerIdx = i;
-   //            SDL_GameControllerSetPlayerIndex(sdlController, i);
-   //         }
-   //      }
-   //   }
-   //   gamepads[playerIdx].controller = sdlController;
-   //   gamepads[playerIdx].controllerId = insId;
+   //  SDL_GameController* sdlController = SDL_GameControllerOpen(id);
+   //  int32_t insId = SDL_JoystickGetDeviceInstanceID(id);
+   //  ctDebugLog("Controller Added (%d)", insId);
+   //  int playerIdx = SDL_GameControllerGetPlayerIndex(sdlController);
+   //  /* Exceeds maximum*/
+   //  if (playerIdx >= 4) {
+   //     SDL_GameControllerClose(sdlController);
+   //     return;
+   //  }
+   //  /* Unknown bind (find empty slot) */
+   //  if (playerIdx < 0) {
+   //     for (int i = 0; i < 4; i++) {
+   //        if (gamepads[i].controller == NULL) {
+   //           playerIdx = i;
+   //           SDL_GameControllerSetPlayerIndex(sdlController, i);
+   //        }
+   //     }
+   //  }
+   //  gamepads[playerIdx].controller = sdlController;
+   //  gamepads[playerIdx].controllerId = insId;
    //}
 }
 
 void ctInteractSDLGamepadBackend::RemoveController(int32_t id) {
-   ZoneScoped;
-   /*for (int i = 0; i < 4; i++) {
-      if (gamepads[i].controllerId == id) {
-         ctDebugLog("Controller Removed (%d)", id);
-         SDL_GameControllerClose(gamepads[i].controller);
-         memset(&gamepads[i], 0, sizeof(gamepads[0]));
-      }
-   }*/
+   // ZoneScoped;
+   // for (int i = 0; i < 4; i++) {
+   //   if (gamepads[i].controllerId == id) {
+   //      ctDebugLog("Controller Removed (%d)", id);
+   //      SDL_GameControllerClose(gamepads[i].controller);
+   //      memset(&gamepads[i], 0, sizeof(gamepads[0]));
+   //   }
+   //}
 }
 
 void ctInteractSDLGamepadBackend::OnRemapController(int32_t id) {
-   ZoneScoped;
-   /*for (int i = 0; i < 4; i++) {
-      if (gamepads[i].controllerId == id) { remaps.Append({gamepads[i].controller, id}); }
-   }*/
+   // ZoneScoped;
+   // for (int i = 0; i < 4; i++) {
+   //   if (gamepads[i].controllerId == id) { remaps.Append({gamepads[i].controller, id});
+   //   }
+   //}
 }

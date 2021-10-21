@@ -107,3 +107,8 @@ ctResults ctLoadTextureFromFile(const char* path, ctTextureLoadCtx* ctx) {
    }
    return CT_SUCCESS;
 }
+
+void ctTextureLoadCtxRelease(ctTextureLoadCtx* pCtx) {
+   if (!pCtx) { return; }
+   ctFree(pCtx->memory.data);
+}

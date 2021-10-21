@@ -18,11 +18,11 @@
 
 #include "utilities/Common.h"
 
-typedef ctHandle ctKeyLimeGeometryHandle;
-typedef ctHandle ctKeyLimeMaterialHandle;
-typedef ctHandle ctKeyLimeTransformPoolHandle;
-typedef ctHandle ctKeyLimeGeoInstanceHandle;
-typedef ctHandle ctKeyLimeTextureHandle;
+typedef void* ctKeyLimeGeometryReference;
+typedef void* ctKeyLimeMaterialReference;
+typedef void* ctKeyLimeTransformPoolReference;
+typedef void* ctKeyLimeGeoInstanceReference;
+typedef void* ctKeyLimeTextureReference;
 
 struct CT_API ctKeyLimeStreamSubmesh {
    int32_t idxOffset;
@@ -66,35 +66,6 @@ struct ctKeyLimeCameraDesc {
    float fov;
 };
 
-struct ctKeyLimeGeometryHeader {
-   char magic[4];
-   int32_t flags;
-   int32_t alignment;
-
-   float cener[3];
-   float radius;
-
-   uint32_t submeshCount;
-   uint32_t indexCount;
-   uint32_t vertexCount;
-   uint32_t uvChannelCount;
-   uint32_t colorChannelCount;
-
-   uint64_t submeshOffset;
-   uint64_t indexOffset;
-   uint64_t positionOffset;
-   uint64_t tangentNormalOffset;
-   uint64_t skinOffset;
-   uint64_t uvOffsets[4];
-   uint64_t colorOffsets[4];
-};
-
-struct ctKeyLimeCreateGeometryDesc {
-   ctKeyLimeGeometryHeader header;
-   void* blob;
-   size_t blobSize;
-};
-
 struct ctKeyLimeMaterialScalarDesc {
    const char* name;
    float value;
@@ -107,7 +78,7 @@ struct ctKeyLimeMaterialVectorDesc {
 
 struct ctKeyLimeMaterialTextureDesc {
    const char* name;
-   ctKeyLimeTextureHandle textureHandle;
+   ctKeyLimeTextureReference textureHandle;
 };
 
 struct ctKeyLimeMaterialDesc {
@@ -130,8 +101,73 @@ struct ctKeyLimeTransformsDesc {
 
 struct ctKeyLimeInstanceDesc {
    int32_t flags;
-   ctHandle transformsHandle;
+   ctKeyLimeTransformPoolReference transformsHandle;
    size_t materialCount;
-   ctHandle* pMaterialHandles;
-   ctHandle geometryHandle;
+   ctKeyLimeMaterialReference materialHandles[CT_MAX_MESH_MATERIALS];
+   ctKeyLimeGeometryReference geometryHandle;
+};
+
+struct ctKeyLimeImageRange {
+   uint32_t start;
+   uint32_t size;
+};
+
+enum ctKeyLimeTextureType {
+   CT_TEXTURE_TYPE_1D,
+   CT_TEXTURE_TYPE_1D_ARRAY,
+   CT_TEXTURE_TYPE_2D,
+   CT_TEXTURE_TYPE_2D_ARRAY,
+   CT_TEXTURE_TYPE_CUBE,
+   CT_TEXTURE_TYPE_CUBE_ARRAY,
+   CT_TEXTURE_TYPE_3D
+};
+
+enum ctKeyLimeTextureCubeFaces {
+   CT_TEXTURE_CUBE_FRONT,
+   CT_TEXTURE_CUBE_BACK,
+   CT_TEXTURE_CUBE_TOP,
+   CT_TEXTURE_CUBE_BOTTOM,
+   CT_TEXTURE_CUBE_LEFT,
+   CT_TEXTURE_CUBE_RIGHT
+};
+
+struct ctKeyLimeTextureDesc {
+   int32_t flags;
+   uint32_t width;
+   uint32_t height;
+   uint32_t depth;
+   uint32_t mips;
+   uint32_t layers;
+   enum TinyImageFormat format;
+   ctKeyLimeTextureType type;
+   ctKeyLimeImageRange ranges[6][CT_MAX_MIP_LEVELS];
+   uint8_t* data;
+
+   void* userData;
+   void (*fpOnUploadFinish)(ctKeyLimeTextureDesc* pDesc);
+};
+
+struct ctKeyLimeGeometryDesc {
+   int32_t flags;
+   uint32_t submeshCount;
+   uint32_t submeshCapacity;
+   ctKeyLimeStreamSubmesh* pSubmeshes;
+
+   uint32_t indexCount;
+   uint32_t indexCapacity;
+   ctKeyLimeMeshIndex* pIndices;
+
+   uint32_t vertexCount;
+   uint32_t vertexCapacity;
+   ctKeyLimeStreamPosition* pPositions;
+   ctKeyLimeStreamNormalTangent* pNormalTangents;
+   ctKeyLimeStreamSkin* pSkinning;
+
+   uint32_t uvChannels;
+   ctKeyLimeStreamUV* pUVs[CT_MAX_VERTEX_UV_CHANNELS];
+   uint32_t colorChannels;
+   ctKeyLimeStreamColor* pColors[CT_MAX_VERTEX_COLOR_CHANNELS];
+
+   void* userData;
+   void (*fpOnUploadFinish)(ctKeyLimeGeometryDesc* pDesc);
 };

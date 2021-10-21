@@ -20,11 +20,6 @@
 #include "FileSystem.hpp"
 #include "Settings.hpp"
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-#include <locale.h>
-
 ctTranslation* mainTranslationSystem;
 
 ctTranslation::ctTranslation(bool shared) {
@@ -39,37 +34,17 @@ void _setLanguageCb(const char* val, void* data) {
    pTranslation->LoadLanguage(val);
 }
 
+#include "system/System.h"
+
 ctResults ctTranslation::Startup() {
    ZoneScoped;
 #if CITRUS_INCLUDE_AUDITION
    Engine->HotReload->RegisterAssetCategory(&TextHotReload);
 #endif
-#if defined(_WIN32)
-   wchar_t data[LOCALE_NAME_MAX_LENGTH];
-   GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, data, LOCALE_NAME_MAX_LENGTH);
-   isoLanguage = ctStringUtf8(data);
-#elif defined(__linux__)
-   /* Try to extract a similar string off "setlocale" (tested only on some Debian distros)
-    */
-   const char* cbuf = setlocale(LC_ALL, "");
-   size_t max = strlen(cbuf) > 255 ? 255 : strlen(cbuf);
-   char scratch[256];
-   memset(scratch, 0, 256);
-   strncpy(scratch, cbuf, max);
-   char* nextVal = scratch;
-   while (*nextVal != '\0') {
-      if (*nextVal == '_') { *nextVal = '-'; }
-      if (*nextVal == '.') {
-         *nextVal = '\0';
-         break;
-      }
-      nextVal++;
-   }
-   isoLanguage = scratch;
-   if (isoLanguage == "C") { isoLanguage = "DEFAULT"; }
-#else
-   isoLanguage = "DEFAULT";
-#endif
+   char languageNameBuff[32];
+   memset(languageNameBuff, 0, 32);
+   ctSystemInitialGetLanguage(languageNameBuff, 32);
+   isoLanguage = languageNameBuff;
    setlocale(LC_ALL, "C"); /* Unify C Locale */
    fullLanguageName = "?";
    ctDebugLog("OS Reported Language: %s", isoLanguage.CStr());
@@ -127,7 +102,7 @@ ctResults ctTranslation::LoadLanguage(const char* isoCode) {
    {
       ctFile file;
       ctDynamicArray<uint8_t> fileContents = {};
-      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFile(file, "text/languages.json"));
+      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFileNamed(file, "text/languages.json"));
       file.GetBytes(fileContents);
       file.Close();
       ctJSONReader jsonReader = ctJSONReader();
@@ -172,7 +147,7 @@ ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
 #endif
       ctFile file;
       ctDynamicArray<uint8_t> fileContents = {};
-      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFile(file, path.CStr()));
+      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFileNamed(file, path.CStr()));
       file.GetBytes(fileContents);
       file.Close();
       ctJSONReader jsonReader = ctJSONReader();

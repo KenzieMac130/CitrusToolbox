@@ -113,6 +113,7 @@ ${LIBRARY_INSTALL_DEPENDENCY})
 # ---------- Utility Libraries ----------
 set(ENGINE_SOURCE_FILES_UTILITIES
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
@@ -129,7 +130,9 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/BloomFilter.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandleManager.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandledList.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
@@ -178,6 +181,9 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gamelayer/GameLayer.hpp
 )
 
+# ---------- System Abstraction ---------- 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/system)
+
 # ---------- Audition  ---------- 
 if(CITRUS_INCLUDE_AUDITION)
 set(ENGINE_SOURCE_FILES_AUDITION
@@ -189,12 +195,14 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.hpp
 )
 endif()
 
-# ---------- Wad and Prototypes  ---------- 
-set(ENGINE_SOURCE_FILES_WAD
+# ---------- File Formats  ---------- 
+set(ENGINE_SOURCE_FILES_FORMAT
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.c
+${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.cpp
 )
 
-set(ENGINE_HEADER_FILES_WAD
+set(ENGINE_HEADER_FILES_FORMAT
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Header.h
@@ -204,17 +212,18 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Light.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Material.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/RenderMesh.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
 )
 
 # ---------- Renderer Frontend ---------- 
 set(ENGINE_SOURCE_FILES_RENDERER
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/TextureLoad.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeShared.cpp
 )
 
 set(ENGINE_HEADER_FILES_RENDERER
 ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeDataTypes.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/TextureLoad.h
 )
 
 # ---------- Scene Engine ---------- 
@@ -362,7 +371,7 @@ ${ENGINE_SOURCE_FILES_GFX_BACKEND} ${ENGINE_HEADER_FILES_GFX_BACKEND}
 ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
 ${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
 ${ENGINE_SOURCE_FILES_ASSET_SYSTEM} ${ENGINE_HEADER_FILES_ASSET_SYSTEM}
-${ENGINE_SOURCE_FILES_WAD} ${ENGINE_HEADER_FILES_WAD}
+${ENGINE_SOURCE_FILES_FORMAT} ${ENGINE_HEADER_FILES_FORMAT}
 ${ISPC_KERNEL_INPUTS}
 ${SWIG_INPUTS})
 
@@ -394,6 +403,7 @@ target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
+target_link_libraries(engine system)
 
 if(CITRUS_SDL)
 	target_link_libraries(engine ${SDL2_LIBRARIES})

@@ -175,9 +175,9 @@ public:
                                  uint32_t* pQueueFamilyIndices = NULL);
 
    VkResult CreateShaderModuleFromWad(VkShaderModule& shader,
-                                             struct ctWADReader& reader,
-                                             int32_t fxIdx,
-                                             const char* name);
+                                      struct ctWADReader& reader,
+                                      int32_t fxIdx,
+                                      const char* name);
    VkResult CreateBindlessPipelineLayout(VkPipelineLayout& layout,
                                          uint32_t pushConstantRangeCount = 0,
                                          VkPushConstantRange* pPushConstantRanges = NULL);
@@ -188,6 +188,10 @@ public:
      uint32_t subpass,
      VkShaderModule vertexShader,
      VkShaderModule fragShader,
+     VkShaderModule controlShader = VK_NULL_HANDLE,
+     VkShaderModule evaluationShader = VK_NULL_HANDLE,
+     VkShaderModule taskShader = VK_NULL_HANDLE,
+     VkShaderModule meshShader = VK_NULL_HANDLE,
      bool depthTest = false,
      bool depthWrite = true,
      bool blendEnable = false, /* Enable blending on defaults */
@@ -238,7 +242,6 @@ public:
    void RecreateSync();
 
    /* Bindless System */
-
    VkDescriptorSetLayout vkDescriptorSetLayout;
    VkDescriptorPool vkDescriptorPool;
    VkDescriptorSet vkGlobalDescriptorSet;
@@ -252,9 +255,24 @@ public:
                                     VkDeviceSize range = VK_WHOLE_SIZE,
                                     VkDeviceSize offset = 0);
    void ReleaseBindlessStorageBuffer(uint32_t idx);
+   void ExposeBindlessSampledImage(
+     uint32_t& outIdx,
+     VkImageView view,
+     VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+     VkSampler sampler = VK_NULL_HANDLE);
+   void ReleaseBindlessSampledImage(uint32_t idx);
+
+   /* Staging */
+   uint64_t AddStageToBuffer(VkBuffer src, VkBuffer dst, VkBufferCopy& copyInfo);
+   uint64_t AddStageToImage(VkBuffer src,
+                            VkImage dst,
+                            VkImageLayout layout,
+                            VkBufferImageCopy& copyInfo);
+   ctResults CheckAsyncStageProgress(uint64_t idx);
+   uint64_t stagingPhase;
+   VkCommandBuffer stagingCommands[CT_MAX_INFLIGHT_FRAMES];
 
    /* Screen */
-
    ctVkScreenResources mainScreenResources;
 
    /* Settings */
@@ -268,4 +286,7 @@ public:
 
    int32_t vsync;
    int32_t nextFrameTimeout;
+
+   int32_t useMeshShaders;
+   int32_t defaultTessAmount;
 };

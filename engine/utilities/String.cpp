@@ -223,14 +223,10 @@ ctStringUtf8& ctStringUtf8::FilePathUnify() {
    return *this;
 }
 
+#include "system/System.h"
+
 ctStringUtf8& ctStringUtf8::FilePathLocalize() {
-   for (int i = 0; i < ByteLength(); i++) {
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-      if (_data[i] == '/') { _data[i] = '\\'; }
-#else
-      if (_data[i] == '\\') { _data[i] = '/'; }
-#endif
-   }
+   ctSystemFilePathLocalize(_data.Data());
    return *this;
 }
 
@@ -370,6 +366,11 @@ void ctStringUtf8::MakeUTF16Array(ctDynamicArray<char16_t>& arr) const {
       arr.Append((char16_t)chr);
       if (chr == 0) { break; }
    }
+}
+
+void ctStringUtf8::CopyToArray(char* dest, size_t destSize) {
+   memset(dest, 0, destSize);
+   strncpy(dest, CStr(), destSize - 1);
 }
 
 inline void* ctStringUtf8::_dataVoid() const {

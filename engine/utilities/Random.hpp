@@ -20,6 +20,9 @@
 
 #include "mattias/rnd.h"
 
+#define CT_MAX_RAND RAND_MAX
+int32_t ctRand();
+
 class ctRandomGenerator {
 public:
    ctRandomGenerator();

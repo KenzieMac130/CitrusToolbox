@@ -47,7 +47,7 @@ endif()
 message("-------Configuring Asset Build System-------")
 execute_process(
 COMMAND python waf configure 
---platform ${ASSET_BUILD_PLATFORM}
+--platform ${ENGINE_PLATFORM_NAME}
 --final ${ASSET_IS_PRODUCTION}
 -o ${CMAKE_BINARY_DIR}/output/assets
 --libs ${BASE_LIBRARY_DIRECTORY}
@@ -65,7 +65,7 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(assets_configure 
 COMMAND python waf configure 
---platform ${ASSET_BUILD_PLATFORM}
+--platform ${ENGINE_PLATFORM_NAME}
 --final ${ASSET_IS_PRODUCTION}
 -o ${CMAKE_BINARY_DIR}/output/assets
 --libs ${BASE_LIBRARY_DIRECTORY}

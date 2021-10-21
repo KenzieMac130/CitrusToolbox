@@ -103,3 +103,14 @@ ctVec3 ctRandomGenerator::GetOnSphere(float radius) {
 ctVec4 ctRandomGenerator::GetColor(float alpha) {
    return ctVec4(GetFloatUNorm(), GetFloatUNorm(), GetFloatUNorm(), alpha);
 }
+
+/* Not guaranteed to be threadsafe
+Windows: Multithreaded CRT is safe
+POSIX: Use rand_r() for safety */
+int32_t ctRand() {
+#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE
+   return rand_r();
+#else
+   return rand();
+#endif
+}

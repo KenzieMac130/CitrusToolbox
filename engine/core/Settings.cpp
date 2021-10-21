@@ -23,6 +23,9 @@ ctResults ctSettingsManager::Startup() {
 }
 
 ctResults ctSettingsManager::Shutdown() {
+   for (auto iter = _sections.GetIterator(); iter; iter++) {
+      delete iter.Value();
+   }
    return CT_SUCCESS;
 }
 
@@ -390,7 +393,7 @@ ctResults ctSettingsSection::LoadConfigs(ctFileSystem* pFileSystem) {
    ctFile defFile;
    path = "";
    path.Printf(256, "defaults/%s.json", _name.CStr());
-   if (pFileSystem->OpenAssetFile(defFile, path, CT_FILE_OPEN_READ, false) ==
+   if (pFileSystem->OpenAssetFileNamed(defFile, path.CStr(), CT_FILE_OPEN_READ, false) ==
        CT_SUCCESS) {
       /* Load default data */
       defFile.GetBytes(defaultJsonBytes);

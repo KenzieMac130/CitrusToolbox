@@ -39,7 +39,7 @@ inline uint32_t ctHandleGetIndex(ctHandle hndl) {
 class ctHandleManager {
 public:
    inline ctHandleManager() {
-      _freeList.Clear();
+      _freeList = ctDynamicArray<_ctInternalHandleRep>();
       _nextOpenIdx = 1; /* 1 is used for hashtable compatibility */
    };
    inline ctHandle GetNewHandle();

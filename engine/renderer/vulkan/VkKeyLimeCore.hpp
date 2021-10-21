@@ -41,6 +41,8 @@ struct ctVkKeyLimeViewBufferData {
 
 struct ctVkKeyLimeTexture {
    ctVkCompleteImage image;
+   uint32_t bindlessIndex;
+   ctAtomic state;
 };
 
 struct ctVkKeyLimeGeometry {
@@ -52,6 +54,7 @@ struct ctVkKeyLimeGeometry {
    uint32_t streamSkinIdx;
    uint32_t streamUVIdx[4];
    uint32_t streamColorIdx[4];
+   ctAtomic state;
 };
 
 class CT_API ctVkKeyLimeCore : public ctModuleBase {
@@ -59,27 +62,18 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
-   ctResults CreateGeometry(ctHandle* pHandleOut, const ctKeyLimeCreateGeometryDesc& desc);
-   ctResults UpdateGeometry(ctHandle handle);
-   ctResults DestroyGeometry(ctHandle handle);
-
-   ctResults CreateMaterial(ctHandle* pHandleOut, const ctKeyLimeMaterialDesc& desc);
-   ctResults UpdateMaterial(ctHandle handle, const ctKeyLimeMaterialDesc& desc);
-   ctResults DestroyMaterial(ctHandle handle);
-
-   ctResults CreateTransforms(ctHandle* pHandleOut, const ctKeyLimeTransformsDesc& pDesc);
-   ctResults UpdateTransforms(ctHandle handle, const ctKeyLimeTransformsDesc& desc);
-   ctResults DestroyTransforms(ctHandle handle);
-
-   ctResults CreateGeoInstance(ctHandle* pHandleOut, const ctKeyLimeInstanceDesc& desc);
-   ctResults UpdateGeoInstance(ctHandle handle, const ctKeyLimeInstanceDesc& desc);
-   ctResults DestroyGeoInstance(ctHandle handle);
-
-   ctResults LoadTextureKtx(ctHandle* pHandleOut, const char* resolvedPath);
-   ctResults DestroyTexture(ctHandle handle);
-
    ctResults CreateScreenResources();
    ctResults DestroyScreenResources();
+
+   ctResults CreateGeometry(ctKeyLimeGeometryReference* pHandleOut,
+                            const ctKeyLimeGeometryDesc& desc);
+   ctResults GetGeometryState(ctKeyLimeGeometryReference handle);
+   ctResults DestroyGeometry(ctKeyLimeGeometryReference handle);
+
+   ctResults CreateTexture(ctKeyLimeTextureReference* pHandleOut,
+                           const ctKeyLimeTextureDesc& desc);
+   ctResults GetTextureState(ctKeyLimeTextureReference handle);
+   ctResults DestroyTexture(ctKeyLimeTextureReference handle);
 
    ctResults UpdateCamera(const ctKeyLimeCameraDesc cameraDesc);
    ctResults Render();
@@ -109,10 +103,22 @@ public:
    VkRenderPass forwardRenderPass;
    VkFramebuffer forwardFramebuffer;
 
-   ctHandleManager textureHandleManager;
-   ctHashTable<ctVkKeyLimeTexture, ctHandle> textures;
-   ctHandleManager geometryHandleManager;
-   ctHashTable<ctVkKeyLimeGeometry, ctHandle> geometries;
+   /* Uploads */
+   struct GeometryUploadCtx {
+      ctVkKeyLimeGeometry* pGeo;
+      ctKeyLimeGeometryDesc desc;
+   };
+   ctDynamicArray<GeometryUploadCtx> uploadGeometryQueue;
+   struct TextureUploadCtx {
+      ctVkKeyLimeTexture* pTex;
+      ctKeyLimeTextureDesc desc;
+   };
+   ctDynamicArray<TextureUploadCtx> uploadTextureQueue;
+
+   /* Deletions */
+   ctDynamicArray<ctKeyLimeGeometryReference> deleteQueueGeometry;
+   ctDynamicArray<ctKeyLimeTextureReference> deleteQueueTexture;
+   ctVkCompleteBuffer globalStagingBuffer[CT_MAX_INFLIGHT_FRAMES];
 
    ctVkKeyLimeGlobalBufferData* pGlobalBufferData;
 

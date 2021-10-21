@@ -34,7 +34,7 @@ const char* gHelpString = "Example:\n\t<OPTIONS> inputGlslPath outputWadPath\n"
                           "\n\t-help: Show help";
 
 int32_t gNextLumpOffset = 0;
-int32_t MakeSection(char name[8], size_t size, void* data) {
+int32_t MakeSection(const char name[8], size_t size, void* data) {
    WadWriteSection result = WadWriteSection();
    memcpy(result.lump.name, name, 8);
    result.lump.size = (int32_t)size;
@@ -54,7 +54,7 @@ int32_t SaveString(const char* str) {
 
 #define FindFlag(_name) _FindFlag(_name, argc, argv)
 bool _FindFlag(const char* name, int argc, char* argv[]) {
-   for (int i = 1; i < argc - 3; i++) {
+   for (int i = 1; i < argc; i++) {
       if (ctCStrEql(argv[i], name)) { return true; }
    }
    return false;
@@ -63,7 +63,7 @@ bool _FindFlag(const char* name, int argc, char* argv[]) {
 #define FindParamOccurance(_name, _occ) _FindParamOccurance(_name, _occ, argc, argv)
 char* _FindParamOccurance(const char* name, int occurance, int argc, char* argv[]) {
    int j = 0;
-   for (int i = 1; i < argc - 3; i++) {
+   for (int i = 1; i < argc; i++) {
       if (ctCStrEql(argv[i], name)) {
          if (j == occurance) { return argv[i + 1]; }
          j++;
@@ -127,7 +127,20 @@ struct ShaderEntry {
    uint8_t* pData;
    size_t size;
 };
-ctDynamicArray<ShaderEntry> gShaderEntries;
+
+struct stage {
+   ctStringUtf8 blobName;
+   ctStringUtf8 stageDefinition;
+   shaderc_shader_kind kind;
+   ShaderEntry entry;
+};
+
+struct fx {
+   ctStringUtf8 fxDefinitions;
+   ctDynamicArray<stage> stages;
+};
+
+ctDynamicArray<fx> gFxLevels;
 
 int main(int argc, char* argv[]) {
    if (argc < 3) {
@@ -137,8 +150,8 @@ int main(int argc, char* argv[]) {
 
    if (FindFlag("-help")) { ctDebugLog(gHelpString); }
 
-   const char* gltfPath = argv[argc - 2];
-   const char* outPath = argv[argc - 1];
+   const char* glslPath = argv[1];
+   const char* outPath = argv[2];
 
    /* Common Citrus Header */
    ctWADProtoHeader header = ctWADProtoHeader();
@@ -146,13 +159,13 @@ int main(int argc, char* argv[]) {
    header.revision = CT_WADPROTO_HEADER_INTERNAL_REV;
    MakeSection(CT_WADPROTO_NAME_HEADER, sizeof(header), &header);
 
-   ctStringUtf8 relativePath = gltfPath;
+   ctStringUtf8 relativePath = glslPath;
    relativePath.FilePathPop();
 
    shaderc_compiler_t compiler = shaderc_compiler_initialize();
 
    /* Get file data */
-   FILE* pFile = fopen(gltfPath, "rb");
+   FILE* pFile = fopen(glslPath, "rb");
    char* contentsData = NULL;
    size_t contentsSize = 0;
    if (!pFile) { return -1; }
@@ -164,53 +177,142 @@ int main(int argc, char* argv[]) {
    fread(contentsData, 1, contentsSize, pFile);
    fclose(pFile);
 
-   const char* domainDefinitions[] = {"VERTEX_SHADER", "FRAGMENT_SHADER"};
-   shaderc_shader_kind domainTypes[] = {shaderc_vertex_shader, shaderc_fragment_shader};
-   for (int i = 0; i < 2; i++) {
-      /* Setup compiler */
-      shaderc_compile_options_t compilerOptions = shaderc_compile_options_initialize();
-      shaderc_compile_options_add_macro_definition(
-        compilerOptions, domainDefinitions[i], strlen(domainDefinitions[i]), "1", 1);
-      shaderc_compile_options_set_forced_version_profile(
-        compilerOptions, 450, shaderc_profile_core);
+   bool canTess = false;
+   bool wantVertFrag = false;
+   bool wantCallable = false;
+   bool wantTess = false;
+   bool wantCompute = false;
+   bool wantRaytrace = false;
+   bool wantLod = false;
+   if (FindFlag("-surface")) {
+      wantVertFrag = true;
+      canTess = true;
+      wantCallable = true;
+   } else if (FindFlag("-raster")) {
+      wantVertFrag = true;
+      canTess = true;
+   } else if (FindFlag("-compute")) {
+      wantCompute = true;
+   } else if (FindFlag("-raytrace")) {
+      wantRaytrace = true;
+   }
+   if (canTess && FindFlag("-tess")) { wantTess = true; }
+   if (FindFlag("-lod")) { wantLod = true; }
 
-      /* Includer */
-      shaderc_compile_options_set_include_callbacks(
-        compilerOptions, IncludeFetch, IncludeRelease, NULL);
+   fx defaultFx = fx();
+   defaultFx.fxDefinitions = "QUALITY_HIGH";
+   defaultFx.stages.Reserve(16);
 
-      shaderc_compilation_result_t results = shaderc_compile_into_spv(compiler,
-                                                                      contentsData,
-                                                                      contentsSize,
-                                                                      domainTypes[i],
-                                                                      gltfPath,
-                                                                      "main",
-                                                                      compilerOptions);
-      /* Handle errors */
-      if (shaderc_result_get_num_errors(results)) {
-         const char* error = shaderc_result_get_error_message(results);
-         ctDebugLog(error);
-         return -2;
-      } else {
-         ShaderEntry entry = ShaderEntry();
-         entry.size = shaderc_result_get_length(results);
-         entry.pData = (uint8_t*)ctMalloc(entry.size);
-         memset(entry.pData, 0, entry.size);
-         memcpy(entry.pData, shaderc_result_get_bytes(results), entry.size);
-         gShaderEntries.Append(entry);
+   if (wantVertFrag) {
+      defaultFx.stages.Append(
+        {CT_WADBLOB_NAME_SHADER_VERT_SPIRV, "VERTEX_SHADER", shaderc_vertex_shader, {0}});
+      defaultFx.stages.Append(
+        {CT_WADBLOB_NAME_SHADER_FRAG_SPIRV, "FRAGMENT_SHADER", shaderc_fragment_shader, {0}});
+   }
+   if (wantTess) {
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_TESS_CONTROL_SPIRV,
+                               "TESS_CONTROL_SHADER",
+                               shaderc_tess_control_shader,
+                               {0}});
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_TESS_EVALUATION_SPIRV,
+                               "TESS_EVALUATION_SHADER",
+                               shaderc_tess_evaluation_shader,
+                               {0}});
+   }
+   if (wantCompute) {
+      defaultFx.stages.Append(
+        {CT_WADBLOB_NAME_SHADER_COMPUTE_SPIRV, "COMPUTE_SHADER", shaderc_compute_shader, {0}});
+   }
+   if (wantCallable) {
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_CALLABLE_SPIRV,
+                               "CALLABLE_SHADER",
+                               shaderc_callable_shader,
+                               {0}});
+   }
+   if (wantRaytrace) {
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_RAY_GENERATION_SPIRV,
+                               "RAYGEN_SHADER",
+                               shaderc_raygen_shader,
+                               {0}});
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_RAY_ANY_HIT_SPIRV,
+                               "ANY_HIT_SHADER",
+                               shaderc_anyhit_shader,
+                               {0}});
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_RAY_CLOSEST_HIT_SPIRV,
+                               "CLOSEST_HIT_SHADER",
+                               shaderc_closesthit_shader,
+                               {0}});
+      defaultFx.stages.Append(
+        {CT_WADBLOB_NAME_SHADER_RAY_MISS_SPIRV, "MISS_SHADER", shaderc_miss_shader, {0}});
+      defaultFx.stages.Append({CT_WADBLOB_NAME_SHADER_RAY_INTERSECTION_SPIRV,
+                               "INTERSECTION_SHADER",
+                               shaderc_intersection_shader,
+                               {0}});
+   }
+
+   gFxLevels.Reserve(2);
+   gFxLevels.Append(defaultFx);
+   if (wantLod) {
+      fx lowFx = defaultFx;
+      lowFx.fxDefinitions = "QUALITY_LOW";
+      gFxLevels.Append(lowFx);
+   }
+
+   for (int i = 0; i < gFxLevels.Count(); i++) {
+      const fx fxLevel = gFxLevels[i];
+      for (int j = 0; j < fxLevel.stages.Count(); j++) {
+         const stage curStage = fxLevel.stages[j];
+         /* Setup compiler */
+         shaderc_compile_options_t compilerOptions = shaderc_compile_options_initialize();
+         shaderc_compile_options_add_macro_definition(
+           compilerOptions,
+           curStage.stageDefinition.CStr(),
+           curStage.stageDefinition.ByteLength(),
+           "1",
+           1);
+         shaderc_compile_options_set_forced_version_profile(
+           compilerOptions, 460, shaderc_profile_core);
+
+         /* Includer */
+         shaderc_compile_options_set_include_callbacks(
+           compilerOptions, IncludeFetch, IncludeRelease, NULL);
+
+         shaderc_compilation_result_t results = shaderc_compile_into_spv(compiler,
+                                                                         contentsData,
+                                                                         contentsSize,
+                                                                         curStage.kind,
+                                                                         glslPath,
+                                                                         "main",
+                                                                         compilerOptions);
+         /* Handle errors */
+         if (shaderc_result_get_num_errors(results)) {
+            const char* error = shaderc_result_get_error_message(results);
+            ctDebugLog(error);
+            return -2;
+         } else {
+            ShaderEntry entry = ShaderEntry();
+            entry.size = shaderc_result_get_length(results);
+            entry.pData = (uint8_t*)ctMalloc(entry.size);
+            memset(entry.pData, 0, entry.size);
+            memcpy(entry.pData, shaderc_result_get_bytes(results), entry.size);
+            gFxLevels[i].stages[j].entry = entry;
+         }
+         shaderc_compile_options_release(compilerOptions);
       }
-      shaderc_compile_options_release(compilerOptions);
    }
    shaderc_compiler_release(compiler);
 
    /* Write Shader Sections */
-   MakeSection(
-     CT_WADMARKER_NAME_FX_START, gStringsContent.Count(), gStringsContent.Data());
-   char* domainLumps[] = {CT_WADBLOB_NAME_VERT_SPIRV, CT_WADBLOB_NAME_FRAG_SPIRV};
-   for (size_t i = 0; i < gShaderEntries.Count(); i++) {
-      MakeSection(domainLumps[i], gShaderEntries[i].size, gShaderEntries[i].pData);
+   for (int i = 0; i < gFxLevels.Count(); i++) {
+      MakeSection(
+        CT_WADMARKER_NAME_FX_START, gStringsContent.Count(), gStringsContent.Data());
+      for (size_t j = 0; j < gFxLevels[i].stages.Count(); j++) {
+         const stage curStage = gFxLevels[i].stages[j];
+         MakeSection(curStage.blobName.CStr(), curStage.entry.size, curStage.entry.pData);
+      }
+      MakeSection(
+        CT_WADMARKER_NAME_FX_START, gStringsContent.Count(), gStringsContent.Data());
    }
-   MakeSection(
-     CT_WADMARKER_NAME_FX_START, gStringsContent.Count(), gStringsContent.Data());
 
    /* Write Strings Section */
    MakeSection(CT_WADBLOB_NAME_STRINGS, gStringsContent.Count(), gStringsContent.Data());
@@ -240,8 +342,10 @@ int main(int argc, char* argv[]) {
       ctDebugLog("Wrote %s with %d sections", outPath, (int)gWadSections.Count());
    }
 
-   for (size_t i = 0; i < gShaderEntries.Count(); i++) {
-      ctFree(gShaderEntries[i].pData);
+   for (int i = 0; i < gFxLevels.Count(); i++) {
+      for (size_t j = 0; j < gFxLevels[i].stages.Count(); j++) {
+         ctFree(gFxLevels[i].stages[j].entry.pData);
+      }
    }
 
    return 0;

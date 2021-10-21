@@ -420,7 +420,7 @@ inline ctVec4 lerp(const ctVec4& a, const ctVec4& b, float t) {
 
 /* --- Colors --- */
 
-#define CT_COLOR_BLACK           = ctVec4(0.0f, 0.0f, 0.0f, 1.0f);
+#define CT_COLOR_BLACK           ctVec4(0.0f, 0.0f, 0.0f, 1.0f);
 #define CT_COLOR_GREY            ctVec4(0.5f, 0.5f, 0.5f, 1.0f);
 #define CT_COLOR_WHITE           ctVec4(1.0f, 1.0f, 1.0f, 1.0f);
 #define CT_COLOR_INVISIBLE_BLACK ctVec4(0.0f, 0.0f, 0.0f, 0.0f);

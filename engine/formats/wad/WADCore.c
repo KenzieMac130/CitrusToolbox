@@ -1,4 +1,3 @@
-#include "WADCore.h"
 /*
    Copyright 2021 MacKenzie Strand
 
@@ -14,6 +13,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "WADCore.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum ctResults ctWADReaderBind(struct ctWADReader* pReader, uint8_t* blob, size_t size) {
    if (!pReader || !blob || !size) { return CT_FAILURE_INVALID_PARAMETER; }
@@ -80,3 +85,7 @@ const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset) {
    if (!ctCStrNEql(lump.name, "STRINGS", 8)) { return NULL; }
    return pReader->blob + lump.filepos + offset;
 }
+
+#ifdef __cplusplus
+}
+#endif

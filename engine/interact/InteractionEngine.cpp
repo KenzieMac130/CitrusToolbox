@@ -39,7 +39,7 @@ ctResults ctInteractionEngine::Shutdown() {
 
 ctResults ctInteractionEngine::RegisterAll() {
    ctFile file;
-   Engine->FileSystem->OpenAssetFile(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenAssetFileNamed(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
    Directory.CreateActionSetsFromFile(file);
 #if CITRUS_INCLUDE_AUDITION
    Directory.configHotReload.RegisterPath("input/actions.json");

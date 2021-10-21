@@ -35,6 +35,10 @@ public:
    T* Insert(const K key, const T& value);
    /* Key must never be 0! */
    T* Insert(const K key, T&& value);
+   /* Key must never be 0! */
+   T* InsertOrReplace(const K key, const T& value);
+   /* Key must never be 0! */
+   T* InsertOrReplace(const K key, T&& value);
    T* FindPtr(const K key) const;
    T* FindPtr(const K key, const int occurance) const;
    /* Does not call destructor or free for value! */
@@ -94,7 +98,7 @@ inline ctHashTable<T, K>::ctHashTable() {
 }
 
 template<class T, class K>
-inline ctHashTable<T, K>::ctHashTable(ctHashTable<T, K>& hmap) {
+inline ctHashTable<T, K>::ctHashTable(ctHashTable<T, K>& hmap) : ctHashTable() {
    const size_t inputcount = hmap.Count();
    Reserve(inputcount);
    for (size_t i = 0; i < inputcount; i++) {
@@ -156,6 +160,26 @@ inline T* ctHashTable<T, K>::Insert(const K key, const T& value) {
 
 template<class T, class K>
 inline T* ctHashTable<T, K>::Insert(const K key, T&& value) {
+   return Insert(key, value);
+}
+
+template<class T, class K>
+inline T* ctHashTable<T, K>::InsertOrReplace(const K key, const T& value) {
+   T* existing = FindPtr(key);
+   if (existing) {
+      *existing = value;
+      return existing;
+   }
+   return Insert(key, value);
+}
+
+template<class T, class K>
+inline T* ctHashTable<T, K>::InsertOrReplace(const K key, T&& value) {
+   T* existing = FindPtr(key);
+   if (existing) {
+      *existing = value;
+      return existing;
+   }
    return Insert(key, value);
 }
 

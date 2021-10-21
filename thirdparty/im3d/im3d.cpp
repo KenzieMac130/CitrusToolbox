@@ -1695,7 +1695,7 @@ void Context::reset()
 		{
 			continue;
 		}
-		if (std::isinf(plane.w)) // may be the case e.g. for the far plane if projection is infinite
+		if (isinf(plane.w)) // may be the case e.g. for the far plane if projection is infinite
 		{
 			continue;
 		}

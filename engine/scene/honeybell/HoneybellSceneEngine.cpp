@@ -228,6 +228,7 @@ ctCameraInfo ctHoneybellSceneEngine::GetCameraInfoLastFrame(const char* cameraId
 
 ctResults ctHoneybellSceneEngine::LoadScene(const char* path, const char* message) {
    mainScene.ClearScene();
+   // Todo: remove testing code
    mainScene.SpawnToy("citrus/groundPlane", ctTransform(ctVec3(0.0f, -1.0f, 0.0f)));
    ctHandle fpsHandle;
    mainScene.SpawnToy("fps/player", ctTransform(ctVec3(0.0f)), "", "", &fpsHandle);

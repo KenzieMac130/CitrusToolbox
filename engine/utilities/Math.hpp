@@ -104,6 +104,9 @@ inline float ctArcTan2(const float a, const float b);
 inline bool ctIsPrime(const size_t x);
 inline size_t ctNextPrime(size_t x);
 
+/* Hex Conversion */
+inline void ctHexToBytes(size_t byteCount, const char* hex, uint8_t* bytes);
+
 /* ------------------ Implementations ------------------ */
 
 inline bool ctFloatCompare(const float a, const float b, const float threshold) {
@@ -229,4 +232,11 @@ inline size_t ctNextPrime(size_t x) {
       x++;
    }
    return x;
+}
+
+/* https://gist.github.com/xsleonard/7341172 */
+inline void ctHexToBytes(size_t byteCount, const char* hex, uint8_t* bytes) {
+   for (size_t i = 0, j = 0; j < byteCount; i += 2, j++) {
+      bytes[j] = (hex[i] % 32 + 9) % 25 * 16 + (hex[i + 1] % 32 + 9) % 25;
+   }
 }

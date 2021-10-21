@@ -44,8 +44,10 @@ class TestApp : public ctApplication {
    int sphereSeed = 0;
    float sphereRad = 1.0f;
 
-   ctHandle geoHandle;
    ctAsyncTaskHandle tasks[32];
+
+   ctKeyLimeGeometryReference geoRef;
+   ctKeyLimeTextureReference texRef;
 };
 
 const char* TestApp::GetAppName() {
@@ -74,15 +76,57 @@ void testJob(void*) {
    }
 }
 
+#include "tiny_imageFormat/tinyimageformat.h"
+
+void GeoFree(ctKeyLimeGeometryDesc* desc) {
+   delete desc->pSubmeshes;
+   delete desc->pIndices;
+   delete desc->pPositions;
+}
+
+void TexFree(ctKeyLimeTextureDesc* desc) {
+   delete desc->data;
+}
+
 ctResults TestApp::OnStartup() {
    ctDebugLog(CT_NC("Translation Test"));
-   Engine->FileSystem->MakePreferencesDirectory("Test");
    ctDebugLog("---------------------- Dumping paths ----------------------");
    Engine->Interact->Directory.LogContents();
    ctDebugLog("-----------------------------------------------------------");
-   ctStringUtf8 assetPath = Engine->FileSystem->GetAssetPath();
-   assetPath += "game/scene/test/test.gpu";
-   Engine->Renderer->CreateGeometry(&geoHandle, assetPath.CStr());
+   /* Test Geometry Load */
+   {
+      ctKeyLimeGeometryDesc desc = {0};
+      desc.submeshCount = 3;
+      desc.indexCount = 3 * 1000;
+      desc.vertexCount = 3000;
+      desc.vertexCapacity = desc.vertexCount;
+      desc.indexCapacity = desc.indexCount;
+      desc.submeshCapacity = desc.submeshCount;
+      desc.pSubmeshes = new ctKeyLimeStreamSubmesh[desc.submeshCount];
+      desc.pIndices = new ctKeyLimeMeshIndex[desc.indexCount];
+      desc.pPositions = new ctKeyLimeStreamPosition[desc.vertexCount];
+      desc.fpOnUploadFinish = GeoFree;
+
+      Engine->Renderer->CreateGeometry(&geoRef, desc);
+      Engine->Renderer->DestroyGeometry(geoRef);
+   }
+   /* Test Texture Load */
+   {
+      ctKeyLimeTextureDesc desc = {0};
+      desc.width = 1024;
+      desc.height = 1024;
+      desc.depth = 1;
+      desc.layers = 1;
+      desc.mips = 8;
+      desc.type = CT_TEXTURE_TYPE_2D;
+      desc.format = TinyImageFormat_R8G8B8A8_UNORM;
+      uint32_t imageSize = 4 * desc.width * desc.height;
+      desc.data = new uint8_t[imageSize];
+      desc.ranges[0][0] = {0, imageSize};
+      desc.fpOnUploadFinish = TexFree;
+      Engine->Renderer->CreateTexture(&texRef, desc);
+      Engine->Renderer->DestroyTexture(texRef);
+   }
 
    for (int i = 31; i > 0; i--) {
       ctStringUtf8 str = ctStringUtf8();
@@ -193,7 +237,6 @@ ctResults TestApp::OnUIUpdate() {
    for (int i = 0; i < spherePts; i++) {
       ctVec3 pt = rng.GetOnSphere(sphereRad);
       ctVec4 color = ctVec4(saturate(normalize(pt)), 1.0f);
-      // color = ctVec4(ctVec3(ctSaturate(ctAbs(ctNoiseImprovedPerlin(pt)))), 1.0f);
       Im3d::DrawPoint(ctVec3ToIm3d(pt), 8.0f, ctVec4ToIm3dColor(color));
    }
 

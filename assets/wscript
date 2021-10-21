@@ -50,7 +50,7 @@ class CompileShader(Task):
 		bld = self.generator.bld
 		return ret
 
-# Compile a shader
+# Install a File
 class InstallFile(Task):
 	def run(self):
 		shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
@@ -64,8 +64,36 @@ class InstallFile(Task):
 		bld = self.generator.bld
 		return ret
 
+# Generate a GUID List
+import json
+class BuildManifest(Task):
+	def run(self):
+		guidDict = {}
+		for file in self.inputs:
+			contents = file.read()
+			nameAndGuid = contents.split(':')
+			guidDict[nameAndGuid[1]] = nameAndGuid[0]
+		contents = json.dumps(guidDict)
+		self.outputs[0].write(contents)
+			
+		return 0;
+
+	def scan(self): #Find all output files
+		return (self.inputs, time.time())
+
+	def runnable_status(self):
+		ret = super(BuildManifest, self).runnable_status()
+		bld = self.generator.bld
+		return ret
+
 def setdir(ctx):
 	print(sys.argv)
+	
+import uuid
+def aquireGuid(ctx, inFile, outFile):
+	guidFile = ctx.path.make_node(inFile.relpath() + '.guid')
+	if not guidFile.exists():
+		guidFile.write(outFile.relpath().replace('\\','/')+':'+uuid.uuid4().hex)
 
 # Define command line options
 def options(ctx):
@@ -102,6 +130,7 @@ def build(ctx):
 	ctx.add_group('Shaders')
 	ctx.add_group('Textures')
 	ctx.add_group('Prefabs')
+	ctx.add_group('GUID')
 
 
 	# Define text files to install
@@ -112,6 +141,7 @@ def build(ctx):
 		task = InstallFile(env=ctx.env)
 		task.set_inputs(file);
 		task.set_outputs(outFile)
+		aquireGuid(ctx, file, outFile)
 		ctx.add_to_group(task)
 		
 	# Define configs to install
@@ -135,6 +165,7 @@ def build(ctx):
 		task = InstallFile(env=ctx.env)
 		task.set_inputs(file[1]);
 		task.set_outputs(outFile)
+		aquireGuid(ctx, file[1], outFile)
 		ctx.add_to_group(task)
 
 	# Define prefabs to compile
@@ -157,6 +188,7 @@ def build(ctx):
 				inputs.append(embedFile)
 		task.set_inputs(inputs)
 		task.set_outputs([outWad])
+		aquireGuid(ctx, file, outWad)
 		ctx.add_to_group(task)
 
 	# Define textures to compile
@@ -171,6 +203,7 @@ def build(ctx):
 			defFile.write('-fd BC7 -miplevels 8')
 		task.set_inputs([file, defFile])
 		task.set_outputs(outFile)
+		aquireGuid(ctx, file, outFile)
 		ctx.add_to_group(task)
 
 	# Define shaders to compile
@@ -182,6 +215,25 @@ def build(ctx):
 		fileName = file.relpath().split('.', 1)[0] + '.wad'
 		outFile = ctx.path.find_or_declare(fileName)
 		task = CompileShader(env=ctx.env)
-		task.set_inputs(file);
+		defFile = ctx.path.make_node(file.relpath() + '.sdef')
+		if not defFile.exists():
+			# -surface: necessary stages to render a surface (vert/frag/mesh/callable)
+			# -compute: a single stage compute program
+			# -raster: only basic raster stages, useful for UI/Post (vert/frag)
+			# -raytrace: ray trace stages
+			# -tess: add tessellation features to applicable modes
+			# -lod: compiles multiple fx for high/low end systems
+			defFile.write('-surface')
+		task.set_inputs([file, defFile]);
 		task.set_outputs(outFile)
+		aquireGuid(ctx, file, outFile)
 		ctx.add_to_group(task)
+
+	# Gather all GUIDs and Build the Manifest
+	ctx.set_group('GUID')
+	inputs = ctx.path.ant_glob(['**/*.guid'])
+	outFile = ctx.path.find_or_declare("MANIFEST")
+	task = BuildManifest(env=ctx.env)
+	task.set_inputs(inputs);
+	task.set_outputs(outFile)
+	ctx.add_to_group(task)

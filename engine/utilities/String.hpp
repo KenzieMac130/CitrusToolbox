@@ -18,8 +18,6 @@
 
 #include "Common.h"
 
-/* Todo: Inline */
-
 class CT_API ctStringUtf8 {
 public:
    ctStringUtf8();
@@ -86,6 +84,7 @@ public:
    uint64_t xxHash64() const;
 
    void MakeUTF16Array(ctDynamicArray<char16_t>& arr) const;
+   void CopyToArray(char* dest, size_t destSize);
 
 private:
    void* _dataVoid() const;

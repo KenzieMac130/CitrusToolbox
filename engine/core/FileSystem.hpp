@@ -30,6 +30,7 @@ public:
    const ctStringUtf8& GetDataPath();
    const ctStringUtf8& GetAssetPath();
 
+   ctResults BuildAssetManifest();
    const void LogPaths();
 
    const ctResults OpenPreferencesFile(ctFile& file,
@@ -40,12 +41,14 @@ public:
                                        const ctStringUtf8& relativePath,
                                        const ctFileOpenMode mode = CT_FILE_OPEN_READ,
                                        bool silent = false) const;
-   const ctResults OpenAssetFile(ctFile& file,
-                                 const ctStringUtf8& relativePath,
-                                 const ctFileOpenMode mode = CT_FILE_OPEN_READ,
-                                 bool silent = false) const;
-
-   const ctResults MakePreferencesDirectory(const ctStringUtf8& relativePath);
+   const ctResults OpenAssetFileNamed(ctFile& file,
+                                      const char* name,
+                                      const ctFileOpenMode mode = CT_FILE_OPEN_READ,
+                                      bool silent = false) const;
+   const ctResults OpenAssetFileGUID(ctFile& file,
+                                     const ctGUID& guid,
+                                     const ctFileOpenMode mode = CT_FILE_OPEN_READ,
+                                     bool silent = false) const;
 
 private:
    ctStringUtf8 _organizationName;
@@ -53,4 +56,10 @@ private:
    ctStringUtf8 _prefPath;
    ctStringUtf8 _dataPath;
    ctStringUtf8 _assetPath;
+
+   struct AssetInfo {
+      ctGUID guid;
+      char relativePath[CT_MAX_FILE_PATH_LENGTH];
+   };
+   ctHashTable<AssetInfo, uint64_t> assetsByGuidHash;
 };

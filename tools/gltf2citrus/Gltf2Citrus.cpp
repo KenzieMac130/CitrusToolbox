@@ -21,6 +21,7 @@
 #include "../thirdparty/cgltf/cgltf.h"
 #pragma warning(pop)
 
+#include "../engine/formats/mesh/GPUGeometry.h"
 #include "../engine/formats/wad/WADCore.h"
 
 #include "../engine/formats/wad/prototypes/MarkersAndBlobs.h"
@@ -83,7 +84,7 @@ ctStringUtf8 ConvertImagePath(const char* input) {
 
 #define FindFlag(_name) _FindFlag(_name, argc, argv)
 bool _FindFlag(const char* name, int argc, char* argv[]) {
-   for (int i = 1; i < argc - 3; i++) {
+   for (int i = 1; i < argc; i++) {
       if (ctCStrEql(argv[i], name)) { return true; }
    }
    return false;
@@ -92,7 +93,7 @@ bool _FindFlag(const char* name, int argc, char* argv[]) {
 #define FindParamOccurance(_name, _occ) _FindParamOccurance(_name, _occ, argc, argv)
 char* _FindParamOccurance(const char* name, int occurance, int argc, char* argv[]) {
    int j = 0;
-   for (int i = 1; i < argc - 3; i++) {
+   for (int i = 1; i < argc; i++) {
       if (ctCStrEql(argv[i], name)) {
          if (j == occurance) { return argv[i + 1]; }
          j++;
@@ -443,7 +444,7 @@ int main(int argc, char* argv[]) {
 
 #define GPU_ALIGNMENT 64
 
-         ctKeyLimeGeometryHeader geoHeader = {};
+         ctGeometryFormatHeader geoHeader = {};
          memcpy(geoHeader.magic, "GPU0", 4);
          geoHeader.alignment = GPU_ALIGNMENT;
 
@@ -583,8 +584,8 @@ int main(int argc, char* argv[]) {
    }
 
          uint64_t _bOffset =
-           sizeof(ctKeyLimeGeometryHeader) +
-           (GPU_ALIGNMENT - (sizeof(ctKeyLimeGeometryHeader) % GPU_ALIGNMENT));
+           sizeof(ctGeometryFormatHeader) +
+           (GPU_ALIGNMENT - (sizeof(ctGeometryFormatHeader) % GPU_ALIGNMENT));
 #define GET_OFFSET(_var, _arr)                                                           \
    if (_arr.isEmpty()) {                                                                 \
       _var = UINT32_MAX;                                                                 \

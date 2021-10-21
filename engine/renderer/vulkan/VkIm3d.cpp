@@ -67,6 +67,7 @@ ctResults ctVkIm3d::Shutdown() {
 }
 
 #include "formats/wad/WADCore.h"
+#include "formats/wad/prototypes/MarkersAndBlobs.h"
 ctResults ctVkIm3d::LoadShaders(ctFileSystem& fileSystem,
                                 VkRenderPass guiRenderpass,
                                 uint32_t subpass) {
@@ -75,13 +76,15 @@ ctResults ctVkIm3d::LoadShaders(ctFileSystem& fileSystem,
    VkShaderModule fragShader;
 
    ctFile file;
-   fileSystem.OpenAssetFile(file, "shaders/im3d.wad");
+   fileSystem.OpenAssetFileNamed(file, "shaders/im3d.wad");
    ctDynamicArray<uint8_t> bytes;
    file.GetBytes(bytes);
    ctWADReader wad;
    ctWADReaderBind(&wad, bytes.Data(), bytes.Count());
-   _pBackend->CreateShaderModuleFromWad(vertShader, wad, 0, "VERT_SPV");
-   _pBackend->CreateShaderModuleFromWad(fragShader, wad, 0, "FRAG_SPV");
+   _pBackend->CreateShaderModuleFromWad(
+     vertShader, wad, 0, CT_WADBLOB_NAME_SHADER_VERT_SPIRV);
+   _pBackend->CreateShaderModuleFromWad(
+     fragShader, wad, 0, CT_WADBLOB_NAME_SHADER_FRAG_SPIRV);
 
    if (pipeline != VK_NULL_HANDLE) {
       vkDestroyPipeline(_pBackend->vkDevice, pipeline, &_pBackend->vkAllocCallback);
@@ -92,6 +95,10 @@ ctResults ctVkIm3d::LoadShaders(ctFileSystem& fileSystem,
                                      0,
                                      vertShader,
                                      fragShader,
+                                     VK_NULL_HANDLE,
+                                     VK_NULL_HANDLE,
+                                     VK_NULL_HANDLE,
+                                     VK_NULL_HANDLE,
                                      true,
                                      true,
                                      true,

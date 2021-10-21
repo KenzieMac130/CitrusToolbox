@@ -20,7 +20,11 @@ enable_testing()
 add_executable(Test_Utilities UtilitiesTest.cpp)
 set_property(TARGET Test_Utilities PROPERTY FOLDER "tests")
 target_link_libraries(Test_Utilities PUBLIC engine)
-target_link_libraries(Test_Utilities PUBLIC game)
+
+#Package Test
+add_executable(Test_Package PackageTest.cpp)
+set_property(TARGET Test_Package PROPERTY FOLDER "tests")
+target_link_libraries(Test_Package PUBLIC engine)
 
 #App Test
 add_executable(Test_App AppTest.cpp)

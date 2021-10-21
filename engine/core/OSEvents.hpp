@@ -20,10 +20,16 @@
 #include "ModuleBase.hpp"
 
 typedef void (*ctOSEventCallback)(SDL_Event*, void*);
+typedef void (*ctOSPrePollCallback)(void*);
+
+struct ctOSPrePollHandler {
+    ctOSPrePollCallback callback;
+    void* data;
+};
 
 struct ctOSEventHandler {
-    ctOSEventCallback callback;
-    void* data;
+   ctOSEventCallback callback;
+   void* data;
 };
 
 class CT_API ctOSEventManager : public ctModuleBase {
@@ -33,6 +39,7 @@ public:
 
    ctResults PollOSEvents();
 
-    ctDynamicArray<ctOSEventHandler> MiscEventHandlers;
-    ctDynamicArray<ctOSEventHandler> WindowEventHandlers;
+   ctDynamicArray<ctOSPrePollHandler> PrePollHandlers;
+   ctDynamicArray<ctOSEventHandler> MiscEventHandlers;
+   ctDynamicArray<ctOSEventHandler> WindowEventHandlers;
 };

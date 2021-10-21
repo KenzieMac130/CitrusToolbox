@@ -18,6 +18,8 @@
 #include "utilities/SpacialQuery.hpp"
 #include "utilities/BloomFilter.hpp"
 #include "utilities/SpacialQuery.hpp"
+#include "utilities/HandledList.hpp"
+#include "utilities/GUID.hpp"
 
 int life_notifier_comp(const int* A, const int* B) {
    return *A - *B;
@@ -206,7 +208,7 @@ int hash_table_test() {
    }
    ctDebugLog("Hash Table (Worst Case Dynamic String)...");
    {
-       ctHashTable<ctStringUtf8, uint32_t> hashTable;
+      ctHashTable<ctStringUtf8, uint32_t> hashTable;
       uint32_t findhash = 0;
       for (int i = 1; i < 500000; i++) {
          ctStringUtf8 result;
@@ -337,6 +339,36 @@ int math_3d_test() {
    return 0;
 }
 
+int handled_list_test() {
+   ctDynamicArray<ctHandle> handles;
+   ctDynamicArray<int*> pointers;
+   ctHandledList<int> list;
+   const int count = 128;
+   for (int i = 0; i < count; i++) {
+      handles.Append(list.Insert(i));
+      pointers.Append(&list[handles.Last()]);
+   }
+   for (int i = 0; i < count; i++) {
+      ctDebugLog("Handle: %d "
+                 "Pointer: %p "
+                 "Value By Pointer: %d "
+                 "Value By Handle: %d",
+                 handles[i],
+                 pointers[i],
+                 *pointers[i],
+                 list[handles[i]]);
+   }
+   return 0;
+}
+
+int guid_test() {
+   const int count = 100000;
+   for (int i = 0; i < 100000; i++) {
+      ctGUID guid = ctGUID();
+   }
+   return 0;
+}
+
 void debugCallback(int level, const char* format, va_list args) {
    char tmp[CT_MAX_LOG_LENGTH];
    memset(tmp, 0, CT_MAX_LOG_LENGTH);
@@ -358,5 +390,7 @@ int main(int argc, char* argv[]) {
    file_path_test();
    bloom_filter_test();
    spacial_query_test();
+   handled_list_test();
+   guid_test();
    return 0;
 }

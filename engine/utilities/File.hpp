@@ -19,9 +19,9 @@
 #include "utilities/Common.h"
 
 enum ctFileSeekMode {
-   CT_FILE_SEEK_SET = SEEK_SET,
-   CT_FILE_SEEK_CUR = SEEK_CUR,
-   CT_FILE_SEEK_END = SEEK_END
+   CT_FILE_SEEK_SET = RW_SEEK_SET,
+   CT_FILE_SEEK_CUR = RW_SEEK_CUR,
+   CT_FILE_SEEK_END = RW_SEEK_END
 };
 
 enum ctFileOpenMode {
@@ -35,17 +35,20 @@ class CT_API ctFile {
 public:
    ctFile();
    ctFile(FILE* fp, const ctFileOpenMode mode);
+   ctFile(void* memory, size_t size, const ctFileOpenMode mode);
+   ctFile(const void* memory, size_t size, const ctFileOpenMode mode);
    ctFile(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent = false);
    ~ctFile();
-   void FromCStream(FILE* fp, const ctFileOpenMode mode);
+   void FromCStream(FILE* fp, const ctFileOpenMode mode, bool allowClose = true);
    ctResults
    Open(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent = false);
    void Close();
 
    int64_t GetFileSize();
-   void GetBytes(ctDynamicArray<uint8_t>& outArray);
-   void GetBytes(ctDynamicArray<char>& outArray);
-   void GetText(ctStringUtf8& outString);
+   size_t GetBytes(uint8_t** ppOutBytes);
+   size_t GetBytes(ctDynamicArray<uint8_t>& outArray);
+   size_t GetBytes(ctDynamicArray<char>& outArray);
+   size_t GetText(ctStringUtf8& outString);
 
    int64_t Tell();
    ctResults Seek(const int64_t offset, const ctFileSeekMode mode);
@@ -53,17 +56,15 @@ public:
    size_t ReadRaw(void* pDest, const size_t size, const size_t count);
 
    size_t WriteRaw(const void* pData, size_t size, const size_t count);
-   int64_t Printf(const char* format, ...);
-   int64_t VPrintf(const char* format, va_list va);
+   size_t Printf(const char* format, ...);
+   size_t VPrintf(const char* format, va_list va);
    void Flush();
    bool isEndOfFile();
-
-   FILE* CFile() const;
 
    bool isOpen() const;
 
 private:
    ctFileOpenMode _mode;
    int64_t _fSize;
-   FILE* _fp;
+   SDL_RWops* _ctx;
 };

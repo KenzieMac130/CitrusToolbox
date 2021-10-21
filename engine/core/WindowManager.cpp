@@ -120,6 +120,17 @@ ctResults ctWindowManager::Shutdown() {
    return CT_SUCCESS;
 }
 
+ctCursorMode ctWindowManager::GetCursorMode() {
+   return SDL_GetRelativeMouseMode() ? CT_CURSOR_MODE_RELATIVE : CT_CURSOR_MODE_DEFAULT;
+}
+
+ctResults ctWindowManager::SetCursorMode(ctCursorMode mode) {
+   if (SDL_SetRelativeMouseMode((SDL_bool)(mode == CT_CURSOR_MODE_RELATIVE))) {
+      return CT_FAILURE_UNKNOWN;
+   }
+   return CT_SUCCESS;
+}
+
 ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) {
 #if !CITRUS_HEADLESS
    if (SDL_ShowSimpleMessageBox(

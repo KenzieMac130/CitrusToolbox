@@ -30,6 +30,11 @@
 
 #define PIPELINE_CACHE_FILE_PATH "VK_PIPELINE_CACHE"
 
+#define GLOBAL_BIND_SAMPLER        0
+#define GLOBAL_BIND_SAMPLED_IMAGE  1
+#define GLOBAL_BIND_STORAGE_IMAGE  2
+#define GLOBAL_BIND_STORAGE_BUFFER 3
+
 /* ------------- Debug Callback ------------- */
 
 VKAPI_ATTR VkBool32 VKAPI_CALL vDebugCallback(VkDebugReportFlagsEXT flags,
@@ -228,6 +233,10 @@ ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
                                     uint32_t subpass,
                                     VkShaderModule vertexShader,
                                     VkShaderModule fragShader,
+                                    VkShaderModule controlShader,
+                                    VkShaderModule evaluationShader,
+                                    VkShaderModule taskShader,
+                                    VkShaderModule meshShader,
                                     bool depthTest,
                                     bool depthWrite,
                                     bool blendEnable,
@@ -261,23 +270,62 @@ ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
    }
 
    /* Shader stages */
-   VkPipelineShaderStageCreateInfo shaderStages[2];
-   createInfo.stageCount = ctCStaticArrayLen(shaderStages);
-   createInfo.pStages = shaderStages;
+   VkPipelineShaderStageCreateInfo shaderStages[4];
+   uint32_t shaderCount = 0;
 
-   /* Vertex */
-   shaderStages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-   shaderStages[0].module = vertexShader;
-   shaderStages[0].pName = "main";
-   shaderStages[0].pSpecializationInfo = NULL;
-   shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+   /* Mesh shaders */
+   if (useMeshShaders && taskShader != VK_NULL_HANDLE) {
+      /* Task */
+      shaderStages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+      shaderStages[0].module = taskShader;
+      shaderStages[0].pName = "main";
+      shaderStages[0].pSpecializationInfo = NULL;
+      shaderStages[0].stage = VK_SHADER_STAGE_TASK_BIT_NV;
 
-   /* Fragment */
-   shaderStages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-   shaderStages[1].module = fragShader;
-   shaderStages[1].pName = "main";
-   shaderStages[1].pSpecializationInfo = NULL;
-   shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      /* Mesh */
+      shaderStages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+      shaderStages[1].module = meshShader;
+      shaderStages[1].pName = "main";
+      shaderStages[1].pSpecializationInfo = NULL;
+      shaderStages[1].stage = VK_SHADER_STAGE_MESH_BIT_NV;
+      shaderCount += 2;
+   }
+   /* Traditional shaders */
+   else if (vertexShader != VK_NULL_HANDLE) {
+      /* Vertex */
+      shaderStages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+      shaderStages[0].module = vertexShader;
+      shaderStages[0].pName = "main";
+      shaderStages[0].pSpecializationInfo = NULL;
+      shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      shaderCount++;
+
+      /* Tessellation */
+      if (controlShader != VK_NULL_HANDLE) {
+         shaderStages[2] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+         shaderStages[2].module = controlShader;
+         shaderStages[2].pName = "main";
+         shaderStages[2].pSpecializationInfo = NULL;
+         shaderStages[2].stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+
+         shaderStages[3] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+         shaderStages[3].module = evaluationShader;
+         shaderStages[3].pName = "main";
+         shaderStages[3].pSpecializationInfo = NULL;
+         shaderStages[3].stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+         shaderCount += 2;
+      }
+   }
+
+   if (fragShader != VK_NULL_HANDLE) {
+      /* Fragment */
+      shaderStages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+      shaderStages[1].module = fragShader;
+      shaderStages[1].pName = "main";
+      shaderStages[1].pSpecializationInfo = NULL;
+      shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      shaderCount++;
+   }
 
    /* Color Blend state */
    VkPipelineColorBlendStateCreateInfo colorBlendStateDefault = {
@@ -342,7 +390,10 @@ ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
 
    /* Tessellation state */
    VkPipelineTessellationStateCreateInfo tessStateDefault = {
-     VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, 0, 0, 0};
+     VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+     0,
+     0,
+     controlShader != VK_NULL_HANDLE ? (uint32_t)defaultTessAmount : 0};
 
    /* Dynamic state */
    VkPipelineDynamicStateCreateInfo dynamicStateDefault = {
@@ -359,6 +410,10 @@ ctVkBackend::CreateGraphicsPipeline(VkPipeline& pipeline,
    /* Pipeline derivitives */
    createInfo.basePipelineHandle = VK_NULL_HANDLE;
    createInfo.basePipelineIndex = 0;
+
+   /* Shader stages */
+   createInfo.stageCount = shaderCount;
+   createInfo.pStages = shaderStages;
 
    /* Assign states */
    createInfo.layout = layout;
@@ -434,7 +489,7 @@ void ctVkBackend::ExposeBindlessStorageBuffer(uint32_t& outIdx,
    write.descriptorCount = 1;
    write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
    write.dstSet = vkGlobalDescriptorSet;
-   write.dstBinding = 3;
+   write.dstBinding = GLOBAL_BIND_STORAGE_BUFFER;
    write.dstArrayElement = outIdx;
    write.pBufferInfo = &buffInfo;
    vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
@@ -442,6 +497,47 @@ void ctVkBackend::ExposeBindlessStorageBuffer(uint32_t& outIdx,
 
 void ctVkBackend::ReleaseBindlessStorageBuffer(uint32_t idx) {
    descriptorsStorageBuffer.ReleaseSlot(idx);
+}
+
+void ctVkBackend::ExposeBindlessSampledImage(uint32_t& outIdx,
+                                             VkImageView view,
+                                             VkImageLayout layout,
+                                             VkSampler sampler) {
+   outIdx = descriptorsSampledImage.AllocateSlot();
+   VkDescriptorImageInfo imageInfo = {0};
+   imageInfo.imageView = view;
+   imageInfo.imageLayout = layout;
+   imageInfo.sampler = sampler;
+   VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+   write.descriptorCount = 1;
+   write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+   write.dstSet = vkGlobalDescriptorSet;
+   write.dstBinding = GLOBAL_BIND_SAMPLED_IMAGE;
+   write.dstArrayElement = outIdx;
+   write.pImageInfo = &imageInfo;
+   vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
+}
+
+void ctVkBackend::ReleaseBindlessSampledImage(uint32_t idx) {
+   descriptorsSampledImage.ReleaseSlot(idx);
+}
+
+uint64_t
+ctVkBackend::AddStageToBuffer(VkBuffer src, VkBuffer dst, VkBufferCopy& copyInfo) {
+   vkCmdCopyBuffer(stagingCommands[currentFrame], src, dst, 1, &copyInfo);
+   return stagingPhase;
+}
+
+uint64_t ctVkBackend::AddStageToImage(VkBuffer src,
+                                      VkImage dst,
+                                      VkImageLayout layout,
+                                      VkBufferImageCopy& copyInfo) {
+   vkCmdCopyBufferToImage(stagingCommands[currentFrame], src, dst, layout, 1, &copyInfo);
+   return stagingPhase;
+}
+
+ctResults ctVkBackend::CheckAsyncStageProgress(uint64_t idx) {
+   return stagingPhase > idx ? CT_SUCCESS : CT_FAILURE_NOT_FINISHED;
 }
 
 void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
@@ -734,7 +830,8 @@ ctResults ctVkBackend::Startup() {
          vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &vPhysicalDeviceFeatures);
          vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &vPhysicalDeviceFeatures2);
 
-         if (!vDeviceHasRequiredFeatures(vPhysicalDeviceFeatures, vDescriptorIndexingFeatures) ||
+         if (!vDeviceHasRequiredFeatures(vPhysicalDeviceFeatures,
+                                         vDescriptorIndexingFeatures) ||
              !DeviceHasRequiredExtensions(vkPhysicalDevice) ||
              !vDeviceHasSwapChainSupport(vkPhysicalDevice, mainScreenResources.surface)) {
             ctFatalError(-1,
@@ -921,7 +1018,7 @@ ctResults ctVkBackend::Startup() {
       VkDescriptorPoolSize descriptorPoolSizes[4] = {};
       VkDescriptorBindingFlags bindFlags[4] = {};
       /* Sampler */
-      descriptorSetLayouts[0].binding = 0;
+      descriptorSetLayouts[0].binding = GLOBAL_BIND_SAMPLER;
       descriptorSetLayouts[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
       descriptorSetLayouts[0].stageFlags = VK_SHADER_STAGE_ALL;
       descriptorSetLayouts[0].descriptorCount = maxSamplers;
@@ -930,7 +1027,7 @@ ctResults ctVkBackend::Startup() {
       bindFlags[0] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
       descriptorsSamplers = ctVkDescriptorManager(maxSamplers);
       /* Sampled Image */
-      descriptorSetLayouts[1].binding = 1;
+      descriptorSetLayouts[1].binding = GLOBAL_BIND_SAMPLED_IMAGE;
       descriptorSetLayouts[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
       descriptorSetLayouts[1].stageFlags = VK_SHADER_STAGE_ALL;
       descriptorSetLayouts[1].descriptorCount = maxSampledImages;
@@ -940,7 +1037,7 @@ ctResults ctVkBackend::Startup() {
                      VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
       descriptorsSampledImage = ctVkDescriptorManager(maxSampledImages);
       /* Storage Image */
-      descriptorSetLayouts[2].binding = 2;
+      descriptorSetLayouts[2].binding = GLOBAL_BIND_STORAGE_IMAGE;
       descriptorSetLayouts[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
       descriptorSetLayouts[2].stageFlags = VK_SHADER_STAGE_ALL;
       descriptorSetLayouts[2].descriptorCount = maxStorageImages;
@@ -950,7 +1047,7 @@ ctResults ctVkBackend::Startup() {
                      VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
       descriptorsStorageImage = ctVkDescriptorManager(maxStorageImages);
       /* Storage Buffer */
-      descriptorSetLayouts[3].binding = 3;
+      descriptorSetLayouts[3].binding = GLOBAL_BIND_STORAGE_BUFFER;
       descriptorSetLayouts[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       descriptorSetLayouts[3].stageFlags = VK_SHADER_STAGE_ALL;
       descriptorSetLayouts[3].descriptorCount = maxStorageBuffers;

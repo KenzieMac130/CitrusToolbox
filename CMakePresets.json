@@ -19,7 +19,7 @@
 				"BASE_LIBRARY_DIRECTORY": "${sourceDir}/libs/Win64",
 				"SHARED_LIBRARY_FORMAT": ".dll",
 				"EXECUTABLE_FORMAT": ".exe",
-				"ASSET_BUILD_PLATFORM": "windows",
+				"ENGINE_PLATFORM_NAME": "windows",
 				"NATIVE_SOURCE_FILES": "",
 				"IS_PRODUCTION_BUILD": false,
 				"TRACY_DEBUG": true
@@ -37,7 +37,7 @@
 				"BASE_LIBRARY_DIRECTORY": "${sourceDir}/libs/Win64",
 				"SHARED_LIBRARY_FORMAT": ".dll",
 				"EXECUTABLE_FORMAT": ".exe",
-				"ASSET_BUILD_PLATFORM": "windows",
+				"ENGINE_PLATFORM_NAME": "windows",
 				"NATIVE_SOURCE_FILES": "",
 				"IS_PRODUCTION_BUILD": true,
 				"USE_AUDITION": false,

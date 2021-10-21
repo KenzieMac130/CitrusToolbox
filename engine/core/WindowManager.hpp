@@ -26,6 +26,12 @@ public:
     SDL_Window* pSDLWindow;
 };
 
+enum ctCursorMode {
+	CT_CURSOR_MODE_DEFAULT,
+	CT_CURSOR_MODE_RELATIVE,
+	CT_CURSOR_MODE_COUNT
+};
+
 class CT_API ctWindowManager : public ctModuleBase {
 public:
     ctWindowManager();
@@ -38,6 +44,9 @@ public:
 
     ctWindow mainWindow;
     ctResults GetMainWindowDrawableSize(int32_t* pWidth, int32_t* pHeight);
+	
+	ctCursorMode GetCursorMode();
+	ctResults SetCursorMode(ctCursorMode);
 
     int32_t mainDesiredWindowWidth;
     int32_t mainDesiredWindowHeight;
