@@ -33,7 +33,7 @@ ctResults ctImguiIntegration::Startup() {
    ImGui::CreateContext();
 #if !CITRUS_HEADLESS
 #ifdef CITRUS_GFX_VULKAN
-   ImGui_ImplSDL2_InitForVulkan(Engine->WindowManager->mainWindow.pSDLWindow);
+   ImGui_ImplSDL2_InitForVulkan(Engine->WindowManager->mainWindow);
 #endif
    Engine->OSEventManager->MiscEventHandlers.Append({processImguiEvent, this});
    Engine->OSEventManager->WindowEventHandlers.Append({processImguiEvent, this});
@@ -65,7 +65,7 @@ ctResults ctImguiIntegration::NextFrame() {
    ImGui::EndFrame();
    ImGui::NewFrame();
 #else
-   ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow.pSDLWindow);
+   ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow);
    ImGui::NewFrame();
    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
        Engine->Interact->isFrameActive = false;

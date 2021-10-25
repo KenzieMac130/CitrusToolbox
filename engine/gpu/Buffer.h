@@ -17,15 +17,9 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
 
-class CT_API ctSceneEngineBase : public ctModuleBase {
-public:
-   /* Called at the end of a frame */
-   virtual ctResults NextFrame() = 0;
+/* Buffer manages structured buffers, 
+while binding might internally manage UBOs depending on backend
+for adding properties structured buffers will be used for larger data.
 
-   /* Get ctCameraInfo for a camera (NULL must return the "main camera")*/
-   virtual ctCameraInfo GetCameraInfo(const char* cameraId) = 0;
-   /* Load scene/level */
-   virtual ctResults LoadScene(const char* name, const char* message = NULL) = 0;
-};
+Specialized vertex/index buffers will likely be deemed obsolete. */

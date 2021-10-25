@@ -14,8 +14,10 @@
    limitations under the License.
 */
 
-#include "utilities/Common.h"
-#include "core/EngineCore.hpp"
-#include "core/AsyncTasks.hpp"
+#pragma once
 
-#include "KeyLime.hpp"
+#include "utilities/Common.h"
+
+/* Architect allows the high level gfx programmer
+ to lay out the frame and let the backend build
+ the required transitions without torturous detail. */

@@ -21,10 +21,7 @@
 
 #include "SDL_video.h"
 
-class CT_API ctWindow {
-public:
-    SDL_Window* pSDLWindow;
-};
+typedef SDL_Window* ctWindow;
 
 enum ctCursorMode {
 	CT_CURSOR_MODE_DEFAULT,

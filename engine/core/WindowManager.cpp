@@ -108,14 +108,14 @@ ctResults ctWindowManager::Startup() {
                                          flags);
    if (!window) { return CT_FAILURE_UNKNOWN; }
    SDL_SetWindowMinimumSize(window, 640, 480);
-   mainWindow.pSDLWindow = window;
+   mainWindow = window;
 #endif
    return CT_SUCCESS;
 }
 
 ctResults ctWindowManager::Shutdown() {
 #if !CITRUS_HEADLESS
-   SDL_DestroyWindow(mainWindow.pSDLWindow);
+   SDL_DestroyWindow(mainWindow);
 #endif
    return CT_SUCCESS;
 }
@@ -134,7 +134,7 @@ ctResults ctWindowManager::SetCursorMode(ctCursorMode mode) {
 ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) {
 #if !CITRUS_HEADLESS
    if (SDL_ShowSimpleMessageBox(
-         SDL_MESSAGEBOX_ERROR, title, msg, mainWindow.pSDLWindow)) {
+         SDL_MESSAGEBOX_ERROR, title, msg, mainWindow)) {
       return CT_FAILURE_UNKNOWN;
    }
 #endif
@@ -143,7 +143,7 @@ ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) 
 
 ctResults ctWindowManager::ShowMainWindow() {
 #if !CITRUS_HEADLESS
-   if (mainWindow.pSDLWindow) { SDL_ShowWindow(mainWindow.pSDLWindow); }
+   if (mainWindow) { SDL_ShowWindow(mainWindow); }
 #endif
    return CT_SUCCESS;
 }
@@ -151,7 +151,7 @@ ctResults ctWindowManager::ShowMainWindow() {
 ctResults ctWindowManager::GetMainWindowDrawableSize(int32_t* pWidth, int32_t* pHeight) {
 #if !CITRUS_HEADLESS
 #ifdef CITRUS_GFX_VULKAN
-   SDL_Vulkan_GetDrawableSize(mainWindow.pSDLWindow, pWidth, pHeight);
+   SDL_Vulkan_GetDrawableSize(mainWindow, pWidth, pHeight);
 #endif
 #else
    *pWidth = 640;

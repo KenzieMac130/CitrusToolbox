@@ -22,6 +22,7 @@
 #include "core/Translation.hpp"
 #include "gamelayer/GameLayer.hpp"
 #include "interact/InteractionEngine.hpp"
+#include "renderer/keylime/KeyLimeRenderer.hpp"
 
 /* Defined in TypeRegistration */
 namespace ctHoneybell {
@@ -210,7 +211,7 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       debugCameraActive = true;
    }
 
-   LastCamera = CurrentCamera;
+   Engine->Renderer->UpdateCamera(CurrentCamera);
    return CT_SUCCESS;
 }
 
@@ -220,10 +221,6 @@ void ctHoneybellSceneEngine::SetCameraInfo(ctCameraInfo camera, const char* came
 
 ctCameraInfo ctHoneybellSceneEngine::GetCameraInfo(const char* cameraId) {
    return CurrentCamera;
-}
-
-ctCameraInfo ctHoneybellSceneEngine::GetCameraInfoLastFrame(const char* cameraId) {
-   return LastCamera;
 }
 
 ctResults ctHoneybellSceneEngine::LoadScene(const char* path, const char* message) {

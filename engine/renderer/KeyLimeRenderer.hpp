@@ -17,23 +17,17 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "VkBackend.hpp"
+#include "core/ModuleBase.hpp"
 
-class CT_API ctVkImgui {
+class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
-   ctResults Startup(ctVkBackend* pBackend,
-                     VkCommandBuffer textureUploadCmd,
-                     VkRenderPass guiRenderpass,
-                     uint32_t subpass);
-   ctResults Shutdown();
-   void BuildDrawLists();
-   void SetDisplaySize(int32_t windowWidth,
-                       int32_t windowHeight,
-                       int32_t internalWidth,
-                       int32_t internalHeight);
-   void RenderCommands(VkCommandBuffer cmd);
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
-private:
-   ctVkBackend* _pBackend;
-   VkDescriptorPool _vkDescriptorPool;
+   ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
+
+   ctResults RenderFrame();
+
+   struct ctGPUDevice* pGPUDevice;
+   struct ctGPUDeviceCapabilities* pCapabilities;
 };

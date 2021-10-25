@@ -35,7 +35,6 @@ public:
 
    void SetCameraInfo(ctCameraInfo camera, const char* cameraId = NULL);
    ctCameraInfo GetCameraInfo(const char* cameraId) final;
-   ctCameraInfo GetCameraInfoLastFrame(const char* cameraId) final;
    ctResults LoadScene(const char* path, const char* message = NULL) final;
    ctResults PossessToy(ctHandle handle,
                         bool wantCamera = true,
@@ -57,7 +56,6 @@ private:
 
    ctHandle possessedToy;
 
-   ctCameraInfo LastCamera;
    ctCameraInfo CurrentCamera;
 
    int32_t debugCameraAllowed = false;

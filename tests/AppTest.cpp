@@ -20,7 +20,7 @@
 #include "imgui/imgui.h"
 #include "core/FileSystem.hpp"
 #include "interact/InteractionEngine.hpp"
-#include "renderer/KeyLime.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
 #include "core/AsyncTasks.hpp"
 #include "core/JobSystem.hpp"
 
@@ -45,9 +45,6 @@ class TestApp : public ctApplication {
    float sphereRad = 1.0f;
 
    ctAsyncTaskHandle tasks[32];
-
-   ctKeyLimeGeometryReference geoRef;
-   ctKeyLimeTextureReference texRef;
 };
 
 const char* TestApp::GetAppName() {
@@ -72,20 +69,8 @@ ctResults testTask(void*) {
 void testJob(void*) {
    ZoneScoped;
    for (int i = 0; i < 10000; i++) {
-      float j = 23 * i;
+      float j = 23.0f * i;
    }
-}
-
-#include "tiny_imageFormat/tinyimageformat.h"
-
-void GeoFree(ctKeyLimeGeometryDesc* desc) {
-   delete desc->pSubmeshes;
-   delete desc->pIndices;
-   delete desc->pPositions;
-}
-
-void TexFree(ctKeyLimeTextureDesc* desc) {
-   delete desc->data;
 }
 
 ctResults TestApp::OnStartup() {
@@ -95,37 +80,9 @@ ctResults TestApp::OnStartup() {
    ctDebugLog("-----------------------------------------------------------");
    /* Test Geometry Load */
    {
-      ctKeyLimeGeometryDesc desc = {0};
-      desc.submeshCount = 3;
-      desc.indexCount = 3 * 1000;
-      desc.vertexCount = 3000;
-      desc.vertexCapacity = desc.vertexCount;
-      desc.indexCapacity = desc.indexCount;
-      desc.submeshCapacity = desc.submeshCount;
-      desc.pSubmeshes = new ctKeyLimeStreamSubmesh[desc.submeshCount];
-      desc.pIndices = new ctKeyLimeMeshIndex[desc.indexCount];
-      desc.pPositions = new ctKeyLimeStreamPosition[desc.vertexCount];
-      desc.fpOnUploadFinish = GeoFree;
-
-      Engine->Renderer->CreateGeometry(&geoRef, desc);
-      Engine->Renderer->DestroyGeometry(geoRef);
    }
    /* Test Texture Load */
    {
-      ctKeyLimeTextureDesc desc = {0};
-      desc.width = 1024;
-      desc.height = 1024;
-      desc.depth = 1;
-      desc.layers = 1;
-      desc.mips = 8;
-      desc.type = CT_TEXTURE_TYPE_2D;
-      desc.format = TinyImageFormat_R8G8B8A8_UNORM;
-      uint32_t imageSize = 4 * desc.width * desc.height;
-      desc.data = new uint8_t[imageSize];
-      desc.ranges[0][0] = {0, imageSize};
-      desc.fpOnUploadFinish = TexFree;
-      Engine->Renderer->CreateTexture(&texRef, desc);
-      Engine->Renderer->DestroyTexture(texRef);
    }
 
    for (int i = 31; i > 0; i--) {

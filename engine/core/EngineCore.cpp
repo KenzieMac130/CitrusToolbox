@@ -38,7 +38,7 @@
 #endif
 
 #include "interact/InteractionEngine.hpp"
-#include "renderer/KeyLime.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
 #include "scene/SceneEngineBase.hpp"
 
 #include CITRUS_SCENE_ENGINE_HEADER
