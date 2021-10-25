@@ -21,7 +21,7 @@
 #include "../thirdparty/cgltf/cgltf.h"
 #pragma warning(pop)
 
-#include "../engine/formats/mesh/GPUGeometry.h"
+#include "../engine/formats/mesh/RenderMesh.h"
 #include "../engine/formats/wad/WADCore.h"
 
 #include "../engine/formats/wad/prototypes/MarkersAndBlobs.h"
@@ -432,207 +432,209 @@ int main(int argc, char* argv[]) {
       /* Write actual mesh data */
       for (size_t meshIdx = 0; meshIdx < gltf->meshes_count; meshIdx++) {
          /* Streams */
-//         ctDynamicArray<ctKeyLimeStreamSubmesh> submeshes;
-//         ctDynamicArray<uint32_t> indexData;
-//         ctDynamicArray<ctKeyLimeStreamPosition> positionData;
-//         ctDynamicArray<ctKeyLimeStreamNormalTangent> normalTangentData;
-//         ctDynamicArray<ctKeyLimeStreamUV> uvData[4];
-//         ctDynamicArray<ctKeyLimeStreamColor> colorData[4];
-//         ctDynamicArray<ctKeyLimeStreamSkin> skinData;
-//
-//         const cgltf_mesh mesh = gltf->meshes[meshIdx];
-//
-//#define GPU_ALIGNMENT 64
-//
-//         ctGeometryFormatHeader geoHeader = {};
-//         memcpy(geoHeader.magic, "GPU0", 4);
-//         geoHeader.alignment = GPU_ALIGNMENT;
-//
-//         /* For each primitive */
-//         for (size_t primIdx = 0; primIdx < mesh.primitives_count; primIdx++) {
-//            cgltf_primitive prim = mesh.primitives[primIdx];
-//            /* Find accessors */
-//            cgltf_accessor* pPositionAccessor = NULL;
-//            cgltf_accessor* pNormalAccessor = NULL;
-//            cgltf_accessor* pTangentAccessor = NULL;
-//            cgltf_accessor* pTexcoordAccessors[4] = {0};
-//            cgltf_accessor* pColorAccessors[4] = {0};
-//            cgltf_accessor* pJointAccessor = NULL;
-//            cgltf_accessor* pWeightAccessor = NULL;
-//            for (size_t i = 0; i < prim.attributes_count; i++) {
-//               if (prim.attributes[i].type == cgltf_attribute_type_position) {
-//                  pPositionAccessor = prim.attributes[i].data;
-//               } else if (prim.attributes[i].type == cgltf_attribute_type_normal) {
-//                  pNormalAccessor = prim.attributes[i].data;
-//               } else if (prim.attributes[i].type == cgltf_attribute_type_tangent) {
-//                  pTangentAccessor = prim.attributes[i].data;
-//               } else if (prim.attributes[i].type == cgltf_attribute_type_texcoord) {
-//                  if (prim.attributes[i].index >= 4) { continue; }
-//                  pTexcoordAccessors[prim.attributes[i].index] = prim.attributes[i].data;
-//               } else if (prim.attributes[i].type == cgltf_attribute_type_color) {
-//                  if (prim.attributes[i].index >= 4) { continue; }
-//                  pColorAccessors[prim.attributes[i].index] = prim.attributes[i].data;
-//               } else if (prim.attributes[i].type == cgltf_attribute_type_joints) {
-//                  pJointAccessor = prim.attributes[i].data;
-//               } else if (prim.attributes[i].type == cgltf_attribute_type_weights) {
-//                  pWeightAccessor = prim.attributes[i].data;
-//               }
-//            }
-//
-//            /* Reasons to ignore primitives */
-//            const char* ignorePrimReason = NULL;
-//            if (prim.type != cgltf_primitive_type_triangles) {
-//               ignorePrimReason = "Unsupported type";
-//            }
-//            if (!pPositionAccessor) { ignorePrimReason = "No positions"; }
-//            if (!prim.indices) { ignorePrimReason = "No index buffer"; }
-//            if (!prim.material) { ignorePrimReason = "No material"; }
-//            if (prim.has_draco_mesh_compression) {
-//               ignorePrimReason = "Draco compression unsupported";
-//            }
-//            for (size_t i = 0; i < prim.attributes_count; i++) {
-//               if (prim.attributes[i].data->is_sparse) {
-//                  ignorePrimReason = "Sparse accessors unsupported";
-//               }
-//            }
-//            if (ignorePrimReason) {
-//               ctDebugWarning("Primitive on #%d ignored (%s)...", (int)primIdx);
-//               continue;
-//            }
-//
-//            /* Reserve for performance */
-//            const size_t vertexCount = pPositionAccessor->count;
-//            indexData.Reserve(prim.indices->count);
-//            positionData.Reserve(vertexCount);
-//            normalTangentData.Reserve(vertexCount);
-//            skinData.Reserve(vertexCount);
-//            for (int i = 0; i < 4; i++) {
-//               uvData[i].Reserve(vertexCount);
-//               colorData[i].Reserve(vertexCount);
-//            }
-//
-//            /* Submesh Data */
-//            ctKeyLimeStreamSubmesh submesh;
-//            submesh.idxOffset = (int32_t)indexData.Count();
-//            submesh.idxCount = (int32_t)prim.indices->count;
-//            submesh.matIdx = (int32_t)(prim.material - gltf->materials);
-//            submeshes.Append(submesh);
-//
-//            /* Index Data */
-//            for (size_t i = 0; i < prim.indices->count; i++) {
-//               indexData.Append((int32_t)cgltf_accessor_read_index(prim.indices, i));
-//            }
-//
-//            /* Position Data */
-//            ctBoundBox bbox = ctBoundBox();
-//            for (size_t i = 0; i < pPositionAccessor->count; i++) {
-//               ctKeyLimeStreamPosition entry = {0};
-//               cgltf_accessor_read_float(pPositionAccessor, i, entry.position, 3);
-//               positionData.Append(entry);
-//               bbox.AddPoint(entry.position);
-//            }
-//            ctBoundSphere bsphere = bbox;
-//            geoHeader.cener[0] = bsphere.position.x;
-//            geoHeader.cener[1] = bsphere.position.y;
-//            geoHeader.cener[2] = bsphere.position.z;
-//            geoHeader.radius = bsphere.radius;
-//
-//            /* UV Data */
-//            for (int aidx = 0; aidx < 4; aidx++) {
-//               if (pTexcoordAccessors[aidx]) {
-//                  for (size_t i = 0; i < pTexcoordAccessors[aidx]->count; i++) {
-//                     ctKeyLimeStreamUV entry = {0};
-//                     cgltf_accessor_read_float(pTexcoordAccessors[aidx], i, entry.uv, 2);
-//                     uvData[aidx].Append(entry);
-//                  }
-//                  geoHeader.uvChannelCount++;
-//               }
-//            }
-//
-//            /* Color Data */
-//            for (int aidx = 0; aidx < 4; aidx++) {
-//               if (pColorAccessors[aidx]) {
-//                  for (size_t i = 0; i < pColorAccessors[aidx]->count; i++) {
-//                     ctKeyLimeStreamColor entry = {0};
-//                     float fData[4] = {0};
-//                     cgltf_accessor_read_float(pColorAccessors[aidx], i, fData, 4);
-//                     for (int j = 0; j < 4; j++) {
-//                        entry.color[j] = (uint8_t)fData[j] * 255;
-//                     }
-//                     colorData[aidx].Append(entry);
-//                  }
-//                  geoHeader.colorChannelCount++;
-//               }
-//            }
-//
-//            geoHeader.submeshCount++;
-//            geoHeader.indexCount += (uint32_t)prim.indices->count;
-//            geoHeader.vertexCount += (uint32_t)pPositionAccessor->count;
-//         }
-//
-//         /* Write data and build offsets */
-//#define WRITE_DYN_ARRAY(_arr)                                                            \
-//   if (!_arr.isEmpty()) { fwrite(_arr.Data(), sizeof(_arr[0]), _arr.Count(), pFile); }
-//
-//         int _pad = 0;
-//#define WRITE_PADDING()                                                                  \
-//   {                                                                                     \
-//      long amount = GPU_ALIGNMENT - (ftell(pFile) % GPU_ALIGNMENT);                      \
-//      for (long i = 0; i < amount; i++) {                                                \
-//         fwrite(&_pad, 1, 1, pFile);                                                     \
-//      }                                                                                  \
-//   }
-//
-//         uint64_t _bOffset =
-//           sizeof(ctGeometryFormatHeader) +
-//           (GPU_ALIGNMENT - (sizeof(ctGeometryFormatHeader) % GPU_ALIGNMENT));
-//#define GET_OFFSET(_var, _arr)                                                           \
-//   if (_arr.isEmpty()) {                                                                 \
-//      _var = UINT32_MAX;                                                                 \
-//   } else {                                                                              \
-//      _var = _bOffset;                                                                   \
-//      _bOffset += sizeof(_arr[0]) * _arr.Count();                                        \
-//      _bOffset += GPU_ALIGNMENT - (_bOffset % GPU_ALIGNMENT);                            \
-//   }
-//         GET_OFFSET(geoHeader.submeshOffset, submeshes);
-//         GET_OFFSET(geoHeader.indexOffset, indexData);
-//         GET_OFFSET(geoHeader.positionOffset, positionData);
-//         GET_OFFSET(geoHeader.tangentNormalOffset, normalTangentData);
-//         GET_OFFSET(geoHeader.skinOffset, skinData);
-//         for (int i = 0; i < 4; i++) {
-//            GET_OFFSET(geoHeader.uvOffsets[i], uvData[i]);
-//         }
-//         for (int i = 0; i < 4; i++) {
-//            GET_OFFSET(geoHeader.colorOffsets[i], uvData[i]);
-//         }
-//
-//         fwrite(&geoHeader, sizeof(geoHeader), 1, pFile);
-//         WRITE_PADDING();
-//         WRITE_DYN_ARRAY(submeshes);
-//         WRITE_PADDING();
-//         WRITE_DYN_ARRAY(indexData);
-//         WRITE_PADDING();
-//         WRITE_DYN_ARRAY(positionData);
-//         WRITE_PADDING();
-//         WRITE_DYN_ARRAY(normalTangentData);
-//         WRITE_PADDING();
-//         WRITE_DYN_ARRAY(skinData);
-//         WRITE_PADDING();
-//         for (int i = 0; i < 4; i++) {
-//            WRITE_DYN_ARRAY(uvData[i]);
-//            WRITE_PADDING();
-//         }
-//         for (int i = 0; i < 4; i++) {
-//            WRITE_DYN_ARRAY(colorData[i]);
-//            WRITE_PADDING();
-//         }
-//#undef WRITE_DYN_ARRAY
-//#undef GET_OFFSET
-//
-//         ctWADProtoRenderMesh renderMesh = {};
-//         renderMesh.filePath = SaveString("gpu");
-//         renderMeshes.Append(renderMesh);
-//         outGltfMeshes.Append(&gltf->meshes[meshIdx]);
+         ctDynamicArray<ctKeyLimeStreamSubmesh> submeshes;
+         ctDynamicArray<uint32_t> indexData;
+         ctDynamicArray<ctKeyLimeStreamPosition> positionData;
+         ctDynamicArray<ctKeyLimeStreamNormalTangent> normalTangentData;
+         ctDynamicArray<ctKeyLimeStreamUV> uvData[4];
+         ctDynamicArray<ctKeyLimeStreamColor> colorData[4];
+         ctDynamicArray<ctKeyLimeStreamSkin> skinData;
+
+         const cgltf_mesh mesh = gltf->meshes[meshIdx];
+
+#define GPU_ALIGNMENT 64
+
+         ctGeometryFormatHeader geoHeader = {};
+         memcpy(geoHeader.magic, "GPU0", 4);
+         geoHeader.alignment = GPU_ALIGNMENT;
+
+         /* For each primitive */
+         for (size_t primIdx = 0; primIdx < mesh.primitives_count; primIdx++) {
+            cgltf_primitive prim = mesh.primitives[primIdx];
+            /* Find accessors */
+            cgltf_accessor* pPositionAccessor = NULL;
+            cgltf_accessor* pNormalAccessor = NULL;
+            cgltf_accessor* pTangentAccessor = NULL;
+            cgltf_accessor* pTexcoordAccessors[4] = {0};
+            cgltf_accessor* pColorAccessors[4] = {0};
+            cgltf_accessor* pJointAccessor = NULL;
+            cgltf_accessor* pWeightAccessor = NULL;
+            for (size_t i = 0; i < prim.attributes_count; i++) {
+               if (prim.attributes[i].type == cgltf_attribute_type_position) {
+                  pPositionAccessor = prim.attributes[i].data;
+               } else if (prim.attributes[i].type == cgltf_attribute_type_normal) {
+                  pNormalAccessor = prim.attributes[i].data;
+               } else if (prim.attributes[i].type == cgltf_attribute_type_tangent) {
+                  pTangentAccessor = prim.attributes[i].data;
+               } else if (prim.attributes[i].type == cgltf_attribute_type_texcoord) {
+                  if (prim.attributes[i].index >= 4) { continue; }
+                  pTexcoordAccessors[prim.attributes[i].index] = prim.attributes[i].data;
+               } else if (prim.attributes[i].type == cgltf_attribute_type_color) {
+                  if (prim.attributes[i].index >= 4) { continue; }
+                  pColorAccessors[prim.attributes[i].index] = prim.attributes[i].data;
+               } else if (prim.attributes[i].type == cgltf_attribute_type_joints) {
+                  pJointAccessor = prim.attributes[i].data;
+               } else if (prim.attributes[i].type == cgltf_attribute_type_weights) {
+                  pWeightAccessor = prim.attributes[i].data;
+               }
+            }
+
+            /* Reasons to ignore primitives */
+            const char* ignorePrimReason = NULL;
+            if (prim.type != cgltf_primitive_type_triangles) {
+               ignorePrimReason = "Unsupported type";
+            }
+            if (!pPositionAccessor) { ignorePrimReason = "No positions"; }
+            if (!prim.indices) { ignorePrimReason = "No index buffer"; }
+            if (!prim.material) { ignorePrimReason = "No material"; }
+            if (prim.has_draco_mesh_compression) {
+               ignorePrimReason = "Draco compression unsupported";
+            }
+            for (size_t i = 0; i < prim.attributes_count; i++) {
+               if (prim.attributes[i].data->is_sparse) {
+                  ignorePrimReason = "Sparse accessors unsupported";
+               }
+            }
+            if (ignorePrimReason) {
+               ctDebugWarning("Primitive on #%d ignored (%s)...", (int)primIdx);
+               continue;
+            }
+
+            /* Reserve for performance */
+            const size_t vertexCount = pPositionAccessor->count;
+            indexData.Reserve(prim.indices->count);
+            positionData.Reserve(vertexCount);
+            normalTangentData.Reserve(vertexCount);
+            skinData.Reserve(vertexCount);
+            for (int i = 0; i < 4; i++) {
+               uvData[i].Reserve(vertexCount);
+               colorData[i].Reserve(vertexCount);
+            }
+
+            /* Submesh Data */
+            ctKeyLimeStreamSubmesh submesh;
+            submesh.idxOffset = (int32_t)indexData.Count();
+            submesh.idxCount = (int32_t)prim.indices->count;
+            submesh.matIdx = (int32_t)(prim.material - gltf->materials);
+            submeshes.Append(submesh);
+
+            /* Index Data */
+            for (size_t i = 0; i < prim.indices->count; i++) {
+               indexData.Append((int32_t)cgltf_accessor_read_index(prim.indices, i));
+            }
+
+            /* Position Data */
+            ctBoundBox bbox = ctBoundBox();
+            for (size_t i = 0; i < pPositionAccessor->count; i++) {
+               ctKeyLimeStreamPosition entry = {0};
+               cgltf_accessor_read_float(pPositionAccessor, i, entry.position, 3);
+               positionData.Append(entry);
+               bbox.AddPoint(entry.position);
+            }
+            ctBoundSphere bsphere = bbox;
+            geoHeader.cener[0] = bsphere.position.x;
+            geoHeader.cener[1] = bsphere.position.y;
+            geoHeader.cener[2] = bsphere.position.z;
+            geoHeader.radius = bsphere.radius;
+
+            /* UV Data */
+            for (int aidx = 0; aidx < 4; aidx++) {
+               if (pTexcoordAccessors[aidx]) {
+                  for (size_t i = 0; i < pTexcoordAccessors[aidx]->count; i++) {
+                     ctKeyLimeStreamUV entry = {0};
+                     cgltf_accessor_read_float(pTexcoordAccessors[aidx], i, entry.uv, 2);
+                     uvData[aidx].Append(entry);
+                  }
+                  geoHeader.uvChannelCount++;
+               }
+            }
+
+            /* Color Data */
+            for (int aidx = 0; aidx < 4; aidx++) {
+               if (pColorAccessors[aidx]) {
+                  for (size_t i = 0; i < pColorAccessors[aidx]->count; i++) {
+                     ctKeyLimeStreamColor entry = {0};
+                     float fData[4] = {0};
+                     cgltf_accessor_read_float(pColorAccessors[aidx], i, fData, 4);
+                     for (int j = 0; j < 4; j++) {
+                        entry.color[j] = (uint8_t)fData[j] * 255;
+                     }
+                     colorData[aidx].Append(entry);
+                  }
+                  geoHeader.colorChannelCount++;
+               }
+            }
+
+            // Todo: Other Data...
+
+            geoHeader.submeshCount++;
+            geoHeader.indexCount += (uint32_t)prim.indices->count;
+            geoHeader.vertexCount += (uint32_t)pPositionAccessor->count;
+         }
+
+         /* Write data and build offsets */
+#define WRITE_DYN_ARRAY(_arr)                                                            \
+   if (!_arr.isEmpty()) { fwrite(_arr.Data(), sizeof(_arr[0]), _arr.Count(), pFile); }
+
+         int _pad = 0;
+#define WRITE_PADDING()                                                                  \
+   {                                                                                     \
+      long amount = GPU_ALIGNMENT - (ftell(pFile) % GPU_ALIGNMENT);                      \
+      for (long i = 0; i < amount; i++) {                                                \
+         fwrite(&_pad, 1, 1, pFile);                                                     \
+      }                                                                                  \
+   }
+
+         uint64_t _bOffset =
+           sizeof(ctGeometryFormatHeader) +
+           (GPU_ALIGNMENT - (sizeof(ctGeometryFormatHeader) % GPU_ALIGNMENT));
+#define GET_OFFSET(_var, _arr)                                                           \
+   if (_arr.isEmpty()) {                                                                 \
+      _var = UINT32_MAX;                                                                 \
+   } else {                                                                              \
+      _var = _bOffset;                                                                   \
+      _bOffset += sizeof(_arr[0]) * _arr.Count();                                        \
+      _bOffset += GPU_ALIGNMENT - (_bOffset % GPU_ALIGNMENT);                            \
+   }
+         GET_OFFSET(geoHeader.submeshOffset, submeshes);
+         GET_OFFSET(geoHeader.indexOffset, indexData);
+         GET_OFFSET(geoHeader.positionOffset, positionData);
+         GET_OFFSET(geoHeader.tangentNormalOffset, normalTangentData);
+         GET_OFFSET(geoHeader.skinOffset, skinData);
+         for (int i = 0; i < 4; i++) {
+            GET_OFFSET(geoHeader.uvOffsets[i], uvData[i]);
+         }
+         for (int i = 0; i < 4; i++) {
+            GET_OFFSET(geoHeader.colorOffsets[i], uvData[i]);
+         }
+
+         fwrite(&geoHeader, sizeof(geoHeader), 1, pFile);
+         WRITE_PADDING();
+         WRITE_DYN_ARRAY(submeshes);
+         WRITE_PADDING();
+         WRITE_DYN_ARRAY(indexData);
+         WRITE_PADDING();
+         WRITE_DYN_ARRAY(positionData);
+         WRITE_PADDING();
+         WRITE_DYN_ARRAY(normalTangentData);
+         WRITE_PADDING();
+         WRITE_DYN_ARRAY(skinData);
+         WRITE_PADDING();
+         for (int i = 0; i < 4; i++) {
+            WRITE_DYN_ARRAY(uvData[i]);
+            WRITE_PADDING();
+         }
+         for (int i = 0; i < 4; i++) {
+            WRITE_DYN_ARRAY(colorData[i]);
+            WRITE_PADDING();
+         }
+#undef WRITE_DYN_ARRAY
+#undef GET_OFFSET
+
+         ctWADProtoRenderMesh renderMesh = {};
+         renderMesh.filePath = SaveString("gpu");
+         renderMeshes.Append(renderMesh);
+         outGltfMeshes.Append(&gltf->meshes[meshIdx]);
       }
       fclose(pFile);
 

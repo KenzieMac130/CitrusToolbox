@@ -214,6 +214,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/RenderMesh.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/mesh/RenderMesh.h
 )
 
 # ---------- Renderer Frontend ---------- 
@@ -251,7 +252,6 @@ set(ENGINE_HEADER_FILES_GPU_BACKEND)
 endif()
 
 # ---------- Scene Engine ---------- 
-
 set(CITRUS_SCENE_ENGINE_HEADER
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
 )

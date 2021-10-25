@@ -18,6 +18,42 @@
 
 #include "utilities/Common.h"
 
+struct ctKeyLimeStreamSubmesh {
+   int32_t idxOffset;
+   int32_t idxCount;
+   int32_t matIdx;
+};
+
+struct ctKeyLimeStreamPosition {
+   float position[3];
+};
+
+struct ctKeyLimeStreamNormalTangent {
+   float tangent[4];
+   float normal[3];
+};
+
+struct ctKeyLimeStreamUV {
+   float uv[2];
+};
+
+struct ctKeyLimeStreamColor {
+   uint8_t color[4];
+};
+
+struct ctKeyLimeStreamSkin {
+   uint16_t weight[4];
+   uint16_t boneIdx[4];
+};
+
+struct ctKeyLimeStreamTransform {
+   float position[3];
+   float orientation[4];
+   float scale[3];
+};
+
+typedef uint32_t ctKeyLimeMeshIndex;
+
 struct ctGeometryFormatHeader {
    char magic[4];
    int32_t flags;
