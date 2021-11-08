@@ -37,7 +37,6 @@
    }
 #define PIPELINE_CACHE_FILE_PATH "VK_PIPELINE_CACHE"
 
-/* -------- Define Structure -------- */
 struct ctVkQueueFamilyIndices {
    uint32_t graphicsIdx;
    uint32_t presentIdx;
@@ -109,6 +108,7 @@ private:
    uint32_t frameIdx;
 };
 
+/* -------- Define Structure -------- */
 struct ctGPUDevice {
    ctResults Startup();
    ctResults Shutdown();
@@ -121,7 +121,8 @@ struct ctGPUDevice {
 
    /* Extern */
    SDL_Window* pMainWindow;
-   ctFileSystem* pFileSystem;
+   ctGPUOpenCacheFileFn fpOpenCacheFileCallback;
+   void* pCacheCallbackCustomData;
 
    /* Vulkan Objects */
    VkAllocationCallbacks vkAllocCallback;

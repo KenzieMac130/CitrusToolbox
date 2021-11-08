@@ -143,7 +143,7 @@ enum ctResults {
 #define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 #define ctCStrEql(a, b)         strcmp(a, b) == 0
 #define ctCStrNEql(a, b, n)     strncmp(a, b, n) == 0
-#define ctCFlagCheck(v, f)      ((v) & (1 << (f)))
+#define ctCFlagCheck(v, f)      ((v & f) == f)
 
 /*Assert*/
 #define ctAssert(e) assert(e)

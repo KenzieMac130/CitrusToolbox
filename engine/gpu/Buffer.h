@@ -18,8 +18,7 @@
 
 #include "utilities/Common.h"
 
-/* Buffer manages structured buffers, 
-while binding might internally manage UBOs depending on backend
-for adding properties structured buffers will be used for larger data.
-
-Specialized vertex/index buffers will likely be deemed obsolete. */
+/* 
+Buffer manages Structured Buffers and Constant Buffers
+Vertex/index buffers can't be fetched for manually and arent supported.
+*/

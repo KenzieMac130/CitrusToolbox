@@ -19,24 +19,35 @@
 #include "utilities/Common.h"
 
 /* Device pretty much manages all the api device, gpu, swapchain, etc. */
+struct ctGPUDevice;
+
+typedef ctResults (*ctGPUOpenCacheFileFn)(void* pTargetCtFile,
+                                          const char* path,
+                                          int fileMode,
+                                          void* pUserData);
 
 struct ctGPUDeviceCreateInfo {
-   void* mainWindowPtr;
-   void* fileSystemModulePtr;
+   void* pMainWindow;
+
    const char* appName;
    int32_t version[3];
    bool validationEnabled;
    bool useVSync;
+
+   int32_t fixedTextureBindUpperBound;
+   int32_t fixedBufferBindUpperBound;
+
+   ctGPUOpenCacheFileFn fpOpenCacheFileCallback;
+   void* pCacheCallbackCustomData;
 };
 
 struct ctGPUDeviceCapabilities {
-   bool hasBindless;
    bool hasRobustIndirect;
    bool hasMeshShaders;
    bool hasRaytracing;
 };
 
-ctResults ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,
-                             struct ctGPUDeviceCreateInfo* pCreateInfo,
-                             ctGPUDeviceCapabilities* pCapabilitiesOut);
-ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);
+CT_API ctResults ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,
+                                    struct ctGPUDeviceCreateInfo* pCreateInfo,
+                                    ctGPUDeviceCapabilities* pCapabilitiesOut);
+CT_API ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);

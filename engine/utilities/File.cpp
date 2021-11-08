@@ -63,7 +63,7 @@ void ctFile::FromCStream(FILE* fp, const ctFileOpenMode mode, bool allowClose) {
 ctResults
 ctFile::Open(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent) {
    ZoneScoped;
-   if (mode >= 3 || mode < 0) { return CT_FAILURE_INVALID_PARAMETER; }
+   if (mode > 3 || mode < 0) { return CT_FAILURE_INVALID_PARAMETER; }
    _ctx = SDL_RWFromFile(filePath.CStr(), modestr[mode]);
    _mode = mode;
    if (_ctx) {

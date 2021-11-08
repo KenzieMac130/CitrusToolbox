@@ -211,6 +211,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Camera.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Light.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Material.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/RenderMesh.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/MarkersAndBlobs.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
@@ -229,10 +230,8 @@ ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.hpp
 # ---------- Graphics Backend Files ----------
 set(ENGINE_HEADER_FILES_GPU_INTERFACE
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Architect.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Binding.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Framebuffer.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Pipeline.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/RasterContext.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/RaytraceContext.h
@@ -247,9 +246,19 @@ endif()
 
 if(CITRUS_GPU_VULKAN)
 set(ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp)
-set(ENGINE_HEADER_FILES_GPU_BACKEND)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp)
+set(ENGINE_HEADER_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp)
 endif()
+
+list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp)
+list(APPEND ENGINE_HEADER_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp)
 
 # ---------- Scene Engine ---------- 
 set(CITRUS_SCENE_ENGINE_HEADER
@@ -385,6 +394,7 @@ ${CITRUS_CODEGEN_DIR}/Config.h)
 # ---------- Create Engine Library ----------
 add_library(engine 
 ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
+${CMAKE_CURRENT_SOURCE_DIR}/../citrus.natvis
 ${ENGINE_FILES}
 ${TRACY_FILES}
 ${THIRD_PARTY_IMPL_FILES}

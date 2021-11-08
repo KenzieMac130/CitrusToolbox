@@ -29,5 +29,5 @@ public:
    ctResults RenderFrame();
 
    struct ctGPUDevice* pGPUDevice;
-   struct ctGPUDeviceCapabilities* pCapabilities;
+   struct ctGPUArchitect* pGPUArchitect;
 };

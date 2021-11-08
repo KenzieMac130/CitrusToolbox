@@ -19,3 +19,5 @@
 int ctSystemCreateGUID(void* guidPtr);
 int ctSystemFilePathLocalize(char* str);
 int ctSystemInitialGetLanguage(char* buff, size_t max);
+int ctSystemExecuteCommand(const char* commandAlias, int argc, const char* argv[]);
+int ctSystemShowFileToDeveloper(const char* path);

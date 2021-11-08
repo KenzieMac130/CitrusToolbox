@@ -67,7 +67,7 @@ public:
          return tmp;
       }
       inline operator bool() const {
-         return currentIdx < pTable->_Capacity;
+         return currentIdx < pTable->_capacity;
       }
 
    private:
@@ -83,8 +83,8 @@ public:
 private:
    K* _pKeys;
    T* _pValues;
-   size_t _Capacity;
-   size_t _Count;
+   size_t _capacity;
+   size_t _count;
    size_t _baseSize;
 };
 
@@ -92,8 +92,8 @@ template<class T, class K>
 inline ctHashTable<T, K>::ctHashTable() {
    _pKeys = NULL;
    _pValues = NULL;
-   _Capacity = 0;
-   _Count = 0;
+   _capacity = 0;
+   _count = 0;
    _baseSize = 1;
 }
 
@@ -150,7 +150,7 @@ inline T* ctHashTable<T, K>::Insert(const K key, const T& value) {
       if (_pKeys[idx] == 0) {
          _pKeys[idx] = key;
          _pValues[idx] = value;
-         _Count++;
+         _count++;
          return &_pValues[idx];
       }
       _HASH_LOOP_END
@@ -212,7 +212,7 @@ inline void ctHashTable<T, K>::Remove(const K key) {
    _HASH_LOOP_BEGIN(Capacity()) {
       if (_pKeys[idx] == key) {
          _pKeys[idx] = 0;
-         _Count--;
+         _count--;
          return;
       }
       _HASH_LOOP_END
@@ -221,13 +221,13 @@ inline void ctHashTable<T, K>::Remove(const K key) {
 
 template<class T, class K>
 inline void ctHashTable<T, K>::Clear() {
-   memset(_pKeys, 0, sizeof(K) * _Capacity);
-   _Count = 0;
+   memset(_pKeys, 0, sizeof(K) * _capacity);
+   _count = 0;
 }
 
 template<class T, class K>
 inline bool ctHashTable<T, K>::isEmpty() const {
-   return _Count == 0;
+   return _count == 0;
 }
 
 template<class T, class K>
@@ -237,12 +237,12 @@ inline bool ctHashTable<T, K>::Exists(const K key) const {
 
 template<class T, class K>
 inline size_t ctHashTable<T, K>::Count() const {
-   return _Count;
+   return _count;
 }
 
 template<class T, class K>
 inline size_t ctHashTable<T, K>::Capacity() const {
-   return _Capacity;
+   return _capacity;
 }
 
 template<class T, class K>
@@ -252,14 +252,14 @@ inline ctResults ctHashTable<T, K>::Reserve(const size_t baseSize) {
 
    T* oldValues = _pValues;
    K* oldKeys = _pKeys;
-   size_t oldCapacity = _Capacity;
+   size_t oldCapacity = _capacity;
 
    size_t capacity = ctNextPrime(baseSize);
    _pValues = new T[capacity];
    _pKeys = new K[capacity];
    memset(_pKeys, 0, sizeof(K) * capacity);
-   _Capacity = capacity;
-   _Count = 0;
+   _capacity = capacity;
+   _count = 0;
 
    if (!oldKeys || !oldValues) { return CT_SUCCESS; }
 
@@ -284,24 +284,24 @@ inline ctHashTable<T, K>::Iterator::Iterator(ctHashTable<T, K>* _pTable) {
 template<class T, class K>
 inline T& ctHashTable<T, K>::Iterator::Value() const {
    ctAssert(pTable);
-   ctAssert(currentIdx < pTable->_Capacity);
+   ctAssert(currentIdx < pTable->_capacity);
    return pTable->_pValues[currentIdx];
 }
 
 template<class T, class K>
 inline const K& ctHashTable<T, K>::Iterator::Key() const {
    ctAssert(pTable);
-   ctAssert(currentIdx < pTable->_Capacity);
+   ctAssert(currentIdx < pTable->_capacity);
    return pTable->_pKeys[currentIdx];
 }
 
 template<class T, class K>
 inline void ctHashTable<T, K>::Iterator::findNextValid() {
    ZoneScoped;
-   if (currentIdx < pTable->_Capacity) {
+   if (currentIdx < pTable->_capacity) {
       while (pTable->_pKeys[currentIdx] == 0) {
          currentIdx++;
-         if (currentIdx >= pTable->_Capacity) { break; }
+         if (currentIdx >= pTable->_capacity) { break; }
       }
    }
 }

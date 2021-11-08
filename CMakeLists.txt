@@ -53,6 +53,10 @@ set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
 set(CT_MAX_GFX_STORAGE_IMAGES 64)
 set(CT_MAX_GFX_STORAGE_BUFFERS 16192)
 set(CT_MAX_INFLIGHT_FRAMES 3)
+set(CT_MAX_GFX_TASK_DEPENDENCIES 64)
+set(CT_MAX_GFX_TASK_BUFFERS 8)
+set(CT_MAX_GFX_TASK_IMAGES 9)
+set(CT_MAX_GFX_TASK_BARRIERS 4)
 set(CT_MAX_INTERACT_PATH_SIZE 1024)
 set(CT_MAX_JOB_GROUPS 1024)
 set(CT_MAX_MIP_LEVELS 12)
@@ -201,6 +205,8 @@ else()
    set(TRACY_FILES "")
    set(CITRUS_TRACY 0)
 endif()
+
+# ---------- Catch2 Unit Testing ---------- 
 
 # ---------- Audition Live Development ----------
 option(USE_AUDITION "Enable Audition Live Development" ON)

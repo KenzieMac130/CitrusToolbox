@@ -23,9 +23,9 @@
 #include "vma/vk_mem_alloc.h"
 
 /* -------- Expose to API -------- */
-ctResults ctGPUDeviceStartup(ctGPUDevice** ppDevice,
-                             ctGPUDeviceCreateInfo* pCreateInfo,
-                             ctGPUDeviceCapabilities* pCapabilitiesOut) {
+CT_API ctResults ctGPUDeviceStartup(ctGPUDevice** ppDevice,
+                                    ctGPUDeviceCreateInfo* pCreateInfo,
+                                    ctGPUDeviceCapabilities* pCapabilitiesOut) {
    ZoneScoped;
    ctAssert(ppDevice);
    ctAssert(pCreateInfo);
@@ -34,18 +34,17 @@ ctResults ctGPUDeviceStartup(ctGPUDevice** ppDevice,
    VkApplicationInfo& appInfo = pDevice->vkAppInfo;
    appInfo.pApplicationName = pCreateInfo->appName;
    pDevice->validationEnabled = pCreateInfo->validationEnabled;
-   pDevice->pMainWindow = (SDL_Window*)pCreateInfo->mainWindowPtr;
+   pDevice->pMainWindow = (SDL_Window*)pCreateInfo->pMainWindow;
    pDevice->vsync = pCreateInfo->useVSync;
    pDevice->nextFrameTimeout = 10000;
+   pDevice->fpOpenCacheFileCallback = pCreateInfo->fpOpenCacheFileCallback;
+   pDevice->pCacheCallbackCustomData = pCreateInfo->pCacheCallbackCustomData;
    ctResults result = pDevice->Startup();
-   if (pCapabilitiesOut) {
-      memset(pCapabilitiesOut, 0, sizeof(*pCapabilitiesOut));
-      pCapabilitiesOut->hasBindless = true;
-   }
+   if (pCapabilitiesOut) { memset(pCapabilitiesOut, 0, sizeof(*pCapabilitiesOut)); }
    return result;
 }
 
-ctResults ctGPUDeviceShutdown(ctGPUDevice* pDevice) {
+CT_API ctResults ctGPUDeviceShutdown(ctGPUDevice* pDevice) {
    ZoneScoped;
    ctAssert(pDevice);
    ctResults result = pDevice->Shutdown();
@@ -915,11 +914,13 @@ ctResults ctGPUDevice::Startup() {
    /* Pipeline Cache */
    {
       vkPipelineCache = VK_NULL_HANDLE;
-      if (pFileSystem) {
+      if (fpOpenCacheFileCallback) {
          ctDebugLog("Loading Pipeline Cache...");
          ctFile cacheFile;
-         pFileSystem->OpenPreferencesFile(
-           cacheFile, PIPELINE_CACHE_FILE_PATH, CT_FILE_OPEN_READ);
+         fpOpenCacheFileCallback(&cacheFile,
+                                 PIPELINE_CACHE_FILE_PATH,
+                                 CT_FILE_OPEN_READ,
+                                 pCacheCallbackCustomData);
          size_t cacheSize = 0;
          void* cacheData = NULL;
          if (cacheFile.isOpen()) {
@@ -949,7 +950,7 @@ ctResults ctGPUDevice::Shutdown() {
    vkDeviceWaitIdle(vkDevice);
 
    /* Save Pipeline Cache */
-   if (pFileSystem) {
+   if (fpOpenCacheFileCallback) {
       size_t cacheSize = 0;
       void* cacheData = NULL;
       vkGetPipelineCacheData(vkDevice, vkPipelineCache, &cacheSize, NULL);
@@ -957,8 +958,10 @@ ctResults ctGPUDevice::Shutdown() {
          cacheData = ctMalloc(cacheSize);
          vkGetPipelineCacheData(vkDevice, vkPipelineCache, &cacheSize, cacheData);
          ctFile cacheFile;
-         pFileSystem->OpenPreferencesFile(
-           cacheFile, PIPELINE_CACHE_FILE_PATH, CT_FILE_OPEN_WRITE);
+         fpOpenCacheFileCallback(&cacheFile,
+                                 PIPELINE_CACHE_FILE_PATH,
+                                 CT_FILE_OPEN_WRITE,
+                                 pCacheCallbackCustomData);
          if (cacheFile.isOpen()) {
             cacheFile.WriteRaw(cacheData, cacheSize, 1);
             cacheFile.Close();

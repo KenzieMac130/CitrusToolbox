@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="ctDynamicArray&lt;*&gt;">
+    <Expand>
+      <Item Name="[count]">_count</Item>
+      <Item Name="[capacity]">_capacity</Item>
+      <ArrayItems>
+        <Size>_count</Size>
+        <ValuePointer>_pData</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  <Type Name="ctHashTable&lt;*,*&gt;">
+    <Expand>
+      <Item Name="[count]">_count</Item>
+      <Item Name="[capacity]">_capacity</Item>
+      <Item Name="[baseSize]">_baseSize</Item>
+      <CustomListItems MaxItemsPerView="5000">
+        <Variable Name="idx" InitialValue="0" />
+        <Size>_count</Size>
+        <Loop>
+          <If Condition="_pKeys[idx] != 0">
+              <Item Name="&lt;{_pKeys[idx]}&gt;">_pValues[idx]</Item>
+          </If>
+          <Exec>idx++</Exec>
+          <Break Condition="idx >= _capacity" />
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>

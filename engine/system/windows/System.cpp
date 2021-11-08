@@ -38,3 +38,28 @@ int ctSystemInitialGetLanguage(char* buff, size_t max) {
      CP_UTF8, 0, data, LOCALE_NAME_MAX_LENGTH, buff, (int)max, NULL, NULL);
    return 0;
 }
+
+int ctSystemExecuteCommand(const char* commandAlias, int argc, const char* argv[]) {
+   size_t argStrSize = strlen(commandAlias) + 1;
+   for (int i = 0; i < argc; i++) {
+      argStrSize += strlen(argv[i]) + 1;
+   }
+   char* argStr = (char*)malloc(argStrSize);
+   if (!argStr) { return -1000000; }
+   memset(argStr, 0, argStrSize);
+   argStrSize -= strlen(commandAlias) + 1;
+   strncat(argStr, commandAlias, argStrSize);
+   for (int i = 0; i < argc; i++) {
+      strncat(argStr, " ", argStrSize);
+      argStrSize -= 1;
+      strncat(argStr, argv[i], argStrSize);
+      argStrSize -= strlen(argv[i]);
+   }
+   int result = system(argStr);
+   free(argStr);
+   return result;
+}
+
+int ctSystemShowFileToDeveloper(const char* path) {
+   return system(path);
+}

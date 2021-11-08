@@ -22,7 +22,7 @@
 #include "core/Translation.hpp"
 #include "gamelayer/GameLayer.hpp"
 #include "interact/InteractionEngine.hpp"
-#include "renderer/keylime/KeyLimeRenderer.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
 
 /* Defined in TypeRegistration */
 namespace ctHoneybell {
