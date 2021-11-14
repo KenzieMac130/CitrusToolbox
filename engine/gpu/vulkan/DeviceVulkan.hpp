@@ -108,6 +108,17 @@ private:
    uint32_t frameIdx;
 };
 
+struct ctVkCompleteImage {
+   VkImage image;
+   VkImageView view;
+   VmaAllocation alloc;
+};
+
+struct ctVkCompleteBuffer {
+   VkBuffer buffer;
+   VmaAllocation alloc;
+};
+
 /* -------- Define Structure -------- */
 struct ctGPUDevice {
    ctResults Startup();
@@ -164,4 +175,37 @@ struct ctGPUDevice {
    };
    VkResult WaitForFrameAvailible();
    void RecreateSync();
+
+   /* Helpers */
+   VkResult CreateCompleteImage(ctVkCompleteImage& fullImage,
+                                VkFormat format,
+                                VkImageUsageFlags usage,
+                                VmaAllocationCreateFlags allocFlags,
+                                VkImageAspectFlags aspect,
+                                uint32_t width,
+                                uint32_t height,
+                                uint32_t depth = 1,
+                                uint32_t mip = 1,
+                                uint32_t layers = 1,
+                                VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
+                                VkImageType imageType = VK_IMAGE_TYPE_2D,
+                                VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+                                VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY,
+                                int32_t imageFlags = 0,
+                                VkSharingMode sharing = VK_SHARING_MODE_EXCLUSIVE,
+                                uint32_t queueFamilyIndexCount = 0,
+                                uint32_t* pQueueFamilyIndices = NULL);
+   VkResult CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
+                                 VkBufferUsageFlags usage,
+                                 VmaAllocationCreateFlags allocFlags,
+                                 size_t size,
+                                 VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY,
+                                 int32_t bufferFlags = 0,
+                                 VkSharingMode sharing = VK_SHARING_MODE_EXCLUSIVE,
+                                 uint32_t queueFamilyIndexCount = 0,
+                                 uint32_t* pQueueFamilyIndices = NULL);
+   void TryDestroyCompleteImage(ctVkCompleteImage& fullImage);
+   void TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer);
 };

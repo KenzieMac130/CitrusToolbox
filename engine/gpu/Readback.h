@@ -18,4 +18,4 @@
 
 #include "utilities/Common.h"
 
-/* Drives callbacks for raytracing pass */
+/* Manages occlusion queries and retreiving data from accessors */

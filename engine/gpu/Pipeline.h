@@ -19,13 +19,12 @@
 #include "utilities/Common.h"
 #include "Device.h"
 #include "formats/wad/WADCore.h"
+#include "tiny_imageFormat/tinyimageformat.h"
 
 struct ctGPUPipelineBuilder;
 
 typedef void* ctGPUShaderModule;
-typedef void* ctGPUPipelineRaster;
-typedef void* ctGPUPipelineCompute;
-typedef void* ctGPUPipelineRaytrace;
+typedef void* ctGPUPipeline;
 
 enum ctGPUPipelineType {
    CT_GPU_PIPELINE_RASTER,
@@ -80,7 +79,8 @@ CT_API ctResults ctGPUPipelineBuilderSetDepthWrite(ctGPUPipelineBuilder* pBuilde
 CT_API ctResults ctGPUPipelineBuilderSetDepthBias(ctGPUPipelineBuilder* pBuilder,
                                                   bool enabled,
                                                   float constantFactor,
-                                                  float slopeFactor);
+                                                  float slopeFactor,
+                                                  float clamp);
 enum ctGPUBlendingMode {
    CT_GPU_BLEND_ADD,
    CT_GPU_BLEND_SUBTRACT,
@@ -106,14 +106,15 @@ enum ctGPUFillMode { CT_GPU_FILL_SOLID, CT_GPU_FILL_LINES, CT_GPU_FILL_POINTS };
 CT_API ctResults ctGPUPipelineBuilderSetFillMode(ctGPUPipelineBuilder* pBuilder,
                                                  ctGPUFillMode fill);
 
-enum ctGPUFaceCull {
-   CT_GPU_FACECULL_FRONT,
-   CT_GPU_FACECULL_BACK,
-   CT_GPU_FACECULL_NONE,
-   CT_GPU_FACECULL_BOTH
+enum ctGPUFaceBits {
+   CT_GPU_FACE_NONE = 0,
+   CT_GPU_FACE_FRONT = 0x01,
+   CT_GPU_FACE_BACK = 0x02,
+   CT_GPU_FACE_BOTH = CT_GPU_FACE_FRONT | CT_GPU_FACE_BACK
 };
+typedef int32_t ctGPUFaceMask;
 CT_API ctResults ctGPUPipelineBuilderSetFaceCull(ctGPUPipelineBuilder* pBuilder,
-                                                 ctGPUFaceCull cull);
+                                                 ctGPUFaceMask cull);
 enum ctGPUTopology {
    CT_GPU_TOPOLOGY_TRIANGLE_LIST,
    CT_GPU_TOPOLOGY_TRIANGLE_STRIP,
@@ -142,6 +143,37 @@ CT_API ctResults ctGPUPipelineBuilderSetMSAA(ctGPUPipelineBuilder* pBuilder,
                                              bool alphaToCoverage,
                                              bool alphaToOne);
 
+enum ctGPUStencilOps {
+   CT_GPU_STENCIL_OP_KEEP,
+   CT_GPU_STENCIL_OP_ZERO,
+   CT_GPU_STENCIL_OP_REPLACE,
+   CT_GPU_STENCIL_OP_INCREMENT_CLAMP,
+   CT_GPU_STENCIL_OP_DECREMENT_CLAMP,
+   CT_GPU_STENCIL_OP_INCREMENT_INVERT,
+   CT_GPU_STENCIL_OP_INCREMENT_WRAP,
+   CT_GPU_STENCIL_OP_DECREMENT_WRAP
+};
+enum ctGPUStencilTest {
+   CT_GPU_STENCIL_TEST_NEVER,
+   CT_GPU_STENCIL_TEST_LESS,
+   CT_GPU_STENCIL_TEST_EQUAL,
+   CT_GPU_STENCIL_TEST_LESS_EQUAL,
+   CT_GPU_STENCIL_TEST_GREATER,
+   CT_GPU_STENCIL_TEST_NOT_EQUAL,
+   CT_GPU_STENCIL_TEST_GREATER_EQUAL,
+   CT_GPU_STENCIL_TEST_ALWAYS
+};
+CT_API ctResults ctGPUPipelineBuilderSetStencil(ctGPUPipelineBuilder* pBuilder,
+                                                bool enable,
+                                                ctGPUFaceMask face,
+                                                ctGPUStencilOps failOp,
+                                                ctGPUStencilOps passOp,
+                                                ctGPUStencilOps depthFailOp,
+                                                ctGPUStencilTest testMode,
+                                                uint32_t compareMask,
+                                                uint32_t writeMask,
+                                                uint32_t referenceValue);
+
 enum ctGPUDynamicState {
    CT_GPU_DYNAMICSTATE_VIEWPORT,         /* Default: true */
    CT_GPU_DYNAMICSTATE_SCISSOR,          /* Default: true */
@@ -156,26 +188,14 @@ enum ctGPUDynamicState {
 CT_API ctResults ctGPUPipelineBuilderEnableDynamicState(ctGPUPipelineBuilder* pBuilder,
                                                         ctGPUDynamicState state);
 
-CT_API ctResults ctGPUPipelineBuilderSetRasterTask(ctGPUPipelineBuilder* pBuilder,
-                                                   struct ctGPUArchitect* pArchitect,
-                                                   const char* name);
-
-/* Compute Options */
+CT_API ctResults ctGPUPipelineBuilderSetAttachments(ctGPUPipelineBuilder* pBuilder,
+                                                    TinyImageFormat depthFormat,
+                                                    uint32_t colorCount,
+                                                    TinyImageFormat* colorFormats);
 
 /* Compile Pipelines */
-CT_API ctResults ctGPUPipelineBuilderGenerateRaster(ctGPUDevice* pDevice,
-                                                    ctGPUPipelineBuilder* pBuilder,
-                                                    ctGPUPipelineRaster* pPipeline);
-CT_API ctResults ctGPUPipelineBuilderGenerateCompute(ctGPUDevice* pDevice,
-                                                     ctGPUPipelineBuilder* pBuilder,
-                                                     ctGPUPipelineCompute* pPipeline);
-CT_API ctResults ctGPUPipelineBuilderGenerateRaytrace(ctGPUDevice* pDevice,
-                                                      ctGPUPipelineBuilder* pBuilder,
-                                                      ctGPUPipelineRaytrace* pPipeline);
+CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
+                                     ctGPUPipelineBuilder* pBuilder,
+                                     ctGPUPipeline* pPipeline);
 
-CT_API void ctGPUPipelineRasterDestroy(ctGPUDevice* pDevice,
-                                       ctGPUPipelineRaster pipeline);
-CT_API void ctGPUPipelineComputeDestroy(ctGPUDevice* pDevice,
-                                        ctGPUPipelineRaster pipeline);
-CT_API void ctGPUPipelineRaytraceDestroy(ctGPUDevice* pDevice,
-                                         ctGPUPipelineRaster pipeline);
+CT_API void ctGPUPipelineDestroy(ctGPUDevice* pDevice, ctGPUPipeline pipeline);

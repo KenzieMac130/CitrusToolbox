@@ -231,10 +231,9 @@ ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.hpp
 set(ENGINE_HEADER_FILES_GPU_INTERFACE
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Architect.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Commands.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Pipeline.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/RasterContext.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/RaytraceContext.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Texture.h)
 set(ENGINE_SOURCE_FILES_GPU_INTERFACE)
 
@@ -248,11 +247,13 @@ if(CITRUS_GPU_VULKAN)
 set(ENGINE_SOURCE_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.cpp)
 set(ENGINE_HEADER_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.hpp)
 endif()
 
 list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND

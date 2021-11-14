@@ -18,4 +18,4 @@
 
 #include "utilities/Common.h"
 
-/* Drives callbacks for raster drawing pass */
+/* Manages the raytracers internal state */

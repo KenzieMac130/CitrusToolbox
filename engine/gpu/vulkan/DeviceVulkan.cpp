@@ -993,3 +993,101 @@ ctResults ctGPUDevice::Shutdown() {
    vkDestroyInstance(vkInstance, &vkAllocCallback);
    return CT_SUCCESS;
 }
+
+VkResult ctGPUDevice::CreateCompleteImage(ctVkCompleteImage& fullImage,
+                                          VkFormat format,
+                                          VkImageUsageFlags usage,
+                                          VmaAllocationCreateFlags allocFlags,
+                                          VkImageAspectFlags aspect,
+                                          uint32_t width,
+                                          uint32_t height,
+                                          uint32_t depth,
+                                          uint32_t mip,
+                                          uint32_t layers,
+                                          VkSampleCountFlagBits samples,
+                                          VkImageType imageType,
+                                          VkImageViewType viewType,
+                                          VkImageTiling tiling,
+                                          VkImageLayout initialLayout,
+                                          VmaMemoryUsage memUsage,
+                                          int32_t imageFlags,
+                                          VkSharingMode sharing,
+                                          uint32_t queueFamilyIndexCount,
+                                          uint32_t* pQueueFamilyIndices) {
+   ZoneScoped;
+   VkImageCreateInfo imageInfo {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+   imageInfo.format = format;
+   imageInfo.usage = usage;
+   imageInfo.extent.width = width;
+   imageInfo.extent.height = height;
+   imageInfo.extent.depth = depth;
+   imageInfo.mipLevels = mip;
+   imageInfo.samples = samples;
+   imageInfo.imageType = imageType;
+   imageInfo.sharingMode = sharing;
+   imageInfo.tiling = tiling;
+   imageInfo.initialLayout = initialLayout;
+   imageInfo.flags = imageFlags;
+   imageInfo.arrayLayers = layers;
+   imageInfo.queueFamilyIndexCount = queueFamilyIndexCount;
+   imageInfo.pQueueFamilyIndices = pQueueFamilyIndices;
+
+   VmaAllocationCreateInfo allocInfo {};
+   allocInfo.flags = allocFlags;
+   allocInfo.usage = memUsage;
+
+   VkResult result = vmaCreateImage(
+     vmaAllocator, &imageInfo, &allocInfo, &fullImage.image, &fullImage.alloc, NULL);
+   if (result != VK_SUCCESS) { return result; }
+
+   VkImageViewCreateInfo viewInfo {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+   viewInfo.image = fullImage.image;
+   viewInfo.viewType = viewType;
+   viewInfo.format = format;
+   viewInfo.subresourceRange.aspectMask = aspect;
+   viewInfo.subresourceRange.baseArrayLayer = 0;
+   viewInfo.subresourceRange.layerCount = layers;
+   viewInfo.subresourceRange.baseMipLevel = 0;
+   viewInfo.subresourceRange.levelCount = mip;
+   return vkCreateImageView(vkDevice, &viewInfo, &vkAllocCallback, &fullImage.view);
+}
+
+VkResult ctGPUDevice::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
+                                           VkBufferUsageFlags usage,
+                                           VmaAllocationCreateFlags allocFlags,
+                                           size_t size,
+                                           VmaMemoryUsage memUsage,
+                                           int32_t bufferFlags,
+                                           VkSharingMode sharing,
+                                           uint32_t queueFamilyIndexCount,
+                                           uint32_t* pQueueFamilyIndices) {
+   ZoneScoped;
+   VkBufferCreateInfo bufferInfo {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+   bufferInfo.usage = usage;
+   bufferInfo.size = size;
+   bufferInfo.sharingMode = sharing;
+   bufferInfo.queueFamilyIndexCount = queueFamilyIndexCount;
+   bufferInfo.pQueueFamilyIndices = pQueueFamilyIndices;
+
+   VmaAllocationCreateInfo allocInfo {};
+   allocInfo.flags = allocFlags;
+   allocInfo.usage = memUsage;
+   return vmaCreateBuffer(
+     vmaAllocator, &bufferInfo, &allocInfo, &fullBuffer.buffer, &fullBuffer.alloc, NULL);
+}
+
+void ctGPUDevice::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
+   ZoneScoped;
+   if (fullImage.view == VK_NULL_HANDLE) { return; }
+   vkDestroyImageView(vkDevice, fullImage.view, &vkAllocCallback);
+   if (fullImage.image == VK_NULL_HANDLE || fullImage.alloc == VK_NULL_HANDLE) { return; }
+   vmaDestroyImage(vmaAllocator, fullImage.image, fullImage.alloc);
+}
+
+void ctGPUDevice::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
+   ZoneScoped;
+   if (fullBuffer.buffer == VK_NULL_HANDLE || fullBuffer.alloc == VK_NULL_HANDLE) {
+      return;
+   }
+   vmaDestroyBuffer(vmaAllocator, fullBuffer.buffer, fullBuffer.alloc);
+}

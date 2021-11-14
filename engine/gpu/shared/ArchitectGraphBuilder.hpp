@@ -21,16 +21,12 @@
 
 class ctGPUArchitectBackend {
 public:
-   virtual ctResults Startup(struct ctGPUDevice* pDevice) = 0;
-   virtual ctResults Shutdown(struct ctGPUDevice* pDevice) = 0;
-   virtual ctResults BuildInternal(struct ctGPUDevice* pDevice,
-                                   struct ctGPUArchitect* pArchitect) = 0;
-   virtual ctResults ExecuteInternal(struct ctGPUDevice* pDevice,
-                                     struct ctGPUArchitect* pArchitect) = 0;
-   virtual ctResults ResetInternal(struct ctGPUDevice* pDevice,
-                                   struct ctGPUArchitect* pArchitect) = 0;
-   virtual ctResults OptimizeOrder(ctGPUDevice* pDevice,
-                                   struct ctGPUArchitect* pArchitect) = 0;
+   virtual ctResults Startup(struct ctGPUDevice* pDevice,
+                             struct ctGPUArchitect* pArchitect) = 0;
+   virtual ctResults Shutdown() = 0;
+   virtual ctResults BuildInternal() = 0;
+   virtual ctResults ExecuteInternal() = 0;
+   virtual ctResults ResetInternal() = 0;
 };
 ctGPUArchitectBackend* ctGPUNewArchitectBackend(ctGPUDevice* pDevice);
 
@@ -42,10 +38,14 @@ struct ctGPUArchitectImagePayload {
    int32_t bindSlot;
    char debugName[32];
    int32_t flags;
-   bool fixedSize;
    float height;
    float width;
+   int32_t layers;
+   int32_t miplevels;
    TinyImageFormat format;
+   ctGPUArchitectClearContents* pClearDesc;
+
+   void* apiData;
 };
 
 struct ctGPUArchitectBufferPayload {
@@ -57,6 +57,8 @@ struct ctGPUArchitectBufferPayload {
    char debugName[32];
    int32_t flags;
    size_t size;
+
+   void* apiData;
 };
 
 struct ctGPUArchitectBarrierPayload {
@@ -67,9 +69,12 @@ struct ctGPUArchitectBarrierPayload {
    ctGPUDependencyID identifier;
    char debugName[32];
    int32_t flags;
+
+   void* apiData;
 };
 
 enum ctGPUArchitectDependencyType {
+   CT_GPU_ARCH_INVALID,
    CT_GPU_ARCH_BARRIER,
    CT_GPU_ARCH_DEPTH_TARGET,
    CT_GPU_ARCH_COLOR_TARGET,
@@ -79,13 +84,18 @@ enum ctGPUArchitectDependencyType {
 };
 
 struct ctGPUArchitectDependencyEntry {
+   inline bool isValid() {
+      return resourceId != 0 && access != 0 && type != CT_GPU_ARCH_INVALID;
+   }
    ctGPUDependencyID resourceId;
    ctGPUArchitectResourceAccess access;
    ctGPUArchitectDependencyType type;
+   uint8_t slot;
 };
 
 struct ctGPUArchitectTaskInternal {
    char debugName[32];
+   int32_t debugIdx;
 
    ctGPUArchitectTaskCategory category;
    ctGPUArchitectTaskDefinitionFn fpDefinition;
@@ -97,70 +107,123 @@ struct ctGPUArchitectTaskInternal {
    ctStaticArray<ctGPUArchitectBarrierPayload, CT_MAX_GFX_TASK_IMAGES> barriers;
    ctStaticArray<ctGPUArchitectDependencyEntry, CT_MAX_GFX_TASK_DEPENDENCIES>
      dependencies;
+
+   void* apiData;
 };
 
 struct ctGPUArchitectDefinitionContext {
    ctGPUArchitectTaskInternal* pInternal;
 };
-struct ctGPUArchitectExecutionContext {};
 #define OUTPUT_TASK_ID INT32_MAX
 
+struct ctGPUArchitectDependencyRange {
+   inline ctGPUArchitectDependencyRange() {
+      firstSeenIdx = INT32_MAX;
+      lastSeenIdx = INT32_MIN;
+   }
+   inline bool isValid() {
+      return firstSeenIdx < lastSeenIdx;
+   }
+   inline bool isOverlapping(ctGPUArchitectDependencyRange target) {
+      return firstSeenIdx <= target.firstSeenIdx && lastSeenIdx >= target.lastSeenIdx;
+   }
+   int32_t firstSeenIdx;
+   int32_t lastSeenIdx;
+};
+
+struct ctGPUArchitectDependencyUseData {
+   ctGPUArchitectTaskInternal* pTask;
+   ctGPUArchitectDependencyEntry entry;
+};
+
 struct ctGPUArchitect {
-   ctGPUArchitectBackend* pBackend;
+   ctGPUArchitectBackend* pBackend = NULL;
    ctDynamicArray<ctGPUArchitectTaskInternal> tasks;
 
    /* Main User Functions */
    ctResults Validate();
    ctResults DumpGraphVis(const char* path, bool generateImage, bool showImage);
    ctResults Build(ctGPUDevice* pDevice);
+   ctResults Execute(ctGPUDevice* pDevice);
+
+   ctResults AddTask(ctGPUArchitectTaskInfo* pTaskInfo);
+   ctResults SetOutput(ctGPUDependencyID dep, uint32_t socket);
 
    /* Fetching Functions */
-   inline class ctGPUArchitectTaskIterator
-   GetFinalTaskIterator(ctGPUArchitectTaskCategory cat);
+   inline class ctGPUArchitectTaskIterator GetFinalTaskIterator();
+   ctGPUArchitectDependencyUseData GetTaskLastTouchedDependency(ctGPUDependencyID id);
+   ctGPUArchitectDependencyRange GetDependencyLifetime(ctGPUDependencyID id);
+   ctGPUArchitectImagePayload* GetImagePayloadPtrForDependency(ctGPUDependencyID id);
+   ctGPUArchitectBufferPayload* GetBufferPayloadPtrForDependency(ctGPUDependencyID id);
+
+   ctResults ResetCache(ctGPUDevice* pDevice);
+   inline bool isCacheBuilt() {
+      return cacheBuilt;
+   }
 
    /* Caches */
-   ctResults ResetCache(ctGPUDevice* pDevice);
-   bool isCacheBuilt;
+   ctGPUDependencyID outputDependency = 0;
+   bool cacheBuilt = false;
    ctDynamicArray<int32_t> cTaskFinalCutList;
-   ctHashTable<bool, ctGPUDependencyID> cDependenciesSafeToRead;
+   ctHashTable<bool, ctGPUDependencyID> cDependenciesSafeToReadNextTask;
    ctDynamicArray<int32_t> cFinalOrderList;
+   ctHashTable<const char*, ctGPUDependencyID> cpDependencyNames;
+   ctDynamicArray<ctGPUDependencyID> cpDependencyFeedbacks;
+   ctHashTable<ctGPUArchitectImagePayload*, ctGPUDependencyID> cpLogicalImagePayloads;
+   ctHashTable<ctGPUArchitectBufferPayload*, ctGPUDependencyID> cpLogicalBufferPayloads;
+   ctHashTable<ctGPUArchitectDependencyRange, ctGPUDependencyID> cDependenciesLifespan;
 
    /* Build Phases */
    int32_t InitialFindNextWithDependencyMet();
    bool InitialAreDependenciesMet(const ctGPUArchitectTaskInternal& task);
    void InitialMarkDependencyWrites(const ctGPUArchitectTaskInternal& task);
+   void InitialAddPayloads(ctGPUArchitectTaskInternal* pTask);
+   void InitialTrackResourceLifespan(const ctGPUArchitectTaskInternal& task,
+                                     int32_t orderedIdx);
 };
 
 /* Iterator over final tasks for a queue */
 class ctGPUArchitectTaskIterator {
 public:
-   inline ctGPUArchitectTaskIterator(ctGPUArchitect* pArch,
-                                     ctGPUArchitectTaskCategory cat) {
+   inline ctGPUArchitectTaskIterator(ctGPUArchitect* pArch) {
       pArchitect = pArch;
-      category = cat;
       orderedIdx = 0;
    }
    inline ctGPUArchitectTaskIterator(const ctGPUArchitectTaskIterator& orig) {
       pArchitect = orig.pArchitect;
-      category = orig.category;
       orderedIdx = orig.orderedIdx;
    }
    inline ctGPUArchitectTaskInternal& Task() const {
-      pArchitect->tasks[pArchitect->cFinalOrderList[orderedIdx]];
+      return pArchitect->tasks[pArchitect->cFinalOrderList[orderedIdx]];
    }
-   inline ctGPUArchitectTaskIterator& operator++() {
-      ctGPUArchitectTaskInternal& task = Task();
-      while (task.category != category &&
-             orderedIdx < pArchitect->cFinalOrderList.Count()) {
-         orderedIdx++;
+   inline ctGPUArchitectDependencyUseData GetLastDependencyUse(ctGPUDependencyID id) {
+      ctGPUArchitectTaskIterator it = (*this);
+      for (it--; it; it--) {
+         for (int i = 0; i < it.Task().dependencies.Count(); i++) {
+            if (it.Task().dependencies[i].resourceId == id) {
+               return {&it.Task(), it.Task().dependencies[i]};
+            }
+         }
       }
+      return ctGPUArchitectDependencyUseData();
+   }
+   inline ctGPUArchitectDependencyUseData GetNextDependencyUse(ctGPUDependencyID id) {
+      ctGPUArchitectTaskIterator it = (*this);
+      for (it++; it; it++) {
+         for (int i = 0; i < it.Task().dependencies.Count(); i++) {
+            if (it.Task().dependencies[i].resourceId == id) {
+               return {&it.Task(), it.Task().dependencies[i]};
+            }
+         }
+      }
+      return ctGPUArchitectDependencyUseData();
+   }
+   inline ctGPUArchitectTaskIterator operator++(int) {
+      orderedIdx++;
       return *this;
    }
-   inline ctGPUArchitectTaskIterator& operator--() {
-      ctGPUArchitectTaskInternal& task = Task();
-      while (task.category != category && orderedIdx >= 0) {
-         orderedIdx--;
-      }
+   inline ctGPUArchitectTaskIterator operator--(int) {
+      orderedIdx--;
       return *this;
    }
    inline operator bool() const {
@@ -169,11 +232,43 @@ public:
 
 private:
    ctGPUArchitect* pArchitect;
-   ctGPUArchitectTaskCategory category;
    int32_t orderedIdx;
 };
 
-inline class ctGPUArchitectTaskIterator
-ctGPUArchitect::GetFinalTaskIterator(ctGPUArchitectTaskCategory cat) {
-   return ctGPUArchitectTaskIterator(this, cat);
+inline class ctGPUArchitectTaskIterator ctGPUArchitect::GetFinalTaskIterator() {
+   return ctGPUArchitectTaskIterator(this);
+}
+
+inline ctGPUArchitectDependencyUseData
+ctGPUArchitect::GetTaskLastTouchedDependency(ctGPUDependencyID id) {
+   ctGPUArchitectTaskInternal* pTask = NULL;
+   ctGPUArchitectDependencyRange* pRange = cDependenciesLifespan.FindPtr(id);
+   if (!pRange) { return ctGPUArchitectDependencyUseData(); }
+   pTask = &tasks[cFinalOrderList[pRange->lastSeenIdx]];
+   for (size_t i = 0; i < pTask->dependencies.Count(); i++) {
+      if (pTask->dependencies[i].resourceId == id) {
+         return {pTask, pTask->dependencies[i]};
+      }
+   }
+   return ctGPUArchitectDependencyUseData();
+}
+
+inline ctGPUArchitectDependencyRange
+ctGPUArchitect::GetDependencyLifetime(ctGPUDependencyID id) {
+   if (!isCacheBuilt()) { return ctGPUArchitectDependencyRange(); }
+   ctGPUArchitectDependencyRange* pRange = cDependenciesLifespan.FindPtr(id);
+   if (pRange) { return *pRange; }
+   return ctGPUArchitectDependencyRange();
+}
+
+inline ctGPUArchitectImagePayload*
+ctGPUArchitect::GetImagePayloadPtrForDependency(ctGPUDependencyID id) {
+   ctGPUArchitectImagePayload** ppPayload = cpLogicalImagePayloads.FindPtr(id);
+   return ppPayload ? *ppPayload : NULL;
+}
+
+inline ctGPUArchitectBufferPayload*
+ctGPUArchitect::GetBufferPayloadPtrForDependency(ctGPUDependencyID id) {
+   ctGPUArchitectBufferPayload** ppPayload = cpLogicalBufferPayloads.FindPtr(id);
+   return ppPayload ? *ppPayload : NULL;
 }

@@ -31,6 +31,7 @@ ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
        raster.depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
        raster.blendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
        raster.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+       raster.dynamicRendering.sType = (VkStructureType)VK_STRUCTURE_TYPE_MAX_ENUM; /* todo: use final */
       // clang-format on
       raster.createInfo.pInputAssemblyState = &raster.inputAssembly;
       raster.createInfo.pTessellationState = &raster.tessellation;
@@ -40,10 +41,15 @@ ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
       raster.createInfo.pDepthStencilState = &raster.depthStencil;
       raster.createInfo.pColorBlendState = &raster.blendState;
       raster.createInfo.pDynamicState = &raster.dynamicState;
+      raster.createInfo.pNext = &raster.dynamicRendering;
 
       raster.dynamicState.pDynamicStates = raster.dynamics;
       raster.blendState.pAttachments = raster.attachmentBlends;
       raster.createInfo.pStages = stages;
+
+      raster.createInfo.renderPass = VK_NULL_HANDLE;
+      raster.createInfo.subpass = 0;
+      raster.dynamicRendering.pColorAttachmentFormats = raster.colorFormats;
 
       ctGPUPipelineBuilderEnableDynamicState(this, CT_GPU_DYNAMICSTATE_VIEWPORT);
       ctGPUPipelineBuilderEnableDynamicState(this, CT_GPU_DYNAMICSTATE_SCISSOR);
@@ -165,13 +171,15 @@ CT_API ctResults ctGPUPipelineBuilderSetDepthWrite(ctGPUPipelineBuilder* pBuilde
 CT_API ctResults ctGPUPipelineBuilderSetDepthBias(ctGPUPipelineBuilder* pBuilder,
                                                   bool enabled,
                                                   float constantFactor,
-                                                  float slopeFactor) {
+                                                  float slopeFactor,
+                                                  float clamp) {
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
    VkPipelineRasterizationStateCreateInfo& rasterState = pBuilder->raster.rasterState;
    rasterState.depthBiasEnable = enabled ? VK_TRUE : VK_FALSE;
    rasterState.depthBiasConstantFactor = constantFactor;
    rasterState.depthBiasSlopeFactor = slopeFactor;
+   rasterState.depthBiasClamp = clamp;
    return CT_SUCCESS;
 }
 
@@ -302,7 +310,7 @@ CT_API ctResults ctGPUPipelineBuilderSetFillMode(ctGPUPipelineBuilder* pBuilder,
 }
 
 CT_API ctResults ctGPUPipelineBuilderSetFaceCull(ctGPUPipelineBuilder* pBuilder,
-                                                 ctGPUFaceCull cull) {
+                                                 ctGPUFaceMask cull) {
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
    VkPipelineRasterizationStateCreateInfo& rasterState = pBuilder->raster.rasterState;
@@ -354,6 +362,34 @@ CT_API ctResults ctGPUPipelineBuilderSetMSAA(ctGPUPipelineBuilder* pBuilder,
    return CT_SUCCESS;
 }
 
+CT_API ctResults ctGPUPipelineBuilderSetStencil(ctGPUPipelineBuilder* pBuilder,
+                                                bool enable,
+                                                ctGPUFaceMask face,
+                                                ctGPUStencilOps failOp,
+                                                ctGPUStencilOps passOp,
+                                                ctGPUStencilOps depthFailOp,
+                                                ctGPUStencilTest testMode,
+                                                uint32_t compareMask,
+                                                uint32_t writeMask,
+                                                uint32_t referenceValue) {
+   ctAssert(pBuilder);
+   ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
+   VkPipelineDepthStencilStateCreateInfo& depthStencil = pBuilder->raster.depthStencil;
+   depthStencil.stencilTestEnable = enable;
+   VkStencilOpState state = {};
+   state.failOp = (VkStencilOp)failOp;
+   state.passOp = (VkStencilOp)passOp;
+   state.depthFailOp = (VkStencilOp)depthFailOp;
+   state.compareOp = (VkCompareOp)testMode;
+   state.compareMask = compareMask;
+   state.writeMask = writeMask;
+   state.reference = referenceValue;
+
+   if (ctCFlagCheck(face, CT_GPU_FACE_FRONT)) { depthStencil.back = state; }
+   if (ctCFlagCheck(face, CT_GPU_FACE_BACK)) { depthStencil.back = state; }
+   return CT_SUCCESS;
+}
+
 CT_API ctResults ctGPUPipelineBuilderEnableDynamicState(ctGPUPipelineBuilder* pBuilder,
                                                         ctGPUDynamicState state) {
    ctAssert(pBuilder);
@@ -376,57 +412,57 @@ CT_API ctResults ctGPUPipelineBuilderEnableDynamicState(ctGPUPipelineBuilder* pB
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUPipelineBuilderSetRasterTask(ctGPUPipelineBuilder* pBuilder,
-                                                   ctGPUArchitect* pArchitect,
-                                                   const char* name) {
-   return CT_API ctResults();
-}
-
-CT_API ctResults ctGPUPipelineBuilderGenerateRaster(ctGPUDevice* pDevice,
-                                                    ctGPUPipelineBuilder* pBuilder,
-                                                    ctGPUPipelineRaster* pPipeline) {
+CT_API ctResults ctGPUPipelineBuilderSetAttachments(ctGPUPipelineBuilder* pBuilder,
+                                                    TinyImageFormat depthFormat,
+                                                    uint32_t colorCount,
+                                                    TinyImageFormat* colorFormats) {
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
-   pBuilder->raster.createInfo.stageCount = pBuilder->stageCount;
-   // pBuilder->raster.createInfo.layout = pDevice->globalLayout;
-   if (vkCreateGraphicsPipelines(pDevice->vkDevice,
-                                 pDevice->vkPipelineCache,
-                                 1,
-                                 &pBuilder->raster.createInfo,
-                                 &pDevice->vkAllocCallback,
-                                 (VkPipeline*)pPipeline) != VK_SUCCESS) {
-      return CT_FAILURE_RUNTIME_ERROR;
+   ctAssert(colorFormats);
+   VkPipelineRenderingCreateInfoKHR& renderInfo = pBuilder->raster.dynamicRendering;
+   renderInfo.colorAttachmentCount = colorCount;
+   renderInfo.viewMask = 0;
+   VkFormat vDepthFormat = (VkFormat)(TinyImageFormat_ToVkFormat(depthFormat));
+   if (TinyImageFormat_IsDepthOnly(depthFormat)) {
+      renderInfo.depthAttachmentFormat = vDepthFormat;
+      renderInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+   } else if (TinyImageFormat_IsStencilOnly(depthFormat)) {
+      renderInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+      renderInfo.stencilAttachmentFormat = vDepthFormat;
+   } else {
+      renderInfo.depthAttachmentFormat = vDepthFormat;
+      renderInfo.stencilAttachmentFormat = vDepthFormat;
    }
-   return CT_SUCCESS;
+   for (uint32_t i = 0; i < colorCount; i++) {
+      pBuilder->raster.colorFormats[i] =
+        (VkFormat)(TinyImageFormat_ToVkFormat(colorFormats[i]));
+   }
+   return CT_API CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUPipelineBuilderGenerateCompute(ctGPUDevice* pDevice,
-                                                     ctGPUPipelineBuilder* pBuilder,
-                                                     ctGPUPipelineCompute* pPipeline) {
+CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
+                                     ctGPUPipelineBuilder* pBuilder,
+                                     ctGPUPipeline* pPipeline) {
+   ctAssert(pDevice);
    ctAssert(pBuilder);
-   ctAssert(pBuilder->type == CT_GPU_PIPELINE_COMPUTE);
+   if (pBuilder->type == CT_GPU_PIPELINE_RASTER) {
+      pBuilder->raster.createInfo.stageCount = pBuilder->stageCount;
+      // pBuilder->raster.createInfo.layout = pDevice->globalLayout;
+      if (vkCreateGraphicsPipelines(pDevice->vkDevice,
+                                    pDevice->vkPipelineCache,
+                                    1,
+                                    &pBuilder->raster.createInfo,
+                                    &pDevice->vkAllocCallback,
+                                    (VkPipeline*)pPipeline) != VK_SUCCESS) {
+         return CT_FAILURE_RUNTIME_ERROR;
+      }
+      return CT_SUCCESS;
+   }
    return CT_FAILURE_UNKNOWN;
 }
 
-CT_API ctResults ctGPUPipelineBuilderGenerateRaytrace(ctGPUDevice* pDevice,
-                                                      ctGPUPipelineBuilder* pBuilder,
-                                                      ctGPUPipelineRaytrace* pPipeline) {
-   ctAssert(pBuilder);
-   ctAssert(pBuilder->type == CT_GPU_PIPELINE_RAYTRACE);
-   return CT_FAILURE_UNKNOWN;
-}
-
-CT_API void ctGPUPipelineRasterDestroy(ctGPUDevice* pDevice,
-                                       ctGPUPipelineRaster pipeline) {
-   vkDestroyPipeline(pDevice->vkDevice, (VkPipeline)pipeline, &pDevice->vkAllocCallback);
-}
-
-CT_API void ctGPUPipelineComputeDestroy(ctGPUDevice* pDevice,
-                                        ctGPUPipelineRaster pipeline) {
-   vkDestroyPipeline(pDevice->vkDevice, (VkPipeline)pipeline, &pDevice->vkAllocCallback);
-}
-
-CT_API void ctGPUPipelineRaytraceDestroy(ctGPUDevice* pDevice,
-                                         ctGPUPipelineRaster pipeline) {
+CT_API void ctGPUPipelineDestroy(ctGPUDevice* pDevice, ctGPUPipeline pipeline) {
+   ctAssert(pDevice);
+   ctAssert(pipeline);
    vkDestroyPipeline(pDevice->vkDevice, (VkPipeline)pipeline, &pDevice->vkAllocCallback);
 }
