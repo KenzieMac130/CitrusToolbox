@@ -56,6 +56,7 @@ public:
    void RemoveAt(const int64_t position = 0);
    ctResults Remove(const T& val, const int64_t position = 0);
    void RemoveLast();
+   void RemoveAllOf(const T& val);
    /* Clear */
    void Clear();
    /* Memset */
@@ -323,6 +324,11 @@ inline ctResults ctDynamicArray<T>::Remove(const T& val, const int64_t position)
 template<class T>
 inline void ctDynamicArray<T>::RemoveLast() {
    RemoveAt(-1);
+}
+
+template<class T>
+inline void ctDynamicArray<T>::RemoveAllOf(const T& val) {
+   while (Remove(val) == CT_SUCCESS) {}
 }
 
 template<class T>

@@ -104,7 +104,7 @@ ctVec4 ctRandomGenerator::GetColor(float alpha) {
    return ctVec4(GetFloatUNorm(), GetFloatUNorm(), GetFloatUNorm(), alpha);
 }
 
-/* Not guaranteed to be threadsafe
+/* Guarantee threadsafety
 Windows: Multithreaded CRT is safe
 POSIX: Use rand_r() for safety */
 int32_t ctRand() {

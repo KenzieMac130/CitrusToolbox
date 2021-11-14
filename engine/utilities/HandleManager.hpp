@@ -44,6 +44,7 @@ public:
    };
    inline ctHandle GetNewHandle();
    inline void FreeHandle(ctHandle hndl);
+   inline void Clear(); /* only do this if handles no-longer matter! */
 
 private:
    ctDynamicArray<_ctInternalHandleRep> _freeList;
@@ -66,4 +67,8 @@ inline void ctHandleManager::FreeHandle(ctHandle hndl) {
    _ctInternalHandleRep toInsert;
    toInsert.data = hndl;
    _freeList.Append(toInsert);
+}
+
+inline void ctHandleManager::Clear() {
+   _freeList.Clear();
 }
