@@ -1,7 +1,7 @@
 # CitrusToolbox
  Small Game Engine
  
- ![CitrusToolboxArchitecture](/docs/CitrusToolboxArchitecture.png)
+<!--- ![CitrusToolboxArchitecture](/docs/CitrusToolboxArchitecture.png) --->
 
  Project is a work-in-progress, feel free to take a look around.
  
