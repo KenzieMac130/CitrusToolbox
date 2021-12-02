@@ -81,16 +81,7 @@ CT_API ctResults ctGPUPipelineBuilderSetDepthBias(ctGPUPipelineBuilder* pBuilder
                                                   float constantFactor,
                                                   float slopeFactor,
                                                   float clamp);
-enum ctGPUBlendingMode {
-   CT_GPU_BLEND_ADD,
-   CT_GPU_BLEND_SUBTRACT,
-   CT_GPU_BLEND_MULTIPLY,
-   CT_GPU_BLEND_MAX,
-   CT_GPU_BLEND_MIN,
-   CT_GPU_BLEND_LERP,
-   CT_GPU_BLEND_OVERWRITE,
-   CT_GPU_BLEND_DISCARD
-};
+
 CT_API ctResults ctGPUPipelineBuilderSetBlendMode(ctGPUPipelineBuilder* pBuilder,
                                                   uint32_t attachmentIndex,
                                                   bool enabled,
@@ -106,12 +97,6 @@ enum ctGPUFillMode { CT_GPU_FILL_SOLID, CT_GPU_FILL_LINES, CT_GPU_FILL_POINTS };
 CT_API ctResults ctGPUPipelineBuilderSetFillMode(ctGPUPipelineBuilder* pBuilder,
                                                  ctGPUFillMode fill);
 
-enum ctGPUFaceBits {
-   CT_GPU_FACE_NONE = 0,
-   CT_GPU_FACE_FRONT = 0x01,
-   CT_GPU_FACE_BACK = 0x02,
-   CT_GPU_FACE_BOTH = CT_GPU_FACE_FRONT | CT_GPU_FACE_BACK
-};
 typedef int32_t ctGPUFaceMask;
 CT_API ctResults ctGPUPipelineBuilderSetFaceCull(ctGPUPipelineBuilder* pBuilder,
                                                  ctGPUFaceMask cull);
@@ -128,15 +113,6 @@ CT_API ctResults ctGPUPipelineBuilderSetTopology(ctGPUPipelineBuilder* pBuilder,
 CT_API ctResults ctGPUPipelineBuilderSetTessPoints(ctGPUPipelineBuilder* pBuilder,
                                                    int32_t points);
 
-enum ctGPUSampleCounts {
-   CT_GPU_SAMPLES_1 = 1,
-   CT_GPU_SAMPLES_2 = 2,
-   CT_GPU_SAMPLES_4 = 4,
-   CT_GPU_SAMPLES_8 = 8,
-   CT_GPU_SAMPLES_16 = 16,
-   CT_GPU_SAMPLES_32 = 32,
-   CT_GPU_SAMPLES_64 = 64
-};
 CT_API ctResults ctGPUPipelineBuilderSetMSAA(ctGPUPipelineBuilder* pBuilder,
                                              ctGPUSampleCounts samples,
                                              bool sampleShading,

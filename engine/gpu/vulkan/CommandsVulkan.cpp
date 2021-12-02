@@ -17,6 +17,7 @@
 #include "CommandsVulkan.hpp"
 
 #include "vulkan/vulkan.h"
+#include "..\Commands.h"
 
 /* The intention of the abstraction is to be thin to promote inlining */
 
@@ -33,25 +34,25 @@ CT_API void ctGPUCmdDraw(ctGPUCommandBuffer commandBuffer,
 }
 
 CT_API void ctGPUCmdDrawIndirect(ctGPUCommandBuffer commandBuffer,
-                                 ctGPUBufferAccessor* pBuffer,
+                                 ctGPUBufferAccessor buffer,
                                  size_t bufferOffset,
                                  uint32_t drawCount,
                                  uint32_t stride) {
    vkCmdDrawIndirect(
-     (VkCommandBuffer)commandBuffer, (VkBuffer)pBuffer, bufferOffset, drawCount, stride);
+     (VkCommandBuffer)commandBuffer, (VkBuffer)buffer, bufferOffset, drawCount, stride);
 }
 
 CT_API void ctGPUCmdDrawIndirectRobust(ctGPUCommandBuffer commandBuffer,
-                                       ctGPUBufferAccessor* pBuffer,
+                                       ctGPUBufferAccessor buffer,
                                        size_t bufferOffset,
-                                       ctGPUBufferAccessor* pCountBuffer,
+                                       ctGPUBufferAccessor countBuffer,
                                        size_t countBufferOffset,
                                        uint32_t maxDrawCount,
                                        uint32_t stride) {
    vkCmdDrawIndirectCount((VkCommandBuffer)commandBuffer,
-                          (VkBuffer)pBuffer,
+                          (VkBuffer)buffer,
                           bufferOffset,
-                          (VkBuffer)pCountBuffer,
+                          (VkBuffer)countBuffer,
                           countBufferOffset,
                           maxDrawCount,
                           stride);
@@ -65,8 +66,8 @@ CT_API void ctGPUCmdDispatch(ctGPUCommandBuffer commandBuffer,
 }
 
 CT_API void ctGPUCmdBlit(ctGPUCommandBuffer commandBuffer,
-                         ctGPUImageAccessor* pSource,
-                         ctGPUImageAccessor* pDest,
+                         ctGPUImageAccessor source,
+                         ctGPUImageAccessor dest,
                          bool filter,
                          uint32_t regionCount,
                          ctGPUBlitRegion* pRegions) {
@@ -187,6 +188,21 @@ CT_API void ctGPUCmdSetStencilWrite(ctGPUCommandBuffer commandBuffer,
 
 CT_API void ctGPUCmdSetLineWidth(ctGPUCommandBuffer commandBuffer, float width) {
    vkCmdSetLineWidth((VkCommandBuffer)commandBuffer, width);
+}
+
+#include "DeviceVulkan.hpp"
+CT_API void ctGPUCmdSetDynamicInteger(ctGPUCommandBuffer commandBuffer,
+                                      ctGPUDevice* pDevice,
+                                      uint32_t index,
+                                      int32_t value) {
+   ctAssert(pDevice);
+   ctAssert(index > CT_MAX_GFX_DYNAMIC_INTS);
+   vkCmdPushConstants((VkCommandBuffer)commandBuffer,
+                      pDevice->vkGlobalPipelineLayout,
+                      VK_SHADER_STAGE_ALL,
+                      sizeof(int32_t) * index,
+                      sizeof(int32_t),
+                      &value);
 }
 
 CT_API void ctGPUCmdSetGraphicsPipeline(ctGPUCommandBuffer commandBuffer,

@@ -447,7 +447,7 @@ CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
    ctAssert(pBuilder);
    if (pBuilder->type == CT_GPU_PIPELINE_RASTER) {
       pBuilder->raster.createInfo.stageCount = pBuilder->stageCount;
-      // pBuilder->raster.createInfo.layout = pDevice->globalLayout;
+      pBuilder->raster.createInfo.layout = pDevice->vkGlobalPipelineLayout;
       if (vkCreateGraphicsPipelines(pDevice->vkDevice,
                                     pDevice->vkPipelineCache,
                                     1,

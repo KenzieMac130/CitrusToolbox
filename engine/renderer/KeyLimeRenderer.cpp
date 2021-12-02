@@ -20,24 +20,29 @@
 #include "gpu/Device.h"
 #include "gpu/Pipeline.h"
 #include "gpu/Architect.h"
+#include "gpu/Buffer.h"
+#include "gpu/Texture.h"
 
 #include "core/EngineCore.hpp"
 #include "core/Application.hpp"
 #include "core/WindowManager.hpp"
 #include "core/FileSystem.hpp"
 
-#define CT_GPU_BIND_BUFFER_SCENE_OCCLUSION 0
+#define CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION 0
 
-#define CT_GPU_BIND_TEXTURE_SCENE_DEPTH    0
-#define CT_GPU_BIND_TEXTURE_GBUFFER_COLOR  1
-#define CT_GPU_BIND_TEXTURE_GBUFFER_NORMAL 2
-#define CT_GPU_BIND_TEXTURE_GBUFFER_PBR    3
-#define CT_GPU_BIND_TEXTURE_LIGHTING       4
+#define CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH    0
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR  1
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL 2
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR    3
+#define CT_KEYLIME_BIND_TEXTURE_LIGHTING       4
 
 ctGPUArchitectBufferPayloadDesc occlusionFeedbackDesc = {
-  CT_GPU_BIND_BUFFER_SCENE_OCCLUSION, "Occlusion List", CT_GPU_PAYLOAD_FEEDBACK, 2048};
+  CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION,
+  "Occlusion List",
+  CT_GPU_PAYLOAD_FEEDBACK,
+  2048};
 
-ctGPUArchitectImagePayloadDesc depthDesc = {CT_GPU_BIND_TEXTURE_SCENE_DEPTH,
+ctGPUArchitectImagePayloadDesc depthDesc = {CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH,
                                             "Scene Depth",
                                             0,
                                             1.0f,
@@ -45,7 +50,7 @@ ctGPUArchitectImagePayloadDesc depthDesc = {CT_GPU_BIND_TEXTURE_SCENE_DEPTH,
                                             1,
                                             1,
                                             TinyImageFormat_D24_UNORM_S8_UINT};
-ctGPUArchitectImagePayloadDesc gbufferColorDesc = {CT_GPU_BIND_TEXTURE_GBUFFER_COLOR,
+ctGPUArchitectImagePayloadDesc gbufferColorDesc = {CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR,
                                                    "GBuffer Color",
                                                    0,
                                                    1.0f,
@@ -53,15 +58,16 @@ ctGPUArchitectImagePayloadDesc gbufferColorDesc = {CT_GPU_BIND_TEXTURE_GBUFFER_C
                                                    1,
                                                    1,
                                                    TinyImageFormat_R8G8B8A8_UNORM};
-ctGPUArchitectImagePayloadDesc gbufferNormalDesc = {CT_GPU_BIND_TEXTURE_GBUFFER_NORMAL,
-                                                    "GBuffer Normal",
-                                                    0,
-                                                    1.0f,
-                                                    1.0f,
-                                                    1,
-                                                    1,
-                                                    TinyImageFormat_B10G10R10A2_UNORM};
-ctGPUArchitectImagePayloadDesc gbufferPBRDesc = {CT_GPU_BIND_TEXTURE_GBUFFER_PBR,
+ctGPUArchitectImagePayloadDesc gbufferNormalDesc = {
+  CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL,
+  "GBuffer Normal",
+  0,
+  1.0f,
+  1.0f,
+  1,
+  1,
+  TinyImageFormat_B10G10R10A2_UNORM};
+ctGPUArchitectImagePayloadDesc gbufferPBRDesc = {CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR,
                                                  "GBuffer PBR",
                                                  0,
                                                  1.0f,
@@ -69,7 +75,7 @@ ctGPUArchitectImagePayloadDesc gbufferPBRDesc = {CT_GPU_BIND_TEXTURE_GBUFFER_PBR
                                                  1,
                                                  1,
                                                  TinyImageFormat_R8G8B8A8_UNORM};
-ctGPUArchitectImagePayloadDesc lightBufferDesc = {CT_GPU_BIND_TEXTURE_LIGHTING,
+ctGPUArchitectImagePayloadDesc lightBufferDesc = {CT_KEYLIME_BIND_TEXTURE_LIGHTING,
                                                   "GBuffer Light",
                                                   0,
                                                   1.0f,
@@ -120,6 +126,10 @@ ctResults DefineObjectOcclusionPass(ctGPUArchitectDefinitionContext* pCtx,
 }
 // clang-format on
 
+void GenerateTestBuffer(uint8_t* dest, size_t size, void* userData) {
+   memset(dest, 0, size);
+}
+
 ctResults OpenCacheFileCallback(ctFile* pFileOut,
                                 const char* path,
                                 ctFileOpenMode fileMode,
@@ -127,6 +137,13 @@ ctResults OpenCacheFileCallback(ctFile* pFileOut,
    ctAssert(pFileSystem);
    ctAssert(pFileOut);
    return pFileSystem->OpenPreferencesFile(*pFileOut, path, fileMode);
+}
+
+ctResults
+OpenAssetFileCallback(ctFile* pFileOut, ctGUID* pGuid, ctFileSystem* pFileSystem) {
+   ctAssert(pFileSystem);
+   ctAssert(pFileOut);
+   return pFileSystem->OpenAssetFileGUID(*pFileOut, *pGuid);
 }
 
 ctResults ctKeyLimeRenderer::Startup() {
@@ -137,6 +154,7 @@ ctResults ctKeyLimeRenderer::Startup() {
    ImGui::GetIO().DisplaySize.y = 480.0f;
    ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
    ImGui::NewFrame();
+
    ctGPUDeviceCreateInfo deviceCreateInfo = {};
    deviceCreateInfo.appName = Engine->App->GetAppName();
    deviceCreateInfo.version[0] = Engine->App->GetAppVersion().major;
@@ -148,23 +166,38 @@ ctResults ctKeyLimeRenderer::Startup() {
    deviceCreateInfo.useVSync = false;
    deviceCreateInfo.validationEnabled = true;
    ctGPUDeviceStartup(&pGPUDevice, &deviceCreateInfo, NULL);
-   Engine->WindowManager->ShowMainWindow();
+
+   ctGPUExternalBufferPoolCreateInfo bufferPoolInfo = {};
+   ctGPUExternalBufferPoolCreate(pGPUDevice, &pGPUBufferPool, &bufferPoolInfo);
+
+   ctGPUExternalBufferCreateInfo bufferInfo = {};
+   bufferInfo.debugName = "Test Buffer";
+   bufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
+   bufferInfo.source = CT_GPU_EXTERN_SOURCE_GENERATE;
+   bufferInfo.updateMode = CT_GPU_UPDATE_DYNAMIC;
+   bufferInfo.generate.size = 1024;
+   bufferInfo.generate.fpGenerationFunction = GenerateTestBuffer;
+   bufferInfo.generate.pUserData = NULL;
+   ctGPUExternalBuffer* pExternBuffer;
+   ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, 1, &pExternBuffer, &bufferInfo);
+   ctGPUExternalBufferRelease(pGPUDevice, pGPUBufferPool, 1, &pExternBuffer);
+   ctGPUExternalBufferPoolFlush(pGPUDevice, pGPUBufferPool);
 
    /* Temporary Test Render Graph */
    ctGPUArchitectCreateInfo architectInfo = {};
    ctGPUArchitectStartup(pGPUDevice, &pGPUArchitect, &architectInfo);
 
    ctGPUArchitectTaskInfo lightPass = {
-     "Lighting Pass", CT_GPU_TASK_RASTER, DefineLightPass, NULL, NULL};
+     "Lighting Pass", 0, CT_GPU_TASK_RASTER, DefineLightPass, NULL, NULL};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &lightPass);
    ctGPUArchitectTaskInfo depthPrepass = {
-     "Depth Prepass", CT_GPU_TASK_RASTER, DefineDepthPrepass, NULL, NULL};
+     "Depth Prepass", 0, CT_GPU_TASK_RASTER, DefineDepthPrepass, NULL, NULL};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &depthPrepass);
    ctGPUArchitectTaskInfo gbufferPass = {
-     "GBuffer Pass", CT_GPU_TASK_RASTER, DefineGBufferPass, NULL, NULL};
+     "GBuffer Pass", 0, CT_GPU_TASK_RASTER, DefineGBufferPass, NULL, NULL};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gbufferPass);
    ctGPUArchitectTaskInfo occlusionBuildPass = {
-     "Build Occlusion", CT_GPU_TASK_COMPUTE, DefineObjectOcclusionPass, NULL, NULL};
+     "Build Occlusion", 0, CT_GPU_TASK_COMPUTE, DefineObjectOcclusionPass, NULL, NULL};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &occlusionBuildPass);
    ctGPUArchitectSetOutput(pGPUDevice, pGPUArchitect, CT_ARCH_ID("C_LightBuffer"), 0);
 
@@ -173,12 +206,16 @@ ctResults ctKeyLimeRenderer::Startup() {
    ctStringUtf8 dotPath = Engine->FileSystem->GetPreferencesPath();
    dotPath.FilePathAppend("RENDERGRAPH_DUMP");
    ctGPUArchitectDumpGraphVis(pGPUArchitect, dotPath.CStr(), true, true);
+
+   /* Show window */
+   Engine->WindowManager->ShowMainWindow();
 #endif
    return CT_SUCCESS;
 }
 
 ctResults ctKeyLimeRenderer::Shutdown() {
 #if !CITRUS_HEADLESS
+   ctGPUExternalBufferPoolDestroy(pGPUDevice, pGPUBufferPool);
    ctGPUArchitectShutdown(pGPUDevice, pGPUArchitect);
    ctGPUDeviceShutdown(pGPUDevice);
 #endif

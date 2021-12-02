@@ -30,14 +30,14 @@ CT_API void ctGPUCmdDraw(ctGPUCommandBuffer commandBuffer,
                          uint32_t firstVertex,
                          uint32_t firstInstance);
 CT_API void ctGPUCmdDrawIndirect(ctGPUCommandBuffer commandBuffer,
-                                 struct ctGPUBufferAccessor* pBuffer,
+                                 ctGPUBufferAccessor buffer,
                                  size_t bufferOffset,
                                  uint32_t drawCount,
                                  uint32_t stride);
 CT_API void ctGPUCmdDrawIndirectRobust(ctGPUCommandBuffer commandBuffer,
-                                       struct ctGPUBufferAccessor* pBuffer,
+                                       ctGPUBufferAccessor puffer,
                                        size_t bufferOffset,
-                                       struct ctGPUBufferAccessor* pCountBuffer,
+                                       ctGPUBufferAccessor countBuffer,
                                        size_t countBufferOffset,
                                        uint32_t maxDrawCount,
                                        uint32_t stride);
@@ -68,8 +68,8 @@ struct ctGPUBlitRegion {
 };
 
 CT_API void ctGPUCmdBlit(ctGPUCommandBuffer commandBuffer,
-                         struct ctGPUImageAccessor* pSource,
-                         struct ctGPUImageAccessor* pDest,
+                         ctGPUImageAccessor source,
+                         ctGPUImageAccessor dest,
                          bool filter,
                          uint32_t regionCount,
                          ctGPUBlitRegion* pRegions);
@@ -119,6 +119,10 @@ CT_API void ctGPUCmdSetLineWidth(ctGPUCommandBuffer commandBuffer, float width);
 
 /* ------------------ Input Data ------------------ */
 
+CT_API void ctGPUCmdSetDynamicInteger(ctGPUCommandBuffer commandBuffer,
+                                      ctGPUDevice* pDevice,
+                                      uint32_t index,
+                                      int32_t value);
 CT_API void ctGPUCmdSetGraphicsPipeline(ctGPUCommandBuffer commandBuffer,
                                         ctGPUPipeline pipeline);
 CT_API void ctGPUCmdSetComputePipeline(ctGPUCommandBuffer commandBuffer,

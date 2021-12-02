@@ -14,21 +14,12 @@
    limitations under the License.
 */
 
-#pragma once
+#include "TextureVulkan.hpp"
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
+#include "vulkan/vulkan.h"
 
-class CT_API ctKeyLimeRenderer : public ctModuleBase {
-public:
-   ctResults Startup() final;
-   ctResults Shutdown() final;
-
-   ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
-
-   ctResults RenderFrame();
-
-   struct ctGPUDevice* pGPUDevice;
-   struct ctGPUArchitect* pGPUArchitect;
-   struct ctGPUExternalBufferPool* pGPUBufferPool;
-};
+CT_API ctResults ctGPUExternalTextureCreate(ctGPUDevice* pDevice,
+                                            ctGPUExternalTexture** ppExternalTexture,
+                                            ctGPUExternalTextureCreateInfo* pInfo) {
+   return CT_API ctResults();
+}

@@ -28,7 +28,6 @@
 #endif
 
 #include "core/Translation.hpp"
-#include "core/FileSystem.hpp"
 
 #define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \
@@ -36,6 +35,12 @@
       if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, _msg); }           \
    }
 #define PIPELINE_CACHE_FILE_PATH "VK_PIPELINE_CACHE"
+#define CT_MAX_CONVEYOR_FRAMES   CT_MAX_INFLIGHT_FRAMES + 1
+
+#define GLOBAL_BIND_SAMPLER        0
+#define GLOBAL_BIND_SAMPLED_IMAGE  1
+#define GLOBAL_BIND_STORAGE_IMAGE  2
+#define GLOBAL_BIND_STORAGE_BUFFER 3
 
 struct ctVkQueueFamilyIndices {
    uint32_t graphicsIdx;
@@ -119,6 +124,39 @@ struct ctVkCompleteBuffer {
    VmaAllocation alloc;
 };
 
+class CT_API ctVkDescriptorManager {
+public:
+   ctVkDescriptorManager() {
+      nextNewIdx = 0;
+      _max = 0;
+   }
+   ctVkDescriptorManager(int32_t max) {
+      nextNewIdx = 0;
+      _max = max;
+   }
+
+   /* Get the next open slot to place a resource in the bindless system */
+   inline int32_t AllocateSlot() {
+      int32_t result = nextNewIdx;
+      if (!freedIdx.isEmpty()) {
+         result = freedIdx.Last();
+         freedIdx.RemoveLast();
+      } else {
+         nextNewIdx++;
+      }
+      return result;
+   }
+   /* Only call once the resource is not in-flight! */
+   void ReleaseSlot(const int32_t idx) {
+      freedIdx.Append(idx);
+   }
+
+private:
+   int32_t _max;
+   ctDynamicArray<int32_t> freedIdx;
+   int32_t nextNewIdx;
+};
+
 /* -------- Define Structure -------- */
 struct ctGPUDevice {
    ctResults Startup();
@@ -134,6 +172,9 @@ struct ctGPUDevice {
    SDL_Window* pMainWindow;
    ctGPUOpenCacheFileFn fpOpenCacheFileCallback;
    void* pCacheCallbackCustomData;
+   ctGPUOpenAssetFileFn fpOpenAssetFileCallback;
+   void* pAssetCallbackCustomData;
+   ctFile OpenAssetFile(ctGPUAssetIdentifier* pAssetIdentifier);
 
    /* Vulkan Objects */
    VkAllocationCallbacks vkAllocCallback;
@@ -161,6 +202,7 @@ struct ctGPUDevice {
 
    ctVkScreenResources mainScreenResources;
 
+   int32_t conveyorFrame;
    int32_t currentFrame;
    VkFence frameAvailibleFences[CT_MAX_INFLIGHT_FRAMES];
 
@@ -172,7 +214,14 @@ struct ctGPUDevice {
    bool DeviceHasRequiredExtensions(VkPhysicalDevice gpu);
    inline void AdvanceNextFrame() {
       currentFrame = (currentFrame + 1) % CT_MAX_INFLIGHT_FRAMES;
+      conveyorFrame = (conveyorFrame + 1) % CT_MAX_CONVEYOR_FRAMES;
+      AdvanceStagingCooldownTimers();
    };
+
+   /* Used to find safe resources that have "fallen off the conveyor belt"*/
+   inline int32_t GetNextSafeReleaseConveyor() {
+      return (conveyorFrame + 1) % CT_MAX_CONVEYOR_FRAMES;
+   }
    VkResult WaitForFrameAvailible();
    void RecreateSync();
 
@@ -208,4 +257,107 @@ struct ctGPUDevice {
                                  uint32_t* pQueueFamilyIndices = NULL);
    void TryDestroyCompleteImage(ctVkCompleteImage& fullImage);
    void TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer);
+
+   /* Bindless System */
+   VkDescriptorSetLayout vkGlobalDescriptorSetLayout;
+   VkDescriptorPool vkDescriptorPool;
+   VkDescriptorSet vkGlobalDescriptorSet;
+   VkPipelineLayout vkGlobalPipelineLayout;
+   ctVkDescriptorManager descriptorsSamplers;
+   ctVkDescriptorManager descriptorsSampledImage;
+   ctVkDescriptorManager descriptorsStorageImage;
+   ctVkDescriptorManager descriptorsStorageBuffer;
+   int32_t maxSamplers = CT_MAX_GFX_SAMPLERS;
+   int32_t maxSampledImages = CT_MAX_GFX_SAMPLED_IMAGES;
+   int32_t maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
+   int32_t maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
+
+   // todo: better api for filling in descriptors
+   void ExposeBindlessStorageBuffer(uint32_t& outIdx,
+                                    VkBuffer buffer,
+                                    VkDeviceSize range = VK_WHOLE_SIZE,
+                                    VkDeviceSize offset = 0);
+   void ReleaseBindlessStorageBuffer(uint32_t idx);
+   void ExposeBindlessSampledImage(
+     uint32_t& outIdx,
+     VkImageView view,
+     VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+     VkSampler sampler = VK_NULL_HANDLE);
+   void ReleaseBindlessSampledImage(uint32_t idx);
+
+   /* Staging */
+   ctResults GetStagingBuffer(ctVkCompleteBuffer& fullBuffer,
+                              size_t& offset,
+                              uint8_t*& mapping,
+                              size_t sizeRequest);
+   void AdvanceStagingCooldownTimers();
+   void DestroyAllStagingBuffers();
+   struct StagingEntry {
+      size_t size;
+      uint8_t* mapping;
+      ctVkCompleteBuffer buffer;
+   };
+   ctDynamicArray<int8_t> stagingBufferCooldown;
+   ctDynamicArray<StagingEntry> stagingBuffers;
+
+   /* Command buffers */
+   struct CommandBufferManager {
+      void Startup(ctGPUDevice* pDevice, uint32_t queueFamilyIdx);
+      void Shutdown(ctGPUDevice* pDevice);
+      void BeginFrame(ctGPUDevice* pDevice);
+      void Submit(ctGPUDevice* pDevice, VkQueue queue);
+      VkCommandBuffer cmd[CT_MAX_INFLIGHT_FRAMES];
+      VkCommandPool pool;
+   };
+   CommandBufferManager graphicsCommands;
+   CommandBufferManager computeCommands;
+   CommandBufferManager transferCommands;
+};
+
+/* Conveyor belt resource handling */
+struct ctVkConveyorBeltResource {
+   virtual ctResults Create(ctGPUDevice* pDevice) = 0;
+   virtual ctResults Update(ctGPUDevice* pDevice) = 0;
+   virtual ctResults Free(ctGPUDevice* pDevice) = 0;
+};
+
+struct ctVkConveyorBeltPool {
+   ctDynamicArray<ctVkConveyorBeltResource*> live;
+   ctDynamicArray<ctVkConveyorBeltResource*> toAllocate;
+   ctDynamicArray<ctVkConveyorBeltResource*> toUpdate;
+   ctDynamicArray<ctVkConveyorBeltResource*> toFree[CT_MAX_CONVEYOR_FRAMES];
+
+   inline void Add(ctVkConveyorBeltResource* pResource) {
+      toAllocate.Append(pResource);
+   }
+   inline void Update(ctVkConveyorBeltResource* pResource) {
+      toUpdate.Append(pResource);
+   }
+   inline void Release(ctVkConveyorBeltResource* pResource,
+                       int32_t currentConveyorFrame) {
+      toFree[currentConveyorFrame].Append(pResource);
+      live.Remove(pResource);
+   }
+   inline void Shutdown(ctGPUDevice* pDevice) {
+      for (size_t i = 0; i < live.Count(); i++) {
+         live[i]->Free(pDevice);
+      }
+   }
+   inline ctResults Flush(ctGPUDevice* pDevice, int32_t nextFreeFrame) {
+      for (size_t i = 0; i < toAllocate.Count(); i++) {
+         toAllocate[i]->Create(pDevice);
+         live.Append(toAllocate[i]);
+      }
+      for (size_t i = 0; i < toUpdate.Count(); i++) {
+         toUpdate[i]->Update(pDevice);
+      }
+      for (size_t i = 0; i < toFree[nextFreeFrame].Count(); i++) {
+         toFree[nextFreeFrame][i]->Free(pDevice);
+         delete toFree[nextFreeFrame][i];
+      }
+      toAllocate.Clear();
+      toUpdate.Clear();
+      toFree[nextFreeFrame].Clear();
+      return CT_SUCCESS;
+   }
 };

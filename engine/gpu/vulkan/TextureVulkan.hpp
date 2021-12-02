@@ -17,18 +17,5 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
 
-class CT_API ctKeyLimeRenderer : public ctModuleBase {
-public:
-   ctResults Startup() final;
-   ctResults Shutdown() final;
-
-   ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
-
-   ctResults RenderFrame();
-
-   struct ctGPUDevice* pGPUDevice;
-   struct ctGPUArchitect* pGPUArchitect;
-   struct ctGPUExternalBufferPool* pGPUBufferPool;
-};
+#include "gpu/Texture.h"

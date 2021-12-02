@@ -73,8 +73,10 @@ typedef ctResults (*ctGPUArchitectTaskDefinitionFn)(ctGPUArchitectDefinitionCont
 typedef ctResults (*ctGPUArchitectTaskExecutionFn)(ctGPUArchitectExecutionContext* pCtx,
                                                    void* pUserData);
 
+enum ctGPUArchitectTaskFlags { CT_GPU_ARCH_TASK_NO_EXTERNAL_RESOURCES = 0x01 };
 struct ctGPUArchitectTaskInfo {
    const char* name;
+   int32_t flags;
    ctGPUArchitectTaskCategory category;
    ctGPUArchitectTaskDefinitionFn fpDefinition;
    ctGPUArchitectTaskExecutionFn fpExecution;
