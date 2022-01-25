@@ -15,7 +15,7 @@
       <Item Name="[count]">_count</Item>
       <Item Name="[capacity]">_capacity</Item>
       <Item Name="[baseSize]">_baseSize</Item>
-      <CustomListItems MaxItemsPerView="5000">
+      <CustomListItems MaxItemsPerView="4096">
         <Variable Name="idx" InitialValue="0" />
         <Size>_count</Size>
         <Loop>
@@ -27,5 +27,8 @@
         </Loop>
       </CustomListItems>
     </Expand>
+  </Type>
+  <Type Name="ctStringUtf8">
+    <DisplayString>{_data._pData}</DisplayString>
   </Type>
 </AutoVisualizer>
