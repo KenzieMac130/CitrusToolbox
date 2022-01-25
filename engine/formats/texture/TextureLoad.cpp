@@ -84,9 +84,7 @@ ctResults ctLoadTextureFromFile(const char* path, ctTextureLoadCtx* ctx) {
    ctFile file = ctFile(path, CT_FILE_OPEN_READ);
    if (!file.isOpen()) { return CT_FAILURE_INACCESSIBLE; }
 
-   ctStringUtf8 ext = path;
-   ext.FilePathGetExtension();
-   if (ext == ".ktx") {
+   if (1/* check ktx magic number*/) {
       /* Load Tiny KTX */
       tinyUserData ud = {&file};
       TinyKtx_ContextHandle tinyKtx = TinyKtx_CreateContext(&tinyKtxCbs, &ud);
@@ -94,9 +92,11 @@ ctResults ctLoadTextureFromFile(const char* path, ctTextureLoadCtx* ctx) {
          TinyKtx_DestroyContext(tinyKtx);
          return CT_FAILURE_CORRUPTED_CONTENTS;
       }
-   } else if (ext == ".dds") {
+   } else if (1/* check dds magic*/) {
       /* Load Tiny DDS */
-   } else {
+   } else if(1/* Wants 3D texture & Check for CUBE file keywords (#**, TIT, LUT, DOM*/) {
+	   /* https://wwwimages2.adobe.com/content/dam/acom/en/products/speedgrade/cc/pdfs/cube-lut-specification-1.0.pdf */
+   } else if(1/* Wants 2D texture */) {
       /* Attempt to Load STB */
       int channels = 0;
       stbUserData ud = {&file};
@@ -104,6 +104,8 @@ ctResults ctLoadTextureFromFile(const char* path, ctTextureLoadCtx* ctx) {
         &stbCallbacks, &ud, &ctx->memory.width, &ctx->memory.height, &channels, 4);
       ctx->memory.format = TinyImageFormat_R8G8B8A8_UNORM;
       if (!ctx->memory.data) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   } else {
+	   return CT_FAILURE_CORRUPTED_CONTENTS;
    }
    return CT_SUCCESS;
 }
