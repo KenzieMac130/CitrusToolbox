@@ -98,6 +98,13 @@ struct ctGPUArchitectTaskInternal {
      dependencies;
 
    void* apiData;
+
+   inline void Reset() {
+      images.Clear();
+      buffers.Clear();
+      barriers.Clear();
+      dependencies.Clear();
+   }
 };
 
 struct ctGPUArchitectDefinitionContext {

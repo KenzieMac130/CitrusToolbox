@@ -308,6 +308,7 @@ ctResults ctGPUArchitect::Build(ctGPUDevice* pDevice, uint32_t width, uint32_t h
    if (isCacheBuilt()) { ResetCache(pDevice); }
    for (size_t i = 0; i < tasks.Count(); i++) {
       ctGPUArchitectTaskInternal& task = tasks[i];
+      task.Reset();
       ctGPUArchitectDefinitionContext ctx = {&task};
       if (!task.fpDefinition) { return CT_FAILURE_INVALID_PARAMETER; }
       if (task.fpDefinition(&ctx, tasks[i].pUserData) == CT_SUCCESS) {
@@ -419,7 +420,7 @@ void ctGPUArchitect::InitialAddPayloads(ctGPUArchitectTaskInternal* pTask) {
       }
    }
    for (int32_t i = 0; i < pTask->buffers.Count(); i++) {
-      cpLogicalBufferPayloads.Insert(pTask->images[i].identifier, &pTask->buffers[i]);
+      cpLogicalBufferPayloads.Insert(pTask->buffers[i].identifier, &pTask->buffers[i]);
       cpDependencyNames.Insert(pTask->buffers[i].identifier, pTask->buffers[i].debugName);
       if (ctCFlagCheck(pTask->buffers[i].flags, CT_GPU_PAYLOAD_FEEDBACK)) {
          cpDependencyFeedbacks.Append(pTask->buffers[i].identifier);
