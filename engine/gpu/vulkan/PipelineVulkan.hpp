@@ -21,18 +21,6 @@
 #include "gpu/Pipeline.h"
 #include "DeviceVulkan.hpp"
 
-/* not there yet :P */
-// Provided by VK_KHR_dynamic_rendering
-typedef struct VkPipelineRenderingCreateInfoKHR {
-   VkStructureType sType;
-   const void* pNext;
-   uint32_t viewMask;
-   uint32_t colorAttachmentCount;
-   const VkFormat* pColorAttachmentFormats;
-   VkFormat depthAttachmentFormat;
-   VkFormat stencilAttachmentFormat;
-} VkPipelineRenderingCreateInfoKHR;
-
 /* -------- Define Structure -------- */
 struct ctGPUPipelineBuilder {
    ctGPUPipelineBuilder(ctGPUPipelineType pipelineType);
@@ -42,6 +30,7 @@ struct ctGPUPipelineBuilder {
          VkGraphicsPipelineCreateInfo createInfo;
          VkPipelineInputAssemblyStateCreateInfo inputAssembly;
          VkPipelineTessellationStateCreateInfo tessellation;
+         VkPipelineVertexInputStateCreateInfo vertex;
          VkPipelineViewportStateCreateInfo viewport;
          VkPipelineRasterizationStateCreateInfo rasterState;
          VkPipelineMultisampleStateCreateInfo msaa;

@@ -57,11 +57,12 @@ enum ctGPUShaderType {
 CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
                                           ctGPUShaderModule* pShaderOut,
                                           ctWADReader* pWad,
-                                          int32_t fxSegment,
+                                          const char* name,
                                           ctGPUShaderType type);
 CT_API void ctGPUShaderSoftRelease(ctGPUDevice* pDevice, ctGPUShaderModule shader);
 
-CT_API ctResults ctGPUPipelineBuilderSetShader(ctGPUPipelineBuilder* pBuilder,
+CT_API ctResults ctGPUPipelineBuilderClearShaders(ctGPUPipelineBuilder* pBuilder);
+CT_API ctResults ctGPUPipelineBuilderAddShader(ctGPUPipelineBuilder* pBuilder,
                                                ctGPUShaderType type,
                                                ctGPUShaderModule shader);
 

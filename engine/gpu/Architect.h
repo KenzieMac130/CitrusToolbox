@@ -28,6 +28,7 @@ struct ctGPUArchitect;
 struct ctGPUArchitectDefinitionContext;
 
 enum ctGPUArchitectTaskCategory {
+   CT_GPU_TASK_UNDEFINED,
    CT_GPU_TASK_RASTER,
    CT_GPU_TASK_COMPUTE,
    CT_GPU_TASK_TRANSFER,
@@ -49,6 +50,8 @@ struct ctGPUArchitectExecutionContext {
 
    ctGPUCommandBuffer cmd;
 
+   ctGPUArchitect* pArchitect;
+   ctGPUDevice* pDevice;
    void* _internalData;
 };
 
@@ -84,8 +87,14 @@ struct ctGPUArchitectTaskInfo {
 };
 
 // Todo: look at other ways than explicit build (register with device)
+struct ctGPUArchitectBuildInfo {
+   uint32_t width;
+   uint32_t height;
+};
+
 CT_API ctResults ctGPUArchitectBuild(struct ctGPUDevice* pDevice,
-                                     struct ctGPUArchitect* pArchitect);
+                                     struct ctGPUArchitect* pArchitect,
+                                     ctGPUArchitectBuildInfo* pInfo);
 CT_API ctResults ctGPUArchitectReset(struct ctGPUDevice* pDevice,
                                      struct ctGPUArchitect* pArchitect);
 CT_API ctResults ctGPUArchitectAddTask(struct ctGPUDevice* pDevice,
@@ -186,10 +195,9 @@ CT_API ctResults ctGPUTaskSignalBarrier(struct ctGPUArchitectDefinitionContext* 
                                         ctGPUDependencyID id);
 
 /* Accessors */
-
-CT_API ctResults ctGPUTaskGetImageAccessor(struct ctGPUArchitectDefinitionContext* pCtx,
+CT_API ctResults ctGPUTaskGetImageAccessor(struct ctGPUArchitectExecutionContext* pCtx,
                                            ctGPUDependencyID id,
-                                           struct ctGPUImageAccessor* pAccessorOut);
-CT_API ctResults ctGPUTaskGetBufferAccessor(struct ctGPUArchitectDefinitionContext* pCtx,
+                                           ctGPUImageAccessor* pAccessorOut);
+CT_API ctResults ctGPUTaskGetBufferAccessor(struct ctGPUArchitectExecutionContext* pCtx,
                                             ctGPUDependencyID id,
-                                            struct ctGPUBufferAccessor* pAccessorOut);
+                                            ctGPUBufferAccessor* pAccessorOut);

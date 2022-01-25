@@ -18,13 +18,16 @@
 #include "formats/wad/prototypes/MarkersAndBlobs.h"
 
 ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
-   memset(this, 0, sizeof(this));
    type = pipelineType;
+   stageCount = 0;
+   memset(stages, 0, sizeof(stages));
    if (type == CT_GPU_PIPELINE_RASTER) {
+      memset(&raster, 0, sizeof(raster));
       // clang-format off
        raster.createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
        raster.inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
        raster.tessellation.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+       raster.vertex.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
        raster.viewport.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
        raster.rasterState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
        raster.msaa.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -35,22 +38,27 @@ ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
       // clang-format on
       raster.createInfo.pInputAssemblyState = &raster.inputAssembly;
       raster.createInfo.pTessellationState = &raster.tessellation;
+      raster.createInfo.pVertexInputState = &raster.vertex;
       raster.createInfo.pViewportState = &raster.viewport;
       raster.createInfo.pRasterizationState = &raster.rasterState;
       raster.createInfo.pMultisampleState = &raster.msaa;
       raster.createInfo.pDepthStencilState = &raster.depthStencil;
       raster.createInfo.pColorBlendState = &raster.blendState;
       raster.createInfo.pDynamicState = &raster.dynamicState;
-      raster.createInfo.pNext = &raster.dynamicRendering;
+
+      /* defaults */
+      raster.viewport.viewportCount = 1;
+      raster.viewport.scissorCount = 1;
+      raster.msaa.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+      raster.rasterState.lineWidth = 1.0f;
 
       raster.dynamicState.pDynamicStates = raster.dynamics;
       raster.blendState.pAttachments = raster.attachmentBlends;
       raster.createInfo.pStages = stages;
 
-      raster.createInfo.renderPass = VK_NULL_HANDLE;
-      raster.createInfo.subpass = 0;
       raster.dynamicRendering.pColorAttachmentFormats = raster.colorFormats;
 
+      ctGPUPipelineBuilderSetTopology(this, CT_GPU_TOPOLOGY_TRIANGLE_LIST, false);
       ctGPUPipelineBuilderEnableDynamicState(this, CT_GPU_DYNAMICSTATE_VIEWPORT);
       ctGPUPipelineBuilderEnableDynamicState(this, CT_GPU_DYNAMICSTATE_SCISSOR);
    }
@@ -75,7 +83,7 @@ CT_API void ctGPUPipelineBuilderReset(ctGPUPipelineBuilder* pBuilder) {
 CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
                                           ctGPUShaderModule* pShaderOut,
                                           ctWADReader* pWad,
-                                          int32_t fxSegment,
+                                          const char* name,
                                           ctGPUShaderType type) {
    ctAssert(pDevice);
    ctAssert(pWad);
@@ -94,12 +102,33 @@ CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
                                   CT_WADBLOB_NAME_SHADER_CALLABLE_SPIRV,
                                   CT_WADBLOB_NAME_SHADER_TASK_SPIRV,
                                   CT_WADBLOB_NAME_SHADER_MESH_SPIRV};
-   void* pData;
-   int32_t size;
+   if (!name) { name = "DEFAULT"; }
+   /* Lookup name table */
+   int32_t fxSegment = -1;
+   int32_t* nameOffsets = NULL;
+   int32_t nameByteSize = 0;
+   ctWADFindLump(pWad, CT_WADBLOB_NAME_FX_NAMES, (void**)&nameOffsets, &nameByteSize);
+   if (nameByteSize % 4 > 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (!nameOffsets) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   for (int i = 0; i < nameByteSize / 4; i++) {
+      const char* str = ctWADGetStringExt(pWad, nameOffsets[i]);
+      if (ctCStrEql(str, name)) { 
+          fxSegment = i;
+      }
+   }
+   if (fxSegment < 0) { 
+       return CT_FAILURE_DATA_DOES_NOT_EXIST;
+   }
+
+   /* Load blob */
+   void* pData = NULL;
+   int32_t size = 0;
    ctWADFindLumpInMarker(
      pWad, fxSegment, "FX_START", "FX_END", lumpNamesByType[type], &pData, &size);
    VkShaderModuleCreateInfo info = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-   if (!pData) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
+   if (!pData) { 
+       return CT_FAILURE_DATA_DOES_NOT_EXIST;
+   }
    info.codeSize = size;
    info.pCode = (uint32_t*)pData;
    VkResult result = vkCreateShaderModule(
@@ -114,7 +143,12 @@ CT_API void ctGPUShaderSoftRelease(ctGPUDevice* pDevice, ctGPUShaderModule shade
      pDevice->vkDevice, (VkShaderModule)shader, &pDevice->vkAllocCallback);
 }
 
-CT_API ctResults ctGPUPipelineBuilderSetShader(ctGPUPipelineBuilder* pBuilder,
+CT_API ctResults ctGPUPipelineBuilderClearShaders(ctGPUPipelineBuilder* pBuilder) {
+   pBuilder->stageCount = 0;
+   return CT_SUCCESS;
+}
+
+CT_API ctResults ctGPUPipelineBuilderAddShader(ctGPUPipelineBuilder* pBuilder,
                                                ctGPUShaderType type,
                                                ctGPUShaderModule shader) {
    ctAssert(type >= 0 && type < CT_GPU_SHADER_COUNT);
@@ -192,9 +226,6 @@ CT_API ctResults ctGPUPipelineBuilderSetBlendMode(ctGPUPipelineBuilder* pBuilder
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
    VkPipelineColorBlendStateCreateInfo& blendState = pBuilder->raster.blendState;
-   if (blendState.attachmentCount <= attachmentIndex) {
-      blendState.attachmentCount = attachmentIndex + 1;
-   }
    VkPipelineColorBlendAttachmentState& attachment =
      pBuilder->raster.attachmentBlends[attachmentIndex];
    attachment.blendEnable = enabled ? VK_TRUE : VK_FALSE;
@@ -419,6 +450,7 @@ CT_API ctResults ctGPUPipelineBuilderSetAttachments(ctGPUPipelineBuilder* pBuild
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
    ctAssert(colorFormats);
+   pBuilder->raster.blendState.attachmentCount = colorCount;
    VkPipelineRenderingCreateInfoKHR& renderInfo = pBuilder->raster.dynamicRendering;
    renderInfo.colorAttachmentCount = colorCount;
    renderInfo.viewMask = 0;
@@ -445,9 +477,21 @@ CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
                                      ctGPUPipeline* pPipeline) {
    ctAssert(pDevice);
    ctAssert(pBuilder);
+   if (pBuilder->stageCount <= 0) { return CT_FAILURE_INVALID_PARAMETER; }
    if (pBuilder->type == CT_GPU_PIPELINE_RASTER) {
       pBuilder->raster.createInfo.stageCount = pBuilder->stageCount;
       pBuilder->raster.createInfo.layout = pDevice->vkGlobalPipelineLayout;
+      /* Dynamic rendering supported */
+      if (pDevice->isDynamicRenderingSupported()) {
+         pBuilder->raster.createInfo.renderPass = VK_NULL_HANDLE;
+         pBuilder->raster.createInfo.subpass = 0;
+         pBuilder->raster.createInfo.pNext = &pBuilder->raster.dynamicRendering;
+      } /* Dynamic rendering unsupported */ else {
+         pBuilder->raster.createInfo.renderPass =
+           pDevice->GetJITPipelineRenderpass(pBuilder->raster.dynamicRendering);
+         pBuilder->raster.createInfo.subpass = 0;
+         pBuilder->raster.createInfo.pNext = NULL;
+      }
       if (vkCreateGraphicsPipelines(pDevice->vkDevice,
                                     pDevice->vkPipelineCache,
                                     1,

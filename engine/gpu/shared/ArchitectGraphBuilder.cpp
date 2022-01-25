@@ -16,22 +16,6 @@
 #include "ArchitectGraphBuilder.hpp"
 #include "system/System.h"
 
-CT_API ctResults ctGPUArchitectStartup(ctGPUDevice* pDevice,
-                                       ctGPUArchitect** ppArchitect,
-                                       ctGPUArchitectCreateInfo* pCreateInfo) {
-   ZoneScoped;
-   *ppArchitect = new ctGPUArchitect();
-   ctGPUArchitect& architect = **ppArchitect;
-   architect.pBackend = ctGPUNewArchitectBackend(pDevice);
-   return architect.pBackend->Startup(pDevice, *ppArchitect);
-}
-
-CT_API ctResults ctGPUArchitectShutdown(ctGPUDevice* pDevice,
-                                        ctGPUArchitect* pArchitect) {
-   ZoneScoped;
-   return pArchitect->pBackend->Shutdown();
-}
-
 CT_API ctResults ctGPUArchitectDumpGraphVis(ctGPUArchitect* pArchitect,
                                             const char* path,
                                             bool generateImage,
@@ -40,9 +24,11 @@ CT_API ctResults ctGPUArchitectDumpGraphVis(ctGPUArchitect* pArchitect,
    return pArchitect->DumpGraphVis(path, generateImage, showImage);
 }
 
-CT_API ctResults ctGPUArchitectBuild(ctGPUDevice* pDevice, ctGPUArchitect* pArchitect) {
+CT_API ctResults ctGPUArchitectBuild(ctGPUDevice* pDevice,
+                                     ctGPUArchitect* pArchitect,
+                                     ctGPUArchitectBuildInfo* pInfo) {
    ZoneScoped;
-   return pArchitect->Build(pDevice);
+   return pArchitect->Build(pDevice, pInfo->width, pInfo->height);
 }
 
 CT_API ctResults ctGPUArchitectReset(ctGPUDevice* pDevice, ctGPUArchitect* pArchitect) {
@@ -312,10 +298,14 @@ ctGPUArchitect::DumpGraphVis(const char* path, bool generateImage, bool showImag
    return CT_SUCCESS;
 }
 
-ctResults ctGPUArchitect::Build(ctGPUDevice* pDevice) {
+ctResults ctGPUArchitect::Build(ctGPUDevice* pDevice, uint32_t width, uint32_t height) {
    ZoneScoped;
+   isRenderable = false;
+   screenWidth = width;
+   screenHeight = height;
+
    /* Define all nodes */
-   if (isCacheBuilt()) { return CT_FAILURE_DEPENDENCY_NOT_MET; }
+   if (isCacheBuilt()) { ResetCache(pDevice); }
    for (size_t i = 0; i < tasks.Count(); i++) {
       ctGPUArchitectTaskInternal& task = tasks[i];
       ctGPUArchitectDefinitionContext ctx = {&task};
@@ -360,14 +350,15 @@ ctResults ctGPUArchitect::Build(ctGPUDevice* pDevice) {
       cFinalOrderList.Append(nextAvailibleTaskIdx);
       cTaskFinalCutList.Remove(nextAvailibleTaskIdx);
    }
-   pBackend->BuildInternal();
    cacheBuilt = true;
+   CT_RETURN_FAIL(BackendBuild(pDevice));
+   isRenderable = true;
    return CT_SUCCESS;
 }
 
 ctResults ctGPUArchitect::Execute(ctGPUDevice* pDevice) {
    ZoneScoped;
-   return pBackend->ExecuteInternal();
+   return BackendExecute(pDevice);
 }
 
 ctResults ctGPUArchitect::ResetCache(ctGPUDevice* pDevice) {
@@ -381,7 +372,7 @@ ctResults ctGPUArchitect::ResetCache(ctGPUDevice* pDevice) {
    cDependenciesLifespan.Clear();
    cpDependencyNames.Clear();
    cpDependencyFeedbacks.Clear();
-   return pBackend->ResetInternal();
+   return BackendReset(pDevice);
 }
 
 int32_t ctGPUArchitect::InitialFindNextWithDependencyMet() {

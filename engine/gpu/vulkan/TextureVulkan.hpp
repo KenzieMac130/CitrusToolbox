@@ -19,3 +19,92 @@
 #include "utilities/Common.h"
 
 #include "gpu/Texture.h"
+#include "DeviceVulkan.hpp"
+
+struct ctGPUExternalTexture {
+   VkMemoryRequirements memreq;
+   TinyImageFormat universalFormat;
+   VkFormat nativeFormat;
+   uint32_t height;
+   uint32_t width;
+   uint32_t depth;
+   uint32_t mips;
+   ctGPUExternalTextureType type;
+   ctGPUExternalUpdateMode updateMode;
+
+   uint32_t frameCount;
+   uint32_t currentFrame;
+
+   /* Contents */
+   ctVkCompleteImage contents[CT_MAX_INFLIGHT_FRAMES];
+   void AllocateContents(ctGPUDevice* pDevice,
+                         VkImageType imageType,
+                         VkImageViewType imageViewType,
+                         VmaMemoryUsage memUsage,
+                         const char* name);
+   void DestroyContents(ctGPUDevice* pDevice);
+
+   /* Staging */
+   ctVkCompleteBuffer staging[CT_MAX_INFLIGHT_FRAMES];
+   void AquireStaging(ctGPUDevice* pDevice);
+   void ReleaseStaging(ctGPUDevice* pDevice);
+
+   /* Mappings */
+   uint8_t* mappings[CT_MAX_INFLIGHT_FRAMES];
+   void GenMappings(ctGPUDevice* pDevice);
+   void FreeMappings(ctGPUDevice* pDevice);
+
+   /* Copies */
+   ctDynamicArray<VkBufferImageCopy> copyCommands;
+
+   /* Bindless */
+   int32_t bindlessIndices[CT_MAX_INFLIGHT_FRAMES];
+   void GenBindless(ctGPUDevice* pDevice);
+   void InvalidateBindless();
+   void FreeBindless(ctGPUDevice* pDevice);
+
+   /* Generation */
+   ctGPUExternalTexturePool* pPool;
+   ctGPUTextureGenerateFn generationFunction;
+   void* userData;
+   void GenSlices();
+   void GenVolume();
+   void GenerateContents();
+
+   /* Async features */
+   bool wantsAsync;
+   ctAtomic contentsReady;
+   inline bool isReady() {
+      return ctAtomicGet(contentsReady);
+   }
+   inline void MakeReady(bool val) {
+      ctAtomicSet(contentsReady, val);
+   }
+   inline void NextFrame() {
+      currentFrame = (currentFrame + 1) % frameCount;
+   }
+
+   /* Commands */
+   void ExecuteCommands(VkCommandBuffer cmd);
+};
+
+struct ctGPUExternalTexturePool {
+   ctGPUExternalTexturePool(ctGPUExternalTexturePoolCreateInfo* pInfo);
+
+   void GarbageCollect(ctGPUDevice* pDevice);
+
+   ctGPUAsyncSchedulerFn fpAsyncScheduler;
+   void* pAsyncUserData;
+
+   /* Hot list is protected by the spinlock and access is in critical section */
+   ctSpinLock uploadListLock;
+   ctDynamicArray<ctGPUExternalTexture*> gpuCmdUpdateListHot;
+   void CommitHotList();
+   void AddToUpload(ctGPUExternalTexture* pTexture);
+   void MakeLayoutTransitions(VkCommandBuffer cmd, VkImageLayout src, VkImageLayout dst);
+   /* This list will be commited from the hot list and is threadsafe */
+   ctDynamicArray<ctGPUExternalTexture*> gpuCmdUpdateList;
+   ctDynamicArray<VkImageMemoryBarrier> memBarrierScratch;
+   ctDynamicArray<ctGPUExternalTexture*> incompleteGarbageList;
+   ctDynamicArray<ctGPUExternalTexture*> garbageList;
+};

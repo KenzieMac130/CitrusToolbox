@@ -19,17 +19,6 @@
 #include "utilities/Common.h"
 #include "gpu/Architect.h"
 
-class ctGPUArchitectBackend {
-public:
-   virtual ctResults Startup(struct ctGPUDevice* pDevice,
-                             struct ctGPUArchitect* pArchitect) = 0;
-   virtual ctResults Shutdown() = 0;
-   virtual ctResults BuildInternal() = 0;
-   virtual ctResults ExecuteInternal() = 0;
-   virtual ctResults ResetInternal() = 0;
-};
-ctGPUArchitectBackend* ctGPUNewArchitectBackend(ctGPUDevice* pDevice);
-
 struct ctGPUArchitectImagePayload {
    ctGPUArchitectImagePayload();
    ctGPUArchitectImagePayload(const ctGPUArchitectImagePayloadDesc& desc,
@@ -125,7 +114,7 @@ struct ctGPUArchitectDependencyRange {
       return firstSeenIdx < lastSeenIdx;
    }
    inline bool isOverlapping(ctGPUArchitectDependencyRange target) {
-      return firstSeenIdx <= target.firstSeenIdx && lastSeenIdx >= target.lastSeenIdx;
+      return firstSeenIdx >= target.firstSeenIdx && lastSeenIdx <= target.lastSeenIdx;
    }
    int32_t firstSeenIdx;
    int32_t lastSeenIdx;
@@ -137,13 +126,18 @@ struct ctGPUArchitectDependencyUseData {
 };
 
 struct ctGPUArchitect {
-   ctGPUArchitectBackend* pBackend = NULL;
    ctDynamicArray<ctGPUArchitectTaskInternal> tasks;
+
+   virtual ctResults BackendStartup(ctGPUDevice* pDevice) = 0;
+   virtual ctResults BackendShutdown(ctGPUDevice* pDevice) = 0;
+   virtual ctResults BackendBuild(ctGPUDevice* pDevice) = 0;
+   virtual ctResults BackendExecute(ctGPUDevice* pDevice) = 0;
+   virtual ctResults BackendReset(ctGPUDevice* pDevice) = 0;
 
    /* Main User Functions */
    ctResults Validate();
    ctResults DumpGraphVis(const char* path, bool generateImage, bool showImage);
-   ctResults Build(ctGPUDevice* pDevice);
+   ctResults Build(ctGPUDevice* pDevice, uint32_t width, uint32_t height);
    ctResults Execute(ctGPUDevice* pDevice);
 
    ctResults AddTask(ctGPUArchitectTaskInfo* pTaskInfo);
@@ -159,6 +153,26 @@ struct ctGPUArchitect {
    ctResults ResetCache(ctGPUDevice* pDevice);
    inline bool isCacheBuilt() {
       return cacheBuilt;
+   }
+
+   /* Screen Data */
+   bool isRenderable = false;
+   uint32_t screenWidth;
+   uint32_t screenHeight;
+
+   inline uint32_t GetPhysicalImageWidth(int32_t flags, float input) {
+      if (ctCFlagCheck(flags, CT_GPU_PAYLOAD_IMAGE_FIXED_SIZE)) {
+         return (uint32_t)input;
+      } else {
+         return (uint32_t)(input * screenWidth);
+      }
+   }
+   inline uint32_t GetPhysicalImageHeight(uint32_t flags, float input) {
+      if (ctCFlagCheck(flags, CT_GPU_PAYLOAD_IMAGE_FIXED_SIZE)) {
+         return (uint32_t)input;
+      } else {
+         return (uint32_t)(input * screenHeight);
+      }
    }
 
    /* Caches */

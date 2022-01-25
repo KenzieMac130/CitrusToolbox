@@ -21,21 +21,76 @@
 #include "gpu/Buffer.h"
 #include "DeviceVulkan.hpp"
 
-struct ctGPUExternalBuffer : ctVkConveyorBeltResource {
-   ctGPUExternalBufferCreateInfo createInfo;
-   int32_t currentDynamicFrame;
-   ctVkCompleteBuffer data[CT_MAX_INFLIGHT_FRAMES];
+struct ctGPUExternalBuffer {
+   size_t size;
+   ctGPUExternalBufferType type;
+   ctGPUExternalUpdateMode updateMode;
+
+   uint32_t frameCount;
+   uint32_t currentFrame;
+
+   /* Contents */
+   ctVkCompleteBuffer contents[CT_MAX_INFLIGHT_FRAMES];
+   void AllocateContents(ctGPUDevice* pDevice,
+                         VkBufferUsageFlags usage,
+                         VmaMemoryUsage memUsage,
+                         const char* name);
+   void DestroyContents(ctGPUDevice* pDevice);
+
+   /* Staging */
+   ctVkCompleteBuffer staging[CT_MAX_INFLIGHT_FRAMES];
+   void AquireStaging(ctGPUDevice* pDevice);
+   void ReleaseStaging(ctGPUDevice* pDevice);
+
+   /* Mappings */
    uint8_t* mappings[CT_MAX_INFLIGHT_FRAMES];
-   ctFile file;
-   size_t bufferSize;
+   void GenMappings(ctGPUDevice* pDevice);
+   void FreeMappings(ctGPUDevice* pDevice);
 
-   virtual ctResults Create(ctGPUDevice* pDevice);
-   virtual ctResults Update(ctGPUDevice* pDevice);
-   virtual ctResults Free(ctGPUDevice* pDevice);
+   /* Bindless */
+   int32_t bindlessIndices[CT_MAX_INFLIGHT_FRAMES];
+   void GenBindless(ctGPUDevice* pDevice);
+   void InvalidateBindless();
+   void FreeBindless(ctGPUDevice* pDevice);
 
-   void PopulateContents(ctGPUDevice* pDevice);
+   /* Generation */
+   ctGPUExternalBufferPool* pPool;
+   ctGPUBufferGenerateFn generationFunction;
+   void* userData;
+   void GenerateContents();
+
+   /* Async features */
+   bool wantsAsync;
+   ctAtomic contentsReady;
+   inline bool isReady() {
+      return ctAtomicGet(contentsReady);
+   }
+   inline void MakeReady(bool val) {
+      ctAtomicSet(contentsReady, val);
+   }
+   inline void NextFrame() {
+      currentFrame = (currentFrame + 1) % frameCount;
+   }
+
+   /* Commands */
+   void ExecuteCommands(VkCommandBuffer cmd);
 };
 
-struct ctGPUExternalBufferPool : ctVkConveyorBeltPool {
+struct ctGPUExternalBufferPool {
    ctGPUExternalBufferPool(ctGPUExternalBufferPoolCreateInfo* pInfo);
+
+   void GarbageCollect(ctGPUDevice* pDevice);
+
+   ctGPUAsyncSchedulerFn fpAsyncScheduler;
+   void* pAsyncUserData;
+
+   /* Hot list is protected by the spinlock and access is in critical section */
+   ctSpinLock uploadListLock;
+   ctDynamicArray<ctGPUExternalBuffer*> gpuCmdUpdateListHot;
+   void CommitHotList();
+   void AddToUpload(ctGPUExternalBuffer* pBuffer);
+   /* This list will be commited from the hot list and is threadsafe */
+   ctDynamicArray<ctGPUExternalBuffer*> gpuCmdUpdateList;
+   ctDynamicArray<ctGPUExternalBuffer*> incompleteGarbageList;
+   ctDynamicArray<ctGPUExternalBuffer*> garbageList;
 };

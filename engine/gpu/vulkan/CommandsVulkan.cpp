@@ -196,7 +196,7 @@ CT_API void ctGPUCmdSetDynamicInteger(ctGPUCommandBuffer commandBuffer,
                                       uint32_t index,
                                       int32_t value) {
    ctAssert(pDevice);
-   ctAssert(index > CT_MAX_GFX_DYNAMIC_INTS);
+   ctAssert(index < CT_MAX_GFX_DYNAMIC_INTS);
    vkCmdPushConstants((VkCommandBuffer)commandBuffer,
                       pDevice->vkGlobalPipelineLayout,
                       VK_SHADER_STAGE_ALL,

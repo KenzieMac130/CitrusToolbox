@@ -18,7 +18,7 @@
 
 #include "utilities/Common.h"
 
-/* Device pretty much manages all the api device, gpu, swapchain, etc. */
+/* Central hub to interact with the graphics api/gpu. */
 struct ctGPUDevice;
 
 /* This is pretty opaque to the abstraction layer so change as needbe */
@@ -35,12 +35,11 @@ typedef ctResults (*ctGPUOpenAssetFileFn)(void* pTargetCtFile,
                                           void* pUserData);
 
 struct ctGPUDeviceCreateInfo {
-   void* pMainWindow; /* Expects an SDL window if applicable*/
+   void* pMainWindow; /* Expects an SDL window if applicable */
 
    const char* appName;
    int32_t version[3];
    bool validationEnabled;
-   bool useVSync;
 
    int32_t fixedTextureBindUpperBound;
    int32_t fixedBufferBindUpperBound;
@@ -56,23 +55,23 @@ struct ctGPUDeviceCapabilities {
    bool hasRobustIndirect;
    bool hasMeshShaders;
    bool hasRaytracing;
+   bool hasMultiWindow;
 };
 
 CT_API ctResults ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,
                                     struct ctGPUDeviceCreateInfo* pCreateInfo,
                                     ctGPUDeviceCapabilities* pCapabilitiesOut);
 CT_API ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);
-CT_API ctResults ctGPUDeviceNextFrame(struct ctGPUDevice* pDevice);
 
 /* Common data types  */
+typedef ctResults (*ctGPUAsyncWorkFn)(void*);
+typedef void (*ctGPUAsyncSchedulerFn)(ctGPUAsyncWorkFn, void* pData, void* pUserData);
 
 enum ctGPUExternalUpdateMode {
    CT_GPU_UPDATE_STATIC,  /* Statics are only ever uploaded once */
    CT_GPU_UPDATE_DYNAMIC, /* Dynamics are updated infrequently and are costly to write */
    CT_GPU_UPDATE_STREAM   /* Streams are always expected to be updated before use */
 };
-
-enum ctGPUExternalSource { CT_GPU_EXTERN_SOURCE_GENERATE, CT_GPU_EXTERN_SOURCE_LOAD };
 
 enum ctGPUSampleCounts {
    CT_GPU_SAMPLES_1 = 1,

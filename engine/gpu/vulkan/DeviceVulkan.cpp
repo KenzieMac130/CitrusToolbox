@@ -33,10 +33,12 @@ CT_API ctResults ctGPUDeviceStartup(ctGPUDevice** ppDevice,
    ctGPUDevice* pDevice = *ppDevice;
    VkApplicationInfo& appInfo = pDevice->vkAppInfo;
    appInfo.pApplicationName = pCreateInfo->appName;
+   appInfo.applicationVersion = VK_MAKE_VERSION(
+     pCreateInfo->version[0], pCreateInfo->version[1], pCreateInfo->version[2]);
    pDevice->validationEnabled = pCreateInfo->validationEnabled;
    pDevice->pMainWindow = (SDL_Window*)pCreateInfo->pMainWindow;
-   pDevice->vsync = pCreateInfo->useVSync;
    pDevice->nextFrameTimeout = 10000;
+   pDevice->preferredDevice = -1;
    pDevice->fpOpenCacheFileCallback = pCreateInfo->fpOpenCacheFileCallback;
    pDevice->pCacheCallbackCustomData = pCreateInfo->pCacheCallbackCustomData;
    pDevice->fpOpenAssetFileCallback = pCreateInfo->fpOpenAssetFileCallback;
@@ -52,10 +54,6 @@ CT_API ctResults ctGPUDeviceShutdown(ctGPUDevice* pDevice) {
    ctResults result = pDevice->Shutdown();
    delete pDevice;
    return result;
-}
-
-CT_API ctResults ctGPUDeviceNextFrame(ctGPUDevice* pDevice) {
-   return CT_SUCCESS;
 }
 
 /* -------- Implementation -------- */
@@ -126,6 +124,7 @@ bool ctGPUDevice::isValidationLayersAvailible() {
 
 void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
    ZoneScoped;
+   ctDebugLog("Querying Swapchain Support...");
    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &surfaceCapabilities);
 
    uint32_t formatCount;
@@ -154,6 +153,7 @@ bool vIsQueueFamilyComplete(ctVkQueueFamilyIndices indices) {
 
 bool ctGPUDevice::DeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
    ZoneScoped;
+   ctDebugLog("Checking Device Extensions...");
    uint32_t extCount;
    vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, NULL);
    VkExtensionProperties* availible =
@@ -177,6 +177,22 @@ bool ctGPUDevice::DeviceHasRequiredExtensions(VkPhysicalDevice gpu) {
    return foundAll;
 }
 
+void ctGPUDevice::ApplyOptionalDeviceExtensions(VkPhysicalDevice gpu) {
+   uint32_t extCount;
+   vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, NULL);
+   VkExtensionProperties* extensions =
+     (VkExtensionProperties*)ctMalloc(sizeof(VkExtensionProperties) * extCount);
+   vkEnumerateDeviceExtensionProperties(gpu, NULL, &extCount, extensions);
+   for (uint32_t i = 0; i < extCount; i++) {
+      if (validationEnabled &&
+          ctCStrEql(extensions[i].extensionName, VK_EXT_DEBUG_MARKER_EXTENSION_NAME)) {
+         useMarkers = true;
+         deviceExtensions.Append(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+      }
+   }
+   ctFree(extensions);
+}
+
 bool vDeviceHasSwapChainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
    ZoneScoped;
    ctVkSwapchainSupport support;
@@ -184,20 +200,20 @@ bool vDeviceHasSwapChainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
    return !support.presentModes.isEmpty() && !support.surfaceFormats.isEmpty();
 }
 
-bool vDeviceHasRequiredFeatures(
-  const VkPhysicalDeviceFeatures& features,
-  const VkPhysicalDeviceDescriptorIndexingFeatures& descriptorIndexing) {
+bool vDeviceHasRequiredFeatures(const VkPhysicalDeviceFeatures& features,
+                                const VkPhysicalDeviceVulkan11Features& features_1_1,
+                                const VkPhysicalDeviceVulkan12Features& features_1_2) {
    if (!features.shaderFloat64 || !features.depthClamp || !features.depthBounds ||
-       !features.shaderSampledImageArrayDynamicIndexing ||
+       !features.fillModeNonSolid || !features.shaderSampledImageArrayDynamicIndexing ||
        !features.shaderStorageBufferArrayDynamicIndexing ||
-       !descriptorIndexing.descriptorBindingPartiallyBound ||
-       !descriptorIndexing.runtimeDescriptorArray ||
-       !descriptorIndexing.descriptorBindingSampledImageUpdateAfterBind ||
-       !descriptorIndexing.descriptorBindingStorageBufferUpdateAfterBind ||
-       !descriptorIndexing.descriptorBindingStorageImageUpdateAfterBind ||
-       !descriptorIndexing.shaderSampledImageArrayNonUniformIndexing ||
-       !descriptorIndexing.shaderStorageBufferArrayNonUniformIndexing ||
-       !descriptorIndexing.shaderStorageImageArrayNonUniformIndexing) {
+       !features_1_2.descriptorBindingPartiallyBound ||
+       !features_1_2.runtimeDescriptorArray ||
+       !features_1_2.descriptorBindingSampledImageUpdateAfterBind ||
+       !features_1_2.descriptorBindingStorageBufferUpdateAfterBind ||
+       !features_1_2.descriptorBindingStorageImageUpdateAfterBind ||
+       !features_1_2.shaderSampledImageArrayNonUniformIndexing ||
+       !features_1_2.shaderStorageBufferArrayNonUniformIndexing ||
+       !features_1_2.shaderStorageImageArrayNonUniformIndexing) {
       return false;
    }
    return true;
@@ -211,28 +227,36 @@ VkPhysicalDevice ctGPUDevice::PickBestDevice(VkPhysicalDevice* pGpus,
    int64_t bestGPUScore = -1;
    int64_t currentGPUScore;
    for (uint32_t i = 0; i < count; i++) {
+      ctDebugLog("Checking Device %i...", i);
       currentGPUScore = 0;
+
       VkPhysicalDeviceProperties deviceProperties;
       VkPhysicalDeviceFeatures deviceFeatures;
 
-      VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES};
+      VkPhysicalDeviceVulkan11Features vk11Features {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+      VkPhysicalDeviceVulkan12Features vk12Features {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
       VkPhysicalDeviceFeatures2 deviceFeatures2 = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-      deviceFeatures2.pNext = &descriptorIndexingFeatures;
+      deviceFeatures2.pNext = &vk11Features;
+      vk11Features.pNext = &vk12Features;
 
+      ctDebugLog("Getting Device Features 1/2...");
       vkGetPhysicalDeviceProperties(pGpus[i], &deviceProperties);
       vkGetPhysicalDeviceFeatures(pGpus[i], &deviceFeatures);
-      vkGetPhysicalDeviceFeatures2(pGpus[i], &deviceFeatures2);
+      ctDebugLog("Getting Device Features 2/2...");
+      vkGetPhysicalDeviceFeatures2(pGpus[i], &deviceFeatures2);  // render-doc crash
 
       /*Disqualifications*/
-      if (!vDeviceHasRequiredFeatures(deviceFeatures, descriptorIndexingFeatures))
+      ctDebugLog("Checking Disqualifications...");
+      if (!vDeviceHasRequiredFeatures(deviceFeatures, vk11Features, vk12Features))
          continue; /*Device doesn't meet the minimum features spec*/
       if (!vIsQueueFamilyComplete(FindQueueFamilyIndices(pGpus[i])))
          continue; /*Queue families are incomplete*/
       if (!DeviceHasRequiredExtensions(pGpus[i]))
          continue; /*Doesn't have the required extensions*/
-      if (!vDeviceHasSwapChainSupport(pGpus[i], surface))
+      if ((surface != VK_NULL_HANDLE) && !vDeviceHasSwapChainSupport(pGpus[i], surface))
          continue; /*Doesn't have swap chain support*/
 
       /*Benifits*/
@@ -274,7 +298,11 @@ ctVkQueueFamilyIndices ctGPUDevice::FindQueueFamilyIndices(VkPhysicalDevice gpu)
          result.transferIdx = i;
 
       VkBool32 present = VK_FALSE;
-      vkGetPhysicalDeviceSurfaceSupportKHR(gpu, i, mainScreenResources.surface, &present);
+      if (vkInitialSurface != VK_NULL_HANDLE) {
+         vkGetPhysicalDeviceSurfaceSupportKHR(gpu, i, vkInitialSurface, &present);
+      } else {
+         present = VK_TRUE;
+      }
       if (queueFamilyProps[i].queueCount > 0 && present) result.presentIdx = i;
 
       if (vIsQueueFamilyComplete(result)) break;
@@ -283,372 +311,19 @@ ctVkQueueFamilyIndices ctGPUDevice::FindQueueFamilyIndices(VkPhysicalDevice gpu)
    return result;
 }
 
-/* ------------- Screen Resources ------------- */
-
-ctResults ctVkScreenResources::CreateSurface(ctGPUDevice* pDevice, SDL_Window* pWindow) {
-   ZoneScoped;
-   ctDebugLog("Creating Surface...");
-   window = pWindow;
-   if (SDL_Vulkan_CreateSurface(pWindow, pDevice->vkInstance, &surface)) {
-      return CT_SUCCESS;
-   }
-   return CT_FAILURE_UNKNOWN;
-}
-
-VkSurfaceFormatKHR vPickBestSurfaceFormat(VkSurfaceFormatKHR* formats, size_t count) {
-   ZoneScoped;
-   for (uint32_t i = 0; i < count; i++) {
-      const VkSurfaceFormatKHR fmt = formats[i];
-      if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB &&
-          fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-         return fmt;
-      }
-   }
-   return formats[0];
-}
-
-VkPresentModeKHR vPickPresentMode(VkPresentModeKHR* modes, size_t count, bool vsync) {
-   ZoneScoped;
-   int64_t bestIdx = 0;
-   int64_t bestScore = -1;
-   int64_t currentScore;
-
-   for (uint32_t i = 0; i < count; i++) {
-      const VkPresentModeKHR mode = modes[i];
-      currentScore = 0;
-
-      /* Present to screen ASAP, no V-Sync */
-      if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-         if (vsync == false) {
-            currentScore = 1000;
-         } else {
-            currentScore = 0;
-         }
-      }
-      /* Present and swap to backbuffer. Needs to wait if full. */
-      if (mode == VK_PRESENT_MODE_FIFO_KHR) {
-         if (vsync == true) {
-            currentScore = 500;
-         } else {
-            currentScore = 0;
-         }
-      }
-      /* Present and swap to backbuffer. Can continue if full. */
-      if (mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
-         if (vsync == true) {
-            currentScore = 1000;
-         } else {
-            currentScore = 0;
-         }
-      }
-
-      if (currentScore > bestScore) {
-         bestIdx = i;
-         bestScore = currentScore;
-      }
-   }
-   return modes[bestIdx];
-}
-
-ctResults ctVkScreenResources::CreateSwapchain(ctGPUDevice* pDevice,
-                                               ctVkQueueFamilyIndices indices,
-                                               int32_t vsync,
-                                               VkSwapchainKHR oldSwapchain) {
-   ZoneScoped;
-
-   swapChainSupport.GetSupport(pDevice->vkPhysicalDevice, surface);
-   if (swapChainSupport.surfaceCapabilities.currentExtent.width == 0 ||
-       swapChainSupport.surfaceCapabilities.currentExtent.height == 0) {
-      return CT_FAILURE_NOT_UPDATABLE;
-   }
-
-   ctDebugLog("Creating Swapchain...");
-
-   /* Select a Image and Color Format */
-   surfaceFormat = vPickBestSurfaceFormat(swapChainSupport.surfaceFormats.Data(),
-                                          swapChainSupport.surfaceFormats.Count());
-
-   /* Select a Present Mode */
-   presentMode = vPickPresentMode(
-     swapChainSupport.presentModes.Data(), swapChainSupport.presentModes.Count(), vsync);
-
-   /* Get Size */
-   int w, h;
-   SDL_Vulkan_GetDrawableSize(window, &w, &h);
-   uint32_t flags = SDL_GetWindowFlags(window);
-   extent.width = w;
-   extent.height = h;
-
-   /* Get Image Count */
-   imageCount = swapChainSupport.surfaceCapabilities.minImageCount + 1;
-   if (swapChainSupport.surfaceCapabilities.maxImageCount > 0 &&
-       imageCount > swapChainSupport.surfaceCapabilities.maxImageCount) {
-      imageCount = swapChainSupport.surfaceCapabilities.maxImageCount;
-   }
-
-   /* Create swapchain */
-   uint32_t sharedIndices[] {indices.graphicsIdx, indices.presentIdx};
-   VkSwapchainCreateInfoKHR swapChainInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
-   swapChainInfo.surface = surface;
-   swapChainInfo.imageFormat = surfaceFormat.format;
-   swapChainInfo.imageColorSpace = surfaceFormat.colorSpace;
-   swapChainInfo.presentMode = presentMode;
-   swapChainInfo.imageExtent = extent;
-   swapChainInfo.imageArrayLayers = 1;
-   swapChainInfo.minImageCount = imageCount;
-   swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-   swapChainInfo.preTransform = swapChainSupport.surfaceCapabilities.currentTransform;
-   swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-   swapChainInfo.clipped = VK_TRUE;
-   swapChainInfo.oldSwapchain = oldSwapchain;
-   if (sharedIndices[0] == sharedIndices[1]) {
-      swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-      swapChainInfo.queueFamilyIndexCount = 0;
-      swapChainInfo.pQueueFamilyIndices = NULL;
-   } else {
-      swapChainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-      swapChainInfo.queueFamilyIndexCount = 2;
-      swapChainInfo.pQueueFamilyIndices = sharedIndices;
-   }
-   CT_VK_CHECK(
-     vkCreateSwapchainKHR(
-       pDevice->vkDevice, &swapChainInfo, &pDevice->vkAllocCallback, &swapchain),
-     CT_NCT("FAIL:vkCreateSwapchainKHR",
-            "vkCreateSwapchainKHR() failed to create swapchain."));
-
-   /* Get images */
-   vkGetSwapchainImagesKHR(pDevice->vkDevice, swapchain, &imageCount, NULL);
-   swapImages.Resize(imageCount);
-   vkGetSwapchainImagesKHR(pDevice->vkDevice, swapchain, &imageCount, swapImages.Data());
-
-   return CT_SUCCESS;
-}
-
-ctResults ctVkScreenResources::CreatePresentResources(ctGPUDevice* pDevice) {
-   ZoneScoped;
-   /* Create image availible semaphore */
-   VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkCreateSemaphore(
-        pDevice->vkDevice, &semaphoreInfo, &pDevice->vkAllocCallback, &imageAvailible[i]);
-   }
-   /* Blitting command buffer */
-   VkCommandPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-   poolInfo.queueFamilyIndex = pDevice->queueFamilyIndices.transferIdx;
-   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   vkCreateCommandPool(
-     pDevice->vkDevice, &poolInfo, &pDevice->vkAllocCallback, &blitCommandPool);
-   VkCommandBufferAllocateInfo allocInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
-   allocInfo.commandPool = blitCommandPool;
-   vkAllocateCommandBuffers(pDevice->vkDevice, &allocInfo, blitCommands);
-   return CT_SUCCESS;
-}
-
-ctResults ctVkScreenResources::DestroySwapchain(ctGPUDevice* pDevice) {
-   ZoneScoped;
-   if (swapchain == VK_NULL_HANDLE) { return CT_FAILURE_NOT_FOUND; }
-   vkDestroySwapchainKHR(pDevice->vkDevice, swapchain, &pDevice->vkAllocCallback);
-   swapchain = VK_NULL_HANDLE;
-   return CT_SUCCESS;
-}
-
-ctResults ctVkScreenResources::DestroyPresentResources(ctGPUDevice* pDevice) {
-   ZoneScoped;
-   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroySemaphore(pDevice->vkDevice, imageAvailible[i], &pDevice->vkAllocCallback);
-   }
-   vkDestroyCommandPool(pDevice->vkDevice, blitCommandPool, &pDevice->vkAllocCallback);
-   return CT_SUCCESS;
-}
-
-bool ctVkScreenResources::HandleResizeIfNeeded(ctGPUDevice* pDevice) {
-   if (isMinimized) {
-      swapChainSupport.GetSupport(pDevice->vkPhysicalDevice, surface);
-      if (swapChainSupport.surfaceCapabilities.currentExtent.width != 0 ||
-          swapChainSupport.surfaceCapabilities.currentExtent.height != 0) {
-         resizeTriggered = true;
-         isMinimized = false;
-      }
-   }
-   if (resizeTriggered) {
-      vkDeviceWaitIdle(pDevice->vkDevice);
-      DestroyPresentResources(pDevice);
-      CreatePresentResources(pDevice);
-      DestroySwapchain(pDevice);
-      if (CreateSwapchain(
-            pDevice, pDevice->queueFamilyIndices, pDevice->vsync, VK_NULL_HANDLE) !=
-          VK_SUCCESS) {
-         isMinimized = true;
-      }
-      resizeTriggered = false;
-      return true;
-   }
-   return false;
-}
-
-bool ctVkScreenResources::ShouldSkip() {
-   return swapChainSupport.surfaceCapabilities.currentExtent.width == 0 ||
-          swapChainSupport.surfaceCapabilities.currentExtent.height == 0;
-}
-
-ctResults ctVkScreenResources::DestroySurface(ctGPUDevice* pDevice) {
-   ZoneScoped;
-   vkDestroySurfaceKHR(pDevice->vkInstance, surface, NULL);
-   return CT_SUCCESS;
-}
-
-VkResult ctVkScreenResources::BlitAndPresent(ctGPUDevice* pDevice,
-                                             uint32_t blitQueueIdx,
-                                             VkQueue blitQueue,
-                                             uint32_t semaphoreCount,
-                                             VkSemaphore* pWaitSemaphores,
-                                             VkImage srcImage,
-                                             VkImageLayout srcLayout,
-                                             VkPipelineStageFlags srcStageMask,
-                                             VkAccessFlags srcAccess,
-                                             uint32_t srcQueueFamily,
-                                             VkImageBlit blit) {
-   ZoneScoped;
-   uint32_t imageIndex = 0;
-   VkResult result = vkAcquireNextImageKHR(pDevice->vkDevice,
-                                           swapchain,
-                                           pDevice->nextFrameTimeout,
-                                           imageAvailible[pDevice->currentFrame],
-                                           VK_NULL_HANDLE,
-                                           &imageIndex);
-   if (resizeTriggered || result == VK_ERROR_OUT_OF_DATE_KHR) {
-      resizeTriggered = true;
-      return VK_ERROR_OUT_OF_DATE_KHR;
-   } else if (result != VK_SUCCESS) {
-      return result;
-   }
-
-   /* Blit */
-   {
-      VkCommandBuffer cmd = blitCommands[pDevice->currentFrame];
-      VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-      vkResetCommandBuffer(cmd, 0);
-      vkBeginCommandBuffer(cmd, &beginInfo);
-
-      VkImageMemoryBarrier srcToTransfer {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-      srcToTransfer.image = srcImage;
-      srcToTransfer.srcQueueFamilyIndex = srcQueueFamily;
-      srcToTransfer.dstQueueFamilyIndex = blitQueueIdx;
-      srcToTransfer.oldLayout = srcLayout;
-      srcToTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-      srcToTransfer.srcAccessMask = srcAccess;
-      srcToTransfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-      srcToTransfer.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      srcToTransfer.subresourceRange.baseArrayLayer = 0;
-      srcToTransfer.subresourceRange.baseMipLevel = 0;
-      srcToTransfer.subresourceRange.levelCount = 1;
-      srcToTransfer.subresourceRange.layerCount = 1;
-      vkCmdPipelineBarrier(cmd,
-                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_DEPENDENCY_BY_REGION_BIT,
-                           0,
-                           NULL,
-                           0,
-                           NULL,
-                           1,
-                           &srcToTransfer);
-
-      VkImageMemoryBarrier dstToTransfer {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-      dstToTransfer.image = swapImages[imageIndex];
-      dstToTransfer.srcQueueFamilyIndex = pDevice->queueFamilyIndices.presentIdx;
-      dstToTransfer.dstQueueFamilyIndex = blitQueueIdx;
-      dstToTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; /* Don't care about previous */
-      dstToTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      dstToTransfer.srcAccessMask = 0;
-      dstToTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-      dstToTransfer.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      dstToTransfer.subresourceRange.baseArrayLayer = 0;
-      dstToTransfer.subresourceRange.baseMipLevel = 0;
-      dstToTransfer.subresourceRange.levelCount = 1;
-      dstToTransfer.subresourceRange.layerCount = 1;
-      vkCmdPipelineBarrier(cmd,
-                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_DEPENDENCY_BY_REGION_BIT,
-                           0,
-                           NULL,
-                           0,
-                           NULL,
-                           1,
-                           &dstToTransfer);
-      vkCmdBlitImage(cmd,
-                     srcImage,
-                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                     swapImages[imageIndex],
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                     1,
-                     &blit,
-                     VK_FILTER_LINEAR);
-      VkImageMemoryBarrier dstToPresent {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-      dstToPresent.image = swapImages[imageIndex];
-      dstToPresent.srcQueueFamilyIndex = blitQueueIdx;
-      dstToPresent.dstQueueFamilyIndex = pDevice->queueFamilyIndices.presentIdx;
-      dstToPresent.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      dstToPresent.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-      dstToPresent.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-      dstToPresent.dstAccessMask = 0; /* Won't touch it */
-      dstToPresent.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      dstToPresent.subresourceRange.baseArrayLayer = 0;
-      dstToPresent.subresourceRange.baseMipLevel = 0;
-      dstToPresent.subresourceRange.levelCount = 1;
-      dstToPresent.subresourceRange.layerCount = 1;
-      vkCmdPipelineBarrier(cmd,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                           VK_DEPENDENCY_BY_REGION_BIT,
-                           0,
-                           NULL,
-                           0,
-                           NULL,
-                           1,
-                           &dstToPresent);
-      vkEndCommandBuffer(cmd);
-      VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-      VkPipelineStageFlags waitForStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-      submitInfo.commandBufferCount = 1;
-      submitInfo.pCommandBuffers = &cmd;
-      submitInfo.waitSemaphoreCount = semaphoreCount;
-      submitInfo.pWaitSemaphores = pWaitSemaphores;
-      submitInfo.pWaitDstStageMask = &waitForStage;
-      vkQueueSubmit(
-        blitQueue, 1, &submitInfo, pDevice->frameAvailibleFences[pDevice->currentFrame]);
-   }
-
-   VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
-   presentInfo.waitSemaphoreCount = 1;
-   presentInfo.pWaitSemaphores = &imageAvailible[pDevice->currentFrame];
-   presentInfo.swapchainCount = 1;
-   presentInfo.pSwapchains = &swapchain;
-   presentInfo.pImageIndices = &imageIndex;
-   return vkQueuePresentKHR(pDevice->presentQueue, &presentInfo);
-}
-
 /* ------------- Init and Shutdown ------------- */
-
-void ctGPUDevice::RecreateSync() {
-   VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      if (frameAvailibleFences[i] != VK_NULL_HANDLE) {
-         vkDestroyFence(vkDevice, frameAvailibleFences[i], &vkAllocCallback);
-      }
-      vkCreateFence(vkDevice, &fenceInfo, &vkAllocCallback, &frameAvailibleFences[i]);
-   }
-}
 
 ctResults ctGPUDevice::Startup() {
    ZoneScoped;
    ctDebugLog("Starting Vulkan Backend...");
    /* Fill in AppInfo */
    {
+      vkAppInfo.engineVersion = VK_MAKE_VERSION(CITRUS_ENGINE_VERSION_MAJOR,
+                                                CITRUS_ENGINE_VERSION_MINOR,
+                                                CITRUS_ENGINE_VERSION_PATCH);
+      vkAppInfo.pEngineName = "Citrus Toolbox";
+      vkAppInfo.apiVersion = VK_API_VERSION_1_2;
+
       vkAllocCallback = VkAllocationCallbacks {};
       vkAllocCallback.pUserData = NULL;
       vkAllocCallback.pfnAllocation = (PFN_vkAllocationFunction)vAllocFunction;
@@ -704,7 +379,6 @@ ctResults ctGPUDevice::Startup() {
          instanceInfo.enabledLayerCount = 0;
          instanceInfo.ppEnabledLayerNames = NULL;
       }
-
       instanceInfo.enabledExtensionCount = (uint32_t)instanceExtensions.Count();
       instanceInfo.ppEnabledExtensionNames = instanceExtensions.Data();
       ctDebugLog("Creating Instance...");
@@ -737,8 +411,15 @@ ctResults ctGPUDevice::Startup() {
                              "Failed to find vkCreateDebugReportCallbackEXT()."));
       }
    }
-   /* Initialize a first surface to check for support */
-   { mainScreenResources.CreateSurface(this, pMainWindow); }
+   /* Initialize a surface for the main window (we do this to check capabilities) */
+   {
+      if (pMainWindow) {
+         ctDebugLog("Creating Surface...");
+         SDL_Vulkan_CreateSurface(pMainWindow, vkInstance, &vkInitialSurface);
+      } else {
+         vkInitialSurface = VK_NULL_HANDLE;
+      }
+   }
    /* Pick a GPU */
    {
       ctDebugLog("Finding GPU...");
@@ -756,28 +437,34 @@ ctResults ctGPUDevice::Startup() {
       gpus.Resize(gpuCount);
       vkEnumeratePhysicalDevices(vkInstance, &gpuCount, gpus.Data());
       if (preferredDevice >= 0 && preferredDevice < (int32_t)gpuCount) {
+         ctDebugLog("Manual GPU Selected: %i...", preferredDevice);
          vkPhysicalDevice = gpus[preferredDevice];
 
-         vDescriptorIndexingFeatures = {
-           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES};
-         vPhysicalDeviceFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-         vPhysicalDeviceFeatures2.pNext = &vDescriptorIndexingFeatures;
+         VkPhysicalDeviceVulkan11Features vk11Features {
+           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+         VkPhysicalDeviceVulkan12Features vk12Features {
+           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+         VkPhysicalDeviceFeatures2 deviceFeatures2 = {
+           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+         deviceFeatures2.pNext = &vk11Features;
+         vk11Features.pNext = &vk12Features;
 
          vkGetPhysicalDeviceProperties(vkPhysicalDevice, &vPhysicalDeviceProperties);
          vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &vPhysicalDeviceFeatures);
          vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &vPhysicalDeviceFeatures2);
 
-         if (!vDeviceHasRequiredFeatures(vPhysicalDeviceFeatures,
-                                         vDescriptorIndexingFeatures) ||
+         if (!vDeviceHasRequiredFeatures(
+               vPhysicalDeviceFeatures, vk11Features, vk12Features) ||
              !DeviceHasRequiredExtensions(vkPhysicalDevice) ||
-             !vDeviceHasSwapChainSupport(vkPhysicalDevice, mainScreenResources.surface)) {
+             !(vkInitialSurface != VK_NULL_HANDLE
+                 ? vDeviceHasSwapChainSupport(vkPhysicalDevice, vkInitialSurface)
+                 : true)) {
             ctFatalError(-1,
                          CT_NCT("FAIL:GPUReqNotMet",
                                 "Rendering device does not meet requirements."));
          }
       } else {
-         vkPhysicalDevice =
-           PickBestDevice(gpus.Data(), gpuCount, mainScreenResources.surface);
+         vkPhysicalDevice = PickBestDevice(gpus.Data(), gpuCount, vkInitialSurface);
          if (vkPhysicalDevice == VK_NULL_HANDLE) {
             ctFatalError(
               -1,
@@ -867,6 +554,7 @@ ctResults ctGPUDevice::Startup() {
       features.depthBounds = VK_TRUE;
       features.depthClamp = VK_TRUE;
       features.samplerAnisotropy = VK_TRUE;
+      features.fillModeNonSolid = VK_TRUE;
       deviceInfo.pEnabledFeatures = &features;
 
       VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures = {
@@ -881,6 +569,8 @@ ctResults ctGPUDevice::Startup() {
       indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
       deviceInfo.pNext = &indexingFeatures;
 
+      ApplyOptionalDeviceExtensions(vkPhysicalDevice);
+
       deviceInfo.enabledExtensionCount = (uint32_t)deviceExtensions.Count();
       deviceInfo.ppEnabledExtensionNames = deviceExtensions.Data();
       ctDebugLog("Creating Device...");
@@ -888,18 +578,15 @@ ctResults ctGPUDevice::Startup() {
         vkCreateDevice(vkPhysicalDevice, &deviceInfo, &vkAllocCallback, &vkDevice),
         CT_NCT("FAIL:vkCreateDevice", "vkCreateDevice() failed to create the device."));
 
-      ctDebugLog("Getting Queues...");
+      /* Debug Markers*/
+      if (useMarkers) { SetupMarkers(); }
+
       /* Get Queues */
+      ctDebugLog("Getting Queues...");
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.graphicsIdx, 0, &graphicsQueue);
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.presentIdx, 0, &presentQueue);
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.computeIdx, 0, &computeQueue);
       vkGetDeviceQueue(vkDevice, queueFamilyIndices.transferIdx, 0, &transferQueue);
-   }
-   /* Swapchain and Present Resources */
-   {
-      mainScreenResources.CreatePresentResources(this);
-      mainScreenResources.CreateSwapchain(
-        this, queueFamilyIndices, vsync, VK_NULL_HANDLE);
    }
    /* Memory Allocator */
    {
@@ -915,18 +602,17 @@ ctResults ctGPUDevice::Startup() {
                   CT_NCT("FAIL:vmaCreateAllocator",
                          "vmaCreateAllocator() failed to create allocator."));
    }
-   /* Frame Sync */
-   { RecreateSync(); }
+   /* JIT Renderpass and Framebuffers */
+   {
+      ctSpinLockInit(jitPipelineRenderpassLock);
+      ctSpinLockInit(jitUsableRenderInfoLock);
+   }
    /* Pipeline Cache */
    {
       vkPipelineCache = VK_NULL_HANDLE;
       if (fpOpenCacheFileCallback) {
          ctDebugLog("Loading Pipeline Cache...");
-         ctFile cacheFile;
-         fpOpenCacheFileCallback(&cacheFile,
-                                 PIPELINE_CACHE_FILE_PATH,
-                                 CT_FILE_OPEN_READ,
-                                 pCacheCallbackCustomData);
+         ctFile cacheFile = OpenCacheFile(PIPELINE_CACHE_FILE_PATH, CT_FILE_OPEN_READ);
          size_t cacheSize = 0;
          void* cacheData = NULL;
          if (cacheFile.isOpen()) {
@@ -1050,11 +736,10 @@ ctResults ctGPUDevice::Startup() {
       /* https://ourmachinery.com/post/moving-the-machinery-to-bindless/
        * https://roar11.com/2019/06/vulkan-textures-unbound/
        * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_descriptor_indexing.html
-       * https://gpuopen.com/performance/#descriptors */
+       * https://gpuopen.com/performance/#descriptors
+       * https://anki3d.org/resource-uniformity-bindless-access-in-vulkan/
+       */
    }
-   graphicsCommands.Startup(this, queueFamilyIndices.graphicsIdx);
-   computeCommands.Startup(this, queueFamilyIndices.computeIdx);
-   transferCommands.Startup(this, queueFamilyIndices.transferIdx);
    ctDebugLog("Vulkan Backend has Started!");
    return CT_SUCCESS;
 }
@@ -1064,10 +749,8 @@ ctResults ctGPUDevice::Shutdown() {
    ctDebugLog("Vulkan Backend is Shutting Down...");
    vkDeviceWaitIdle(vkDevice);
 
-   graphicsCommands.Shutdown(this);
-   computeCommands.Shutdown(this);
-   transferCommands.Shutdown(this);
    DestroyAllStagingBuffers();
+   DestroyJITRenderpasses();
    vkDestroyPipelineLayout(vkDevice, vkGlobalPipelineLayout, &vkAllocCallback);
    vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, &vkAllocCallback);
    vkDestroyDescriptorSetLayout(vkDevice, vkGlobalDescriptorSetLayout, &vkAllocCallback);
@@ -1080,11 +763,7 @@ ctResults ctGPUDevice::Shutdown() {
       if (cacheSize) {
          cacheData = ctMalloc(cacheSize);
          vkGetPipelineCacheData(vkDevice, vkPipelineCache, &cacheSize, cacheData);
-         ctFile cacheFile;
-         fpOpenCacheFileCallback(&cacheFile,
-                                 PIPELINE_CACHE_FILE_PATH,
-                                 CT_FILE_OPEN_WRITE,
-                                 pCacheCallbackCustomData);
+         ctFile cacheFile = OpenCacheFile(PIPELINE_CACHE_FILE_PATH, CT_FILE_OPEN_WRITE);
          if (cacheFile.isOpen()) {
             cacheFile.WriteRaw(cacheData, cacheSize, 1);
             cacheFile.Close();
@@ -1096,13 +775,7 @@ ctResults ctGPUDevice::Shutdown() {
       vkDestroyPipelineCache(vkDevice, vkPipelineCache, &vkAllocCallback);
    }
 
-   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroyFence(vkDevice, frameAvailibleFences[i], &vkAllocCallback);
-   }
-
-   mainScreenResources.DestroySwapchain(this);
-   mainScreenResources.DestroySurface(this);
-   mainScreenResources.DestroyPresentResources(this);
+   if (vkInitialSurface) { vkDestroySurfaceKHR(vkInstance, vkInitialSurface, NULL); }
    vmaDestroyAllocator(vmaAllocator);
    vkDestroyDevice(vkDevice, &vkAllocCallback);
 
@@ -1117,7 +790,8 @@ ctResults ctGPUDevice::Shutdown() {
    return CT_SUCCESS;
 }
 
-VkResult ctGPUDevice::CreateCompleteImage(ctVkCompleteImage& fullImage,
+VkResult ctGPUDevice::CreateCompleteImage(const char* name,
+                                          ctVkCompleteImage& fullImage,
                                           VkFormat format,
                                           VkImageUsageFlags usage,
                                           VmaAllocationCreateFlags allocFlags,
@@ -1162,6 +836,11 @@ VkResult ctGPUDevice::CreateCompleteImage(ctVkCompleteImage& fullImage,
    VkResult result = vmaCreateImage(
      vmaAllocator, &imageInfo, &allocInfo, &fullImage.image, &fullImage.alloc, NULL);
    if (result != VK_SUCCESS) { return result; }
+   char fullName[40];
+   memset(fullName, 0, 40);
+   snprintf(fullName, 39, "%s - Image", name);
+   SetObjectMarker(
+     fullName, (uint64_t)fullImage.image, VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT);
 
    VkImageViewCreateInfo viewInfo {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
    viewInfo.image = fullImage.image;
@@ -1172,10 +851,17 @@ VkResult ctGPUDevice::CreateCompleteImage(ctVkCompleteImage& fullImage,
    viewInfo.subresourceRange.layerCount = layers;
    viewInfo.subresourceRange.baseMipLevel = 0;
    viewInfo.subresourceRange.levelCount = mip;
-   return vkCreateImageView(vkDevice, &viewInfo, &vkAllocCallback, &fullImage.view);
+   result = vkCreateImageView(vkDevice, &viewInfo, &vkAllocCallback, &fullImage.view);
+   if (result != VK_SUCCESS) { return result; }
+   memset(fullName, 0, 40);
+   snprintf(fullName, 39, "%s - View", name);
+   SetObjectMarker(
+     fullName, (uint64_t)fullImage.view, VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT);
+   return result;
 }
 
-VkResult ctGPUDevice::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
+VkResult ctGPUDevice::CreateCompleteBuffer(const char* name,
+                                           ctVkCompleteBuffer& fullBuffer,
                                            VkBufferUsageFlags usage,
                                            VmaAllocationCreateFlags allocFlags,
                                            size_t size,
@@ -1195,8 +881,12 @@ VkResult ctGPUDevice::CreateCompleteBuffer(ctVkCompleteBuffer& fullBuffer,
    VmaAllocationCreateInfo allocInfo {};
    allocInfo.flags = allocFlags;
    allocInfo.usage = memUsage;
-   return vmaCreateBuffer(
+   VkResult result = vmaCreateBuffer(
      vmaAllocator, &bufferInfo, &allocInfo, &fullBuffer.buffer, &fullBuffer.alloc, NULL);
+   if (result != VK_SUCCESS) { return result; }
+   SetObjectMarker(
+     name, (uint64_t)fullBuffer.buffer, VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT);
+   return result;
 }
 
 void ctGPUDevice::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
@@ -1215,102 +905,8 @@ void ctGPUDevice::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
    vmaDestroyBuffer(vmaAllocator, fullBuffer.buffer, fullBuffer.alloc);
 }
 
-ctResults ctGPUDevice::GetStagingBuffer(ctVkCompleteBuffer& fullBuffer,
-                                        size_t& offset,
-                                        uint8_t*& mapping,
-                                        size_t sizeRequest) {
-   /* Find existing */
-   const size_t count = stagingBufferCooldown.Count();
-   for (size_t i = 0; i < count; i++) {
-      if (stagingBufferCooldown[i] == 0) {
-         if (stagingBuffers[i].size >= sizeRequest) {
-            offset = 0;
-            fullBuffer = stagingBuffers[i].buffer;
-            mapping = stagingBuffers[i].mapping;
-            stagingBufferCooldown[i] = -1;
-            return CT_SUCCESS;
-         }
-      }
-   }
-
-   /* Create new */
-   StagingEntry entry = {};
-   entry.size = sizeRequest;
-   ctAssert(CreateCompleteBuffer(entry.buffer,
-                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                 VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT,
-                                 sizeRequest,
-                                 VMA_MEMORY_USAGE_CPU_TO_GPU) == VK_SUCCESS);
-   vmaMapMemory(vmaAllocator, entry.buffer.alloc, (void**)&entry.mapping);
-   stagingBufferCooldown.Append(-1);
-   stagingBuffers.Append(entry);
-   offset = 0;
-   mapping = entry.mapping;
-   fullBuffer = entry.buffer;
-   return CT_SUCCESS;
-}
-
-void ctGPUDevice::AdvanceStagingCooldownTimers() {
-   const size_t count = stagingBufferCooldown.Count();
-   for (size_t i = 0; i < count; i++) {
-      if (stagingBufferCooldown[i] > 0) {
-         stagingBufferCooldown[i]--;
-      } else if (stagingBufferCooldown[i] < 0) {
-         stagingBufferCooldown[i] = CT_MAX_CONVEYOR_FRAMES;
-      }
-   }
-}
-
-void ctGPUDevice::DestroyAllStagingBuffers() {
-   for (size_t i = 0; i < stagingBuffers.Count(); i++) {
-      vmaUnmapMemory(vmaAllocator, stagingBuffers[i].buffer.alloc);
-      TryDestroyCompleteBuffer(stagingBuffers[i].buffer);
-   }
-   stagingBufferCooldown.Clear();
-   stagingBuffers.Clear();
-}
-
-ctFile ctGPUDevice::OpenAssetFile(ctGPUAssetIdentifier* pAssetIdentifier) {
-   ctFile result = ctFile();
-   fpOpenAssetFileCallback(&result, pAssetIdentifier, pAssetCallbackCustomData);
-   return result;
-}
-
-void ctGPUDevice::CommandBufferManager::Startup(ctGPUDevice* pDevice,
-                                                uint32_t queueFamilyIdx) {
-   VkCommandPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-   poolInfo.queueFamilyIndex = queueFamilyIdx;
-   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   vkCreateCommandPool(pDevice->vkDevice, &poolInfo, &pDevice->vkAllocCallback, &pool);
-   VkCommandBufferAllocateInfo allocInfo = {
-     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-   allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
-   allocInfo.commandPool = pool;
-   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   vkAllocateCommandBuffers(pDevice->vkDevice, &allocInfo, cmd);
-   BeginFrame(pDevice);
-}
-
-void ctGPUDevice::CommandBufferManager::Shutdown(ctGPUDevice* pDevice) {
-   vkFreeCommandBuffers(pDevice->vkDevice, pool, CT_MAX_INFLIGHT_FRAMES, cmd);
-   vkDestroyCommandPool(pDevice->vkDevice, pool, &pDevice->vkAllocCallback);
-}
-
-void ctGPUDevice::CommandBufferManager::BeginFrame(ctGPUDevice* pDevice) {
-   VkCommandBufferBeginInfo info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-   vkBeginCommandBuffer(cmd[pDevice->currentFrame], &info);
-}
-
-void ctGPUDevice::CommandBufferManager::Submit(ctGPUDevice* pDevice, VkQueue queue) {
-   VkSubmitInfo info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-   info.commandBufferCount = 1;
-   info.pCommandBuffers = &cmd[pDevice->currentFrame];
-   // todo: semaphores and fences
-   vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
-}
-
 /* Bindless */
-void ctGPUDevice::ExposeBindlessStorageBuffer(uint32_t& outIdx,
+void ctGPUDevice::ExposeBindlessStorageBuffer(int32_t& outIdx,
                                               VkBuffer buffer,
                                               VkDeviceSize range,
                                               VkDeviceSize offset) {
@@ -1330,11 +926,11 @@ void ctGPUDevice::ExposeBindlessStorageBuffer(uint32_t& outIdx,
    vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
 }
 
-void ctGPUDevice::ReleaseBindlessStorageBuffer(uint32_t idx) {
+void ctGPUDevice::ReleaseBindlessStorageBuffer(int32_t idx) {
    descriptorsStorageBuffer.ReleaseSlot(idx);
 }
 
-void ctGPUDevice::ExposeBindlessSampledImage(uint32_t& outIdx,
+void ctGPUDevice::ExposeBindlessSampledImage(int32_t& outIdx,
                                              VkImageView view,
                                              VkImageLayout layout,
                                              VkSampler sampler) {
@@ -1353,6 +949,366 @@ void ctGPUDevice::ExposeBindlessSampledImage(uint32_t& outIdx,
    vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
 }
 
-void ctGPUDevice::ReleaseBindlessSampledImage(uint32_t idx) {
+void ctGPUDevice::ReleaseBindlessSampledImage(int32_t idx) {
    descriptorsSampledImage.ReleaseSlot(idx);
+}
+
+ctResults ctGPUDevice::GetStagingBuffer(ctVkCompleteBuffer& fullBuffer,
+                                        size_t sizeRequest) {
+   /* Find existing */
+   const size_t count = stagingBufferCooldown.Count();
+   for (size_t i = 0; i < count; i++) {
+      if (stagingBufferCooldown[i] == 0) {
+         if (stagingBuffers[i].size >= sizeRequest) {
+            fullBuffer = stagingBuffers[i].buffer;
+            stagingBufferCooldown[i] = -1;
+            return CT_SUCCESS;
+         }
+      }
+   }
+
+   /* Create new */
+   StagingEntry entry = {};
+   entry.size = sizeRequest;
+   ctAssert(CreateCompleteBuffer("Staging",
+                                 entry.buffer,
+                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                 VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT,
+                                 sizeRequest,
+                                 VMA_MEMORY_USAGE_CPU_TO_GPU) == VK_SUCCESS);
+   stagingBufferCooldown.Append(-1);
+   stagingBuffers.Append(entry);
+   fullBuffer = entry.buffer;
+   return CT_SUCCESS;
+}
+
+ctResults ctGPUDevice::ReleaseStagingBuffer(ctVkCompleteBuffer& fullBuffer) {
+   const size_t count = stagingBuffers.Count();
+   for (size_t i = 0; i < count; i++) {
+      if (stagingBuffers[i].buffer.buffer == fullBuffer.buffer) {
+         stagingBufferCooldown[i] = CT_MAX_INFLIGHT_FRAMES;
+      }
+   }
+   return CT_SUCCESS;
+}
+
+void ctGPUDevice::AdvanceStagingCooldownTimers() {
+   const size_t count = stagingBufferCooldown.Count();
+   for (size_t i = 0; i < count; i++) {
+      if (stagingBufferCooldown[i] > 0) { stagingBufferCooldown[i]--; }
+   }
+}
+
+void ctGPUDevice::DestroyAllStagingBuffers() {
+   for (size_t i = 0; i < stagingBuffers.Count(); i++) {
+      TryDestroyCompleteBuffer(stagingBuffers[i].buffer);
+   }
+   stagingBufferCooldown.Clear();
+   stagingBuffers.Clear();
+}
+
+void ctGPUDevice::DestroyJITRenderpasses() {
+   for (auto it = pipelineRenderpasses.GetIterator(); it; it++) {
+      vkDestroyRenderPass(vkDevice, it.Value(), &vkAllocCallback);
+   }
+   for (auto it = usableRenderInfo.GetIterator(); it; it++) {
+      vkDestroyRenderPass(vkDevice, it.Value().renderpass, &vkAllocCallback);
+      vkDestroyFramebuffer(vkDevice, it.Value().framebuffer, &vkAllocCallback);
+   }
+}
+
+uint32_t HashPipelineInfo(const VkPipelineRenderingCreateInfoKHR* pInfo) {
+   uint32_t h1 = pInfo->colorAttachmentCount
+                   ? ctXXHash32(pInfo->pColorAttachmentFormats,
+                                sizeof(VkFormat) * pInfo->colorAttachmentCount)
+                   : 0;
+   return ctXXHash32(pInfo, sizeof(VkPipelineRenderingCreateInfoKHR), h1);
+}
+
+/* This is VERY hacky but Vulkan's renderpass system is not very good... */
+VkRenderPass
+ctGPUDevice::GetJITPipelineRenderpass(VkPipelineRenderingCreateInfoKHR& info) {
+   /* Fetch existing */
+   uint32_t hash = HashPipelineInfo(&info);
+   ctSpinLockEnterCritical(jitPipelineRenderpassLock);
+   VkRenderPass* pExistingPass = pipelineRenderpasses.FindPtr(hash);
+   ctSpinLockExitCritical(jitPipelineRenderpassLock);
+   if (pExistingPass) { return *pExistingPass; }
+
+   VkAttachmentReference depthAttachmentRef;
+   ctStaticArray<VkAttachmentReference, 8> colorAttachmentRefs;
+   ctStaticArray<VkAttachmentDescription, 12> attachments;
+
+   /* Configure depth stencil */
+   VkFormat depthStencilFormat = VK_FORMAT_UNDEFINED;
+   if (info.depthAttachmentFormat != VK_FORMAT_UNDEFINED) {
+      depthStencilFormat = info.depthAttachmentFormat;
+   } else {
+      depthStencilFormat = info.stencilAttachmentFormat;
+   }
+   if (depthStencilFormat != VK_FORMAT_UNDEFINED) {
+      depthAttachmentRef = {(uint32_t)attachments.Count(),
+                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+      VkAttachmentDescription desc = {};
+      desc.format = depthStencilFormat;
+      desc.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+      desc.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+      desc.flags = 0;
+      desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+      desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+      desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+      desc.samples = VK_SAMPLE_COUNT_1_BIT; /* doesn't support MSAA, don't cate */
+      attachments.Append(desc);
+   }
+
+   /* Configure colors */
+   for (uint32_t i = 0; i < info.colorAttachmentCount; i++) {
+      colorAttachmentRefs.Append(
+        {(uint32_t)attachments.Count(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+      VkAttachmentDescription desc = {};
+      desc.format = info.pColorAttachmentFormats[i];
+      desc.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+      desc.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+      desc.flags = 0;
+      desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+      desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+      desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+      desc.samples = VK_SAMPLE_COUNT_1_BIT; /* doesn't support MSAA, don't cate */
+      attachments.Append(desc);
+   }
+
+   /* Make dummy subpass */
+   VkSubpassDescription subpassInfo = {};
+   subpassInfo.colorAttachmentCount = (uint32_t)colorAttachmentRefs.Count();
+   subpassInfo.pColorAttachments = colorAttachmentRefs.Data();
+   subpassInfo.pDepthStencilAttachment =
+     depthStencilFormat != VK_FORMAT_UNDEFINED ? &depthAttachmentRef : NULL;
+   subpassInfo.inputAttachmentCount = 0;
+   subpassInfo.pInputAttachments = NULL;
+   subpassInfo.preserveAttachmentCount = 0;
+   subpassInfo.pPreserveAttachments = NULL;
+   subpassInfo.pResolveAttachments = NULL;
+   subpassInfo.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+   /* Create renderpass */
+   VkRenderPass newRenderpass;
+   VkRenderPassCreateInfo renderpassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+   renderpassInfo.attachmentCount = (uint32_t)attachments.Count();
+   renderpassInfo.pAttachments = attachments.Data();
+   renderpassInfo.subpassCount = 1;
+   renderpassInfo.pSubpasses = &subpassInfo;
+   CT_VK_CHECK(
+     vkCreateRenderPass(vkDevice, &renderpassInfo, &vkAllocCallback, &newRenderpass),
+     CT_NC("vkCreateRenderPass() failed to create temporary pipeline renderpass."));
+
+   /* Insert new */
+   ctSpinLockEnterCritical(jitPipelineRenderpassLock);
+   pipelineRenderpasses.Insert(hash, newRenderpass);
+   ctSpinLockExitCritical(jitPipelineRenderpassLock);
+   return newRenderpass;
+}
+
+ctGPUDevice::CompleteRenderInfo
+ctGPUDevice::CreateCompleteRenderInfo(const VkRenderingInfoKHR* pRenderingInfo,
+                                      VkFormat depthStencilFormat,
+                                      VkFormat* pColorFormats,
+                                      VkImageLayout lastDepthLayout,
+                                      VkImageLayout* pLastColorLayouts) {
+   CompleteRenderInfo newRenderInfo = CompleteRenderInfo();
+
+   VkAttachmentReference depthAttachmentRef;
+   ctStaticArray<VkAttachmentReference, 8> colorAttachmentRefs;
+   ctStaticArray<VkAttachmentDescription, 12> attachments;
+
+   /* Configure Depth */
+   if (depthStencilFormat != VK_FORMAT_UNDEFINED) {
+      depthAttachmentRef = {(uint32_t)attachments.Count(),
+                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+      VkAttachmentDescription desc = {};
+      desc.format = depthStencilFormat;
+      desc.initialLayout = lastDepthLayout;
+      desc.finalLayout = pRenderingInfo->pDepthAttachment->imageLayout;
+      desc.flags = 0;
+      desc.loadOp = pRenderingInfo->pDepthAttachment->loadOp;
+      desc.storeOp = pRenderingInfo->pDepthAttachment->storeOp;
+      desc.stencilLoadOp = pRenderingInfo->pDepthAttachment->loadOp;
+      desc.stencilStoreOp = pRenderingInfo->pDepthAttachment->storeOp;
+      desc.samples = VK_SAMPLE_COUNT_1_BIT; /* doesn't support MSAA, don't cate */
+      attachments.Append(desc);
+   }
+
+   /* Configure colors */
+   for (uint32_t i = 0; i < pRenderingInfo->colorAttachmentCount; i++) {
+      colorAttachmentRefs.Append(
+        {(uint32_t)attachments.Count(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+      VkAttachmentDescription desc = {};
+      desc.format = pColorFormats[i];
+      desc.initialLayout = pLastColorLayouts[i];
+      desc.finalLayout = pRenderingInfo->pColorAttachments[i].imageLayout;
+      desc.flags = 0;
+      desc.loadOp = pRenderingInfo->pColorAttachments[i].loadOp;
+      desc.storeOp = pRenderingInfo->pColorAttachments[i].storeOp;
+      desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      desc.samples = VK_SAMPLE_COUNT_1_BIT; /* doesn't support MSAA, don't cate */
+      attachments.Append(desc);
+   }
+
+   /* Make dummy subpass */
+   VkSubpassDescription subpassInfo = {};
+   subpassInfo.colorAttachmentCount = (uint32_t)colorAttachmentRefs.Count();
+   subpassInfo.pColorAttachments = colorAttachmentRefs.Data();
+   subpassInfo.pDepthStencilAttachment =
+     depthStencilFormat != VK_FORMAT_UNDEFINED ? &depthAttachmentRef : NULL;
+   subpassInfo.inputAttachmentCount = 0;
+   subpassInfo.pInputAttachments = NULL;
+   subpassInfo.preserveAttachmentCount = 0;
+   subpassInfo.pPreserveAttachments = NULL;
+   subpassInfo.pResolveAttachments = NULL;
+   subpassInfo.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+   /* Create renderpass */
+   VkRenderPassCreateInfo renderpassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+   renderpassInfo.attachmentCount = (uint32_t)attachments.Count();
+   renderpassInfo.pAttachments = attachments.Data();
+   renderpassInfo.subpassCount = 1;
+   renderpassInfo.pSubpasses = &subpassInfo;
+   CT_VK_CHECK(vkCreateRenderPass(
+                 vkDevice, &renderpassInfo, &vkAllocCallback, &newRenderInfo.renderpass),
+               CT_NC("vkCreateRenderPass() failed to create just-in-time renderpass."));
+
+   /* Create framebuffer */
+   ctStaticArray<VkImageView, 9> imageViews;
+   if (pRenderingInfo->pDepthAttachment) {
+      imageViews.Append(pRenderingInfo->pDepthAttachment->imageView);
+   }
+   for (uint32_t i = 0; i < pRenderingInfo->colorAttachmentCount; i++) {
+      imageViews.Append(pRenderingInfo->pColorAttachments[i].imageView);
+   }
+   VkFramebufferCreateInfo framebufferInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+   framebufferInfo.width = pRenderingInfo->renderArea.extent.width;
+   framebufferInfo.height = pRenderingInfo->renderArea.extent.height;
+   framebufferInfo.layers = pRenderingInfo->layerCount;
+   framebufferInfo.renderPass = newRenderInfo.renderpass;
+   framebufferInfo.attachmentCount = (uint32_t)imageViews.Count();
+   framebufferInfo.pAttachments = imageViews.Data();
+   CT_VK_CHECK(
+     vkCreateFramebuffer(
+       vkDevice, &framebufferInfo, &vkAllocCallback, &newRenderInfo.framebuffer),
+     CT_NC("vkCreateFramebuffer() failed to create just-in-time framebuffer."));
+   return newRenderInfo;
+}
+
+void ctGPUDevice::SetupMarkers() {
+   ctDebugLog("Getting Debug Markers...");
+   fpDebugMarkerSetObjectTag = (PFN_vkDebugMarkerSetObjectTagEXT)vkGetDeviceProcAddr(
+     vkDevice, "vkDebugMarkerSetObjectTagEXT");
+   fpDebugMarkerSetObjectName = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(
+     vkDevice, "vkDebugMarkerSetObjectNameEXT");
+   fpCmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(
+     vkDevice, "vkCmdDebugMarkerBeginEXT");
+   fpCmdDebugMarkerEnd =
+     (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(vkDevice, "vkCmdDebugMarkerEndEXT");
+   fpCmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)vkGetDeviceProcAddr(
+     vkDevice, "vkCmdDebugMarkerInsertEXT");
+}
+
+void ctGPUDevice::SetObjectMarker(const char* name,
+                                  uint64_t object,
+                                  VkDebugReportObjectTypeEXT type) {
+   if (useMarkers) {
+      VkDebugMarkerObjectNameInfoEXT nameInfo = {};
+      nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+      nameInfo.objectType = type;
+      nameInfo.object = object;
+      nameInfo.pObjectName = name;
+      fpDebugMarkerSetObjectName(vkDevice, &nameInfo);
+   }
+}
+
+void ctGPUDevice::MarkBeginRegion(VkCommandBuffer cmd, const char* name) {
+   if (!useMarkers) { return; }
+   VkDebugMarkerMarkerInfoEXT info = {VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT};
+   info.pMarkerName = name;
+   ctRandomGenerator rgen = ctXXHash32(name);
+   const ctVec4 randomColor = rgen.GetColor();
+   memcpy(info.color, randomColor.data, sizeof(float) * 4);
+   fpCmdDebugMarkerBegin(cmd, &info);
+}
+
+void ctGPUDevice::MarkEndRegion(VkCommandBuffer cmd) {
+   if (!useMarkers) { return; }
+   fpCmdDebugMarkerEnd(cmd);
+}
+
+uint32_t HashRenderingInfo(const VkRenderingInfoKHR* pRenderingInfo) {
+   uint32_t h1 = pRenderingInfo->pDepthAttachment
+                   ? ctXXHash32(pRenderingInfo->pDepthAttachment,
+                                sizeof(VkRenderingAttachmentInfoKHR))
+                   : 0;
+   uint32_t h2 = pRenderingInfo->pStencilAttachment
+                   ? ctXXHash32(pRenderingInfo->pStencilAttachment,
+                                sizeof(VkRenderingAttachmentInfoKHR),
+                                h1)
+                   : h1;
+   uint32_t h3 = pRenderingInfo->colorAttachmentCount
+                   ? ctXXHash32(pRenderingInfo->pColorAttachments,
+                                sizeof(VkRenderingAttachmentInfoKHR) *
+                                  pRenderingInfo->colorAttachmentCount,
+                                h2)
+                   : h2;
+   return ctXXHash32(pRenderingInfo, sizeof(VkRenderingInfoKHR), h3);
+}
+
+void ctGPUDevice::BeginJITRenderPass(VkCommandBuffer commandBuffer,
+                                     const VkRenderingInfoKHR* pRenderingInfo,
+                                     VkFormat depthStencilFormat,
+                                     VkFormat* pColorFormats,
+                                     VkImageLayout lastDepthLayout,
+                                     VkImageLayout* pLastColorLayouts) {
+   /* Fetch existing */
+   uint32_t hash = HashRenderingInfo(pRenderingInfo);
+   ctXXHash32(&depthStencilFormat, sizeof(depthStencilFormat), hash);
+   ctXXHash32(pColorFormats,
+              sizeof(pColorFormats[0]) * pRenderingInfo->colorAttachmentCount,
+              hash);
+   ctXXHash32(&lastDepthLayout, sizeof(lastDepthLayout), hash);
+   ctXXHash32(pLastColorLayouts,
+              sizeof(pLastColorLayouts[0]) * pRenderingInfo->colorAttachmentCount,
+              hash);
+   ctSpinLockEnterCritical(jitUsableRenderInfoLock);
+   CompleteRenderInfo* pCompleteRenderInfo = usableRenderInfo.FindPtr(hash);
+   ctSpinLockExitCritical(jitUsableRenderInfoLock);
+   if (!pCompleteRenderInfo) {
+      CompleteRenderInfo newRenderInfo = CreateCompleteRenderInfo(pRenderingInfo,
+                                                                  depthStencilFormat,
+                                                                  pColorFormats,
+                                                                  lastDepthLayout,
+                                                                  pLastColorLayouts);
+      ctSpinLockEnterCritical(jitUsableRenderInfoLock);
+      pCompleteRenderInfo = usableRenderInfo.Insert(hash, newRenderInfo);
+      ctSpinLockExitCritical(jitUsableRenderInfoLock);
+   }
+
+   ctStaticArray<VkClearValue, 9> clears;
+   if (pRenderingInfo->pDepthAttachment) {
+      clears.Append(pRenderingInfo->pDepthAttachment->clearValue);
+   } else {
+   }
+   for (uint32_t i = 0; i < pRenderingInfo->colorAttachmentCount; i++) {
+      clears.Append(pRenderingInfo->pColorAttachments[i].clearValue);
+   }
+   VkRenderPassBeginInfo begin = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+   begin.framebuffer = pCompleteRenderInfo->framebuffer;
+   begin.renderArea = pRenderingInfo->renderArea;
+   begin.renderPass = pCompleteRenderInfo->renderpass;
+   begin.clearValueCount = (uint32_t)clears.Count();
+   begin.pClearValues = clears.Data();
+   vkCmdBeginRenderPass(commandBuffer, &begin, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void ctGPUDevice::EndJITRenderpass(VkCommandBuffer commandBuffer) {
+   vkCmdEndRenderPass(commandBuffer);
 }
