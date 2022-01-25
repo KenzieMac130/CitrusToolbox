@@ -29,6 +29,16 @@ public:
    ctResults RenderFrame();
 
    struct ctGPUDevice* pGPUDevice;
+   struct ctGPUPresenter* pGPUPresenter;
    struct ctGPUArchitect* pGPUArchitect;
    struct ctGPUExternalBufferPool* pGPUBufferPool;
+   struct ctGPUExternalTexturePool* pGPUTexturePool;
+
+   struct ctGPUExternalBuffer* pExternBuffer;
+   struct ctGPUExternalTexture* pExternTexture;
+   void* pTestPipeline;
+   bool rebuildRequired;
+
+private:
+   static void HandleWindowEvent(SDL_Event* event, ctKeyLimeRenderer* renderer);
 };

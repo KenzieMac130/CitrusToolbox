@@ -18,73 +18,138 @@
 
 #include "imgui/imgui.h"
 #include "gpu/Device.h"
+#include "gpu/Present.h"
 #include "gpu/Pipeline.h"
 #include "gpu/Architect.h"
 #include "gpu/Buffer.h"
 #include "gpu/Texture.h"
+#include "gpu/Commands.h"
 
 #include "core/EngineCore.hpp"
 #include "core/Application.hpp"
+#include "core/OSEvents.hpp"
 #include "core/WindowManager.hpp"
 #include "core/FileSystem.hpp"
+#include "core/Translation.hpp"
+#include "core/AsyncTasks.hpp"
 
-#define CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION 0
+#include "middleware/ImguiIntegration.hpp"
+#include "middleware/Im3dIntegration.hpp"
 
-#define CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH    0
-#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR  1
-#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL 2
-#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR    3
-#define CT_KEYLIME_BIND_TEXTURE_LIGHTING       4
+#define CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES  0
+#define CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES 1
 
-ctGPUArchitectBufferPayloadDesc occlusionFeedbackDesc = {
-  CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION,
-  "Occlusion List",
-  CT_GPU_PAYLOAD_FEEDBACK,
-  2048};
+#define CT_KEYLIME_BIND_BUFFER_IM3D_VIEW     2
+#define CT_KEYLIME_BIND_BUFFER_IM3D_VERTICES 3
 
-ctGPUArchitectImagePayloadDesc depthDesc = {CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH,
-                                            "Scene Depth",
-                                            0,
-                                            1.0f,
-                                            1.0f,
-                                            1,
-                                            1,
-                                            TinyImageFormat_D24_UNORM_S8_UINT};
-ctGPUArchitectImagePayloadDesc gbufferColorDesc = {CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR,
-                                                   "GBuffer Color",
-                                                   0,
-                                                   1.0f,
-                                                   1.0f,
-                                                   1,
-                                                   1,
-                                                   TinyImageFormat_R8G8B8A8_UNORM};
-ctGPUArchitectImagePayloadDesc gbufferNormalDesc = {
-  CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL,
-  "GBuffer Normal",
-  0,
-  1.0f,
-  1.0f,
-  1,
-  1,
-  TinyImageFormat_B10G10R10A2_UNORM};
-ctGPUArchitectImagePayloadDesc gbufferPBRDesc = {CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR,
-                                                 "GBuffer PBR",
-                                                 0,
-                                                 1.0f,
-                                                 1.0f,
-                                                 1,
-                                                 1,
-                                                 TinyImageFormat_R8G8B8A8_UNORM};
-ctGPUArchitectImagePayloadDesc lightBufferDesc = {CT_KEYLIME_BIND_TEXTURE_LIGHTING,
-                                                  "GBuffer Light",
-                                                  0,
-                                                  1.0f,
-                                                  1.0f,
-                                                  1,
-                                                  1,
-                                                  TinyImageFormat_B10G10R10A2_UNORM};
+#define CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION 0 + 8
+
+#define CT_KEYLIME_BIND_TEXTURE_IMGUI_FONT     0
+#define CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH    0 + 8
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR  1 + 8
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL 2 + 8
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR    3 + 8
+#define CT_KEYLIME_BIND_TEXTURE_LIGHTING       4 + 8
+#define CT_KEYLIME_BIND_TEXTURE_TONEMAP        5 + 8
+
+#define CT_KEYLIME_FORMAT_COLOR  TinyImageFormat_R8G8B8A8_UNORM
+#define CT_KEYLIME_FORMAT_DEPTH  TinyImageFormat_D24_UNORM_S8_UINT
+#define CT_KEYLIME_FORMAT_NORMAL TinyImageFormat_B10G10R10A2_UNORM
+#define CT_KEYLIME_FORMAT_HDR    TinyImageFormat_B10G10R10A2_UNORM
+
+ctGPUArchitectClearContents depthClear = {{0.0f}, 1.0f, 0};
+ctGPUArchitectClearContents baseColorClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
+ctGPUArchitectClearContents normalRoughClear = {{0.5f, 0.5f, 1.0f, 1.0f}};
+ctGPUArchitectClearContents surfPropsClear = {{0.0f, 0.0f, 0.0f, 0.0f}};
+ctGPUArchitectClearContents lightClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+/* GBuffer Layout:
+C0: Base Color, Thickness
+C1: Normal XY, Roughness, Normal Z Sign
+C2: Occlusion, Metal/Translucent, Fresnel F0, Profile
+C3: Light Level
+DS: Reverse Depth, Draw Flag
+*/
 
 // clang-format off
+ctGPUArchitectBufferPayloadDesc occlusionFeedbackDesc = {CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION,
+                                                         "Occlusion List",
+                                                         CT_GPU_PAYLOAD_FEEDBACK,
+                                                         2048};
+                                                        
+ctGPUArchitectImagePayloadDesc depthDesc =              {CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH,
+                                                         "Scene Depth",
+                                                         0,
+                                                         1.0f,
+                                                         1.0f,
+                                                         1,
+                                                         1,
+                                                         CT_KEYLIME_FORMAT_DEPTH, 
+                                                         &depthClear};
+
+ctGPUArchitectImagePayloadDesc gbufferColorDesc =       {CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR,
+                                                         "GBuffer Color",
+                                                         0,
+                                                         1.0f,
+                                                         1.0f,
+                                                         1,
+                                                         1,
+                                                         CT_KEYLIME_FORMAT_COLOR, 
+                                                         &baseColorClear};
+
+ctGPUArchitectImagePayloadDesc gbufferNormalDesc =      {CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL,
+                                                         "GBuffer Normal",
+                                                         0,
+                                                         1.0f,
+                                                         1.0f,
+                                                         1,
+                                                         1,
+                                                         CT_KEYLIME_FORMAT_NORMAL,
+                                                         &normalRoughClear};
+
+ctGPUArchitectImagePayloadDesc gbufferPBRDesc =         {CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR,
+                                                         "GBuffer PBR",
+                                                         0,
+                                                         1.0f,
+                                                         1.0f,
+                                                         1,
+                                                         1,
+                                                         CT_KEYLIME_FORMAT_COLOR,
+                                                         &surfPropsClear};
+
+ctGPUArchitectImagePayloadDesc lightBufferDesc =        {CT_KEYLIME_BIND_TEXTURE_LIGHTING,
+                                                         "GBuffer Light",
+                                                         0,
+                                                         1.0f,
+                                                         1.0f,
+                                                         1,
+                                                         1,
+                                                         CT_KEYLIME_FORMAT_HDR, 
+                                                         &lightClear};
+ctGPUArchitectImagePayloadDesc tonemapBufferDesc =      {CT_KEYLIME_BIND_TEXTURE_TONEMAP,
+                                                         "Tonemap Output",
+                                                         0,
+                                                         1.0f,
+                                                         1.0f,
+                                                         1,
+                                                         1,
+                                                         CT_KEYLIME_FORMAT_HDR};
+
+
+ctResults DefineObjectOcclusionPass(ctGPUArchitectDefinitionContext* pCtx,
+                                    void* pUserData) {
+    ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_OcclusionBuilt"), "Occlusion Built", 0);
+    ctGPUTaskUseStorageBuffer(pCtx, CT_ARCH_ID("S_OcclusionList"), CT_GPU_ACCESS_WRITE);
+    ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_ResourcesUploaded"));
+    ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_OcclusionBuilt"));
+    return CT_SUCCESS;
+}
+ctResults DefineResourceUploadPass(ctGPUArchitectDefinitionContext* pCtx,
+                                   void* pUserData) {
+    ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_ResourcesUploaded"), "Resources Uploaded", 0);
+    ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_ResourcesUploaded"));
+    return CT_SUCCESS;
+}
 ctResults DefineDepthPrepass(ctGPUArchitectDefinitionContext* pCtx, void* pUserData) {
    ctGPUTaskDeclareDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), &depthDesc);
    ctGPUTaskDeclareStorageBuffer(pCtx, CT_ARCH_ID("S_OcclusionList"), &occlusionFeedbackDesc);
@@ -115,19 +180,45 @@ ctResults DefineLightPass(ctGPUArchitectDefinitionContext* pCtx, void* pUserData
    ctGPUTaskUseTexture(pCtx, CT_ARCH_ID("C_GBuffer_Normal"));
    ctGPUTaskUseTexture(pCtx, CT_ARCH_ID("C_GBuffer_PBR"));
    ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_LightBuffer"), CT_GPU_ACCESS_READ_WRITE, 0);
+
+   ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_LightFinished"), "Light Finished", 0);
+   ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_LightFinished"));
    return CT_SUCCESS;
 }
-ctResults DefineObjectOcclusionPass(ctGPUArchitectDefinitionContext* pCtx,
-                                    void* pUserData) {
-   ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_OcclusionBuilt"), "Occlusion Built", 0);
-   ctGPUTaskUseStorageBuffer(pCtx, CT_ARCH_ID("S_OcclusionList"), CT_GPU_ACCESS_WRITE);
-   ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_OcclusionBuilt"));
-   return CT_SUCCESS;
+ctResults DefineTonemapPass(ctGPUArchitectDefinitionContext* pCtx, void* pUserData) {
+    ctGPUTaskDeclareColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), &tonemapBufferDesc);
+
+    ctGPUTaskUseTexture(pCtx, CT_ARCH_ID("C_LightBuffer"));
+    ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_WRITE, 0);
+
+    ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_LightFinished"));
+    return CT_SUCCESS;
+}
+ctResults DefineGizmoPass(ctGPUArchitectDefinitionContext* pCtx, void* pUserData) {
+    ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_READ_WRITE);
+    ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_READ_WRITE, 0);
+
+    ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"), "Gizmo Drawn", 0);
+    ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"));
+    return CT_SUCCESS;
+}
+ctResults DefineGUIPass(ctGPUArchitectDefinitionContext* pCtx, void* pUserData) {
+    ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_WRITE);
+    ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_READ_WRITE, 0);
+    ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"));
+    return CT_SUCCESS;
 }
 // clang-format on
 
 void GenerateTestBuffer(uint8_t* dest, size_t size, void* userData) {
    memset(dest, 0, size);
+   ctWait(100);
+   ctDebugLog("Loaded!");
+}
+
+void GenerateTestTexture(uint8_t* dest,
+                         ctGPUExternalGenerateContext* ctx,
+                         void* userData) {
 }
 
 ctResults OpenCacheFileCallback(ctFile* pFileOut,
@@ -143,11 +234,22 @@ ctResults
 OpenAssetFileCallback(ctFile* pFileOut, ctGUID* pGuid, ctFileSystem* pFileSystem) {
    ctAssert(pFileSystem);
    ctAssert(pFileOut);
-   return pFileSystem->OpenAssetFileGUID(*pFileOut, *pGuid);
+   return pFileSystem->OpenDataFileByGUID(*pFileOut, *pGuid);
+}
+
+ctResults
+AsyncSchedulerCallback(ctGPUAsyncWorkFn fpWork, void* data, ctAsyncManager* pAsync) {
+   pAsync->CreateTask("Async Render Work", fpWork, data, 0);
+   return CT_SUCCESS;
 }
 
 ctResults ctKeyLimeRenderer::Startup() {
 #if !CITRUS_HEADLESS
+   /* OS Events */
+   Engine->OSEventManager->WindowEventHandlers.Append(
+     {(ctOSEventCallback)HandleWindowEvent, this});
+
+   /* ImGUI */
    ImGui::GetIO().Fonts->AddFontDefault();
    ImGui::GetIO().Fonts->Build();
    ImGui::GetIO().DisplaySize.x = 640.0f;
@@ -155,6 +257,7 @@ ctResults ctKeyLimeRenderer::Startup() {
    ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
    ImGui::NewFrame();
 
+   /* Device */
    ctGPUDeviceCreateInfo deviceCreateInfo = {};
    deviceCreateInfo.appName = Engine->App->GetAppName();
    deviceCreateInfo.version[0] = Engine->App->GetAppVersion().major;
@@ -163,60 +266,113 @@ ctResults ctKeyLimeRenderer::Startup() {
    deviceCreateInfo.pMainWindow = Engine->WindowManager->mainWindow;
    deviceCreateInfo.fpOpenCacheFileCallback = (ctGPUOpenCacheFileFn)OpenCacheFileCallback;
    deviceCreateInfo.pCacheCallbackCustomData = Engine->FileSystem;
-   deviceCreateInfo.useVSync = false;
    deviceCreateInfo.validationEnabled = true;
    ctGPUDeviceStartup(&pGPUDevice, &deviceCreateInfo, NULL);
 
+   /* Presentation */
+   ctGPUPresenterCreateInfo presenterCreateInfo = {};
+   presenterCreateInfo.pWindow = Engine->WindowManager->mainWindow;
+   presenterCreateInfo.useVSync = true;
+   ctGPUPresenterStartup(pGPUDevice, &pGPUPresenter, &presenterCreateInfo);
+
+   /* Buffer Pool */
    ctGPUExternalBufferPoolCreateInfo bufferPoolInfo = {};
+   bufferPoolInfo.fpAsyncScheduler = (ctGPUAsyncSchedulerFn)AsyncSchedulerCallback;
+   bufferPoolInfo.pAsyncUserData = ctGetAsyncManager();
    ctGPUExternalBufferPoolCreate(pGPUDevice, &pGPUBufferPool, &bufferPoolInfo);
 
-   ctGPUExternalBufferCreateInfo bufferInfo = {};
-   bufferInfo.debugName = "Test Buffer";
-   bufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
-   bufferInfo.source = CT_GPU_EXTERN_SOURCE_GENERATE;
-   bufferInfo.updateMode = CT_GPU_UPDATE_DYNAMIC;
-   bufferInfo.generate.size = 1024;
-   bufferInfo.generate.fpGenerationFunction = GenerateTestBuffer;
-   bufferInfo.generate.pUserData = NULL;
-   ctGPUExternalBuffer* pExternBuffer;
-   ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, 1, &pExternBuffer, &bufferInfo);
-   ctGPUExternalBufferRelease(pGPUDevice, pGPUBufferPool, 1, &pExternBuffer);
-   ctGPUExternalBufferPoolFlush(pGPUDevice, pGPUBufferPool);
+   /* Texture Pool */
+   ctGPUExternalTexturePoolCreateInfo texturePoolInfo = {};
+   texturePoolInfo.fpAsyncScheduler = (ctGPUAsyncSchedulerFn)AsyncSchedulerCallback;
+   texturePoolInfo.pAsyncUserData = ctGetAsyncManager();
+   ctGPUExternalTexturePoolCreate(pGPUDevice, &pGPUTexturePool, &texturePoolInfo);
 
-   /* Temporary Test Render Graph */
+   /* Setup Imgui */
+   Engine->ImguiIntegration->StartupGPU(pGPUDevice,
+                                        pGPUBufferPool,
+                                        pGPUTexturePool,
+                                        10000,
+                                        30000,
+                                        CT_KEYLIME_BIND_TEXTURE_IMGUI_FONT,
+                                        CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES,
+                                        CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES,
+                                        CT_KEYLIME_FORMAT_HDR,
+                                        CT_KEYLIME_FORMAT_DEPTH);
+   Engine->Im3dIntegration->StartupGPU(pGPUDevice,
+                                       pGPUBufferPool,
+                                       30000,
+                                       CT_KEYLIME_BIND_BUFFER_IM3D_VIEW,
+                                       CT_KEYLIME_BIND_BUFFER_IM3D_VERTICES,
+                                       CT_KEYLIME_FORMAT_HDR,
+                                       CT_KEYLIME_FORMAT_DEPTH);
+
+   /* Render Graph */
    ctGPUArchitectCreateInfo architectInfo = {};
    ctGPUArchitectStartup(pGPUDevice, &pGPUArchitect, &architectInfo);
 
-   ctGPUArchitectTaskInfo lightPass = {
-     "Lighting Pass", 0, CT_GPU_TASK_RASTER, DefineLightPass, NULL, NULL};
-   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &lightPass);
-   ctGPUArchitectTaskInfo depthPrepass = {
-     "Depth Prepass", 0, CT_GPU_TASK_RASTER, DefineDepthPrepass, NULL, NULL};
-   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &depthPrepass);
-   ctGPUArchitectTaskInfo gbufferPass = {
-     "GBuffer Pass", 0, CT_GPU_TASK_RASTER, DefineGBufferPass, NULL, NULL};
-   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gbufferPass);
+   /* Resource Upload */
+   ctGPUArchitectTaskInfo resourceUploadPass = {
+     "Upload Resources", 0, CT_GPU_TASK_TRANSFER, DefineResourceUploadPass, NULL, NULL};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &resourceUploadPass);
+
+   /* Occlusion Build */
    ctGPUArchitectTaskInfo occlusionBuildPass = {
      "Build Occlusion", 0, CT_GPU_TASK_COMPUTE, DefineObjectOcclusionPass, NULL, NULL};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &occlusionBuildPass);
-   ctGPUArchitectSetOutput(pGPUDevice, pGPUArchitect, CT_ARCH_ID("C_LightBuffer"), 0);
 
-   /* Build and Display Outputs */
-   ctGPUArchitectBuild(pGPUDevice, pGPUArchitect);
-   ctStringUtf8 dotPath = Engine->FileSystem->GetPreferencesPath();
-   dotPath.FilePathAppend("RENDERGRAPH_DUMP");
-   ctGPUArchitectDumpGraphVis(pGPUArchitect, dotPath.CStr(), true, true);
+   /* Depth Prepass */
+   ctGPUArchitectTaskInfo depthPrepass = {
+     "Depth Prepass", 0, CT_GPU_TASK_RASTER, DefineDepthPrepass, NULL, NULL};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &depthPrepass);
+
+   /* GBuffer */
+   ctGPUArchitectTaskInfo gbufferPass = {
+     "GBuffer Pass", 0, CT_GPU_TASK_RASTER, DefineGBufferPass, NULL, NULL};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gbufferPass);
+
+   /* Lighting */
+   ctGPUArchitectTaskInfo lightPass = {
+     "Lighting Pass", 0, CT_GPU_TASK_RASTER, DefineLightPass, NULL, NULL};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &lightPass);
+
+   /* Tonemapping */
+   ctGPUArchitectTaskInfo tonemapPass = {
+     "Tonemap Pass", 0, CT_GPU_TASK_RASTER, DefineTonemapPass, NULL, NULL};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &tonemapPass);
+
+   /* Gizmo */
+   ctGPUArchitectTaskInfo gizmoPass = {
+     "Gizmo Pass", 0, CT_GPU_TASK_RASTER, DefineGizmoPass, NULL, NULL};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gizmoPass);
+
+   /* GUI */
+   ctGPUArchitectTaskInfo guiPass = {"GUI Pass",
+                                     0,
+                                     CT_GPU_TASK_RASTER,
+                                     DefineGUIPass,
+                                     Engine->ImguiIntegration->DrawCallback,
+                                     Engine->ImguiIntegration};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &guiPass);
+
+   /* Output */
+   ctGPUArchitectSetOutput(pGPUDevice, pGPUArchitect, CT_ARCH_ID("C_Tonemap_Color"), 0);
 
    /* Show window */
    Engine->WindowManager->ShowMainWindow();
+   rebuildRequired = true;
 #endif
    return CT_SUCCESS;
 }
 
 ctResults ctKeyLimeRenderer::Shutdown() {
 #if !CITRUS_HEADLESS
+   Engine->Im3dIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool);
+   Engine->ImguiIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool, pGPUTexturePool);
+
+   ctGPUExternalTexturePoolDestroy(pGPUDevice, pGPUTexturePool);
    ctGPUExternalBufferPoolDestroy(pGPUDevice, pGPUBufferPool);
    ctGPUArchitectShutdown(pGPUDevice, pGPUArchitect);
+   ctGPUPresenterShutdown(pGPUDevice, pGPUPresenter);
    ctGPUDeviceShutdown(pGPUDevice);
 #endif
    return CT_SUCCESS;
@@ -225,9 +381,38 @@ ctResults ctKeyLimeRenderer::Shutdown() {
 ctResults ctKeyLimeRenderer::RenderFrame() {
 #if !CITRUS_HEADLESS
    ImGui::Render();
-#endif
+
+   /* Handle Presentation State */
+   uint32_t width;
+   uint32_t height;
+   ctGPUPresenterState presenterState =
+     ctGPUPresenterHandleState(pGPUDevice, pGPUPresenter, &width, &height);
+   if (presenterState == CT_GPU_PRESENTER_INVALID) { return CT_SUCCESS; }
+   if (presenterState == CT_GPU_PRESENTER_RESIZED) { rebuildRequired = true; }
+
+   /* Rebuild Rendergraph as necessary */
+   if (rebuildRequired) {
+      ctGPUArchitectBuildInfo archBuildInfo = {};
+      archBuildInfo.width = width;
+      archBuildInfo.height = height;
+      ctGPUArchitectBuild(pGPUDevice, pGPUArchitect, &archBuildInfo);
+      rebuildRequired = false;
+      ctDebugLog("Rebuilt Rendergraph!");
+   }
    ctGPUArchitectExecute(pGPUDevice, pGPUArchitect);
+   ctGPUPresenterExecute(pGPUDevice, pGPUPresenter, pGPUArchitect);
+#endif
    return CT_SUCCESS;
+}
+
+void ctKeyLimeRenderer::HandleWindowEvent(SDL_Event* event,
+                                          ctKeyLimeRenderer* pRenderer) {
+   if (event->type == SDL_WINDOWEVENT) {
+      if (event->window.event == SDL_WINDOWEVENT_RESIZED) {
+         ctGPUPresenterSignalStateChange(
+           pRenderer->pGPUDevice, pRenderer->pGPUPresenter, CT_GPU_PRESENTER_RESIZED);
+      }
+   }
 }
 
 ctResults ctKeyLimeRenderer::UpdateCamera(const ctCameraInfo& cameraInfo) {
