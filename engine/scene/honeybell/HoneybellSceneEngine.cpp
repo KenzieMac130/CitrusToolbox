@@ -75,7 +75,7 @@ ctResults ctHoneybellSceneEngine::Startup() {
    debugCamera = CurrentCamera;
 
 #if CITRUS_INCLUDE_AUDITION
-   Engine->HotReload->RegisterAssetCategory(&hotReload);
+   Engine->HotReload->RegisterDataCategory(&hotReload);
 #endif
    return CT_SUCCESS;
 }
