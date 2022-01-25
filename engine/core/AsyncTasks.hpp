@@ -37,6 +37,10 @@ public:
                                 void* userdata,
                                 int32_t priority);
    bool isFinished(ctAsyncTaskHandle handle, ctResults* pResultsOut = NULL);
+   inline void WaitForAllToExit() {
+      while (!isEmpty()) {}
+   }
+   bool isEmpty();
    void ReleaseTask(ctHandle handle);
 
    int RunAsyncLoop();

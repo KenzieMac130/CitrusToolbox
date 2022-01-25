@@ -84,6 +84,13 @@ bool ctAsyncManager::isFinished(ctAsyncTaskHandle handle, ctResults* pResultsOut
    return finished;
 }
 
+bool ctAsyncManager::isEmpty() {
+   ctMutexLock(stateLock);
+   bool result = activeTasks.isEmpty();
+   ctMutexUnlock(stateLock);
+   return result;
+}
+
 void ctAsyncManager::ReleaseTask(ctHandle handle) {
    ctMutexLock(stateLock);
    handleManager.FreeHandle(handle);
