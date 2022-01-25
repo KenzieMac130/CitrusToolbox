@@ -14,11 +14,36 @@
    limitations under the License.
 */
 
-#define CT_MATERIAL_START\
-CT_STORAGE_BUFFER_ARRAY(sMaterialBuffer, material, {\
+struct ctVertexData {
+	float3 position;
+	float3 velocity;
+	float3 normal;
+	float4 color;
+	float4 tangent;
+	float4 bitangent;
+	float2 uv0;
+	float2 uv1;
+};
 
-#define CT_MATERIAL_FLOAT(_NAME, _DEFAULT) float _NAME;
-#define CT_MATERIAL_VECTOR(_NAME, _DEFAULT) vec4 _NAME;
-#define CT_MATERIAL_TEXTURE(_NAME, _DEFAULT) int _NAME;
+#ifndef CT_DESIGNER_VERTEX_PROCESS 
+	void ctVertexProcess(inout ctVertexData vertex) {
+	/* stub */
+	}
+#endif
 
-#define CT_MATERIAL_END })
+struct ctSurfaceData {
+	float3 baseColor;
+	float3 emission;
+	float roughness;
+	float metal;
+	float opacity;
+	float translucency;
+	float3 normal;
+	float3 velocity;
+};
+
+#ifndef CT_DESIGNER_SURFACE_PROCESS 
+	void ctSurfaceProcess(in ctVertexData vertex, inout ctSurfaceData surface) {
+	/* stub */
+	}
+#endif 

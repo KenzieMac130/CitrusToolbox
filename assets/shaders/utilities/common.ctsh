@@ -14,6 +14,12 @@
    limitations under the License.
 */
 
-#ifdef IS_ACTUALLY_HLSL
-/* reference https://anteru.net/blog/2016/mapping-between-HLSL-and-GLSL/ */
+#include "portability.ctsh"
+#include "bindless.ctsh"
+
+#if IS_ACTUALLY_GLSL
+//#extension GL_EXT_debug_printf : request
+//#extension GL_ARB_shader_draw_parameters : require
 #endif
+
+#define CT_PI 3.141592653589793238462643383279

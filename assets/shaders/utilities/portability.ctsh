@@ -1,0 +1,152 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+/* As a baseline we assume that the shading language has a C preprocessor */
+/* See docs/ShadingLanguage.md for more details */
+
+#ifdef IS_ACTUALLY_HLSL /* HLSL Compatibility */
+   #define IS_ROW_MAJOR
+   
+   // todo further testing required
+   
+   /* Bit packing */
+   // todo
+   
+   /* Citrus SV Macros */
+   #define CT_CLIP_DISTANCE SV_ClipDistance
+   #define CT_CULL_DISTANCE SV_CullDistance
+   #define CT_COVERAGE_IN SV_Coverage
+   #define CT_COVERAGE_OUT SV_Coverage
+   #define CT_DEPTH SV_Depth
+   #define CT_DEPTH_OUT_LESS_EQUAL CT_DEPTH_OUT_LESS_EQUAL
+   #define CT_DEPTH_OUT_GREATER_EQUAL CT_DEPTH_OUT_GREATER_EQUAL
+   #define CT_DISPATCH_TREAD_ID SV_DispatchThreadID
+   #define CT_GROUP_ID SV_GroupID|gl_WorkGroupID
+   #define CT_GROUP_INDEX SV_GroupIndex
+   #define CT_GROUP_THREAD_ID SV_GroupThreadID
+   #define CT_GS_INSTANCE_ID SV_GSInstanceID
+   #define CT_TESS_LOCATION SV_DomainLocation
+   #define CT_TESS_LEVEL_INNER SV_InsideTessFactor
+   #define CT_TESS_LEVEL_OUTER SV_TessFactor
+   #define CT_IS_FRONT_FACE SV_IsFrontFace
+   #define CT_OUTPUT_CONTROL_POINT_ID SV_OutputControlPointID
+   #define CT_FRAG_POSITION SV_Position
+   #define CT_PRIMITIVE_ID SV_PrimitiveID
+   #define CT_SAMPLE_INDEX SV_SampleIndex
+   #define CT_STENCIL_REF SV_StencilRef
+   #define CT_LAYER SV_RenderTargetArrayIndex
+   #define CT_VIEWPORT_INDEX SV_ViewportArrayIndex
+   #define CT_INSTANCE_INDEX SV_InstanceID
+   #define CT_VERTEX_INDEX SV_VertexID
+   
+   #define CT_SET_FRAG_DEPTH(_depth) CT_DEPTH = _depth
+   #define CT_SET_POSITION(_pos) SV_Position = _pos
+   #define CT_SET_POINT_SIZE(_size) /* ignore */
+   
+#elif IS_ACTUALLY_GLSL /* GLSL Compatibility */
+   #define CT_MAIN() void main()
+
+   #define IS_COL_MAJOR
+   
+   /* HLSL Functions in GLSL */
+   #define atan2(x,y) atan(x,y)
+   #define ddx dFdx
+   #define ddx_coarse dFdxCoarse
+   #define ddx_fine dFdxFine
+   #define ddy dFdy
+   #define ddy_coarse dFdyCoarse
+   #define ddy_fine dFdyFine
+   #define frac fract
+   #define lerp mix
+   #define mad fma
+   #define saturate(v) clamp(v,0.0,1.0)
+   
+   /* Bit packing */
+   // uses unpackUnorm and unpackSnorm
+   
+   /* HLSL types in GLSL */
+   #define float2 vec2
+   #define float3 vec3
+   #define float4 vec4
+   #define int2 ivec2
+   #define int3 ivec2
+   #define int4 ivec4
+   #define uint2 uvec2
+   #define uint3 uvec2
+   #define uint4 uvec4
+   
+   #define float2x2 mat2x2
+   #define float3x2 mat3x2
+   #define float4x2 mat4x2
+   #define float2x3 mat2x3
+   #define float3x3 mat3x3
+   #define float4x3 mat4x3
+   #define float2x4 mat2x4
+   #define float3x4 mat3x4
+   #define float4x4 mat4x4
+
+   /* Citrus SV Macros */
+   #define CT_CLIP_DISTANCE gl_ClipDistance
+   #define CT_CULL_DISTANCE gl_CullDistance
+   #define CT_COVERAGE_IN gl_SampleMaskIn
+   #define CT_COVERAGE_OUT gl_SampleMask
+   #define CT_DEPTH gl_FragDepth
+   #define CT_DEPTH_OUT_LESS_EQUAL layout (depth_less) out float gl_FragDepth;
+   #define CT_DEPTH_OUT_GREATER_EQUAL layout (depth_greater) out float gl_FragDepth;
+   #define CT_DISPATCH_TREAD_ID gl_GlobalInvocationID
+   #define CT_GROUP_ID gl_WorkGroupID
+   #define CT_GROUP_INDEX gl_LocalInvocationIndex
+   #define CT_GROUP_THREAD_ID gl_LocalInvocationID
+   #define CT_GS_INSTANCE_ID gl_InvocationID
+   #define CT_TESS_LOCATION gl_TessCord
+   #define CT_TESS_LEVEL_INNER gl_TessLevelInner
+   #define CT_TESS_LEVEL_OUTER gl_TessLevelOuter
+   #define CT_IS_FRONT_FACE gl_FrontFacing
+   #define CT_OUTPUT_CONTROL_POINT_ID gl_InvocationID
+   #define CT_FRAG_POSITION gl_FragCoord
+   #define CT_PRIMITIVE_ID gl_PrimitiveID
+   #define CT_SAMPLE_INDEX gl_SampleID
+   #define CT_STENCIL_REF gl_FragStencilRef
+   #define CT_LAYER gl_Layer
+   #define CT_VIEWPORT_INDEX gl_ViewportIndex
+   #define CT_INSTANCE_INDEX gl_InstanceIndex
+   #define CT_VERTEX_INDEX gl_VertexIndex
+   
+   #define CT_SET_FRAG_DEPTH(_depth) CT_DEPTH = _depth
+   #define CT_SET_POSITION(_pos) gl_Position = _pos
+   #define CT_SET_POINT_SIZE(_size) gl_PointSize = _size
+#endif
+
+/* Matrix Helpers */
+#ifdef IS_ROW_MAJOR
+   #define CT_MMULV(m,v)   v*m
+   #define CT_MELM(m,r,c)  m[r][c]
+   #define CT_MCOL2(m,t,i) t(m[0][i],m[1][i])
+   #define CT_MCOL3(m,t,i) t(m[0][i],m[1][i],m[2][i])
+   #define CT_MCOL4(m,t,i) t(m[0][i],m[1][i],m[2][i],m[3][i])
+   #define CT_MROW2(m,t,i) t(m[i])
+   #define CT_MROW3(m,t,i) t(m[i])
+   #define CT_MROW4(m,t,i) t(m[i])
+#else        
+   #define CT_MMULV(m,v)   m*v
+   #define CT_MELM(m,r,c)  m[c][r]
+   #define CT_MCOL2(m,t,i) t(m[i])
+   #define CT_MCOL3(m,t,i) t(m[i])
+   #define CT_MCOL4(m,t,i) t(m[i])
+   #define CT_MROW2(m,t,i) t(m[0][i],m[1][i])
+   #define CT_MROW3(m,t,i) t(m[0][i],m[1][i],m[2][i])
+   #define CT_MROW4(m,t,i) t(m[0][i],m[1][i],m[2][i],m[3][i])
+#endif 

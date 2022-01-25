@@ -1,0 +1,62 @@
+{
+  "Settings_Audition": {
+    "path": "configs/Audition.json",
+	"out": "OUTPUT"
+  },
+  "Settings_DebugSystem": {
+    "path": "configs/DebugSystem.json",
+	"out": "OUTPUT"
+  },
+  "Settings_Honeybell": {
+    "path": "configs/Honeybell.json",
+	"out": "OUTPUT"
+  },
+  "Settings_JobSystem": {
+    "path": "configs/JobSystem.json",
+	"out": "OUTPUT"
+  },
+  "Settings_PhysX": {
+    "path": "configs/PhysX.json",
+	"out": "OUTPUT"
+  },
+  "Settings_Renderer": {
+    "path": "configs/Renderer.json",
+	"out": "OUTPUT"
+  },
+  "Settings_Translation": {
+    "path": "configs/Translation.json",
+	"out": "OUTPUT"
+  },
+  "Settings_VulkanBackend": {
+    "path": "configs/VulkanBackend.json",
+	"out": "OUTPUT"
+  },
+  "Settings_Window": {
+    "path": "configs/Window.json",
+	"out": "OUTPUT"
+  },
+  "Input_Actions": {
+    "path": "input/actions.json",
+	"out": "OUTPUT"
+  },
+  "Input_Gamepad": {
+    "path": "input/gamepad.json",
+	"out": "OUTPUT"
+  },
+  "Input_Keyboard": {
+    "path": "input/keyboard.json",
+	"out": "OUTPUT"
+  },
+  "Input_Mouse": {
+    "path": "input/mouse.json",
+	"out": "OUTPUT"
+  },
+  "Shader_Im3d": {
+    "path": "shaders/im3d.ctsi",
+	"out": "OUTPUT"
+  },
+  "Shader_ImGUI": {
+    "path": "shaders/imgui.ctsi",
+	"out": "OUTPUT"
+  }
+}
