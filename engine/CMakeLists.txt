@@ -138,7 +138,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Meta.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
@@ -234,6 +233,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Commands.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Pipeline.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Present.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Texture.h)
 set(ENGINE_SOURCE_FILES_GPU_INTERFACE)
 
@@ -247,6 +247,7 @@ if(CITRUS_GPU_VULKAN)
 set(ENGINE_SOURCE_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.cpp
@@ -255,6 +256,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.cpp)
 set(ENGINE_HEADER_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.hpp
@@ -262,9 +264,12 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.hpp)
 endif()
 
 list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.cpp)
 list(APPEND ENGINE_HEADER_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/DeviceBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
 
 # ---------- Scene Engine ---------- 
 set(CITRUS_SCENE_ENGINE_HEADER
@@ -392,16 +397,20 @@ ${ENGINE_SOURCE_FILES_FORMAT} ${ENGINE_HEADER_FILES_FORMAT}
 ${ISPC_KERNEL_INPUTS}
 ${SWIG_INPUTS})
 
-# ----------Generate Config Files ----------
+# ---------- Generate Config Files ----------
 configure_file (
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
 ${CITRUS_CODEGEN_DIR}/Config.h)
+
+# ---------- Asset System Codegen ----------
+add_library(data ${CITRUS_CODEGEN_DIR}/DataNicknames.cpp)
 
 # ---------- Create Engine Library ----------
 add_library(engine 
 ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
 ${CMAKE_CURRENT_SOURCE_DIR}/../citrus.natvis
 ${ENGINE_FILES}
+${ASSET_SYSTEM_CODEGEN}
 ${TRACY_FILES}
 ${THIRD_PARTY_IMPL_FILES}
 ${NATIVE_SOURCE_FILES}
@@ -412,8 +421,12 @@ ${SWIG_OUTPUTS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../ FILES ${THIRD_PARTY_IMPL_FILES})
 source_group(tracy FILES ${TRACY_FILES})
-source_group(generated FILES ${CITRUS_REFLECT_OUTPUTS} ${SWIG_OUTPUTS} ${ISPC_KERNEL_OUTPUTS})
 source_group(native FILES ${NATIVE_SOURCE_FILES})
+source_group(generated FILES 
+${CITRUS_REFLECT_OUTPUTS}
+${SWIG_OUTPUTS}
+${ISPC_KERNEL_OUTPUTS}
+${ASSET_SYSTEM_CODEGEN})
 
 # ---------- Include and Link ----------
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
@@ -421,6 +434,7 @@ target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
+target_link_libraries(engine data)
 target_link_libraries(engine system)
 
 if(CITRUS_SDL)
@@ -451,7 +465,7 @@ COMMAND ${CMAKE_COMMAND} -E copy_if_different
 $<TARGET_FILE_DIR:engine>)
 add_custom_command(TARGET engine POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-"${SHARED_LIBRARY_DIRECTORY}/assets.redirect"
+"${SHARED_LIBRARY_DIRECTORY}/data.redirect"
 $<TARGET_FILE_DIR:engine>)
 
 if(CITRUS_SDL)
