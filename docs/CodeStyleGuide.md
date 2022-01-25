@@ -91,7 +91,7 @@
 ### Namespaces
 * C does not have namespaces so follow this:
 * "ct" is the engine wide namespace prefix
-* "ct" should be followed by the module name: (ex. "ctGfx...")
+* "ct" can be followed by the module name: (ex. "ctGPU...")
 
 ### Standard Libraries
 * Don't re-implement what is in the standard library unless there is a reason.
@@ -107,7 +107,9 @@
 ### Variables
 * AVOID GLOBAL VARIABLES!!!
 * Only use abbreviations for commonly understood terminology (ex: PBR vs Physically Based Rendering)
-* If you don't want the user to modify a variable use "_" to prefix it
+* Member variables will be prefixed by m_ (ex: m_value or m_pValue...)
+* Global variables will be prefixed by g_ (ex: g_value or g_pValue)
+* If you don't want the user to modify a variable use "_" to prefix it (ex: _m_value)
 
 ### Functions
 * Naming: ctFunctionName()
@@ -128,7 +130,7 @@
 * Use const char* wherever read-only string data needs to be passed.
 * Raw string pointers for modifiable strings are discouraged in favor of utilities.
 * Always assume data is UTF-8 unless otherwise marked and do not assume 1-byte per character.
-* Do not cache C string pointers, always copy to another structure to avoid dangling.
+* Do not cache C string pointers, copy to another structure to avoid dangling.
 * Text that can be presented to the user should be wrapped in a "CT_N*" prefix for translation.
 
 ### Function Pointers
@@ -174,7 +176,7 @@ enum myEnum {
 
 ### SIMD Intrinsics
 * Don't bother with handwritten SIMD, opt for ISPC if absolutely necessary.
-* Avoid small functions with internal SIMD implementations, one of SIMD's main benefits is that there are more registers to not get evicted from.
+* Avoid small functions with internal SIMD implementations, one of SIMD's main benefits is that there are more space/registers to not get evicted from.
 
 ### Additional Features
 * Bit packing is allowed but discouraged.
@@ -230,6 +232,7 @@ enum myEnum {
 ### Namespaces
 * Namespaces will not be used in the engine in favor of the "ct" prefix.
 * Namespaces from 3rd party libraries should not be shortened by "using" unless it has a redundant prefix.
+* Namespaces for the scene engine is currently allowed as a compromise
 
 ### Templates
 * Avoid templates as much as possible outside of containers.
@@ -279,6 +282,9 @@ https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
 https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_vulkan_glsl.txt
 * Ray-Tracing
 https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_tracing.txt
+
+### Platform Independence
+* See [ShadingLanguage.md](docs/ShadingLanguage.md)
 
 ### Includes
 * Includes are allowed with the use of "#include "...""
