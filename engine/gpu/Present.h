@@ -47,3 +47,6 @@ CT_API ctGPUPresenterState ctGPUPresenterHandleState(struct ctGPUDevice* pDevice
 CT_API void ctGPUPresenterSignalStateChange(struct ctGPUDevice* pDevice,
                                             struct ctGPUPresenter* pPresenter,
                                             ctGPUPresenterState state);
+CT_API void ctGPUPresenterChangeVSync(struct ctGPUDevice* pDevice,
+                                      struct ctGPUPresenter* pPresenter,
+                                      bool enable);

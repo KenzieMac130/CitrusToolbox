@@ -25,7 +25,7 @@ CT_API ctResults ctGPUPresenterStartup(ctGPUDevice* pDevice,
    pPresenter->pWindow = (SDL_Window*)pCreateInfo->pWindow;
    pPresenter->wantsVsync = pCreateInfo->useVSync;
    CT_RETURN_FAIL(pPresenter->CreateSurface(pDevice));
-   CT_RETURN_FAIL(pPresenter->CreateSwapchain(pDevice));
+   CT_RETURN_FAIL(pPresenter->GetSwapchain(pDevice));
    CT_RETURN_FAIL(pPresenter->CreatePresentResources(pDevice));
    return CT_SUCCESS;
 }
@@ -107,6 +107,13 @@ CT_API void ctGPUPresenterSignalStateChange(ctGPUDevice* pDevice,
    if (state == CT_GPU_PRESENTER_RESIZED) { pPresenter->resizeTriggered = true; }
 }
 
+CT_API void
+ctGPUPresenterChangeVSync(ctGPUDevice* pDevice, ctGPUPresenter* pPresenter, bool enable) {
+   pPresenter->wantsVsync = enable;
+   pPresenter->GetSwapchain(pDevice);
+   return CT_API void();
+}
+
 ctResults ctGPUPresenter::CreateSurface(ctGPUDevice* pDevice) {
    ZoneScoped;
    if (pDevice->pMainWindow == pWindow && pDevice->vkInitialSurface != VK_NULL_HANDLE) {
@@ -177,7 +184,7 @@ VkPresentModeKHR vPickPresentMode(VkPresentModeKHR* modes, size_t count, bool vs
    return modes[bestIdx];
 }
 
-ctResults ctGPUPresenter::CreateSwapchain(ctGPUDevice* pDevice) {
+ctResults ctGPUPresenter::GetSwapchain(ctGPUDevice* pDevice) {
    ZoneScoped;
 
    swapChainSupport.GetSupport(pDevice->vkPhysicalDevice, surface);
@@ -187,6 +194,8 @@ ctResults ctGPUPresenter::CreateSwapchain(ctGPUDevice* pDevice) {
    }
 
    ctDebugLog("Creating Swapchain...");
+
+   VkSwapchainKHR oldSwapchain = swapchain;
 
    /* Select a Image and Color Format */
    surfaceFormat = vPickBestSurfaceFormat(swapChainSupport.surfaceFormats.Data(),
@@ -226,7 +235,7 @@ ctResults ctGPUPresenter::CreateSwapchain(ctGPUDevice* pDevice) {
    swapChainInfo.preTransform = swapChainSupport.surfaceCapabilities.currentTransform;
    swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    swapChainInfo.clipped = VK_TRUE;
-   swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
+   swapChainInfo.oldSwapchain = swapchain;
    if (sharedIndices[0] == sharedIndices[1]) {
       swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
       swapChainInfo.queueFamilyIndexCount = 0;
@@ -246,6 +255,11 @@ ctResults ctGPUPresenter::CreateSwapchain(ctGPUDevice* pDevice) {
    vkGetSwapchainImagesKHR(pDevice->vkDevice, swapchain, &imageCount, NULL);
    swapImages.Resize(imageCount);
    vkGetSwapchainImagesKHR(pDevice->vkDevice, swapchain, &imageCount, swapImages.Data());
+
+   /* Destroy dangling swapchain*/
+   if (oldSwapchain != VK_NULL_HANDLE) {
+      vkDestroySwapchainKHR(pDevice->vkDevice, oldSwapchain, &pDevice->vkAllocCallback);
+   }
 
    return CT_SUCCESS;
 }
@@ -303,7 +317,7 @@ bool ctGPUPresenter::HandleResizeIfNeeded(ctGPUDevice* pDevice) {
       DestroyPresentResources(pDevice);
       CreatePresentResources(pDevice);
       DestroySwapchain(pDevice);
-      if (CreateSwapchain(pDevice) != VK_SUCCESS) { isMinimized = true; }
+      if (GetSwapchain(pDevice) != VK_SUCCESS) { isMinimized = true; }
       resizeTriggered = false;
       return true;
    }

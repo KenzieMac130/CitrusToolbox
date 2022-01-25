@@ -48,7 +48,7 @@ struct ctGPUPresenter {
    VkSemaphore imageAvailible[CT_MAX_INFLIGHT_FRAMES];
 
    ctResults CreateSurface(struct ctGPUDevice* pDevice);
-   ctResults CreateSwapchain(struct ctGPUDevice* pDevice);
+   ctResults GetSwapchain(struct ctGPUDevice* pDevice);
    ctResults CreatePresentResources(struct ctGPUDevice* pDevice);
    ctResults DestroySurface(struct ctGPUDevice* pDevice);
    ctResults DestroySwapchain(struct ctGPUDevice* pDevice);
