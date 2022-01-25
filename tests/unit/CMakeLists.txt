@@ -14,5 +14,19 @@
 #   limitations under the License.
 #
 
-add_subdirectory(unit)
-add_subdirectory(apps)
+enable_testing()
+
+#Utilities Test
+add_executable(Test_Units UnitTestBase.cpp UnitTestBase.hpp
+
+)
+set_property(TARGET Test_Units PROPERTY FOLDER "tests")
+target_link_libraries(Test_Units PUBLIC engine)
+
+#Helper Macro
+macro(ct_add_test)
+add_test(${arg1} Test_Units ${arg1} Test_Units)
+endmacro()
+
+#Run All Tests
+ct_add_test(DynamicArray)

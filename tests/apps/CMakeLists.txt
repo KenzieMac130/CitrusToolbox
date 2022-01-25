@@ -14,5 +14,14 @@
 #   limitations under the License.
 #
 
-add_subdirectory(unit)
-add_subdirectory(apps)
+#App Test
+add_executable(Test_App AppTest.cpp)
+set_property(TARGET Test_App PROPERTY FOLDER "tests")
+target_link_libraries(Test_App PUBLIC engine)
+target_link_libraries(Test_App PUBLIC game)
+
+#Scene Test
+add_executable(Test_Scene SceneTest.cpp)
+set_property(TARGET Test_Scene PROPERTY FOLDER "tests")
+target_link_libraries(Test_Scene PUBLIC engine)
+target_link_libraries(Test_Scene PUBLIC game)
