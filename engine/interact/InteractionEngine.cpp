@@ -23,7 +23,7 @@
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
 #if CITRUS_INCLUDE_AUDITION
-   Engine->HotReload->RegisterAssetCategory(&Directory.configHotReload);
+   Engine->HotReload->RegisterDataCategory(&Directory.configHotReload);
 #endif
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
@@ -39,7 +39,8 @@ ctResults ctInteractionEngine::Shutdown() {
 
 ctResults ctInteractionEngine::RegisterAll() {
    ctFile file;
-   Engine->FileSystem->OpenAssetFileNamed(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
    Directory.CreateActionSetsFromFile(file);
 #if CITRUS_INCLUDE_AUDITION
    Directory.configHotReload.RegisterPath("input/actions.json");

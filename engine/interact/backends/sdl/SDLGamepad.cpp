@@ -92,7 +92,8 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
       }
    }
    ctFile file;
-   Engine->FileSystem->OpenAssetFileNamed(file, "input/gamepad.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Gamepad"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION

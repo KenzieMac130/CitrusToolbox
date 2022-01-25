@@ -98,12 +98,12 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    }
 
    ctFile file;
-   Engine->FileSystem->OpenAssetFileNamed(
-     file, "input/keyboard.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
-   Engine->FileSystem->OpenAssetFileNamed(
-     file, "input/mouse.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
