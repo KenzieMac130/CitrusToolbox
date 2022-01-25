@@ -23,10 +23,32 @@
 
 class CT_API ctImguiIntegration : public ctModuleBase {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
-    ctResults NextFrame();
+   ctResults StartupGPU(struct ctGPUDevice* pGPUDevice,
+                        struct ctGPUExternalBufferPool* pGPUBufferPool,
+                        struct ctGPUExternalTexturePool* pGPUTexturePool,
+                        size_t maxVerts,
+                        size_t maxIndices,
+                        int32_t fontBind,
+                        int32_t idxBind,
+                        int32_t vtxBind,
+                        enum TinyImageFormat colorFormat,
+                        enum TinyImageFormat depthFormat);
+   ctResults ShutdownGPU(struct ctGPUDevice* pGPUDevice,
+                         struct ctGPUExternalBufferPool* pGPUBufferPool,
+                         struct ctGPUExternalTexturePool* pGPUTexturePool);
+   static ctResults DrawCallback(struct ctGPUArchitectExecutionContext* pCtx,
+                                 void* pUserData);
+
+   ctResults NextFrame();
+
 private:
-    ctStringUtf8 iniPath;
+   void _DrawGPU(struct ctGPUArchitectExecutionContext* pCtx);
+   ctStringUtf8 iniPath;
+   struct ctGPUExternalTexture* pFontTexture;
+   struct ctGPUExternalBuffer* pIndexBuffer;
+   struct ctGPUExternalBuffer* pVertexBuffer;
+   void* pPipeline;
 };

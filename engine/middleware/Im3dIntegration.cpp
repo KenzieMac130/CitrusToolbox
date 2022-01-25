@@ -18,14 +18,77 @@
 #include "core/EngineCore.hpp"
 #include "scene/SceneEngineBase.hpp"
 #include "core/WindowManager.hpp"
+#include "core/Translation.hpp"
+#include "core/FileSystem.hpp"
 #include "im3d/im3d_math.h"
 #include "imgui/imgui.h"
+
+#include "gpu/Device.h"
+#include "gpu/Buffer.h"
+#include "gpu/Pipeline.h"
 
 ctResults ctIm3dIntegration::Startup() {
    return CT_SUCCESS;
 }
 
 ctResults ctIm3dIntegration::Shutdown() {
+   return CT_SUCCESS;
+}
+
+ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
+                                        struct ctGPUExternalBufferPool* pGPUBufferPool,
+                                        size_t maxVerts,
+                                        int32_t viewBind,
+                                        int32_t vtxBind,
+                                        enum TinyImageFormat colorFormat,
+                                        enum TinyImageFormat depthFormat) {
+   ctFile wadFile;
+   ctDynamicArray<uint8_t> wadBytes;
+   ctWADReader wadReader;
+   CT_PANIC_FAIL(Engine->FileSystem->OpenDataFileByGUID(wadFile, CT_CDATA("Shader_Im3d")),
+                 CT_NC("Failed to open shader file!"));
+   wadFile.GetBytes(wadBytes);
+   ctWADReaderBind(&wadReader, wadBytes.Data(), wadBytes.Count());
+
+   ctGPUPipelineBuilder* pPipelineBuilder =
+     ctGPUPipelineBuilderNew(pGPUDevice, CT_GPU_PIPELINE_RASTER);
+   ctGPUPipelineBuilderSetAttachments(pPipelineBuilder, depthFormat, 1, &colorFormat);
+   ctGPUPipelineBuilderSetFaceCull(pPipelineBuilder, CT_GPU_FACE_NONE);
+
+   ctGPUTopology fillToTopo[] = {CT_GPU_TOPOLOGY_TRIANGLE_LIST,
+                                 CT_GPU_TOPOLOGY_LINE_LIST,
+                                 CT_GPU_TOPOLOGY_POINT_LIST};
+   const char* fxNames[] = { "TRIS","LINES","POINTS" };
+   for (int i = 0; i < Im3d::DrawPrimitive_Count; i++) {
+      ctGPUShaderModule vertShader;
+      ctGPUShaderModule fragShader;
+      CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
+                      pGPUDevice, &vertShader, &wadReader, fxNames[i], CT_GPU_SHADER_VERT),
+                    CT_NC("Failed to create im3d shader!"));
+      CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
+                      pGPUDevice, &fragShader, &wadReader, fxNames[i], CT_GPU_SHADER_FRAG),
+                    CT_NC("Failed to create im3d shader!"));
+
+      ctGPUPipelineBuilderSetFillMode(pPipelineBuilder, (ctGPUFillMode)i);
+      ctGPUPipelineBuilderSetTopology(pPipelineBuilder, fillToTopo[i], false);
+      ctGPUPipelineBuilderClearShaders(pPipelineBuilder);
+      ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_VERT, vertShader);
+      ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_FRAG, fragShader);
+      ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipelines[i]);
+
+      ctGPUShaderSoftRelease(pGPUDevice, fragShader);
+      ctGPUShaderSoftRelease(pGPUDevice, vertShader);
+   }
+
+   ctGPUPipelineBuilderDelete(pPipelineBuilder);
+   return CT_SUCCESS;
+}
+
+ctResults ctIm3dIntegration::ShutdownGPU(ctGPUDevice* pGPUDevice,
+                                         ctGPUExternalBufferPool* pGPUBufferPool) {
+   for (int i = 0; i < Im3d::DrawPrimitive_Count; i++) {
+      ctGPUPipelineDestroy(pGPUDevice, pPipelines[i]);
+   }
    return CT_SUCCESS;
 }
 
