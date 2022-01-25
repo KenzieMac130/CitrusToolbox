@@ -34,6 +34,11 @@ public:
    T First() const;
    T& Last();
    T Last() const;
+   /* Iteration */
+   T* Begin();
+   const T* Begin() const;
+   T* End();
+   const T* End() const;
    /* Reserve */
    ctResults Resize(const size_t amount);
    ctResults Reserve(const size_t amount);
@@ -52,9 +57,11 @@ public:
    ctResults Append(const T& val, const size_t amount);
    /* Insert */
    ctResults Insert(const T& val, const int64_t position);
+   ctResults InsertUnique(const T& val);
    /* Remove */
    void RemoveAt(const int64_t position = 0);
    ctResults Remove(const T& val, const int64_t position = 0);
+   void RemoveFirst();
    void RemoveLast();
    void RemoveAllOf(const T& val);
    /* Clear */
@@ -68,6 +75,7 @@ public:
    /* Find */
    int64_t FindIndex(const T& val, const int64_t position = 0, const int step = 1) const;
    T* FindPtr(const T& val, const int64_t position = 0, const int step = 1) const;
+   T& Fetch(const T& val) const;
    /* Sort */
    void QSort(int (*compare)(const T*, const T*),
               const size_t position = 0,
@@ -177,6 +185,30 @@ inline T ctDynamicArray<T>::Last() const {
    ctAssert(Count() > 0);
    ctAssert(_pData);
    return _pData[idx];
+}
+
+template<class T>
+inline T* ctDynamicArray<T>::Begin() {
+   ctAssert(_pData);
+   return pData;
+}
+
+template<class T>
+inline const T* ctDynamicArray<T>::Begin() const {
+   ctAssert(_pData);
+   return pData;
+}
+
+template<class T>
+inline T* ctDynamicArray<T>::End() {
+   ctAssert(_pData);
+   return pData + Count();
+}
+
+template<class T>
+inline const T* ctDynamicArray<T>::End() const {
+   ctAssert(_pData);
+   return pData + Count();
 }
 
 template<class T>
@@ -300,6 +332,12 @@ inline ctResults ctDynamicArray<T>::Insert(const T& val, const int64_t position)
 }
 
 template<class T>
+inline ctResults ctDynamicArray<T>::InsertUnique(const T& val) {
+   if (Exists(val)) { return CT_FAILURE_DUPLICATE_ENTRY; }
+   return Append(val);
+}
+
+template<class T>
 inline void ctDynamicArray<T>::RemoveAt(const int64_t position) {
    if (isEmpty()) { return; }
    const int64_t finalposition = position < 0 ? Count() + position : position;
@@ -322,13 +360,19 @@ inline ctResults ctDynamicArray<T>::Remove(const T& val, const int64_t position)
 }
 
 template<class T>
+inline void ctDynamicArray<T>::RemoveFirst() {
+   RemoveAt(0);
+}
+
+template<class T>
 inline void ctDynamicArray<T>::RemoveLast() {
    RemoveAt(-1);
 }
 
 template<class T>
 inline void ctDynamicArray<T>::RemoveAllOf(const T& val) {
-   while (Remove(val) == CT_SUCCESS) {}
+   while (Remove(val) == CT_SUCCESS)
+      ;
 }
 
 template<class T>
@@ -369,6 +413,13 @@ inline T* ctDynamicArray<T>::FindPtr(const T& val,
    if (isEmpty()) { return NULL; }
    const int64_t idx = FindIndex(val, position, direction);
    return idx >= 0 ? &(Data()[idx]) : NULL;
+}
+
+template<class T>
+inline T& ctDynamicArray<T>::Fetch(const T& val) const {
+   int64_t idx = FindIndex(val);
+   ctAssert(idx >= 0);
+   return Data()[idx];
 }
 
 template<class T>

@@ -50,7 +50,7 @@ ctFile::ctFile(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool sil
 }
 
 ctFile::~ctFile() {
-   if (isOpen()) { Close(); }
+   //if (isOpen()) { Close(); } (explicit close is now required)
 }
 
 void ctFile::FromCStream(FILE* fp, const ctFileOpenMode mode, bool allowClose) {

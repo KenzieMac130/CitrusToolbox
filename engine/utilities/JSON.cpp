@@ -193,11 +193,14 @@ ctResults ctJSONReader::BuildJsonForPtr(const char* pData, size_t length) {
    return CT_SUCCESS;
 }
 
-void ctJSONReader::GetRootEntry(ctJSONReadEntry& entry) {
+ctResults ctJSONReader::GetRootEntry(ctJSONReadEntry& entry) {
    if (_tokens.Count() > 0) {
       entry =
         ctJSONReadEntry(0, (int)_tokens.Count(), _tokens[0], _tokens.Data(), _pData);
+      return CT_SUCCESS;
    }
+   entry = ctJSONReadEntry();
+   return CT_FAILURE_PARSE_ERROR;
 }
 
 ctJSONReadEntry::ctJSONReadEntry() {
@@ -217,6 +220,11 @@ ctJSONReadEntry::ctJSONReadEntry(
    _pData = pData;
 }
 
+bool ctJSONReadEntry::isValid() {
+   if (_token.type == JSMN_UNDEFINED || !_pTokens || !_pData) { return false; }
+   return true;
+}
+
 size_t ctJSONReadEntry::GetRaw(char* pDest, int size) const {
    if (!_pData) { return 0; }
    if (!pDest) { return (size_t)_token.end - _token.start; }
@@ -225,8 +233,15 @@ size_t ctJSONReadEntry::GetRaw(char* pDest, int size) const {
    return size;
 }
 
+int ctJSONReadEntry::_getActualLength() const {
+   return _token.size;
+}
+
 ctResults ctJSONReadEntry::_getEntry(int index, ctJSONReadEntry& entry) const {
-   if (index < 0 || index >= _tokenCount) { return CT_FAILURE_OUT_OF_BOUNDS; }
+   if (index < 0 || index >= _tokenCount) {
+      entry = ctJSONReadEntry();
+      return CT_FAILURE_OUT_OF_BOUNDS;
+   }
    entry = ctJSONReadEntry(index, _tokenCount, _pTokens[index], _pTokens, _pData);
    return CT_SUCCESS;
 }
@@ -242,11 +257,12 @@ ctResults ctJSONReadEntry::GetObjectEntry(const char* name,
          return _getEntry(i + 1, entry);
       }
    }
+   entry = ctJSONReadEntry();
    return CT_FAILURE_DATA_DOES_NOT_EXIST;
 }
 
 int ctJSONReadEntry::GetObjectEntryCount() const {
-   return _token.size;
+   return _getActualLength();
 }
 
 ctResults ctJSONReadEntry::GetObjectEntry(int index,
@@ -266,11 +282,15 @@ ctResults ctJSONReadEntry::GetObjectEntry(int index,
       }
       occurrance++;
    }
+   entry = ctJSONReadEntry();
    return CT_FAILURE_DATA_DOES_NOT_EXIST;
 }
 
 ctResults ctJSONReadEntry::GetArrayEntry(int index, ctJSONReadEntry& entry) const {
-   if (index < 0 || index > GetArrayLength()) { return CT_FAILURE_OUT_OF_BOUNDS; }
+   if (index < 0 || index > GetArrayLength()) {
+      entry = ctJSONReadEntry();
+      return CT_FAILURE_OUT_OF_BOUNDS;
+   }
    if (!isArray()) { return CT_FAILURE_PARSE_ERROR; }
    int occurrance = 0;
    for (int i = _tokenPos; i < _tokenCount; i++) {
@@ -279,12 +299,13 @@ ctResults ctJSONReadEntry::GetArrayEntry(int index, ctJSONReadEntry& entry) cons
       if (occurrance == index) { return _getEntry(i, entry); }
       occurrance++;
    }
+   entry = ctJSONReadEntry();
    return CT_FAILURE_DATA_DOES_NOT_EXIST;
 }
 
 int ctJSONReadEntry::GetArrayLength() const {
    if (!isArray()) { return -1; }
-   return _token.size;
+   return _getActualLength();
 }
 
 bool ctJSONReadEntry::isArray() const {

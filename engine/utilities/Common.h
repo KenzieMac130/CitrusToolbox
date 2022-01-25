@@ -148,7 +148,7 @@ enum ctResults {
 /*Assert*/
 #define ctAssert(e) assert(e)
 
-#define ctErrorCheck(_msg) (_msg != NE_SUCCESS)
+#define ctErrorCheck(_msg) (_msg != CT_SUCCESS)
 
 /**
  * @brief should behave just like malloc but with messages to track leaks
@@ -201,7 +201,6 @@ CT_API size_t ctGetAliveAllocations();
 #include "Hash.hpp"
 #include "String.hpp"
 #include "HashTable.hpp"
-#include "Meta.hpp"
 #include "Sync.hpp"
 #include "JSON.hpp"
 #include "Time.hpp"

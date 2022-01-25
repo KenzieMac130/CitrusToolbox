@@ -23,7 +23,9 @@ public:
    ctGUID();
    ctGUID(const char* hexString);
    ctGUID(char hexString[32]);
-   inline bool operator==(const ctGUID& other) {
+
+   void ToHex(char dest[32]) const;
+   inline bool operator==(const ctGUID& other) const {
       return memcmp(data, other.data, 16) == 0;
    }
    uint8_t data[16];

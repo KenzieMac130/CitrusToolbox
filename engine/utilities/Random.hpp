@@ -44,9 +44,11 @@ public:
    ctVec3 GetVec3(ctVec3 min, ctVec3 max);
    ctVec4 GetVec4(ctVec4 min, ctVec4 max);
 
-   float GetGaussian(float mean, float standardDeviation);
-   ctVec2 GetGaussian2D(ctVec2 mean, float standardDeviation);
+   float GetGaussian(float mean = 0.0f, float standardDeviation = 1.0f);
+   ctVec2 GetGaussian2D(ctVec2 mean = ctVec2(0.0f), float standardDeviation = 1.0f);
+   ctVec3 GetInSphere(float radius = 1.0f);
    ctVec3 GetOnSphere(float radius = 1.0f);
+
    ctVec4 GetColor(float alpha = 1.0f);
 
 private:

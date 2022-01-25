@@ -355,6 +355,11 @@ uint64_t ctStringUtf8::xxHash64() const {
    return xxHash64(0);
 }
 
+size_t ctStringUtf8::HornerHash() const {
+   if (isEmpty()) { return 0; }
+   return ctHornerHash(CStr());
+}
+
 void ctStringUtf8::MakeUTF16Array(ctDynamicArray<char16_t>& arr) const {
    size_t size = CodeLength();
    arr.Reserve(size);

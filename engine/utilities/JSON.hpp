@@ -67,6 +67,8 @@ public:
    ctJSONReadEntry(
      int id, int count, jsmntok_t token, jsmntok_t* pTokenArr, const char* pData);
 
+   bool isValid();
+
    size_t GetRaw(char* pDest, int size) const;
 
    bool isObject() const;
@@ -99,7 +101,8 @@ public:
    ctResults GetNumber(uint64_t& out) const;
 
 protected:
-   ctResults _getEntry(int index, ctJSONReadEntry& entry) const;
+   inline int _getActualLength() const;
+   inline ctResults _getEntry(int index, ctJSONReadEntry& entry) const;
    jsmntok_t _token;
    int _tokenPos;
    int _tokenCount;
@@ -111,7 +114,7 @@ class ctJSONReader {
 public:
    ctResults BuildJsonForPtr(const char* pData, size_t length);
 
-   void GetRootEntry(ctJSONReadEntry& entry);
+   ctResults GetRootEntry(ctJSONReadEntry& entry);
 
 private:
    const char* _pData;

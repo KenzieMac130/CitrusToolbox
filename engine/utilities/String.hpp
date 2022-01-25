@@ -82,6 +82,7 @@ public:
    uint32_t xxHash32() const;
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
+   size_t HornerHash() const;
 
    void MakeUTF16Array(ctDynamicArray<char16_t>& arr) const;
    void CopyToArray(char* dest, size_t destSize);
@@ -91,7 +92,5 @@ private:
    void _removeNullTerminator();
    void _nullTerminate();
 
-   /* Todo: Small string optimization */
-   // ctStaticArray<char, 32> _smallData;
    ctDynamicArray<char> _data;
 };

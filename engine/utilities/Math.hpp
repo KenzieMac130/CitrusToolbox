@@ -240,3 +240,13 @@ inline void ctHexToBytes(size_t byteCount, const char* hex, uint8_t* bytes) {
       bytes[j] = (hex[i] % 32 + 9) % 25 * 16 + (hex[i + 1] % 32 + 9) % 25;
    }
 }
+
+/* https://stackoverflow.com/questions/6357031/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-in-c */
+inline void ctBytesToHex(size_t byteCount, const uint8_t* bytes, char* hex) {
+   const char table[] = "0123456789abcdef";
+   for (; byteCount > 0; --byteCount) {
+      unsigned char c = *bytes++;
+      *hex++ = table[c >> 4];
+      *hex++ = table[c & 0x0f];
+   }
+}

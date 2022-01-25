@@ -38,12 +38,21 @@ public:
    T First() const;
    T& Last();
    T Last() const;
+   /* Iteration */
+   T* Begin();
+   const T* Begin() const;
+   T* End();
+   const T* End() const;
+   /* Resize */
+   ctResults Resize(const size_t amount);
+   /* Append */
    ctResults Append(T&& val);
    ctResults Append(const T& val);
    size_t Append(const T* pArray, const size_t length);
    size_t Append(const T& val, const size_t amount);
    /* Insert */
    ctResults Insert(const T& val, const int64_t position);
+   ctResults InsertUnique(const T& val);
    /* Remove */
    void RemoveAt(const int64_t position);
    ctResults Remove(const T& val);
@@ -57,24 +66,17 @@ public:
    /* Exists */
    bool Exists(const T& val) const;
    /* Find */
-   int64_t FindIndex(const T& val, const int64_t position = 0) const;
-   int64_t FindIndex(const T& val,
-                     const int64_t position = 0,
-                     const int step = 1) const;
-   T* FindPtr(const T& val,
-              const int64_t position = 0,
-              const int step = 1) const;
+   int64_t FindIndex(const T& val, const int64_t position = 0, const int step = 1) const;
+   T* FindPtr(const T& val, const int64_t position = 0, const int step = 1) const;
+   T& Fetch(const T& val) const;
    /* Sort */
-   void QSort(const size_t position,
-              const size_t amount,
-              int (*compare)(const T*, const T*));
+   void
+   QSort(const size_t position, const size_t amount, int (*compare)(const T*, const T*));
    /* Hash */
-   uint32_t
-   xxHash32(const size_t position, const size_t amount, const int seed) const;
+   uint32_t xxHash32(const size_t position, const size_t amount, const int seed) const;
    uint32_t xxHash32(const int seed) const;
    uint32_t xxHash32() const;
-   uint64_t
-   xxHash64(const size_t position, const size_t amount, const int seed) const;
+   uint64_t xxHash64(const size_t position, const size_t amount, const int seed) const;
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
 
@@ -90,8 +92,7 @@ inline ctStaticArray<T, TCAPACITY>::ctStaticArray() {
 }
 
 template<class T, size_t TCAPACITY>
-inline ctStaticArray<T, TCAPACITY>::ctStaticArray(const T* arr,
-                                                  const size_t amount) {
+inline ctStaticArray<T, TCAPACITY>::ctStaticArray(const T* arr, const size_t amount) {
    _count = 0;
    SetBytes(0);
    Append(arr, amount);
@@ -160,6 +161,37 @@ inline T ctStaticArray<T, TCAPACITY>::Last() const {
 }
 
 template<class T, size_t TCAPACITY>
+inline T* ctStaticArray<T, TCAPACITY>::Begin() {
+   ctAssert(_pData);
+   return pData;
+}
+
+template<class T, size_t TCAPACITY>
+inline const T* ctStaticArray<T, TCAPACITY>::Begin() const {
+   ctAssert(_pData);
+   return pData;
+}
+
+template<class T, size_t TCAPACITY>
+inline T* ctStaticArray<T, TCAPACITY>::End() {
+   ctAssert(_pData);
+   return pData + Count();
+}
+
+template<class T, size_t TCAPACITY>
+inline const T* ctStaticArray<T, TCAPACITY>::End() const {
+   ctAssert(_pData);
+   return pData + Count();
+}
+
+template<class T, size_t TCAPACITY>
+inline ctResults ctStaticArray<T, TCAPACITY>::Resize(const size_t amount) {
+   if (amount > Capacity()) { return CT_FAILURE_OUT_OF_BOUNDS; }
+   _count = amount;
+   return CT_SUCCESS;
+}
+
+template<class T, size_t TCAPACITY>
 inline ctResults ctStaticArray<T, TCAPACITY>::Append(T&& val) {
    if (Count() >= Capacity()) { return CT_FAILURE_OUT_OF_BOUNDS; }
    _pData[Count()] = val;
@@ -176,10 +208,8 @@ inline ctResults ctStaticArray<T, TCAPACITY>::Append(const T& val) {
 }
 
 template<class T, size_t TCAPACITY>
-inline size_t ctStaticArray<T, TCAPACITY>::Append(const T* pArray,
-                                                  const size_t amount) {
-   size_t finalcount =
-     amount + Count() > Capacity() ? Capacity() : amount + Count();
+inline size_t ctStaticArray<T, TCAPACITY>::Append(const T* pArray, const size_t amount) {
+   size_t finalcount = amount + Count() > Capacity() ? Capacity() : amount + Count();
    for (int i = _count; i < finalcount; i++) {
       _pData[i] = pArray[i];
    }
@@ -189,10 +219,8 @@ inline size_t ctStaticArray<T, TCAPACITY>::Append(const T* pArray,
 }
 
 template<class T, size_t TCAPACITY>
-inline size_t ctStaticArray<T, TCAPACITY>::Append(const T& val,
-                                                  const size_t amount) {
-   size_t finalcount =
-     amount + Count() > Capacity() ? Capacity() : amount + Count();
+inline size_t ctStaticArray<T, TCAPACITY>::Append(const T& val, const size_t amount) {
+   size_t finalcount = amount + Count() > Capacity() ? Capacity() : amount + Count();
    for (int i = _count; i < finalcount; i++) {
       _pData[i] = val;
    }
@@ -214,6 +242,12 @@ inline ctResults ctStaticArray<T, TCAPACITY>::Insert(const T& val,
    _count++;
    _pData[finalposition] = val;
    return CT_SUCCESS;
+}
+
+template<class T, size_t TCAPACITY>
+inline ctResults ctStaticArray<T, TCAPACITY>::InsertUnique(const T& val) {
+   if (Exists(val)) { return CT_FAILURE_DUPLICATE_ENTRY; }
+   return Append(val);
 }
 
 template<class T, size_t TCAPACITY>
@@ -264,15 +298,9 @@ inline bool ctStaticArray<T, TCAPACITY>::Exists(const T& val) const {
 }
 
 template<class T, size_t TCAPACITY>
-inline int64_t
-ctStaticArray<T, TCAPACITY>::FindIndex(const T& val,
-                                       const int64_t position) const {
-   return FindIndex(val, position, 1);
-}
-
-template<class T, size_t TCAPACITY>
-inline int64_t ctStaticArray<T, TCAPACITY>::FindIndex(
-  const T& val, const int64_t position, const int direction) const {
+inline int64_t ctStaticArray<T, TCAPACITY>::FindIndex(const T& val,
+                                                      const int64_t position,
+                                                      const int direction) const {
    if (isEmpty()) { return -1; }
    const int64_t amount = (int64_t)Count();
    const int64_t finalposition = position < 0 ? Count() + position : position;
@@ -294,18 +322,20 @@ inline T* ctStaticArray<T, TCAPACITY>::FindPtr(const T& val,
 }
 
 template<class T, size_t TCAPACITY>
+inline T& ctStaticArray<T, TCAPACITY>::Fetch(const T& val) const {
+   int64_t idx = FindIndex(val);
+   ctAssert(idx >= 0);
+   return Data()[idx];
+}
+
+template<class T, size_t TCAPACITY>
 inline void ctStaticArray<T, TCAPACITY>::QSort(const size_t position,
                                                const size_t amount,
-                                               int (*compare)(const T*,
-                                                              const T*)) {
+                                               int (*compare)(const T*, const T*)) {
    if (isEmpty()) { return; }
    const size_t remaining_count = Count() - position;
-   const size_t final_amount =
-     amount > remaining_count ? remaining_count : amount;
-   qsort(Data(),
-         final_amount,
-         sizeof(T),
-         (int (*)(void const*, void const*))compare);
+   const size_t final_amount = amount > remaining_count ? remaining_count : amount;
+   qsort(Data(), final_amount, sizeof(T), (int (*)(void const*, void const*))compare);
 }
 
 template<class T, size_t TCAPACITY>

@@ -35,3 +35,7 @@ ctGUID::ctGUID(char hexString[32]) {
    memset(data, 0, sizeof(data));
    ctHexToBytes(16, hexString, data);
 }
+
+void ctGUID::ToHex(char dest[32]) const {
+   ctBytesToHex(16, data, dest);
+}
