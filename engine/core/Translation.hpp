@@ -25,12 +25,13 @@
 #endif
 
 enum ctTranslationCatagory {
-   CT_TRANSLATION_CATAGORY_CORE = 0, /* Engine strings */
-   CT_TRANSLATION_CATAGORY_APP = 0,  /* Application specific strings */
-   CT_TRANSLATION_CATAGORY_GAME = 0, /* Game strings */
-   CT_TRANSLATION_CATAGORY_BANK0,    /* Banked strings (ex: mission specific) */
-   CT_TRANSLATION_CATAGORY_BANK1,    /* Banked strings (ex: level specific) */
-   CT_TRANSLATION_CATAGORY_BANK2,    /* Banked strings (ex: story progress) */
+   CT_TRANSLATION_CATAGORY_CORE,  /* Engine strings */
+   CT_TRANSLATION_CATAGORY_APP,   /* Application specific strings */
+   CT_TRANSLATION_CATAGORY_GAME,  /* Game strings */
+   CT_TRANSLATION_CATAGORY_DATA,  /* Data GUIDs (ex: asset references) */
+   CT_TRANSLATION_CATAGORY_BANK0, /* Banked strings (ex: mission specific) */
+   CT_TRANSLATION_CATAGORY_BANK1, /* Banked strings (ex: level specific) */
+   CT_TRANSLATION_CATAGORY_BANK2, /* Banked strings (ex: story progress) */
    CT_TRANSLATION_CATAGORY_COUNT,
 };
 
@@ -40,6 +41,7 @@ String maps can change when language is set. DO NOT CACHE POINTER! */
 CT_API const char*
 ctGetLocalString(ctTranslationCatagory category, const char* tag, const char* nativeText);
 
+/* Automatic string translations (only feed constant strings, used to extract .pot) */
 /* Translate core string */
 #define CT_NCT(_tag, _txt) ctGetLocalString(CT_TRANSLATION_CATAGORY_CORE, _tag, _txt)
 #define CT_NC(_txt)        CT_NCT(_txt, _txt)
