@@ -1,2 +1,2 @@
-add_subdirectory(gltf2citrus)
-add_subdirectory(glsl2citrus)
+add_subdirectory(compilemodel)
+add_subdirectory(compileshader)

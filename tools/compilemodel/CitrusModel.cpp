@@ -117,6 +117,7 @@ int main(int argc, char* argv[]) {
    const char* relativePath = FindParam("-rp");
    const char* gltfPath = argv[argc - 2];
    const char* outPath = argv[argc - 1];
+   const char* outGPUPath = FindParam("-gpu");
 
    if (!relativePath) {
       ctDebugWarning("Relative path undefined!");
@@ -124,9 +125,11 @@ int main(int argc, char* argv[]) {
    }
 
    if (cgltf_parse_file(&options, gltfPath, &gltf) != cgltf_result_success) {
+      ctDebugError("FAILED TO PARSE FILE %s", gltfPath);
       return -2;
    };
    if (cgltf_load_buffers(&options, gltf, gltfPath) != cgltf_result_success) {
+      ctDebugError("FAILED TO LOAD BUFFERS %s", gltfPath);
       return -3;
    }
 
@@ -422,11 +425,9 @@ int main(int argc, char* argv[]) {
    /* Mesh Data */
    ctDynamicArray<ctWADProtoRenderMesh> renderMeshes;
    ctDynamicArray<cgltf_mesh*> outGltfMeshes;
-   if (gltf->meshes_count) {
+   if (outGPUPath) {
       ctStringUtf8 meshOutPath = outPath;
-      meshOutPath.FilePathRemoveExtension();
-      meshOutPath += ".gpu";
-      FILE* pFile = fopen(meshOutPath.CStr(), "wb");
+      FILE* pFile = fopen(outGPUPath, "wb");
       if (!pFile) { return -10; }
 
       /* Write actual mesh data */

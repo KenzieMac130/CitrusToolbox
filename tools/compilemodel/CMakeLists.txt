@@ -14,8 +14,8 @@
 #   limitations under the License.
 #
 
-add_executable(Gltf2Citrus 
-Gltf2Citrus.cpp
+add_executable(CitrusModel
+CitrusModel.cpp
 ${THIRD_PARTY_DIRECTORY}/mikkt/mikktspace.h
 ${THIRD_PARTY_DIRECTORY}/mikkt/mikktspace.c)
-target_link_libraries(Gltf2Citrus PUBLIC engine)
+target_link_libraries(CitrusModel PUBLIC engine)

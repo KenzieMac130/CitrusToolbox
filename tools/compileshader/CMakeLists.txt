@@ -14,8 +14,8 @@
 #   limitations under the License.
 #
 
-add_executable(Glsl2Citrus 
-Glsl2Citrus.cpp)
-target_include_directories(Glsl2Citrus PUBLIC ${SHADERC_INCLUDE_DIRS})
-target_link_libraries(Glsl2Citrus PUBLIC engine)
-target_link_libraries(Glsl2Citrus PUBLIC ${SHADERC_LIBRARY})
+add_executable(CitrusShader
+CitrusShader.cpp)
+target_include_directories(CitrusShader PUBLIC ${SHADERC_INCLUDE_DIRS})
+target_link_libraries(CitrusShader PUBLIC engine)
+target_link_libraries(CitrusShader PUBLIC ${SHADERC_LIBRARY})
