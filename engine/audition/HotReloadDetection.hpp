@@ -45,7 +45,7 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
-   ctResults RegisterAssetCategory(ctHotReloadCategory* pCategory);
+   ctResults RegisterDataCategory(ctHotReloadCategory* pCategory);
 
    ctMutex _callbackLock;
    void _PushPathUpdate(const char* path);
