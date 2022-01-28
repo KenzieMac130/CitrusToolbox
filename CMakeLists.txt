@@ -139,7 +139,7 @@ HINTS ${BASE_LIBRARY_DIRECTORY}/SDL2 REQUIRED)
 # ---------- Find Vulkan ----------
 set(CITRUS_GPU_VULKAN 1)
 if(CITRUS_GPU_VULKAN)
-   find_package(Vulkan REQUIRED)
+   find_package(Vulkan)
    if(NOT Vulkan_FOUND)
       set(Vulkan_INCLUDE_DIRS ${BASE_LIBRARY_DIRECTORY}/Vulkan/Include)
       set(Vulkan_INCLUDE_DIR ${Vulkan_INCLUDE_DIRS}/vulkan)
