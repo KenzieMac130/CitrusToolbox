@@ -16,11 +16,9 @@
 ### Project Structure
 * CitrusToolbox/
 	* assets/
-		* core/
-			* (...)/
-		* game/
-			* (GAME_NAME)/
-				* (GAME_ASSET_FILES)...
+		* .../
+		wscript
+		DataNicknames.json
 	* build/
 		* generated/
 			* ispc/
@@ -28,21 +26,15 @@
 				* .../
 			* shaders/
 		* output/
-			* assets/
+			* data/
 			* (BINARY_BUILDS)...
-		* ...
+		* .../
 	* docs/
 	* engine/
-		* core/
-		* ispc/
-		* renderer/
-			* lowlevel/
-				* (GFX_BACKEND_NAME)/
-			* shaders/
+		* .../
 		* utilities/
 	* game/
-		* (GAME_NAME)/
-			* (GAME_SOURCE_FILES)...
+		* (GAME_SOURCE_FILES)...
 	* libs/
 		* (PLATFORM_NAME)/
 			* FMOD/
@@ -56,7 +48,7 @@
 		* .../
 		* OpenSourceCredits.txt
 	* tools/
-		* reflect/
+		* .../
 		* tracy/
 			* (TRACY_REPO)...
 				
