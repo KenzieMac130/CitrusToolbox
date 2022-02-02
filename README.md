@@ -1,7 +1,5 @@
 # CitrusToolbox
  Small Game Engine
- 
- ![CitrusToolboxArchitecture](/docs/CitrusToolboxArchitecture.png)
 
  Project is a work-in-progress, feel free to take a look around.
  
@@ -21,5 +19,8 @@
  
 ## Areas of interest:
   * [Code Style](/docs/CodeStyleGuide.md)
-  * [Vulkan Backend](/engine/renderer/vulkan/VkBackend.cpp)
+  * [GPU Abstraction Layer](/engine/gpu)
   * ["Interact" Design](/docs/InteractNotes.md)
+
+## Todo
+Dependency distribution
