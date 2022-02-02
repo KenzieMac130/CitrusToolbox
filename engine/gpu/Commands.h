@@ -76,7 +76,7 @@ CT_API void ctGPUCmdBlit(ctGPUCommandBuffer commandBuffer,
                          ctGPUImageAccessor dest,
                          bool filter,
                          uint32_t regionCount,
-                         ctGPUBlitRegion* pRegions);
+                         struct ctGPUBlitRegion* pRegions);
 
 /* ------------------ Draw State Commands ------------------ */
 
@@ -108,13 +108,13 @@ CT_API void ctGPUCmdSetDepthBounds(ctGPUCommandBuffer commandBuffer,
 /* Stencil Settings */
 
 CT_API void ctGPUCmdSetStencilCompare(ctGPUCommandBuffer commandBuffer,
-                                      ctGPUFaceMask faceMask,
+                                      enum ctGPUFaceMask faceMask,
                                       uint32_t value);
 CT_API void ctGPUCmdSetStencilReference(ctGPUCommandBuffer commandBuffer,
-                                        ctGPUFaceMask faceMask,
+                                        enum ctGPUFaceMask faceMask,
                                         uint32_t value);
 CT_API void ctGPUCmdSetStencilWrite(ctGPUCommandBuffer commandBuffer,
-                                    ctGPUFaceMask faceMask,
+                                    enum ctGPUFaceMask faceMask,
                                     uint32_t value);
 
 /* Misc. Settings */
@@ -131,7 +131,7 @@ CT_API void ctGPUCmdSetGraphicsPipeline(ctGPUCommandBuffer commandBuffer,
                                         ctGPUPipeline pipeline);
 CT_API void ctGPUCmdSetComputePipeline(ctGPUCommandBuffer commandBuffer,
                                        ctGPUPipeline pipeline);
-									   
+
 #ifdef __cplusplus
 }
 #endif

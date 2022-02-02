@@ -112,13 +112,9 @@ CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
    if (!nameOffsets) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    for (int i = 0; i < nameByteSize / 4; i++) {
       const char* str = ctWADGetStringExt(pWad, nameOffsets[i]);
-      if (ctCStrEql(str, name)) { 
-          fxSegment = i;
-      }
+      if (ctCStrEql(str, name)) { fxSegment = i; }
    }
-   if (fxSegment < 0) { 
-       return CT_FAILURE_DATA_DOES_NOT_EXIST;
-   }
+   if (fxSegment < 0) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
 
    /* Load blob */
    void* pData = NULL;
@@ -126,9 +122,7 @@ CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
    ctWADFindLumpInMarker(
      pWad, fxSegment, "FX_START", "FX_END", lumpNamesByType[type], &pData, &size);
    VkShaderModuleCreateInfo info = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-   if (!pData) { 
-       return CT_FAILURE_DATA_DOES_NOT_EXIST;
-   }
+   if (!pData) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    info.codeSize = size;
    info.pCode = (uint32_t*)pData;
    VkResult result = vkCreateShaderModule(
@@ -340,8 +334,9 @@ CT_API ctResults ctGPUPipelineBuilderSetFillMode(ctGPUPipelineBuilder* pBuilder,
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUPipelineBuilderSetFaceCull(ctGPUPipelineBuilder* pBuilder,
-                                                 ctGPUFaceMask cull) {
+CT_API enum ctResults
+ctGPUPipelineBuilderSetFaceCull(struct ctGPUPipelineBuilder* pBuilder,
+                                ctGPUFaceMask cull) {
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
    VkPipelineRasterizationStateCreateInfo& rasterState = pBuilder->raster.rasterState;

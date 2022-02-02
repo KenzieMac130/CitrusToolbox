@@ -38,7 +38,7 @@ enum ctGPUExternalTextureType {
 };
 
 struct ctGPUExternalGenerateContext {
-   TinyImageFormat format;
+   enum TinyImageFormat format;
    uint32_t width;
    uint32_t height;
    uint32_t depth;
@@ -47,12 +47,12 @@ struct ctGPUExternalGenerateContext {
 };
 
 typedef void (*ctGPUTextureGenerateFn)(uint8_t* dest,
-                                       ctGPUExternalGenerateContext* pCtx,
+                                       struct ctGPUExternalGenerateContext* pCtx,
                                        void* userData);
 
 /* Assumes userdata fits the whole size of the first slice/mip of the texture */
 void ctGPUTextureGenerateFnQuickMemcpy(uint8_t* dest,
-                                       ctGPUExternalGenerateContext* pCtx,
+                                       struct ctGPUExternalGenerateContext* pCtx,
                                        void* userData);
 
 /* ------------------------------------------------------------------------------------ */
@@ -64,23 +64,26 @@ struct ctGPUExternalTexturePoolCreateInfo {
    void* pAsyncUserData;
 };
 
-CT_API ctResults
+CT_API enum ctResults
 ctGPUExternalTexturePoolCreate(struct ctGPUDevice* pDevice,
-                               ctGPUExternalTexturePool** ppPool,
-                               ctGPUExternalTexturePoolCreateInfo* pInfo);
+                               struct ctGPUExternalTexturePool** ppPool,
+                               struct ctGPUExternalTexturePoolCreateInfo* pInfo);
 
-CT_API ctResults ctGPUExternalTexturePoolDestroy(struct ctGPUDevice* pDevice,
-                                                 ctGPUExternalTexturePool* pPool);
+CT_API enum ctResults
+ctGPUExternalTexturePoolDestroy(struct ctGPUDevice* pDevice,
+                                struct ctGPUExternalTexturePool* pPool);
 
-CT_API ctResults ctGPUExternalTexturePoolGarbageCollect(struct ctGPUDevice* pDevice,
-                                                        ctGPUExternalTexturePool* pPool);
+CT_API enum ctResults
+ctGPUExternalTexturePoolGarbageCollect(struct ctGPUDevice* pDevice,
+                                       struct ctGPUExternalTexturePool* pPool);
 
 CT_API bool ctGPUExternalTexturePoolNeedsDispatch(struct ctGPUDevice* pDevice,
-                                                  ctGPUExternalTexturePool* pPool);
+                                                  struct ctGPUExternalTexturePool* pPool);
 
-CT_API ctResults ctGPUExternalTexturePoolDispatch(struct ctGPUDevice* pDevice,
-                                                  ctGPUExternalTexturePool* pPool,
-                                                  ctGPUCommandBuffer cmd);
+CT_API enum ctResults
+ctGPUExternalTexturePoolDispatch(struct ctGPUDevice* pDevice,
+                                 struct ctGPUExternalTexturePool* pPool,
+                                 ctGPUCommandBuffer cmd);
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -88,10 +91,10 @@ struct ctGPUExternalTextureCreateFuncInfo {
    const char* debugName;
    int32_t desiredBinding;
    bool async;
-   ctGPUExternalTexture* pPlaceholder;
-   ctGPUExternalTextureType type;
-   ctGPUExternalUpdateMode updateMode;
-   TinyImageFormat format;
+   struct ctGPUExternalTexture* pPlaceholder;
+   enum ctGPUExternalTextureType type;
+   enum ctGPUExternalUpdateMode updateMode;
+   enum TinyImageFormat format;
    uint32_t height;
    uint32_t width;
    uint32_t depth;
@@ -100,49 +103,52 @@ struct ctGPUExternalTextureCreateFuncInfo {
    void* userData;
 };
 
-CT_API ctResults
+CT_API enum ctResults
 ctGPUExternalTextureCreateFunc(struct ctGPUDevice* pDevice,
-                               ctGPUExternalTexturePool* pPool,
-                               ctGPUExternalTexture** ppTexture,
-                               ctGPUExternalTextureCreateFuncInfo* pInfo);
+                               struct ctGPUExternalTexturePool* pPool,
+                               struct ctGPUExternalTexture** ppTexture,
+                               struct ctGPUExternalTextureCreateFuncInfo* pInfo);
 
 struct ctGPUExternalTextureCreateLoadInfo {
    const char* debugName;
    int32_t desiredBinding;
-   ctGPUExternalTexture* pPlaceholder;
-   ctGPUExternalTextureType type;
-   ctGPUAssetIdentifier* identifier;
+   struct ctGPUExternalTexture* pPlaceholder;
+   enum ctGPUExternalTextureType type;
+   struct ctGPUAssetIdentifier* identifier;
 };
 
-CT_API ctResults
+CT_API enum ctResults
 ctGPUExternalTextureCreateLoad(struct ctGPUDevice* pDevice,
-                               ctGPUExternalTexturePool* pPool,
-                               ctGPUExternalTexture** ppTexture,
-                               ctGPUExternalTextureCreateLoadInfo* pInfo);
+                               struct ctGPUExternalTexturePool* pPool,
+                               struct ctGPUExternalTexture** ppTexture,
+                               struct ctGPUExternalTextureCreateLoadInfo* pInfo);
 
-CT_API ctResults ctGPUExternalTextureRebuild(struct ctGPUDevice* pDevice,
-                                             ctGPUExternalTexturePool* pPool,
-                                             size_t textureCount,
-                                             ctGPUExternalTexture** ppTextures);
-CT_API ctResults ctGPUExternalTextureRelease(struct ctGPUDevice* pDevice,
-                                             ctGPUExternalTexturePool* pPool,
-                                             ctGPUExternalTexture* pTexture);
+CT_API enum ctResults
+ctGPUExternalTextureRebuild(struct ctGPUDevice* pDevice,
+                            struct ctGPUExternalTexturePool* pPool,
+                            size_t textureCount,
+                            struct ctGPUExternalTexture** ppTextures);
+CT_API enum ctResults ctGPUExternalTextureRelease(struct ctGPUDevice* pDevice,
+                                                  struct ctGPUExternalTexturePool* pPool,
+                                                  struct ctGPUExternalTexture* pTexture);
 
 CT_API bool ctGPUExternalTextureIsReady(struct ctGPUDevice* pDevice,
-                                        ctGPUExternalTexturePool* pPool,
-                                        ctGPUExternalTexture* pTexture);
+                                        struct ctGPUExternalTexturePool* pPool,
+                                        struct ctGPUExternalTexture* pTexture);
 
 /* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalTextureIsReady()! */
-CT_API ctResults ctGPUExternalTextureGetCurrentAccessor(struct ctGPUDevice* pDevice,
-                                                        ctGPUExternalTexturePool* pPool,
-                                                        ctGPUExternalTexture* pTexture,
-                                                        ctGPUImageAccessor* pAccessor);
+CT_API enum ctResults
+ctGPUExternalTextureGetCurrentAccessor(struct ctGPUDevice* pDevice,
+                                       struct ctGPUExternalTexturePool* pPool,
+                                       struct ctGPUExternalTexture* pTexture,
+                                       ctGPUImageAccessor* pAccessor);
 /* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalTextureIsReady()! */
-CT_API ctResults ctGPUExternalTextureGetBindlessIndex(struct ctGPUDevice* pDevice,
-                                                      ctGPUExternalTexturePool* pPool,
-                                                      ctGPUExternalTexture* pTexture,
-                                                      int32_t* pIndex);
-													  
+CT_API enum ctResults
+ctGPUExternalTextureGetBindlessIndex(struct ctGPUDevice* pDevice,
+                                     struct ctGPUExternalTexturePool* pPool,
+                                     struct ctGPUExternalTexture* pTexture,
+                                     int32_t* pIndex);
+
 #ifdef __cplusplus
 }
 #endif

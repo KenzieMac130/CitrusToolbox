@@ -36,25 +36,26 @@ enum ctGPUPresenterState {
    CT_GPU_PRESENTER_NORMAL
 };
 
-CT_API ctResults ctGPUPresenterStartup(struct ctGPUDevice* pDevice,
-                                       struct ctGPUPresenter** ppPresenter,
-                                       struct ctGPUPresenterCreateInfo* pCreateInfo);
-CT_API ctResults ctGPUPresenterShutdown(struct ctGPUDevice* pDevice,
-                                        struct ctGPUPresenter* pPresenter);
-CT_API ctResults ctGPUPresenterExecute(struct ctGPUDevice* pDevice,
-                                       struct ctGPUPresenter* pPresenter,
-                                       struct ctGPUArchitect* pArchitect);
-CT_API ctGPUPresenterState ctGPUPresenterHandleState(struct ctGPUDevice* pDevice,
-                                                     struct ctGPUPresenter* pPresenter,
-                                                     uint32_t* pWidth,
-                                                     uint32_t* pHeight);
+CT_API enum ctResults ctGPUPresenterStartup(struct ctGPUDevice* pDevice,
+                                            struct ctGPUPresenter** ppPresenter,
+                                            struct ctGPUPresenterCreateInfo* pCreateInfo);
+CT_API enum ctResults ctGPUPresenterShutdown(struct ctGPUDevice* pDevice,
+                                             struct ctGPUPresenter* pPresenter);
+CT_API enum ctResults ctGPUPresenterExecute(struct ctGPUDevice* pDevice,
+                                            struct ctGPUPresenter* pPresenter,
+                                            struct ctGPUArchitect* pArchitect);
+CT_API enum ctGPUPresenterState
+ctGPUPresenterHandleState(struct ctGPUDevice* pDevice,
+                          struct ctGPUPresenter* pPresenter,
+                          uint32_t* pWidth,
+                          uint32_t* pHeight);
 CT_API void ctGPUPresenterSignalStateChange(struct ctGPUDevice* pDevice,
                                             struct ctGPUPresenter* pPresenter,
-                                            ctGPUPresenterState state);
+                                            enum ctGPUPresenterState state);
 CT_API void ctGPUPresenterChangeVSync(struct ctGPUDevice* pDevice,
                                       struct ctGPUPresenter* pPresenter,
                                       bool enable);
-									  
+
 #ifdef __cplusplus
 }
 #endif

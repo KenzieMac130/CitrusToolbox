@@ -252,7 +252,7 @@ ctGPUArchitect::DumpGraphVis(const char* path, bool generateImage, bool showImag
             /* Create wire to feedback as needed */
             if (cpDependencyFeedbacks.FindIndex(curDep.resourceId) < 0) { continue; }
             lastUse.entry = curDep;
-            lastUse.entry.access = 0;
+            lastUse.entry.access = CT_GPU_ACCESS_NONE;
          }
          const char** ppDepName = cpDependencyNames.FindPtr(curDep.resourceId);
          const char* depName = "UNKNOWN";

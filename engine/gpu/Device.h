@@ -30,13 +30,12 @@ struct ctGPUAssetIdentifier {
    uint8_t guidData[16];
 };
 
-typedef ctResults (*ctGPUOpenCacheFileFn)(void* pTargetCtFile,
-                                          const char* path,
-                                          int fileMode,
-                                          void* pUserData);
-typedef ctResults (*ctGPUOpenAssetFileFn)(void* pTargetCtFile,
-                                          ctGPUAssetIdentifier* pAssetIdentifier,
-                                          void* pUserData);
+typedef enum ctResults (*ctGPUOpenCacheFileFn)(void* pTargetCtFile,
+                                               const char* path,
+                                               int fileMode,
+                                               void* pUserData);
+typedef enum ctResults (*ctGPUOpenAssetFileFn)(
+  void* pTargetCtFile, struct ctGPUAssetIdentifier* pAssetIdentifier, void* pUserData);
 
 struct ctGPUDeviceCreateInfo {
    void* pMainWindow; /* Expects an SDL window if applicable */
@@ -62,14 +61,15 @@ struct ctGPUDeviceCapabilities {
    bool hasMultiWindow;
 };
 
-CT_API ctResults ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,
-                                    struct ctGPUDeviceCreateInfo* pCreateInfo,
-                                    ctGPUDeviceCapabilities* pCapabilitiesOut);
+CT_API enum ctResults
+ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,
+                   struct ctGPUDeviceCreateInfo* pCreateInfo,
+                   struct ctGPUDeviceCapabilities* pCapabilitiesOut);
 CT_API void ctGPUDeviceWaitForIdle(struct ctGPUDevice* pDevice);
-CT_API ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);
+CT_API enum ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);
 
 /* Common data types  */
-typedef ctResults (*ctGPUAsyncWorkFn)(void*);
+typedef enum ctResults (*ctGPUAsyncWorkFn)(void*);
 typedef void (*ctGPUAsyncSchedulerFn)(ctGPUAsyncWorkFn, void* pData, void* pUserData);
 
 enum ctGPUExternalUpdateMode {
@@ -88,7 +88,7 @@ enum ctGPUSampleCounts {
    CT_GPU_SAMPLES_64 = 64
 };
 
-enum ctGPUFaceBits {
+enum ctGPUFaceMask {
    CT_GPU_FACE_NONE = 0,
    CT_GPU_FACE_FRONT = 0x01,
    CT_GPU_FACE_BACK = 0x02,

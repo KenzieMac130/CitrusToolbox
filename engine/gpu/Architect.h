@@ -54,8 +54,8 @@ struct ctGPUArchitectExecutionContext {
 
    ctGPUCommandBuffer cmd;
 
-   ctGPUArchitect* pArchitect;
-   ctGPUDevice* pDevice;
+   struct ctGPUArchitect* pArchitect;
+   struct ctGPUDevice* pDevice;
    void* _internalData;
 };
 
@@ -63,11 +63,11 @@ struct ctGPUArchitectCreateInfo {
    int tmp;
 };
 
-CT_API ctResults ctGPUArchitectStartup(struct ctGPUDevice* pDevice,
-                                       struct ctGPUArchitect** ppArchitect,
-                                       struct ctGPUArchitectCreateInfo* pCreateInfo);
-CT_API ctResults ctGPUArchitectShutdown(struct ctGPUDevice* pDevice,
-                                        struct ctGPUArchitect* pArchitect);
+CT_API enum ctResults ctGPUArchitectStartup(struct ctGPUDevice* pDevice,
+                                            struct ctGPUArchitect** ppArchitect,
+                                            struct ctGPUArchitectCreateInfo* pCreateInfo);
+CT_API enum ctResults ctGPUArchitectShutdown(struct ctGPUDevice* pDevice,
+                                             struct ctGPUArchitect* pArchitect);
 
 /* Requires https://graphviz.org/ to generate to an image */
 CT_API ctResults ctGPUArchitectDumpGraphVis(struct ctGPUArchitect* pArchitect,
@@ -75,16 +75,16 @@ CT_API ctResults ctGPUArchitectDumpGraphVis(struct ctGPUArchitect* pArchitect,
                                             bool generateImage,
                                             bool showImage);
 
-typedef ctResults (*ctGPUArchitectTaskDefinitionFn)(ctGPUArchitectDefinitionContext* pCtx,
-                                                    void* pUserData);
-typedef ctResults (*ctGPUArchitectTaskExecutionFn)(ctGPUArchitectExecutionContext* pCtx,
-                                                   void* pUserData);
+typedef enum ctResults (*ctGPUArchitectTaskDefinitionFn)(
+  struct ctGPUArchitectDefinitionContext* pCtx, void* pUserData);
+typedef enum ctResults (*ctGPUArchitectTaskExecutionFn)(
+  struct ctGPUArchitectExecutionContext* pCtx, void* pUserData);
 
 enum ctGPUArchitectTaskFlags { CT_GPU_ARCH_TASK_NO_EXTERNAL_RESOURCES = 0x01 };
 struct ctGPUArchitectTaskInfo {
    const char* name;
    int32_t flags;
-   ctGPUArchitectTaskCategory category;
+   enum ctGPUArchitectTaskCategory category;
    ctGPUArchitectTaskDefinitionFn fpDefinition;
    ctGPUArchitectTaskExecutionFn fpExecution;
    void* pUserData;
@@ -96,20 +96,20 @@ struct ctGPUArchitectBuildInfo {
    uint32_t height;
 };
 
-CT_API ctResults ctGPUArchitectBuild(struct ctGPUDevice* pDevice,
-                                     struct ctGPUArchitect* pArchitect,
-                                     ctGPUArchitectBuildInfo* pInfo);
-CT_API ctResults ctGPUArchitectReset(struct ctGPUDevice* pDevice,
-                                     struct ctGPUArchitect* pArchitect);
-CT_API ctResults ctGPUArchitectAddTask(struct ctGPUDevice* pDevice,
-                                       struct ctGPUArchitect* pArchitect,
-                                       struct ctGPUArchitectTaskInfo* pTaskInfo);
-CT_API ctResults ctGPUArchitectExecute(struct ctGPUDevice* pDevice,
-                                       struct ctGPUArchitect* pArchitect);
-CT_API ctResults ctGPUArchitectSetOutput(struct ctGPUDevice* pDevice,
-                                         struct ctGPUArchitect* pArchitect,
-                                         ctGPUDependencyID dependency,
-                                         uint32_t socket);
+CT_API enum ctResults ctGPUArchitectBuild(struct ctGPUDevice* pDevice,
+                                          struct ctGPUArchitect* pArchitect,
+                                          struct ctGPUArchitectBuildInfo* pInfo);
+CT_API enum ctResults ctGPUArchitectReset(struct ctGPUDevice* pDevice,
+                                          struct ctGPUArchitect* pArchitect);
+CT_API enum ctResults ctGPUArchitectAddTask(struct ctGPUDevice* pDevice,
+                                            struct ctGPUArchitect* pArchitect,
+                                            struct ctGPUArchitectTaskInfo* pTaskInfo);
+CT_API enum ctResults ctGPUArchitectExecute(struct ctGPUDevice* pDevice,
+                                            struct ctGPUArchitect* pArchitect);
+CT_API enum ctResults ctGPUArchitectSetOutput(struct ctGPUDevice* pDevice,
+                                              struct ctGPUArchitect* pArchitect,
+                                              ctGPUDependencyID dependency,
+                                              uint32_t socket);
 
 #ifdef __cplusplus
 /* Use following format:
@@ -117,8 +117,8 @@ S_: structured buffer
 C_: color target
 D_: depth target
 B_: barrier */
-#define CT_ARCH_ID(_NAME) (uint32_t)(CT_COMPILE_HORNER_HASH(_NAME) % UINT32_MAX)
-#define CT_ARCH_DYNAMIC_ID(_NAME)(uint32_t)(ctHornerHash(_NAME) % UINT32_MAX)
+#define CT_ARCH_ID(_NAME)         (uint32_t)(CT_COMPILE_HORNER_HASH(_NAME) % UINT32_MAX)
+#define CT_ARCH_DYNAMIC_ID(_NAME) (uint32_t)(ctHornerHash(_NAME) % UINT32_MAX)
 #endif
 
 enum ctGPUArchitectPayloadFlags {
@@ -146,8 +146,8 @@ struct ctGPUArchitectImagePayloadDesc {
    float width;
    int32_t layers;
    int32_t miplevels;
-   TinyImageFormat format;
-   ctGPUArchitectClearContents* pClearDesc; /* pointer must remain alive */
+   enum TinyImageFormat format;
+   struct ctGPUArchitectClearContents* pClearDesc; /* pointer must remain alive */
 };
 
 struct ctGPUArchitectBufferPayloadDesc {
@@ -164,51 +164,59 @@ enum ctGPUArchitectResourceAccessFlags {
    CT_GPU_ACCESS_WRITE = 0x02,
    /* preserve incoming and write to attachment or buffer */
    CT_GPU_ACCESS_READ_WRITE = CT_GPU_ACCESS_READ | CT_GPU_ACCESS_WRITE,
+   CT_GPU_ACCESS_NONE = 0
 };
 typedef uint8_t ctGPUArchitectResourceAccess;
 
-CT_API ctResults ctGPUTaskDeclareDepthTarget(struct ctGPUArchitectDefinitionContext* pCtx,
-                                             ctGPUDependencyID id,
-                                             ctGPUArchitectImagePayloadDesc* pDesc);
-CT_API ctResults ctGPUTaskDeclareColorTarget(struct ctGPUArchitectDefinitionContext* pCtx,
-                                             ctGPUDependencyID id,
-                                             ctGPUArchitectImagePayloadDesc* pDesc);
-CT_API ctResults
-ctGPUTaskDeclareStorageBuffer(struct ctGPUArchitectDefinitionContext* pCtx,
-                              ctGPUDependencyID id,
-                              ctGPUArchitectBufferPayloadDesc* pDesc);
+// clang-format off
 
-CT_API ctResults ctGPUTaskCreateBarrier(struct ctGPUArchitectDefinitionContext* pCtx,
+CT_API enum ctResults ctGPUTaskDeclareDepthTarget(struct ctGPUArchitectDefinitionContext* pCtx,
+                                             ctGPUDependencyID id,
+                                             struct ctGPUArchitectImagePayloadDesc* pDesc);
+
+CT_API enum ctResults ctGPUTaskDeclareColorTarget(struct ctGPUArchitectDefinitionContext* pCtx,
+                                             ctGPUDependencyID id,
+                                             struct ctGPUArchitectImagePayloadDesc* pDesc);
+
+CT_API enum ctResults ctGPUTaskDeclareStorageBuffer(struct ctGPUArchitectDefinitionContext* pCtx,
+                              ctGPUDependencyID id,
+                              struct ctGPUArchitectBufferPayloadDesc* pDesc);
+
+CT_API enum ctResults ctGPUTaskCreateBarrier(struct ctGPUArchitectDefinitionContext* pCtx,
                                         ctGPUDependencyID id,
                                         const char* debugName,
                                         int32_t flags);
 
-CT_API ctResults ctGPUTaskUseDepthTarget(struct ctGPUArchitectDefinitionContext* pCtx,
+CT_API enum ctResults ctGPUTaskUseDepthTarget(struct ctGPUArchitectDefinitionContext* pCtx,
                                          ctGPUDependencyID id,
                                          ctGPUArchitectResourceAccess access);
-CT_API ctResults ctGPUTaskUseColorTarget(struct ctGPUArchitectDefinitionContext* pCtx,
+
+CT_API enum ctResults ctGPUTaskUseColorTarget(struct ctGPUArchitectDefinitionContext* pCtx,
                                          ctGPUDependencyID id,
                                          ctGPUArchitectResourceAccess access,
                                          uint32_t slot);
-CT_API ctResults ctGPUTaskUseTexture(ctGPUArchitectDefinitionContext* pCtx,
-                                     ctGPUDependencyID id);
-CT_API ctResults ctGPUTaskUseStorageBuffer(struct ctGPUArchitectDefinitionContext* pCtx,
-                                           ctGPUDependencyID id,
-                                           ctGPUArchitectResourceAccess access);
 
-CT_API ctResults ctGPUTaskWaitBarrier(struct ctGPUArchitectDefinitionContext* pCtx,
-                                      ctGPUDependencyID id);
-CT_API ctResults ctGPUTaskSignalBarrier(struct ctGPUArchitectDefinitionContext* pCtx,
-                                        ctGPUDependencyID id);
+CT_API enum ctResults ctGPUTaskUseTexture(ctGPUArchitectDefinitionContext* pCtx,
+                                          ctGPUDependencyID id);
+
+CT_API enum ctResults ctGPUTaskUseStorageBuffer(struct ctGPUArchitectDefinitionContext* pCtx,
+                                                ctGPUDependencyID id,
+                                                ctGPUArchitectResourceAccess access);
+
+CT_API enum ctResults ctGPUTaskWaitBarrier(struct ctGPUArchitectDefinitionContext* pCtx,
+                                           ctGPUDependencyID id);
+
+CT_API enum ctResults ctGPUTaskSignalBarrier(struct ctGPUArchitectDefinitionContext* pCtx,
+                                             ctGPUDependencyID id);
 
 /* Accessors */
-CT_API ctResults ctGPUTaskGetImageAccessor(struct ctGPUArchitectExecutionContext* pCtx,
-                                           ctGPUDependencyID id,
-                                           ctGPUImageAccessor* pAccessorOut);
-CT_API ctResults ctGPUTaskGetBufferAccessor(struct ctGPUArchitectExecutionContext* pCtx,
-                                            ctGPUDependencyID id,
-                                            ctGPUBufferAccessor* pAccessorOut);
-											
+CT_API enum ctResults ctGPUTaskGetImageAccessor(struct ctGPUArchitectExecutionContext* pCtx,
+                                                ctGPUDependencyID id,
+                                                ctGPUImageAccessor* pAccessorOut);
+CT_API enum ctResults ctGPUTaskGetBufferAccessor(struct ctGPUArchitectExecutionContext* pCtx,
+                                                 ctGPUDependencyID id,
+                                                 ctGPUBufferAccessor* pAccessorOut);
+// clang-format on
 #ifdef __cplusplus
 }
 #endif
