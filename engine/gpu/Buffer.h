@@ -20,6 +20,10 @@
 #include "Device.h"
 #include "Commands.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
 Buffer manages Structured Buffers and Constant Buffers
 Vertex/index buffers can't be fetched for manually and arent supported.
@@ -117,3 +121,7 @@ CT_API ctResults ctGPUExternalBufferGetBindlessIndex(struct ctGPUDevice* pDevice
                                                      ctGPUExternalBufferPool* pPool,
                                                      ctGPUExternalBuffer* pBuffer,
                                                      int32_t* pIndex);
+													 
+#ifdef __cplusplus
+}
+#endif

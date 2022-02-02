@@ -18,4 +18,12 @@
 
 #include "utilities/Common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Manages the raytracers internal state */
+
+#ifdef __cplusplus
+}
+#endif

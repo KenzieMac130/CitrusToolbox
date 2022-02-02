@@ -48,6 +48,10 @@ CT_API ctResults ctGPUDeviceStartup(ctGPUDevice** ppDevice,
    return result;
 }
 
+CT_API void ctGPUDeviceWaitForIdle(ctGPUDevice* pDevice) {
+   vkDeviceWaitIdle(pDevice->vkDevice);
+}
+
 CT_API ctResults ctGPUDeviceShutdown(ctGPUDevice* pDevice) {
    ZoneScoped;
    ctAssert(pDevice);

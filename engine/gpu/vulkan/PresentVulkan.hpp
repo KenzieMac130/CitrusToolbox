@@ -45,6 +45,7 @@ struct ctGPUPresenter {
    bool isMinimized;
 
    int32_t currentFrame;
+   VkFence finishedPresentFence[CT_MAX_INFLIGHT_FRAMES];
    VkSemaphore imageAvailible[CT_MAX_INFLIGHT_FRAMES];
 
    ctResults CreateSurface(struct ctGPUDevice* pDevice);

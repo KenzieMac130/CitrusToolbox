@@ -21,6 +21,10 @@
 #include "formats/wad/WADCore.h"
 #include "tiny_imageFormat/tinyimageformat.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct ctGPUPipelineBuilder;
 
 typedef void* ctGPUShaderModule;
@@ -176,3 +180,7 @@ CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
                                      ctGPUPipeline* pPipeline);
 
 CT_API void ctGPUPipelineDestroy(ctGPUDevice* pDevice, ctGPUPipeline pipeline);
+
+#ifdef __cplusplus
+}
+#endif

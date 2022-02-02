@@ -18,6 +18,10 @@
 
 #include "utilities/Common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Central hub to interact with the graphics api/gpu. */
 struct ctGPUDevice;
 
@@ -61,6 +65,7 @@ struct ctGPUDeviceCapabilities {
 CT_API ctResults ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,
                                     struct ctGPUDeviceCreateInfo* pCreateInfo,
                                     ctGPUDeviceCapabilities* pCapabilitiesOut);
+CT_API void ctGPUDeviceWaitForIdle(struct ctGPUDevice* pDevice);
 CT_API ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);
 
 /* Common data types  */
@@ -103,3 +108,7 @@ enum ctGPUBlendingMode {
 
 typedef void* ctGPUBufferAccessor;
 typedef void* ctGPUImageAccessor;
+
+#ifdef __cplusplus
+}
+#endif

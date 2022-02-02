@@ -21,6 +21,10 @@
 #include "Commands.h"
 #include "tiny_imageFormat/tinyimageformat.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Handles all textures */
 
 struct ctGPUExternalTexturePool;
@@ -138,3 +142,7 @@ CT_API ctResults ctGPUExternalTextureGetBindlessIndex(struct ctGPUDevice* pDevic
                                                       ctGPUExternalTexturePool* pPool,
                                                       ctGPUExternalTexture* pTexture,
                                                       int32_t* pIndex);
+													  
+#ifdef __cplusplus
+}
+#endif

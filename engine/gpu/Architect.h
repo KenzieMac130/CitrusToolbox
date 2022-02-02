@@ -20,6 +20,10 @@
 #include "utilities/Common.h"
 #include "tiny_imageFormat/tinyimageformat.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Architect allows the high level gfx programmer
  to lay out the frame and let the backend build
  the required transitions without torturous detail. */
@@ -65,7 +69,7 @@ CT_API ctResults ctGPUArchitectStartup(struct ctGPUDevice* pDevice,
 CT_API ctResults ctGPUArchitectShutdown(struct ctGPUDevice* pDevice,
                                         struct ctGPUArchitect* pArchitect);
 
-/* Requires https://graphviz.org/ to view or render to an image */
+/* Requires https://graphviz.org/ to generate to an image */
 CT_API ctResults ctGPUArchitectDumpGraphVis(struct ctGPUArchitect* pArchitect,
                                             const char* path,
                                             bool generateImage,
@@ -107,12 +111,15 @@ CT_API ctResults ctGPUArchitectSetOutput(struct ctGPUDevice* pDevice,
                                          ctGPUDependencyID dependency,
                                          uint32_t socket);
 
+#ifdef __cplusplus
 /* Use following format:
 S_: structured buffer
 C_: color target
 D_: depth target
 B_: barrier */
 #define CT_ARCH_ID(_NAME) (uint32_t)(CT_COMPILE_HORNER_HASH(_NAME) % UINT32_MAX)
+#define CT_ARCH_DYNAMIC_ID(_NAME)(uint32_t)(ctHornerHash(_NAME) % UINT32_MAX)
+#endif
 
 enum ctGPUArchitectPayloadFlags {
    /* Feedback payloads will be preserved between frames (TAA/scatter/paintmaps) */
@@ -201,3 +208,7 @@ CT_API ctResults ctGPUTaskGetImageAccessor(struct ctGPUArchitectExecutionContext
 CT_API ctResults ctGPUTaskGetBufferAccessor(struct ctGPUArchitectExecutionContext* pCtx,
                                             ctGPUDependencyID id,
                                             ctGPUBufferAccessor* pAccessorOut);
+											
+#ifdef __cplusplus
+}
+#endif

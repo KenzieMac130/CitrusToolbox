@@ -18,4 +18,12 @@
 
 #include "utilities/Common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Manages occlusion queries and retreiving data from accessors */
+
+#ifdef __cplusplus
+}
+#endif

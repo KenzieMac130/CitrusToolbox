@@ -63,12 +63,23 @@ ctGPUArchitectClearContents normalRoughClear = {{0.5f, 0.5f, 1.0f, 1.0f}};
 ctGPUArchitectClearContents surfPropsClear = {{0.0f, 0.0f, 0.0f, 0.0f}};
 ctGPUArchitectClearContents lightClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
-/* GBuffer Layout:
+/* 
+----- GBuffer Layout -----
 C0: Base Color, Thickness
 C1: Normal XY, Roughness, Normal Z Sign
-C2: Occlusion, Metal/Translucent, Fresnel F0, Profile
-C3: Light Level
+C2: Occlusion, Metal/Translucent, Fresnel F0, Profile ID
+C3: Illumination
 DS: Reverse Depth, Draw Flag
+
+----- Draw Flag Layout -----
+0: Recieves Decals
+1: Unused
+2: Unused
+3: Unused
+4: Unused
+5: Unused
+6: Unused
+7: Unused
 */
 
 // clang-format off
@@ -366,6 +377,7 @@ ctResults ctKeyLimeRenderer::Startup() {
 
 ctResults ctKeyLimeRenderer::Shutdown() {
 #if !CITRUS_HEADLESS
+   ctGPUDeviceWaitForIdle(pGPUDevice);
    Engine->Im3dIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool);
    Engine->ImguiIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool, pGPUTexturePool);
 

@@ -20,6 +20,10 @@
 #include "tiny_imageFormat/tinyimageformat.h"
 #include "Pipeline.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void* ctGPUCommandBuffer;
 
 /* ------------------ Drawing Commands ------------------ */
@@ -127,3 +131,7 @@ CT_API void ctGPUCmdSetGraphicsPipeline(ctGPUCommandBuffer commandBuffer,
                                         ctGPUPipeline pipeline);
 CT_API void ctGPUCmdSetComputePipeline(ctGPUCommandBuffer commandBuffer,
                                        ctGPUPipeline pipeline);
+									   
+#ifdef __cplusplus
+}
+#endif

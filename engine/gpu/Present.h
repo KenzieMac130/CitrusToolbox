@@ -18,6 +18,10 @@
 
 #include "utilities/Common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Manages the presentation of a window */
 struct ctGPUPresenter;
 
@@ -50,3 +54,7 @@ CT_API void ctGPUPresenterSignalStateChange(struct ctGPUDevice* pDevice,
 CT_API void ctGPUPresenterChangeVSync(struct ctGPUDevice* pDevice,
                                       struct ctGPUPresenter* pPresenter,
                                       bool enable);
+									  
+#ifdef __cplusplus
+}
+#endif

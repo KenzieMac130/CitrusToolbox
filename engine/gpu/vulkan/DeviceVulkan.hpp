@@ -28,7 +28,13 @@
 #include "tracy/TracyVulkan.hpp"
 #endif
 
+/* todo: replace need with generic fatal error callback */
+#ifndef CITRUS_GPU_NO_TRANSLATION
 #include "core/Translation.hpp"
+#else
+#define CT_NCT(_tag, _txt)
+#define CT_NC(_txt)
+#endif
 
 #define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \

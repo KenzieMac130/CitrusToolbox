@@ -267,10 +267,19 @@ ctResults ctGPUPresenter::GetSwapchain(ctGPUDevice* pDevice) {
 ctResults ctGPUPresenter::CreatePresentResources(ctGPUDevice* pDevice) {
    ZoneScoped;
    /* Create image availible semaphore */
-   VkSemaphoreCreateInfo semaphoreInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+   VkSemaphoreCreateInfo semaphoreInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkCreateSemaphore(
         pDevice->vkDevice, &semaphoreInfo, &pDevice->vkAllocCallback, &imageAvailible[i]);
+   }
+   /* Create present finished fences */
+   VkFenceCreateInfo fenceInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkCreateFence(pDevice->vkDevice,
+                    &fenceInfo,
+                    &pDevice->vkAllocCallback,
+                    &finishedPresentFence[i]);
    }
    /* Blitting command buffer */
    VkCommandPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
@@ -298,6 +307,8 @@ ctResults ctGPUPresenter::DestroyPresentResources(ctGPUDevice* pDevice) {
    ZoneScoped;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkDestroySemaphore(pDevice->vkDevice, imageAvailible[i], &pDevice->vkAllocCallback);
+      vkDestroyFence(
+        pDevice->vkDevice, finishedPresentFence[i], &pDevice->vkAllocCallback);
    }
    vkDestroyCommandPool(pDevice->vkDevice, blitCommandPool, &pDevice->vkAllocCallback);
    return CT_SUCCESS;
@@ -364,9 +375,11 @@ VkResult ctGPUPresenter::BlitAndPresent(ctGPUDevice* pDevice,
 
    /* Blit */
    {
+      vkWaitForFences(
+        pDevice->vkDevice, 1, &finishedPresentFence[currentFrame], VK_TRUE, UINT64_MAX);
+      vkResetFences(pDevice->vkDevice, 1, &finishedPresentFence[currentFrame]);
       VkCommandBuffer cmd = blitCommands[currentFrame];
       VkCommandBufferBeginInfo beginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-      vkResetCommandBuffer(cmd, 0);
       vkBeginCommandBuffer(cmd, &beginInfo);
       pDevice->MarkBeginRegion(cmd, "Blit Output");
 
@@ -457,7 +470,7 @@ VkResult ctGPUPresenter::BlitAndPresent(ctGPUDevice* pDevice,
       submitInfo.waitSemaphoreCount = semaphoreCount;
       submitInfo.pWaitSemaphores = pWaitSemaphores;
       submitInfo.pWaitDstStageMask = &waitForStage;
-      vkQueueSubmit(blitQueue, 1, &submitInfo, VK_NULL_HANDLE);
+      vkQueueSubmit(blitQueue, 1, &submitInfo, finishedPresentFence[currentFrame]);
    }
 
    VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
