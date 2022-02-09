@@ -101,7 +101,8 @@ enum ctResults {
    CT_FAILURE_SYNTAX_ERROR = -19,
    CT_FAILURE_RUNTIME_ERROR = -19,
    CT_FAILURE_TYPE_ERROR = -20,
-   CT_FAILURE_NOT_FINISHED = -21
+   CT_FAILURE_NOT_FINISHED = -21,
+   CT_FAILURE_SKIPPED = -22
 };
 
 #define CT_PANIC_FAIL(_arg, _message)                                                    \
