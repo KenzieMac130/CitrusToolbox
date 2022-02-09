@@ -366,10 +366,6 @@ void ctGPUExternalTexture::GenMappings(ctGPUDevice* pDevice) {
       for (uint32_t i = 0; i < frameCount; i++) {
          vmaMapMemory(pDevice->vmaAllocator, staging[i].alloc, (void**)&mappings[i]);
       }
-   } else {
-      for (uint32_t i = 0; i < frameCount; i++) {
-         vmaMapMemory(pDevice->vmaAllocator, contents[i].alloc, (void**)&mappings[i]);
-      }
    }
 }
 
@@ -377,10 +373,6 @@ void ctGPUExternalTexture::FreeMappings(ctGPUDevice* pDevice) {
    if (staging[0].buffer != VK_NULL_HANDLE) {
       for (uint32_t i = 0; i < frameCount; i++) {
          vmaUnmapMemory(pDevice->vmaAllocator, staging[i].alloc);
-      }
-   } else {
-      for (uint32_t i = 0; i < frameCount; i++) {
-         vmaUnmapMemory(pDevice->vmaAllocator, contents[i].alloc);
       }
    }
 }
@@ -398,6 +390,7 @@ void ctGPUExternalTexture::GenSlices() {
          ctx.currentMipLevel = j;
          ctx.width = mipWidth;
          ctx.height = mipHeight;
+         ctAssert(mappings[currentFrame]);
          generationFunction(
            mappings[currentFrame] + currentSeekIntoChunk, &ctx, userData);
          currentSeekIntoChunk = AlignOffsetIntoMapping(
