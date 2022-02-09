@@ -16,11 +16,9 @@
 ### Project Structure
 * CitrusToolbox/
 	* assets/
-		* core/
-			* (...)/
-		* game/
-			* (GAME_NAME)/
-				* (GAME_ASSET_FILES)...
+		* .../
+		wscript
+		DataNicknames.json
 	* build/
 		* generated/
 			* ispc/
@@ -28,21 +26,15 @@
 				* .../
 			* shaders/
 		* output/
-			* assets/
+			* data/
 			* (BINARY_BUILDS)...
-		* ...
+		* .../
 	* docs/
 	* engine/
-		* core/
-		* ispc/
-		* renderer/
-			* lowlevel/
-				* (GFX_BACKEND_NAME)/
-			* shaders/
+		* .../
 		* utilities/
 	* game/
-		* (GAME_NAME)/
-			* (GAME_SOURCE_FILES)...
+		* (GAME_SOURCE_FILES)...
 	* libs/
 		* (PLATFORM_NAME)/
 			* FMOD/
@@ -56,7 +48,7 @@
 		* .../
 		* OpenSourceCredits.txt
 	* tools/
-		* reflect/
+		* .../
 		* tracy/
 			* (TRACY_REPO)...
 				
@@ -107,6 +99,7 @@
 ### Variables
 * AVOID GLOBAL VARIABLES!!!
 * Only use abbreviations for commonly understood terminology (ex: PBR vs Physically Based Rendering)
+* (The following rules have been introduced and will be enforced in a cleanup project)
 * Member variables will be prefixed by m_ (ex: m_value or m_pValue...)
 * Global variables will be prefixed by g_ (ex: g_value or g_pValue)
 * If you don't want the user to modify a variable use "_" to prefix it (ex: _m_value)
@@ -116,7 +109,7 @@
 * MINIMIZE HIDDEN STATES!!! Only modify what is passed to a function! (Even if this is just a module context object)
 * You can break up function calls and definitions into multiple lines.
 
-### Current Hidden State Exceptions
+### Current Hidden/Global State Exceptions
 * Shared Logging
 * Shared String Translation
 * Tracy Profiling Markup
@@ -138,6 +131,7 @@
 
 ### Const Correctness
 * WILL MY FUNCTION INPUT BE MODIFIED? (Y/N) (to const or not to const)
+* Admittedly this rule is not currently strictly enforced
 
 ### Returns
 * Generally try to only return type ctResult for error checking
@@ -188,7 +182,7 @@ enum myEnum {
 
 ### Version
 
-**C++11**
+**C++14**
 
 ### File Extensions
 * Header: ".hpp"
@@ -273,27 +267,8 @@ CMake 3.10
 * Use dynamic linking for large third party libraries.
 * Avoid deeply nested CMakeLists.txt trees, try to keep one per-library
 
-## GLSL
-
-### Version
-* GLSL STD 460
-https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
-* Vulkan Extension (Builtin)
-https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_vulkan_glsl.txt
-* Ray-Tracing
-https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_tracing.txt
-
-### Platform Independence
+## Shaders
 * See [ShadingLanguage.md](docs/ShadingLanguage.md)
-
-### Includes
-* Includes are allowed with the use of "#include "...""
-* Includes must be relative to the current path.
-* Include guards must be in-place
-
-### File Extensions
-* Vertex and fragment extensions to seperate stages are not welcome.
-* GLSL Shader: ".glsl"
 
 ## ISPC
 * Todo
