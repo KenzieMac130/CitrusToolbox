@@ -812,14 +812,14 @@ ctResults ctGPUDevice::GetStagingBuffer(ctVkCompleteBuffer& fullBuffer,
    }
 
    /* Create new */
-   StagingEntry entry = {};
+   StagingEntry entry;
    entry.size = sizeRequest;
-   ctAssert(CreateCompleteBuffer("Staging",
-                                 entry.buffer,
-                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                 VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT,
-                                 sizeRequest,
-                                 VMA_MEMORY_USAGE_CPU_TO_GPU) == VK_SUCCESS);
+   CreateCompleteBuffer("Staging",
+                        entry.buffer,
+                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                        VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT,
+                        sizeRequest,
+                        VMA_MEMORY_USAGE_CPU_TO_GPU);
    stagingBufferCooldown.Append(-1);
    stagingBuffers.Append(entry);
    fullBuffer = entry.buffer;
