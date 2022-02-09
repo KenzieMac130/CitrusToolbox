@@ -445,13 +445,13 @@ ctResults ctGPUArchitectVulkan::MapToBuffer(ctGPUDevice* pDevice,
          pPhysicalBuffers[i]->refCount++;
          pPhysicalBuffers[i]->mappings.Append(pPayloadData->identifier);
          pPayloadData->apiData = pPhysicalBuffers[i];
-         ctDebugLog("Aliased Buffer %s->%s",
-                    pPayloadData->debugName,
-                    pPhysicalBuffers[i]->debugName);
+         //ctDebugLog("Aliased Buffer %s->%s",
+         //           pPayloadData->debugName,
+         //           pPhysicalBuffers[i]->debugName);
          return CT_SUCCESS;
       }
    }
-   ctDebugLog("Created New Buffer %s", pPayloadData->debugName);
+   //ctDebugLog("Created New Buffer %s", pPayloadData->debugName);
    return CreateNewBuffer(pDevice, pPayloadData);
 }
 
@@ -463,13 +463,13 @@ ctResults ctGPUArchitectVulkan::MapToImage(ctGPUDevice* pDevice,
          pPhysicalImages[i]->refCount++;
          pPhysicalImages[i]->mappings.Append(pPayloadData->identifier);
          pPayloadData->apiData = pPhysicalImages[i];
-         ctDebugLog("Aliased Image %s->%s",
-                    pPayloadData->debugName,
-                    pPhysicalImages[i]->debugName);
+         //ctDebugLog("Aliased Image %s->%s",
+         //           pPayloadData->debugName,
+         //           pPhysicalImages[i]->debugName);
          return CT_SUCCESS;
       }
    }
-   ctDebugLog("Created New Image %s", pPayloadData->debugName);
+   //ctDebugLog("Created New Image %s", pPayloadData->debugName);
    return CreateNewImage(pDevice, pPayloadData);
 }
 
