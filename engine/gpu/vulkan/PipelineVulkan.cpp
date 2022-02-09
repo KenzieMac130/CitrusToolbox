@@ -15,6 +15,7 @@
 */
 
 #include "PipelineVulkan.hpp"
+#include "BindlessVulkan.hpp"
 #include "formats/wad/prototypes/MarkersAndBlobs.h"
 
 ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
@@ -469,13 +470,14 @@ CT_API ctResults ctGPUPipelineBuilderSetAttachments(ctGPUPipelineBuilder* pBuild
 
 CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
                                      ctGPUPipelineBuilder* pBuilder,
-                                     ctGPUPipeline* pPipeline) {
+                                     ctGPUPipeline* pPipeline,
+                                     ctGPUBindlessManager* pBindless) {
    ctAssert(pDevice);
    ctAssert(pBuilder);
    if (pBuilder->stageCount <= 0) { return CT_FAILURE_INVALID_PARAMETER; }
    if (pBuilder->type == CT_GPU_PIPELINE_RASTER) {
       pBuilder->raster.createInfo.stageCount = pBuilder->stageCount;
-      pBuilder->raster.createInfo.layout = pDevice->vkGlobalPipelineLayout;
+      pBuilder->raster.createInfo.layout = pBindless->vkGlobalPipelineLayout;
       /* Dynamic rendering supported */
       if (pDevice->isDynamicRenderingSupported()) {
          pBuilder->raster.createInfo.renderPass = VK_NULL_HANDLE;

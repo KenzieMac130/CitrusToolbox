@@ -44,9 +44,6 @@ struct ctGPUDeviceCreateInfo {
    int32_t version[3];
    bool validationEnabled;
 
-   int32_t fixedTextureBindUpperBound;
-   int32_t fixedBufferBindUpperBound;
-
    ctGPUOpenCacheFileFn fpOpenCacheFileCallback;
    void* pCacheCallbackCustomData;
 
@@ -108,6 +105,7 @@ enum ctGPUBlendingMode {
 
 typedef void* ctGPUBufferAccessor;
 typedef void* ctGPUImageAccessor;
+typedef struct ctGPUBindlessManager ctGPUBindingModel;
 
 #ifdef __cplusplus
 }

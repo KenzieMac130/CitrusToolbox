@@ -85,11 +85,18 @@ ctGPUExternalTexturePoolDispatch(struct ctGPUDevice* pDevice,
                                  struct ctGPUExternalTexturePool* pPool,
                                  ctGPUCommandBuffer cmd);
 
+CT_API bool ctGPUExternalTexturePoolNeedsRebind(struct ctGPUDevice* pDevice,
+                                                struct ctGPUExternalTexturePool* pPool);
+
+CT_API enum ctResults
+ctGPUExternalTexturePoolRebind(struct ctGPUDevice* pDevice,
+                               struct ctGPUExternalTexturePool* pPool,
+                               ctGPUBindingModel* pBindingModel);
+
 /* ------------------------------------------------------------------------------------ */
 
 struct ctGPUExternalTextureCreateFuncInfo {
    const char* debugName;
-   int32_t desiredBinding;
    bool async;
    struct ctGPUExternalTexture* pPlaceholder;
    enum ctGPUExternalTextureType type;

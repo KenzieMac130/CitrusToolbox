@@ -124,7 +124,7 @@ CT_API void ctGPUCmdSetLineWidth(ctGPUCommandBuffer commandBuffer, float width);
 /* ------------------ Input Data ------------------ */
 
 CT_API void ctGPUCmdSetDynamicInteger(ctGPUCommandBuffer commandBuffer,
-                                      ctGPUDevice* pDevice,
+                                      ctGPUBindingModel* pBindingModel,
                                       uint32_t index,
                                       int32_t value);
 CT_API void ctGPUCmdSetGraphicsPipeline(ctGPUCommandBuffer commandBuffer,

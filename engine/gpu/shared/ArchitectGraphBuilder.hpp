@@ -32,7 +32,6 @@ struct ctGPUArchitectImagePayload {
    int32_t layers;
    int32_t miplevels;
    TinyImageFormat format;
-   ctGPUArchitectClearContents* pClearDesc;
 
    void* apiData;
 };
@@ -73,6 +72,23 @@ enum ctGPUArchitectDependencyType {
 };
 
 struct ctGPUArchitectDependencyEntry {
+   inline ctGPUArchitectDependencyEntry() {
+      memset(this, 0, sizeof(*this));
+   }
+   inline ctGPUArchitectDependencyEntry(
+     ctGPUDependencyID _resourceId,
+     ctGPUArchitectResourceAccess _access,
+     ctGPUArchitectDependencyType _type,
+     uint8_t _slot = 0,
+     bool _useClear = false,
+     ctGPUArchitectClearContents _clear = ctGPUArchitectClearContents()) {
+      resourceId = _resourceId;
+      access = _access;
+      type = _type;
+      slot = _slot;
+      useClear = _useClear;
+      clear = _clear;
+   }
    inline bool isValid() {
       return resourceId != 0 && access != 0 && type != CT_GPU_ARCH_INVALID;
    }
@@ -80,6 +96,8 @@ struct ctGPUArchitectDependencyEntry {
    ctGPUArchitectResourceAccess access;
    ctGPUArchitectDependencyType type;
    uint8_t slot;
+   bool useClear;
+   ctGPUArchitectClearContents clear;
 };
 
 struct ctGPUArchitectTaskInternal {
@@ -121,7 +139,9 @@ struct ctGPUArchitectDependencyRange {
       return firstSeenIdx < lastSeenIdx;
    }
    inline bool isOverlapping(ctGPUArchitectDependencyRange target) {
-      return firstSeenIdx >= target.firstSeenIdx && lastSeenIdx <= target.lastSeenIdx;
+      if (firstSeenIdx > target.lastSeenIdx) { return false; }
+      if (lastSeenIdx < target.firstSeenIdx) { return false; }
+      return true;
    }
    int32_t firstSeenIdx;
    int32_t lastSeenIdx;
@@ -138,14 +158,15 @@ struct ctGPUArchitect {
    virtual ctResults BackendStartup(ctGPUDevice* pDevice) = 0;
    virtual ctResults BackendShutdown(ctGPUDevice* pDevice) = 0;
    virtual ctResults BackendBuild(ctGPUDevice* pDevice) = 0;
-   virtual ctResults BackendExecute(ctGPUDevice* pDevice) = 0;
+   virtual ctResults BackendExecute(ctGPUDevice* pDevice,
+                                    ctGPUBindingModel* pBindingModel) = 0;
    virtual ctResults BackendReset(ctGPUDevice* pDevice) = 0;
 
    /* Main User Functions */
    ctResults Validate();
    ctResults DumpGraphVis(const char* path, bool generateImage, bool showImage);
    ctResults Build(ctGPUDevice* pDevice, uint32_t width, uint32_t height);
-   ctResults Execute(ctGPUDevice* pDevice);
+   ctResults Execute(ctGPUDevice* pDevice, ctGPUBindingModel* pBindingModel);
 
    ctResults AddTask(ctGPUArchitectTaskInfo* pTaskInfo);
    ctResults SetOutput(ctGPUDependencyID dep, uint32_t socket);

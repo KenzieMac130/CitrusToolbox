@@ -49,9 +49,7 @@ struct ctGPUExternalBuffer {
 
    /* Bindless */
    int32_t bindlessIndices[CT_MAX_INFLIGHT_FRAMES];
-   void GenBindless(ctGPUDevice* pDevice);
-   void InvalidateBindless();
-   void FreeBindless(ctGPUDevice* pDevice);
+   bool bindlessDirty[CT_MAX_INFLIGHT_FRAMES];
 
    /* Generation */
    ctGPUExternalBufferPool* pPool;

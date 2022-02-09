@@ -55,6 +55,7 @@ struct ctGPUArchitectExecutionContext {
    ctGPUCommandBuffer cmd;
 
    struct ctGPUArchitect* pArchitect;
+   ctGPUBindingModel* pBindingModel;
    struct ctGPUDevice* pDevice;
    void* _internalData;
 };
@@ -105,7 +106,8 @@ CT_API enum ctResults ctGPUArchitectAddTask(struct ctGPUDevice* pDevice,
                                             struct ctGPUArchitect* pArchitect,
                                             struct ctGPUArchitectTaskInfo* pTaskInfo);
 CT_API enum ctResults ctGPUArchitectExecute(struct ctGPUDevice* pDevice,
-                                            struct ctGPUArchitect* pArchitect);
+                                            struct ctGPUArchitect* pArchitect,
+                                            ctGPUBindingModel* pBinding);
 CT_API enum ctResults ctGPUArchitectSetOutput(struct ctGPUDevice* pDevice,
                                               struct ctGPUArchitect* pArchitect,
                                               ctGPUDependencyID dependency,
@@ -147,7 +149,6 @@ struct ctGPUArchitectImagePayloadDesc {
    int32_t layers;
    int32_t miplevels;
    enum TinyImageFormat format;
-   struct ctGPUArchitectClearContents* pClearDesc; /* pointer must remain alive */
 };
 
 struct ctGPUArchitectBufferPayloadDesc {
@@ -189,12 +190,14 @@ CT_API enum ctResults ctGPUTaskCreateBarrier(struct ctGPUArchitectDefinitionCont
 
 CT_API enum ctResults ctGPUTaskUseDepthTarget(struct ctGPUArchitectDefinitionContext* pCtx,
                                          ctGPUDependencyID id,
-                                         ctGPUArchitectResourceAccess access);
+                                         ctGPUArchitectResourceAccess access, 
+                                         struct ctGPUArchitectClearContents* pClearDesc);
 
 CT_API enum ctResults ctGPUTaskUseColorTarget(struct ctGPUArchitectDefinitionContext* pCtx,
                                          ctGPUDependencyID id,
                                          ctGPUArchitectResourceAccess access,
-                                         uint32_t slot);
+                                         uint32_t slot, 
+                                         struct ctGPUArchitectClearContents* pClearDesc);
 
 CT_API enum ctResults ctGPUTaskUseTexture(ctGPUArchitectDefinitionContext* pCtx,
                                           ctGPUDependencyID id);

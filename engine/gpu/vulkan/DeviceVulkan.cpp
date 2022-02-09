@@ -128,7 +128,6 @@ bool ctGPUDevice::isValidationLayersAvailible() {
 
 void ctVkSwapchainSupport::GetSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
    ZoneScoped;
-   ctDebugLog("Querying Swapchain Support...");
    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &surfaceCapabilities);
 
    uint32_t formatCount;
@@ -636,114 +635,6 @@ ctResults ctGPUDevice::Startup() {
          if (cacheData) { ctFree(cacheData); }
       }
    }
-   {
-      ctDebugLog("Starting Bindless System...");
-      VkDescriptorSetLayoutBinding descriptorSetLayouts[4] = {};
-      VkDescriptorPoolSize descriptorPoolSizes[4] = {};
-      VkDescriptorBindingFlags bindFlags[4] = {};
-      /* Sampler */
-      descriptorSetLayouts[0].binding = GLOBAL_BIND_SAMPLER;
-      descriptorSetLayouts[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-      descriptorSetLayouts[0].stageFlags = VK_SHADER_STAGE_ALL;
-      descriptorSetLayouts[0].descriptorCount = maxSamplers;
-      descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-      descriptorPoolSizes[0].descriptorCount = maxSamplers;
-      bindFlags[0] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
-      descriptorsSamplers = ctVkDescriptorManager(maxSamplers);
-      /* Sampled Image */
-      descriptorSetLayouts[1].binding = GLOBAL_BIND_SAMPLED_IMAGE;
-      descriptorSetLayouts[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-      descriptorSetLayouts[1].stageFlags = VK_SHADER_STAGE_ALL;
-      descriptorSetLayouts[1].descriptorCount = maxSampledImages;
-      descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-      descriptorPoolSizes[1].descriptorCount = maxSampledImages;
-      bindFlags[1] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                     VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-      descriptorsSampledImage = ctVkDescriptorManager(maxSampledImages);
-      /* Storage Image */
-      descriptorSetLayouts[2].binding = GLOBAL_BIND_STORAGE_IMAGE;
-      descriptorSetLayouts[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-      descriptorSetLayouts[2].stageFlags = VK_SHADER_STAGE_ALL;
-      descriptorSetLayouts[2].descriptorCount = maxStorageImages;
-      descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-      descriptorPoolSizes[2].descriptorCount = maxStorageImages;
-      bindFlags[2] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                     VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-      descriptorsStorageImage = ctVkDescriptorManager(maxStorageImages);
-      /* Storage Buffer */
-      descriptorSetLayouts[3].binding = GLOBAL_BIND_STORAGE_BUFFER;
-      descriptorSetLayouts[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      descriptorSetLayouts[3].stageFlags = VK_SHADER_STAGE_ALL;
-      descriptorSetLayouts[3].descriptorCount = maxStorageBuffers;
-      descriptorPoolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      descriptorPoolSizes[3].descriptorCount = maxStorageBuffers;
-      bindFlags[3] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                     VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-      descriptorsStorageBuffer = ctVkDescriptorManager(maxStorageBuffers);
-
-      VkDescriptorSetLayoutBindingFlagsCreateInfo bindingExtInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
-      bindingExtInfo.pBindingFlags = bindFlags;
-      bindingExtInfo.bindingCount = ctCStaticArrayLen(bindFlags);
-
-      VkDescriptorSetLayoutCreateInfo descSetLayoutInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-      descSetLayoutInfo.pNext = &bindingExtInfo;
-      descSetLayoutInfo.flags =
-        VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-      descSetLayoutInfo.bindingCount = ctCStaticArrayLen(descriptorSetLayouts);
-      descSetLayoutInfo.pBindings = descriptorSetLayouts;
-      CT_VK_CHECK(
-        vkCreateDescriptorSetLayout(
-          vkDevice, &descSetLayoutInfo, &vkAllocCallback, &vkGlobalDescriptorSetLayout),
-        CT_NCT("FAIL:vkCreateDescriptorSetLayout",
-               "vkCreateDescriptorSetLayout() failed to create descriptor set layout."));
-
-      VkDescriptorPoolCreateInfo poolInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-      poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT |
-                       VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
-      poolInfo.poolSizeCount = ctCStaticArrayLen(descriptorPoolSizes);
-      poolInfo.pPoolSizes = descriptorPoolSizes;
-      poolInfo.maxSets = 1;
-      CT_VK_CHECK(
-        vkCreateDescriptorPool(vkDevice, &poolInfo, &vkAllocCallback, &vkDescriptorPool),
-        CT_NCT("FAIL:vkCreateDescriptorPool",
-               "vkCreateDescriptorPool() failed to create descriptor pool."));
-
-      VkDescriptorSetAllocateInfo allocInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
-      allocInfo.descriptorSetCount = 1;
-      allocInfo.descriptorPool = vkDescriptorPool;
-      allocInfo.pSetLayouts = &vkGlobalDescriptorSetLayout;
-      CT_VK_CHECK(
-        vkAllocateDescriptorSets(vkDevice, &allocInfo, &vkGlobalDescriptorSet),
-        CT_NCT("FAIL:vkAllocateDescriptorSets",
-               "vkAllocateDescriptorSets() failed to allocate global descriptor set."));
-
-      VkPushConstantRange range = {};
-      range.stageFlags = VK_SHADER_STAGE_ALL;
-      range.size = sizeof(int32_t) * CT_MAX_GFX_DYNAMIC_INTS;
-      range.offset = 0;
-      VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-      pipelineLayoutInfo.setLayoutCount = 1;
-      pipelineLayoutInfo.pSetLayouts = &vkGlobalDescriptorSetLayout;
-      pipelineLayoutInfo.pushConstantRangeCount = 1;
-      pipelineLayoutInfo.pPushConstantRanges = &range;
-      CT_VK_CHECK(
-        vkCreatePipelineLayout(
-          vkDevice, &pipelineLayoutInfo, &vkAllocCallback, &vkGlobalPipelineLayout),
-        CT_NCT("FAIL:vkCreatePipelineLayout",
-               "vkCreatePipelineLayout() failed to allocate global pipeline layout."));
-
-      /* https://ourmachinery.com/post/moving-the-machinery-to-bindless/
-       * https://roar11.com/2019/06/vulkan-textures-unbound/
-       * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_descriptor_indexing.html
-       * https://gpuopen.com/performance/#descriptors
-       * https://anki3d.org/resource-uniformity-bindless-access-in-vulkan/
-       */
-   }
    ctDebugLog("Vulkan Backend has Started!");
    return CT_SUCCESS;
 }
@@ -755,9 +646,6 @@ ctResults ctGPUDevice::Shutdown() {
 
    DestroyAllStagingBuffers();
    DestroyJITRenderpasses();
-   vkDestroyPipelineLayout(vkDevice, vkGlobalPipelineLayout, &vkAllocCallback);
-   vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, &vkAllocCallback);
-   vkDestroyDescriptorSetLayout(vkDevice, vkGlobalDescriptorSetLayout, &vkAllocCallback);
 
    /* Save Pipeline Cache */
    if (fpOpenCacheFileCallback) {
@@ -907,54 +795,6 @@ void ctGPUDevice::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
       return;
    }
    vmaDestroyBuffer(vmaAllocator, fullBuffer.buffer, fullBuffer.alloc);
-}
-
-/* Bindless */
-void ctGPUDevice::ExposeBindlessStorageBuffer(int32_t& outIdx,
-                                              VkBuffer buffer,
-                                              VkDeviceSize range,
-                                              VkDeviceSize offset) {
-   ZoneScoped;
-   outIdx = descriptorsStorageBuffer.AllocateSlot();
-   VkDescriptorBufferInfo buffInfo = {0};
-   buffInfo.buffer = buffer;
-   buffInfo.offset = offset;
-   buffInfo.range = range;
-   VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-   write.descriptorCount = 1;
-   write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-   write.dstSet = vkGlobalDescriptorSet;
-   write.dstBinding = GLOBAL_BIND_STORAGE_BUFFER;
-   write.dstArrayElement = outIdx;
-   write.pBufferInfo = &buffInfo;
-   vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
-}
-
-void ctGPUDevice::ReleaseBindlessStorageBuffer(int32_t idx) {
-   descriptorsStorageBuffer.ReleaseSlot(idx);
-}
-
-void ctGPUDevice::ExposeBindlessSampledImage(int32_t& outIdx,
-                                             VkImageView view,
-                                             VkImageLayout layout,
-                                             VkSampler sampler) {
-   outIdx = descriptorsSampledImage.AllocateSlot();
-   VkDescriptorImageInfo imageInfo = {0};
-   imageInfo.imageView = view;
-   imageInfo.imageLayout = layout;
-   imageInfo.sampler = sampler;
-   VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-   write.descriptorCount = 1;
-   write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-   write.dstSet = vkGlobalDescriptorSet;
-   write.dstBinding = GLOBAL_BIND_SAMPLED_IMAGE;
-   write.dstArrayElement = outIdx;
-   write.pImageInfo = &imageInfo;
-   vkUpdateDescriptorSets(vkDevice, 1, &write, 0, NULL);
-}
-
-void ctGPUDevice::ReleaseBindlessSampledImage(int32_t idx) {
-   descriptorsSampledImage.ReleaseSlot(idx);
 }
 
 ctResults ctGPUDevice::GetStagingBuffer(ctVkCompleteBuffer& fullBuffer,

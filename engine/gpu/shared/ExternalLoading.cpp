@@ -49,7 +49,6 @@ ctGPUExternalBufferCreateLoadCPU(ctGPUDevice* pDevice,
    pCtx->size = pInfo->size;
    ctGPUExternalBufferCreateFuncInfo info;
    info.debugName = pInfo->debugName;
-   info.desiredBinding = pInfo->desiredBinding;
    info.async = true;
    info.pPlaceholder = NULL;
    info.updateMode = CT_GPU_UPDATE_STATIC;

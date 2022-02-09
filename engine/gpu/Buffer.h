@@ -65,6 +65,14 @@ ctGPUExternalBufferPoolGarbageCollect(struct ctGPUDevice* pDevice,
 CT_API bool ctGPUExternalBufferPoolNeedsDispatch(struct ctGPUDevice* pDevice,
                                                  struct ctGPUExternalBufferPool* pPool);
 
+CT_API bool ctGPUExternalBufferPoolNeedsRebind(struct ctGPUDevice* pDevice,
+                                               struct ctGPUExternalBufferPool* pPool);
+
+CT_API enum ctResults
+ctGPUExternalBufferPoolRebind(struct ctGPUDevice* pDevice,
+                              struct ctGPUExternalTexturePool* pPool,
+                              ctGPUBindingModel* pBindingModel);
+
 CT_API enum ctResults
 ctGPUExternalBufferPoolDispatch(struct ctGPUDevice* pDevice,
                                 struct ctGPUExternalBufferPool* pPool,
@@ -74,7 +82,6 @@ ctGPUExternalBufferPoolDispatch(struct ctGPUDevice* pDevice,
 
 struct ctGPUExternalBufferCreateFuncInfo {
    const char* debugName;
-   int32_t desiredBinding;
    bool async;
    struct ctGPUExternalBuffer* pPlaceholder;
    enum ctGPUExternalBufferType type;
@@ -92,7 +99,6 @@ CT_API enum ctResults ctGPUExternalBufferCreateFunc(struct ctGPUDevice* pDevice,
                                                     struct ctGPUExternalBufferCreateFuncInfo* pInfo);
 struct ctGPUExternalBufferCreateLoadInfo {
    const char* debugName;
-   int32_t desiredBinding;
    struct ctGPUExternalBuffer* pPlaceholder;
    enum ctGPUExternalBufferType type;
    struct ctGPUAssetIdentifier* identifier;

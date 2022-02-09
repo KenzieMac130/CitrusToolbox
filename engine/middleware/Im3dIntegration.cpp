@@ -36,6 +36,7 @@ ctResults ctIm3dIntegration::Shutdown() {
 }
 
 ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
+                                        struct ctGPUBindlessManager* pBindless,
                                         struct ctGPUExternalBufferPool* pGPUBufferPool,
                                         size_t maxVerts,
                                         int32_t viewBind,
@@ -58,23 +59,25 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ctGPUTopology fillToTopo[] = {CT_GPU_TOPOLOGY_TRIANGLE_LIST,
                                  CT_GPU_TOPOLOGY_LINE_LIST,
                                  CT_GPU_TOPOLOGY_POINT_LIST};
-   const char* fxNames[] = { "TRIS","LINES","POINTS" };
+   const char* fxNames[] = {"TRIS", "LINES", "POINTS"};
    for (int i = 0; i < Im3d::DrawPrimitive_Count; i++) {
       ctGPUShaderModule vertShader;
       ctGPUShaderModule fragShader;
-      CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
-                      pGPUDevice, &vertShader, &wadReader, fxNames[i], CT_GPU_SHADER_VERT),
-                    CT_NC("Failed to create im3d shader!"));
-      CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
-                      pGPUDevice, &fragShader, &wadReader, fxNames[i], CT_GPU_SHADER_FRAG),
-                    CT_NC("Failed to create im3d shader!"));
+      CT_PANIC_FAIL(
+        ctGPUShaderCreateFromWad(
+          pGPUDevice, &vertShader, &wadReader, fxNames[i], CT_GPU_SHADER_VERT),
+        CT_NC("Failed to create im3d shader!"));
+      CT_PANIC_FAIL(
+        ctGPUShaderCreateFromWad(
+          pGPUDevice, &fragShader, &wadReader, fxNames[i], CT_GPU_SHADER_FRAG),
+        CT_NC("Failed to create im3d shader!"));
 
       ctGPUPipelineBuilderSetFillMode(pPipelineBuilder, (ctGPUFillMode)i);
       ctGPUPipelineBuilderSetTopology(pPipelineBuilder, fillToTopo[i], false);
       ctGPUPipelineBuilderClearShaders(pPipelineBuilder);
       ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_VERT, vertShader);
       ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_FRAG, fragShader);
-      ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipelines[i]);
+      ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipelines[i], pBindless);
 
       ctGPUShaderSoftRelease(pGPUDevice, fragShader);
       ctGPUShaderSoftRelease(pGPUDevice, vertShader);

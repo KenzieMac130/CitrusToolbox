@@ -162,7 +162,8 @@ VkPipelineStageFlags GetStageForCategory(ctGPUArchitectTaskCategory category) {
    }
 }
 
-ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
+ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice,
+                                               ctGPUBindingModel* pBindingModel) {
    ZoneScoped;
    if (!isRenderable) { return CT_FAILURE_DEPENDENCY_NOT_MET; }
    currentFrame = (currentFrame + 1) % CT_MAX_INFLIGHT_FRAMES;
@@ -173,6 +174,27 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
       uniqueManagers[i].NextFrame();
    }
 
+   VkCommandBuffer gcmd = pGraphicsCommands->GetCmd();
+   VkCommandBuffer ccmd = pComputeCommands->GetCmd();
+   VkCommandBuffer tcmd = pTransferCommands->GetCmd();
+
+   vkCmdBindDescriptorSets(gcmd,
+                           VK_PIPELINE_BIND_POINT_GRAPHICS,
+                           pBindingModel->vkGlobalPipelineLayout,
+                           0,
+                           1,
+                           &pBindingModel->vkGlobalDescriptorSet,
+                           0,
+                           NULL);
+   vkCmdBindDescriptorSets(gcmd,
+                           VK_PIPELINE_BIND_POINT_COMPUTE,
+                           pBindingModel->vkGlobalPipelineLayout,
+                           0,
+                           1,
+                           &pBindingModel->vkGlobalDescriptorSet,
+                           0,
+                           NULL);
+
    ctGPUArchitectTaskCategory lastTaskCategory = CT_GPU_TASK_UNDEFINED;
    ctGPUArchitectTaskCategory lastOutputTouchCategory = CT_GPU_TASK_UNDEFINED;
    for (auto current = GetFinalTaskIterator(); current; current++) {
@@ -180,8 +202,6 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
       if (lastTaskCategory == CT_GPU_TASK_UNDEFINED) { lastTaskCategory = task.category; }
       /* Do Raster Commands */
       if (task.category == CT_GPU_TASK_RASTER) {
-         VkCommandBuffer cmd = pGraphicsCommands->GetCmd();
-
          /* Build render info */
          VkRenderingAttachmentInfoKHR colorInfos[8];
          VkRenderingAttachmentInfoKHR depthStencilInfo;
@@ -219,7 +239,7 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
                /* Coming from another queue family */
                if (image->lastQueueFamilyIdx != pDevice->queueFamilyIndices.graphicsIdx) {
                   DoResourceTransition(
-                    cmd, dependency, pDevice->queueFamilyIndices.graphicsIdx);
+                    gcmd, dependency, pDevice->queueFamilyIndices.graphicsIdx);
                }
 
                uint32_t width = image->widthPixels;
@@ -257,12 +277,12 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
                // clang-format on
             } else {
                DoResourceTransition(
-                 cmd, dependency, pDevice->queueFamilyIndices.graphicsIdx);
+                 gcmd, dependency, pDevice->queueFamilyIndices.graphicsIdx);
             }
          }
          /* Handle Pipeline Barrier */
          if (lastTaskCategory != CT_GPU_TASK_RASTER) {
-            vkCmdPipelineBarrier(cmd,
+            vkCmdPipelineBarrier(gcmd,
                                  GetStageForCategory(task.category),
                                  GetStageForCategory(lastTaskCategory),
                                  0,
@@ -273,8 +293,8 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
                                  0,
                                  NULL);
          }
-         pDevice->MarkBeginRegion(cmd, task.debugName);
-         pDevice->BeginJITRenderPass(cmd,
+         pDevice->MarkBeginRegion(gcmd, task.debugName);
+         pDevice->BeginJITRenderPass(gcmd,
                                      &renderInfo,
                                      depthStencilFormat,
                                      colorFormats.Data(),
@@ -288,13 +308,14 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
          ctx.raster.width = renderInfo.renderArea.extent.width;
          ctx.raster.height = renderInfo.renderArea.extent.height;
          ctx.raster.layerCount = renderInfo.layerCount;
-         ctx.cmd = cmd;
+         ctx.cmd = gcmd;
          ctx.pArchitect = this;
+         ctx.pBindingModel = pBindingModel;
          ctx.pDevice = pDevice;
          ctx._internalData = &internalData;
          if (task.fpExecution) { task.fpExecution(&ctx, task.pUserData); }
-         pDevice->EndJITRenderpass(cmd);
-         pDevice->MarkEndRegion(cmd);
+         pDevice->EndJITRenderpass(gcmd);
+         pDevice->MarkEndRegion(gcmd);
 
          /* Keep track of layout changes */
          if (pDepthImage) {
@@ -306,20 +327,19 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
       } /* end raster commands */
       /* Do Compute Commands */
       else if (task.category == CT_GPU_TASK_COMPUTE) {
-         VkCommandBuffer cmd = pComputeCommands->GetCmd();
-
          /* Handle Dependencies */
          for (int i = 0; i < task.dependencies.Count(); i++) {
             ctGPUArchitectDependencyEntry& dependency = task.dependencies[i];
             if (dependency.resourceId == outputDependency) {
                lastOutputTouchCategory = CT_GPU_TASK_COMPUTE;
             }
-            DoResourceTransition(cmd, dependency, pDevice->queueFamilyIndices.computeIdx);
+            DoResourceTransition(
+              ccmd, dependency, pDevice->queueFamilyIndices.computeIdx);
          }
 
          /* Handle Pipeline Barrier */
          if (lastTaskCategory != CT_GPU_TASK_RASTER) {
-            vkCmdPipelineBarrier(cmd,
+            vkCmdPipelineBarrier(ccmd,
                                  GetStageForCategory(task.category),
                                  GetStageForCategory(lastTaskCategory),
                                  0,
@@ -331,24 +351,23 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
                                  NULL);  // todo: image barriers
          }
 
-         pDevice->MarkBeginRegion(cmd, task.debugName);
+         pDevice->MarkBeginRegion(ccmd, task.debugName);
          ctGPUArchitectExecutionContext ctx = {};
          ExecutionInternalData internalData = {};
          internalData.pBackend = this;
          internalData.pTask = &task;
          ctx.category = CT_GPU_TASK_COMPUTE;
          ctx.raster = {};
-         ctx.cmd = cmd;
+         ctx.cmd = ccmd;
          ctx.pArchitect = this;
+         ctx.pBindingModel = pBindingModel;
          ctx.pDevice = pDevice;
          ctx._internalData = &internalData;
          if (task.fpExecution) { task.fpExecution(&ctx, task.pUserData); }
-         pDevice->MarkEndRegion(cmd);
+         pDevice->MarkEndRegion(ccmd);
       }
       /* Do Transfer Commands */
       else if (task.category == CT_GPU_TASK_TRANSFER) {
-         VkCommandBuffer cmd = pTransferCommands->GetCmd();
-
          /* Handle Dependencies */
          for (int i = 0; i < task.dependencies.Count(); i++) {
             ctGPUArchitectDependencyEntry& dependency = task.dependencies[i];
@@ -356,22 +375,23 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
                lastOutputTouchCategory = CT_GPU_TASK_TRANSFER;
             }
             DoResourceTransition(
-              cmd, dependency, pDevice->queueFamilyIndices.transferIdx);
+              tcmd, dependency, pDevice->queueFamilyIndices.transferIdx);
          }
 
-         pDevice->MarkBeginRegion(cmd, task.debugName);
+         pDevice->MarkBeginRegion(tcmd, task.debugName);
          ctGPUArchitectExecutionContext ctx = {};
          ExecutionInternalData internalData = {};
          internalData.pBackend = this;
          internalData.pTask = &task;
          ctx.category = CT_GPU_TASK_TRANSFER;
          ctx.raster = {};
-         ctx.cmd = cmd;
+         ctx.cmd = tcmd;
          ctx.pArchitect = this;
+         ctx.pBindingModel = pBindingModel;
          ctx.pDevice = pDevice;
          ctx._internalData = &internalData;
          if (task.fpExecution) { task.fpExecution(&ctx, task.pUserData); }
-         pDevice->MarkEndRegion(cmd);
+         pDevice->MarkEndRegion(tcmd);
       }
       lastTaskCategory = task.category;
    }
@@ -413,9 +433,6 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice) {
 ctResults ctGPUArchitectVulkan::BackendReset(ctGPUDevice* pDevice) {
    ZoneScoped;
    DereferenceAll();
-   GarbageCollect(pDevice);
-   pPhysicalBuffers.Clear();
-   pPhysicalImages.Clear();
    isRenderable = false;
    return CT_SUCCESS;
 }
@@ -423,34 +440,36 @@ ctResults ctGPUArchitectVulkan::BackendReset(ctGPUDevice* pDevice) {
 ctResults ctGPUArchitectVulkan::MapToBuffer(ctGPUDevice* pDevice,
                                             ctGPUArchitectBufferPayload* pPayloadData) {
    ZoneScoped;
-   if (ctCFlagCheck(pPayloadData->flags, CT_GPU_PAYLOAD_FEEDBACK)) {
-      return CreateNewBuffer(pDevice, pPayloadData);
-   }
    for (size_t i = 0; i < pPhysicalBuffers.Count(); i++) {
       if (isBufferAliasable(*pPhysicalBuffers[i], *pPayloadData)) {
          pPhysicalBuffers[i]->refCount++;
          pPhysicalBuffers[i]->mappings.Append(pPayloadData->identifier);
          pPayloadData->apiData = pPhysicalBuffers[i];
+         ctDebugLog("Aliased Buffer %s->%s",
+                    pPayloadData->debugName,
+                    pPhysicalBuffers[i]->debugName);
          return CT_SUCCESS;
       }
    }
+   ctDebugLog("Created New Buffer %s", pPayloadData->debugName);
    return CreateNewBuffer(pDevice, pPayloadData);
 }
 
 ctResults ctGPUArchitectVulkan::MapToImage(ctGPUDevice* pDevice,
                                            ctGPUArchitectImagePayload* pPayloadData) {
    ZoneScoped;
-   if (ctCFlagCheck(pPayloadData->flags, CT_GPU_PAYLOAD_FEEDBACK)) {
-      return CreateNewImage(pDevice, pPayloadData);
-   }
    for (size_t i = 0; i < pPhysicalImages.Count(); i++) {
       if (isImageAliasable(*pPhysicalImages[i], *pPayloadData)) {
          pPhysicalImages[i]->refCount++;
          pPhysicalImages[i]->mappings.Append(pPayloadData->identifier);
          pPayloadData->apiData = pPhysicalImages[i];
+         ctDebugLog("Aliased Image %s->%s",
+                    pPayloadData->debugName,
+                    pPhysicalImages[i]->debugName);
          return CT_SUCCESS;
       }
    }
+   ctDebugLog("Created New Image %s", pPayloadData->debugName);
    return CreateNewImage(pDevice, pPayloadData);
 }
 
@@ -479,9 +498,13 @@ ctResults ctGPUArchitectVulkan::DereferenceAll() {
    ZoneScoped;
    for (size_t i = 0; i < pPhysicalBuffers.Count(); i++) {
       pPhysicalBuffers[i]->refCount = 0;
+      pPhysicalBuffers[i]->previousMappings = pPhysicalBuffers[i]->mappings;
+      pPhysicalBuffers[i]->mappings.Clear();
    }
    for (size_t i = 0; i < pPhysicalImages.Count(); i++) {
       pPhysicalImages[i]->refCount = 0;
+      pPhysicalImages[i]->previousMappings = pPhysicalImages[i]->mappings;
+      pPhysicalImages[i]->mappings.Clear();
    }
    return CT_SUCCESS;
 }
@@ -510,8 +533,10 @@ bool ctGPUArchitectVulkan::GetOutput(ctGPUDevice* pDevice,
 bool ctGPUArchitectVulkan::isBufferAliasable(const ctGPUArchVkPhysicalBuffer& physical,
                                              const ctGPUArchitectBufferPayload& desired) {
    ZoneScoped;
-   /* Dont allow feedback to be aliased */
-   if (ctCFlagCheck(physical.flags, CT_GPU_PAYLOAD_FEEDBACK)) { return false; }
+   /* Only Alias with Known Feedback */
+   if (ctCFlagCheck(physical.flags, CT_GPU_PAYLOAD_FEEDBACK)) {
+      if (!physical.previousMappings.Exists(desired.identifier)) { return false; }
+   }
    /* Check for settings overlap */
    if (physical.size < desired.size) { return false; }
    /* Check for lifetime overlap */
@@ -520,7 +545,9 @@ bool ctGPUArchitectVulkan::isBufferAliasable(const ctGPUArchVkPhysicalBuffer& ph
    for (size_t i = 0; i < physical.mappings.Count(); i++) {
       ctGPUArchitectDependencyRange currentLifetime =
         GetDependencyLifetime(physical.mappings[i]);
-      if (desiredLifetime.isOverlapping(currentLifetime)) { return false; }
+      if (currentLifetime.isValid() && desiredLifetime.isOverlapping(currentLifetime)) {
+         return false;
+      }
    }
    return true;
 }
@@ -528,8 +555,10 @@ bool ctGPUArchitectVulkan::isBufferAliasable(const ctGPUArchVkPhysicalBuffer& ph
 bool ctGPUArchitectVulkan::isImageAliasable(const ctGPUArchVkPhysicalImage& physical,
                                             const ctGPUArchitectImagePayload& desired) {
    ZoneScoped;
-   /* Dont allow feedback to be aliased */
-   if (ctCFlagCheck(physical.flags, CT_GPU_PAYLOAD_FEEDBACK)) { return false; }
+   /* Only Alias with Known Feedback */
+   if (ctCFlagCheck(physical.flags, CT_GPU_PAYLOAD_FEEDBACK)) {
+      if (!physical.previousMappings.Exists(desired.identifier)) { return false; }
+   }
    if (physical.flags != desired.flags) { return false; }
    if (physical.widthPixels != GetPhysicalImageWidth(desired.flags, desired.width)) {
       return false;
@@ -548,7 +577,9 @@ bool ctGPUArchitectVulkan::isImageAliasable(const ctGPUArchVkPhysicalImage& phys
    for (size_t i = 0; i < physical.mappings.Count(); i++) {
       ctGPUArchitectDependencyRange currentLifetime =
         GetDependencyLifetime(physical.mappings[i]);
-      if (desiredLifetime.isOverlapping(currentLifetime)) { return false; }
+      if (currentLifetime.isValid() && desiredLifetime.isOverlapping(currentLifetime)) {
+         return false;
+      }
    }
    return true;
 }
@@ -563,6 +594,7 @@ ctGPUArchitectVulkan::CreateNewBuffer(ctGPUDevice* pDevice,
    pPhysicalBuffer->lastQueueFamilyIdx = -1; /* not owned yet */
    pPhysicalBuffer->size = pPayloadData->size;
    pPhysicalBuffer->mappings.Append(pPayloadData->identifier);
+   strncpy(pPhysicalBuffer->debugName, pPayloadData->debugName, 31);
    pPhysicalBuffers.Append(pPhysicalBuffer);
 
    VkBufferUsageFlags knownUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
@@ -596,6 +628,7 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
    pPhysicalImage->layers = pPayloadData->layers;
    pPhysicalImage->miplevels = pPayloadData->miplevels;
    pPhysicalImage->mappings.Append(pPayloadData->identifier);
+   strncpy(pPhysicalImage->debugName, pPayloadData->debugName, 31);
    pPhysicalImages.Append(pPhysicalImage);
 
    VkImageUsageFlags knownUsage = VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -624,34 +657,6 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
       aspect = VK_IMAGE_ASPECT_COLOR_BIT;
    }
 
-   pPhysicalImage->useClear = (bool)pPayloadData->pClearDesc;
-   // clang-format off
-   if (pPhysicalImage->useClear) {
-       if (pPhysicalImage->hasDepth || pPhysicalImage->hasStencil) {
-           pPhysicalImage->clearValue.depthStencil.depth = pPayloadData->pClearDesc->depth;
-           pPhysicalImage->clearValue.depthStencil.stencil = pPayloadData->pClearDesc->stencil;
-       }
-       else if (TinyImageFormat_IsNormalised(pPayloadData->format) || TinyImageFormat_IsFloat(pPayloadData->format)) {
-           pPhysicalImage->clearValue.color.float32[0] = pPayloadData->pClearDesc->rgba[0];
-           pPhysicalImage->clearValue.color.float32[1] = pPayloadData->pClearDesc->rgba[1];
-           pPhysicalImage->clearValue.color.float32[2] = pPayloadData->pClearDesc->rgba[2];
-           pPhysicalImage->clearValue.color.float32[3] = pPayloadData->pClearDesc->rgba[3];
-       }
-       else if (TinyImageFormat_IsSigned(pPayloadData->format)) {
-           pPhysicalImage->clearValue.color.int32[0] = (int32_t)pPayloadData->pClearDesc->rgba[0];
-           pPhysicalImage->clearValue.color.int32[1] = (int32_t)pPayloadData->pClearDesc->rgba[1];
-           pPhysicalImage->clearValue.color.int32[2] = (int32_t)pPayloadData->pClearDesc->rgba[2];
-           pPhysicalImage->clearValue.color.int32[3] = (int32_t)pPayloadData->pClearDesc->rgba[3];
-       }
-       else {
-           pPhysicalImage->clearValue.color.uint32[0] = (uint32_t)pPayloadData->pClearDesc->rgba[0];
-           pPhysicalImage->clearValue.color.uint32[1] = (uint32_t)pPayloadData->pClearDesc->rgba[1];
-           pPhysicalImage->clearValue.color.uint32[2] = (uint32_t)pPayloadData->pClearDesc->rgba[2];
-           pPhysicalImage->clearValue.color.uint32[3] = (uint32_t)pPayloadData->pClearDesc->rgba[3];
-       }
-   }
-   // clang-format on
-
    VkImageType imageType = VK_IMAGE_TYPE_2D;
    VkImageViewType viewType;
    if (ctCFlagCheck(pPayloadData->flags, CT_GPU_PAYLOAD_IMAGE_3D)) {
@@ -671,6 +676,7 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
       }
    }
 
+   pPhysicalImage->tinyFormat = pPayloadData->format;
    pPhysicalImage->format = (VkFormat)TinyImageFormat_ToVkFormat(pPayloadData->format);
    if (pDevice->CreateCompleteImage(
          pPayloadData->debugName,
@@ -698,6 +704,37 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
+VkClearValue GetClearValue(const ctGPUArchVkPhysicalImage& image,
+                           const ctGPUArchitectDependencyEntry& currentDep) {
+   const ctGPUArchitectClearContents& clear = currentDep.clear;
+   // clang-format off
+    VkClearValue clearValue;
+   if (image.hasDepth || image.hasStencil) {
+       clearValue.depthStencil.depth = clear.depth;
+       clearValue.depthStencil.stencil = clear.stencil;
+   }
+   else if (TinyImageFormat_IsNormalised(image.tinyFormat) || TinyImageFormat_IsFloat(image.tinyFormat)) {
+       clearValue.color.float32[0] = clear.rgba[0];
+       clearValue.color.float32[1] = clear.rgba[1];
+       clearValue.color.float32[2] = clear.rgba[2];
+       clearValue.color.float32[3] = clear.rgba[3];
+   }
+   else if (TinyImageFormat_IsSigned(image.tinyFormat)) {
+       clearValue.color.int32[0] = (int32_t)clear.rgba[0];
+       clearValue.color.int32[1] = (int32_t)clear.rgba[1];
+       clearValue.color.int32[2] = (int32_t)clear.rgba[2];
+       clearValue.color.int32[3] = (int32_t)clear.rgba[3];
+   }
+   else {
+       clearValue.color.uint32[0] = (uint32_t)clear.rgba[0];
+       clearValue.color.uint32[1] = (uint32_t)clear.rgba[1];
+       clearValue.color.uint32[2] = (uint32_t)clear.rgba[2];
+       clearValue.color.uint32[3] = (uint32_t)clear.rgba[3];
+   }
+   // clang-format on
+   return clearValue;
+}
+
 VkRenderingAttachmentInfoKHR ctGPUArchitectVulkan::RenderingAttachmentInfoFromImage(
   ctGPUArchVkPhysicalImage* image, ctGPUArchitectDependencyEntry currentDep) {
    ZoneScoped;
@@ -715,9 +752,9 @@ VkRenderingAttachmentInfoKHR ctGPUArchitectVulkan::RenderingAttachmentInfoFromIm
    if (ctCFlagCheck(currentDep.access, CT_GPU_ACCESS_READ)) {
       info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
    } else {
-      if (image->useClear) {
+      if (currentDep.useClear) {
          info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-         info.clearValue = image->clearValue;
+         info.clearValue = GetClearValue(*image, currentDep);
       } else {
          info.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
       }

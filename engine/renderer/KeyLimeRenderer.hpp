@@ -30,15 +30,43 @@ public:
 
    struct ctGPUDevice* pGPUDevice;
    struct ctGPUPresenter* pGPUPresenter;
+   struct ctGPUBindlessManager* pGPUBindless;
    struct ctGPUArchitect* pGPUArchitect;
    struct ctGPUExternalBufferPool* pGPUBufferPool;
    struct ctGPUExternalTexturePool* pGPUTexturePool;
 
-   struct ctGPUExternalBuffer* pExternBuffer;
-   struct ctGPUExternalTexture* pExternTexture;
    void* pTestPipeline;
    bool rebuildRequired;
 
 private:
    static void HandleWindowEvent(SDL_Event* event, ctKeyLimeRenderer* renderer);
+
+   /* Features */
+   struct ResourceUploadS {
+      bool needsUpload;
+      static ctResults Define(struct ctGPUArchitectDefinitionContext* pCtx,
+                              ctKeyLimeRenderer* pRenderer);
+      static ctResults Execute(struct ctGPUArchitectExecutionContext* pCtx,
+                               ctKeyLimeRenderer* pRenderer);
+   } ResourceUpload;
+   struct CullS {
+      static ctResults Define(struct ctGPUArchitectDefinitionContext* pCtx,
+                              ctKeyLimeRenderer* pRenderer);
+   } Cull;
+   struct DeferredS {
+      static ctResults DefineDepthPrepass(struct ctGPUArchitectDefinitionContext* pCtx,
+                                          ctKeyLimeRenderer* pRenderer);
+      static ctResults DefineGBufferPass(struct ctGPUArchitectDefinitionContext* pCtx,
+                                         ctKeyLimeRenderer* pRenderer);
+      static ctResults DefineLightPass(struct ctGPUArchitectDefinitionContext* pCtx,
+                                       ctKeyLimeRenderer* pRenderer);
+   } Deferred;
+   struct PostProcessS {
+      static ctResults DefineTonemapPass(struct ctGPUArchitectDefinitionContext* pCtx,
+                                         ctKeyLimeRenderer* pRenderer);
+      static ctResults DefineGizmoPass(struct ctGPUArchitectDefinitionContext* pCtx,
+                                       ctKeyLimeRenderer* pRenderer);
+      static ctResults DefineGUIPass(struct ctGPUArchitectDefinitionContext* pCtx,
+                                     ctKeyLimeRenderer* pRenderer);
+   } PostProcess;
 };

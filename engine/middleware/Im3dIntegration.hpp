@@ -27,6 +27,7 @@ public:
    ctResults Shutdown() final;
 
    ctResults StartupGPU(struct ctGPUDevice* pGPUDevice,
+                        struct ctGPUBindlessManager* pBindless,
                         struct ctGPUExternalBufferPool* pGPUBufferPool,
                         size_t maxVerts,
                         int32_t viewBind,

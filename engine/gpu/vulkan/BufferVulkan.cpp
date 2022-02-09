@@ -50,6 +50,16 @@ CT_API bool ctGPUExternalBufferPoolNeedsDispatch(ctGPUDevice* pDevice,
    return needsUpdate;
 }
 
+CT_API bool ctGPUExternalBufferPoolNeedsRebind(ctGPUDevice* pDevice,
+                                               ctGPUExternalBufferPool* pPool) {
+   return CT_API bool();
+}
+
+CT_API ctResults ctGPUExternalBufferPoolRebind(ctGPUDevice* pDevice,
+                                               ctGPUBindingModel* pBindingModel) {
+   return CT_API ctResults();
+}
+
 CT_API ctResults ctGPUExternalBufferPoolDispatch(ctGPUDevice* pDevice,
                                                  ctGPUExternalBufferPool* pPool,
                                                  ctGPUCommandBuffer cmd) {
@@ -112,9 +122,6 @@ CT_API ctResults ctGPUExternalBufferCreateFunc(ctGPUDevice* pDevice,
    } else {
       pBuffer->GenerateContents();
    }
-
-   /* Generate bindless as needed */
-   pBuffer->GenBindless(pDevice);
    return CT_SUCCESS;
 }
 
@@ -187,7 +194,6 @@ void ctGPUExternalBufferPool::GarbageCollect(ctGPUDevice* pDevice) {
 
       /* Release internals */
       pBuffer->FreeMappings(pDevice);
-      pBuffer->FreeBindless(pDevice);
       pBuffer->ReleaseStaging(pDevice);
       pBuffer->DestroyContents(pDevice);
    }
@@ -200,7 +206,7 @@ void ctGPUExternalBufferPool::GarbageCollect(ctGPUDevice* pDevice) {
 
 void ctGPUExternalBufferPool::CommitHotList() {
    ctSpinLockEnterCritical(uploadListLock);
-   gpuCmdUpdateListHot.Resize(gpuCmdUpdateListHot.Count());
+   gpuCmdUpdateList.Resize(gpuCmdUpdateListHot.Count());
    memcpy(gpuCmdUpdateList.Data(),
           gpuCmdUpdateListHot.Data(),
           sizeof(ctGPUExternalBuffer*) * gpuCmdUpdateListHot.Count());
@@ -269,33 +275,6 @@ void ctGPUExternalBuffer::FreeMappings(ctGPUDevice* pDevice) {
    } else {
       for (uint32_t i = 0; i < frameCount; i++) {
          vmaUnmapMemory(pDevice->vmaAllocator, contents[i].alloc);
-      }
-   }
-}
-
-void ctGPUExternalBuffer::GenBindless(ctGPUDevice* pDevice) {
-   if (type == CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) {
-      for (uint32_t i = 0; i < frameCount; i++) {
-         pDevice->ExposeBindlessStorageBuffer(bindlessIndices[i], contents[i].buffer);
-         // todo: handle inflight frames and preferred bindings
-      }
-   } else {
-      InvalidateBindless();
-   }
-}
-
-void ctGPUExternalBuffer::InvalidateBindless() {
-   for (uint32_t i = 0; i < frameCount; i++) {
-      bindlessIndices[i] = -1;
-   }
-}
-
-void ctGPUExternalBuffer::FreeBindless(ctGPUDevice* pDevice) {
-   if (type == CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) {
-      for (uint32_t i = 0; i < frameCount; i++) {
-         if (bindlessIndices[i] >= 0) {
-            pDevice->ReleaseBindlessStorageBuffer(bindlessIndices[i]);
-         }
       }
    }
 }

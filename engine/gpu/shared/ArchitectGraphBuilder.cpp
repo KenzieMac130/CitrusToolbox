@@ -43,9 +43,11 @@ CT_API ctResults ctGPUArchitectAddTask(ctGPUDevice* pDevice,
    return pArchitect->AddTask(pTaskInfo);
 }
 
-CT_API ctResults ctGPUArchitectExecute(ctGPUDevice* pDevice, ctGPUArchitect* pArchitect) {
+CT_API ctResults ctGPUArchitectExecute(ctGPUDevice* pDevice,
+                                       ctGPUArchitect* pArchitect,
+                                       ctGPUBindingModel* pBindingModel) {
    ZoneScoped;
-   return pArchitect->Execute(pDevice);
+   return pArchitect->Execute(pDevice, pBindingModel);
 }
 
 CT_API ctResults ctGPUArchitectSetOutput(ctGPUDevice* pDevice,
@@ -357,9 +359,10 @@ ctResults ctGPUArchitect::Build(ctGPUDevice* pDevice, uint32_t width, uint32_t h
    return CT_SUCCESS;
 }
 
-ctResults ctGPUArchitect::Execute(ctGPUDevice* pDevice) {
+ctResults ctGPUArchitect::Execute(ctGPUDevice* pDevice,
+                                  ctGPUBindingModel* pBindingModel) {
    ZoneScoped;
-   return BackendExecute(pDevice);
+   return BackendExecute(pDevice, pBindingModel);
 }
 
 ctResults ctGPUArchitect::ResetCache(ctGPUDevice* pDevice) {
@@ -484,23 +487,36 @@ CT_API ctResults ctGPUTaskCreateBarrier(ctGPUArchitectDefinitionContext* pCtx,
 
 CT_API ctResults ctGPUTaskUseDepthTarget(ctGPUArchitectDefinitionContext* pCtx,
                                          ctGPUDependencyID id,
-                                         ctGPUArchitectResourceAccess access) {
+                                         ctGPUArchitectResourceAccess access,
+                                         ctGPUArchitectClearContents* pClear) {
    ZoneScoped;
    ctAssert(pCtx);
    ctAssert(pCtx->pInternal);
-   pCtx->pInternal->dependencies.Append({id, access, CT_GPU_ARCH_DEPTH_TARGET, 0});
+   pCtx->pInternal->dependencies.Append(
+     ctGPUArchitectDependencyEntry(id,
+                                   access,
+                                   CT_GPU_ARCH_DEPTH_TARGET,
+                                   0,
+                                   pClear ? true : false,
+                                   pClear ? *pClear : ctGPUArchitectClearContents()));
    return CT_SUCCESS;
 }
 
 CT_API ctResults ctGPUTaskUseColorTarget(ctGPUArchitectDefinitionContext* pCtx,
                                          ctGPUDependencyID id,
                                          ctGPUArchitectResourceAccess access,
-                                         uint32_t slot) {
+                                         uint32_t slot,
+                                         ctGPUArchitectClearContents* pClear) {
    ZoneScoped;
    ctAssert(pCtx);
    ctAssert(pCtx->pInternal);
    pCtx->pInternal->dependencies.Append(
-     {id, access, CT_GPU_ARCH_COLOR_TARGET, (uint8_t)slot});
+     ctGPUArchitectDependencyEntry(id,
+                                   access,
+                                   CT_GPU_ARCH_COLOR_TARGET,
+                                   (uint8_t)slot,
+                                   pClear ? true : false,
+                                   pClear ? *pClear : ctGPUArchitectClearContents()));
    return CT_SUCCESS;
 }
 
@@ -509,7 +525,8 @@ CT_API ctResults ctGPUTaskUseTexture(ctGPUArchitectDefinitionContext* pCtx,
    ZoneScoped;
    ctAssert(pCtx);
    ctAssert(pCtx->pInternal);
-   pCtx->pInternal->dependencies.Append({id, CT_GPU_ACCESS_READ, CT_GPU_ARCH_TEXTURE, 0});
+   pCtx->pInternal->dependencies.Append(
+     ctGPUArchitectDependencyEntry(id, CT_GPU_ACCESS_READ, CT_GPU_ARCH_TEXTURE));
    return CT_SUCCESS;
 }
 
@@ -519,7 +536,8 @@ CT_API ctResults ctGPUTaskUseStorageBuffer(ctGPUArchitectDefinitionContext* pCtx
    ZoneScoped;
    ctAssert(pCtx);
    ctAssert(pCtx->pInternal);
-   pCtx->pInternal->dependencies.Append({id, access, CT_GPU_ARCH_STORAGE_BUFFER, 0});
+   pCtx->pInternal->dependencies.Append(
+     ctGPUArchitectDependencyEntry(id, access, CT_GPU_ARCH_STORAGE_BUFFER));
    return CT_SUCCESS;
 }
 
@@ -528,7 +546,8 @@ CT_API ctResults ctGPUTaskWaitBarrier(ctGPUArchitectDefinitionContext* pCtx,
    ZoneScoped;
    ctAssert(pCtx);
    ctAssert(pCtx->pInternal);
-   pCtx->pInternal->dependencies.Append({id, CT_GPU_ACCESS_READ, CT_GPU_ARCH_BARRIER, 0});
+   pCtx->pInternal->dependencies.Append(
+     ctGPUArchitectDependencyEntry(id, CT_GPU_ACCESS_READ, CT_GPU_ARCH_BARRIER));
    return CT_SUCCESS;
 }
 
@@ -538,7 +557,7 @@ CT_API ctResults ctGPUTaskSignalBarrier(ctGPUArchitectDefinitionContext* pCtx,
    ctAssert(pCtx);
    ctAssert(pCtx->pInternal);
    pCtx->pInternal->dependencies.Append(
-     {id, CT_GPU_ACCESS_WRITE, CT_GPU_ARCH_BARRIER, 0});
+     ctGPUArchitectDependencyEntry(id, CT_GPU_ACCESS_WRITE, CT_GPU_ARCH_BARRIER));
    return CT_SUCCESS;
 }
 
@@ -565,7 +584,6 @@ ctGPUArchitectImagePayload::ctGPUArchitectImagePayload(
    miplevels = desc.miplevels;
    format = desc.format;
    identifier = id;
-   pClearDesc = desc.pClearDesc;
    apiData = NULL;
 }
 

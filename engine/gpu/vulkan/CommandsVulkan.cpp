@@ -190,15 +190,15 @@ CT_API void ctGPUCmdSetLineWidth(ctGPUCommandBuffer commandBuffer, float width) 
    vkCmdSetLineWidth((VkCommandBuffer)commandBuffer, width);
 }
 
-#include "DeviceVulkan.hpp"
+#include "BindlessVulkan.hpp"
 CT_API void ctGPUCmdSetDynamicInteger(ctGPUCommandBuffer commandBuffer,
-                                      ctGPUDevice* pDevice,
+                                      ctGPUBindingModel* pBindingModel,
                                       uint32_t index,
                                       int32_t value) {
-   ctAssert(pDevice);
+   ctAssert(pBindingModel);
    ctAssert(index < CT_MAX_GFX_DYNAMIC_INTS);
    vkCmdPushConstants((VkCommandBuffer)commandBuffer,
-                      pDevice->vkGlobalPipelineLayout,
+                      pBindingModel->vkGlobalPipelineLayout,
                       VK_SHADER_STAGE_ALL,
                       sizeof(int32_t) * index,
                       sizeof(int32_t),

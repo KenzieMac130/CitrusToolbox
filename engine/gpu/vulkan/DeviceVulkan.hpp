@@ -75,39 +75,6 @@ struct ctVkCompleteBuffer {
    VmaAllocation alloc;
 };
 
-class CT_API ctVkDescriptorManager {
-public:
-   ctVkDescriptorManager() {
-      nextNewIdx = 0;
-      _max = 0;
-   }
-   ctVkDescriptorManager(int32_t max) {
-      nextNewIdx = 0;
-      _max = max;
-   }
-
-   /* Get the next open slot to place a resource in the bindless system */
-   inline int32_t AllocateSlot() {
-      int32_t result = nextNewIdx;
-      if (!freedIdx.isEmpty()) {
-         result = freedIdx.Last();
-         freedIdx.RemoveLast();
-      } else {
-         nextNewIdx++;
-      }
-      return result;
-   }
-   /* Only call once the resource is not in-flight! */
-   void ReleaseSlot(const int32_t idx) {
-      freedIdx.Append(idx);
-   }
-
-private:
-   int32_t _max;
-   ctDynamicArray<int32_t> freedIdx;
-   int32_t nextNewIdx;
-};
-
 /* -------- Define Structure -------- */
 struct ctGPUDevice : ctGPUDeviceBase {
    ctResults Startup();
@@ -188,34 +155,6 @@ struct ctGPUDevice : ctGPUDeviceBase {
    /* Todo Wait for right opportunity to garbage collect */
    void TryDestroyCompleteImage(ctVkCompleteImage& fullImage);
    void TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer);
-
-   /* Bindless System */
-   VkDescriptorSetLayout vkGlobalDescriptorSetLayout;
-   VkDescriptorPool vkDescriptorPool;
-   VkDescriptorSet vkGlobalDescriptorSet;
-   VkPipelineLayout vkGlobalPipelineLayout;
-   ctVkDescriptorManager descriptorsSamplers;
-   ctVkDescriptorManager descriptorsSampledImage;
-   ctVkDescriptorManager descriptorsStorageImage;
-   ctVkDescriptorManager descriptorsStorageBuffer;
-   int32_t maxSamplers = CT_MAX_GFX_SAMPLERS;
-   int32_t maxSampledImages = CT_MAX_GFX_SAMPLED_IMAGES;
-   int32_t maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
-   int32_t maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
-   int32_t maxUniformBuffers = CT_MAX_GFX_UNIFORM_BUFFERS;
-
-   // todo: better api for filling in descriptors
-   void ExposeBindlessStorageBuffer(int32_t& outIdx,
-                                    VkBuffer buffer,
-                                    VkDeviceSize range = VK_WHOLE_SIZE,
-                                    VkDeviceSize offset = 0);
-   void ReleaseBindlessStorageBuffer(int32_t idx);
-   void ExposeBindlessSampledImage(
-     int32_t& outIdx,
-     VkImageView view,
-     VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-     VkSampler sampler = VK_NULL_HANDLE);
-   void ReleaseBindlessSampledImage(int32_t idx);
 
    /* Staging */
    ctResults GetStagingBuffer(ctVkCompleteBuffer& fullBuffer, size_t sizeRequest);

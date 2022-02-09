@@ -95,6 +95,7 @@ void ctImguiUploadVertices(uint8_t* dest, size_t size, void* unused) {
 }
 
 ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
+                                         struct ctGPUBindlessManager* pBindless,
                                          struct ctGPUExternalBufferPool* pGPUBufferPool,
                                          struct ctGPUExternalTexturePool* pGPUTexturePool,
                                          size_t maxVerts,
@@ -115,7 +116,6 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ctGPUExternalTextureCreateFuncInfo fontTexInfo = {};
    fontTexInfo.async = false;
    fontTexInfo.debugName = "Imgui Font";
-   fontTexInfo.desiredBinding = fontBind;
    fontTexInfo.pPlaceholder = NULL;
    fontTexInfo.type = CT_GPU_EXTERN_TEXTURE_TYPE_2D;
    fontTexInfo.updateMode = CT_GPU_UPDATE_STATIC;
@@ -133,7 +133,6 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    /* Index Buffer */
    ctGPUExternalBufferCreateFuncInfo iBufferInfo = {};
    iBufferInfo.debugName = "Imgui Indices";
-   iBufferInfo.desiredBinding = idxBind;
    iBufferInfo.async = false;
    iBufferInfo.pPlaceholder = NULL;
    iBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
@@ -146,7 +145,6 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    /* Vertex Buffer */
    ctGPUExternalBufferCreateFuncInfo vBufferInfo = {};
    vBufferInfo.debugName = "Imgui Vertices";
-   vBufferInfo.desiredBinding = vtxBind;
    vBufferInfo.async = false;
    vBufferInfo.pPlaceholder = NULL;
    vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
@@ -182,7 +180,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
 
    ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_VERT, vertShader);
    ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_FRAG, fragShader);
-   ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipeline);
+   ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipeline, pBindless);
 
    ctGPUPipelineBuilderDelete(pPipelineBuilder);
    ctGPUShaderSoftRelease(pGPUDevice, fragShader);
@@ -234,7 +232,7 @@ void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
          const uint32_t offsetY = (uint32_t)(
            (float)((pCmd->ClipRect.y) / pDrawData->DisplaySize.y) * pCtx->raster.height);
          ctGPUCmdSetScissor(gpuCmd, offsetX, offsetY, width, height);
-         ctGPUCmdSetDynamicInteger(gpuCmd, pCtx->pDevice, 0, (int32_t)pCmd->TextureId);
+         ctGPUCmdSetDynamicInteger(gpuCmd, pCtx->pBindingModel, 0, (int32_t)pCmd->TextureId);
          ctGPUCmdDraw(gpuCmd, pCmd->ElemCount, 1, pCmd->IdxOffset + offset, 0);
       }
       offset += pList->IdxBuffer.Size;

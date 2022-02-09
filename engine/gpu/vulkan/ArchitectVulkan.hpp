@@ -20,13 +20,16 @@
 
 #include "gpu/shared/ArchitectGraphBuilder.hpp"
 #include "DeviceVulkan.hpp"
+#include "BindlessVulkan.hpp"
 
 struct ctGPUArchVkPhysicalBuffer {
+   char debugName[32];
    int32_t flags;
    size_t size;
 
    int32_t refCount;
    ctDynamicArray<ctGPUDependencyID> mappings;
+   ctDynamicArray<ctGPUDependencyID> previousMappings;
 
    /* for now we just alias the whole buffer */
    ctVkCompleteBuffer data;
@@ -35,6 +38,7 @@ struct ctGPUArchVkPhysicalBuffer {
 };
 
 struct ctGPUArchVkPhysicalImage {
+   char debugName[32];
    int32_t flags;
    uint32_t heightPixels;
    uint32_t widthPixels;
@@ -44,12 +48,11 @@ struct ctGPUArchVkPhysicalImage {
    bool hasDepth;
    bool hasStencil;
    VkFormat format;
-
-   bool useClear;
-   VkClearValue clearValue;
+   TinyImageFormat tinyFormat;
 
    int32_t refCount;
    ctDynamicArray<ctGPUDependencyID> mappings;
+   ctDynamicArray<ctGPUDependencyID> previousMappings;
 
    /* for now we just alias the whole image */
    ctVkCompleteImage data;
@@ -62,7 +65,8 @@ struct ctGPUArchitectVulkan : ctGPUArchitect {
    virtual ctResults BackendStartup(ctGPUDevice* pDevice);
    virtual ctResults BackendShutdown(ctGPUDevice* pDevice);
    virtual ctResults BackendBuild(ctGPUDevice* pDevice);
-   virtual ctResults BackendExecute(ctGPUDevice* pDevice);
+   virtual ctResults BackendExecute(ctGPUDevice* pDevice,
+                                    ctGPUBindingModel* pBindingModel);
    virtual ctResults BackendReset(ctGPUDevice* pDevice);
 
    ctResults MapToBuffer(ctGPUDevice* pDevice, ctGPUArchitectBufferPayload* pPayloadData);

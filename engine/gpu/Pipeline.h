@@ -187,7 +187,8 @@ ctGPUPipelineBuilderSetAttachments(struct ctGPUPipelineBuilder* pBuilder,
 /* Compile Pipelines */
 CT_API enum ctResults ctGPUPipelineCreate(struct ctGPUDevice* pDevice,
                                           struct ctGPUPipelineBuilder* pBuilder,
-                                          ctGPUPipeline* pPipeline);
+                                          ctGPUPipeline* pPipeline,
+                                          ctGPUBindingModel* pBinding);
 
 CT_API void ctGPUPipelineDestroy(struct ctGPUDevice* pDevice, ctGPUPipeline pipeline);
 

@@ -177,9 +177,6 @@ ctGPUExternalTextureCreateFunc(ctGPUDevice* pDevice,
    } else {
       pTexture->GenerateContents();
    }
-
-   /* Generate bindless as needed */
-   pTexture->GenBindless(pDevice);
    return CT_SUCCESS;
 }
 
@@ -263,7 +260,6 @@ void ctGPUExternalTexturePool::GarbageCollect(ctGPUDevice* pDevice) {
 
       /* Release internals */
       pTexture->FreeMappings(pDevice);
-      pTexture->FreeBindless(pDevice);
       pTexture->ReleaseStaging(pDevice);
       pTexture->DestroyContents(pDevice);
    }
@@ -276,7 +272,7 @@ void ctGPUExternalTexturePool::GarbageCollect(ctGPUDevice* pDevice) {
 
 void ctGPUExternalTexturePool::CommitHotList() {
    ctSpinLockEnterCritical(uploadListLock);
-   gpuCmdUpdateListHot.Resize(gpuCmdUpdateListHot.Count());
+   gpuCmdUpdateList.Resize(gpuCmdUpdateListHot.Count());
    memcpy(gpuCmdUpdateList.Data(),
           gpuCmdUpdateListHot.Data(),
           sizeof(ctGPUExternalBuffer*) * gpuCmdUpdateListHot.Count());
@@ -389,33 +385,6 @@ void ctGPUExternalTexture::FreeMappings(ctGPUDevice* pDevice) {
    }
 }
 
-void ctGPUExternalTexture::GenBindless(ctGPUDevice* pDevice) {
-   if (type == CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) {
-      for (uint32_t i = 0; i < frameCount; i++) {
-         pDevice->ExposeBindlessSampledImage(bindlessIndices[i], contents[i].view);
-         // todo: handle inflight frames and preferred bindings
-      }
-   } else {
-      InvalidateBindless();
-   }
-}
-
-void ctGPUExternalTexture::InvalidateBindless() {
-   for (uint32_t i = 0; i < frameCount; i++) {
-      bindlessIndices[i] = -1;
-   }
-}
-
-void ctGPUExternalTexture::FreeBindless(ctGPUDevice* pDevice) {
-   if (type == CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) {
-      for (uint32_t i = 0; i < frameCount; i++) {
-         if (bindlessIndices[i] >= 0) {
-            pDevice->ReleaseBindlessSampledImage(bindlessIndices[i]);
-         }
-      }
-   }
-}
-
 void ctGPUExternalTexture::GenSlices() {
    size_t currentSeekIntoChunk = 0;
    ctGPUExternalGenerateContext ctx;
@@ -426,9 +395,6 @@ void ctGPUExternalTexture::GenSlices() {
    for (uint32_t i = 0; i < depth; i++) {
       ctx.currentLayer = i;
       for (uint32_t j = 0; j < mips; j++) {
-         mipWidth = mipWidth > 1 ? mipWidth / 2 : 1;
-         mipHeight = mipHeight > 1 ? mipHeight / 2 : 1;
-
          ctx.currentMipLevel = j;
          ctx.width = mipWidth;
          ctx.height = mipHeight;
@@ -449,6 +415,8 @@ void ctGPUExternalTexture::GenSlices() {
          copy.imageExtent.height = mipHeight;
          copy.imageExtent.depth = 1;
          copyCommands.Append(copy);
+         mipWidth = mipWidth > 1 ? mipWidth / 2 : 1;
+         mipHeight = mipHeight > 1 ? mipHeight / 2 : 1;
       }
    }
 }
