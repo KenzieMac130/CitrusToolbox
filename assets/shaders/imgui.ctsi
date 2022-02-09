@@ -15,6 +15,7 @@
 */
 
 #include "utilities/common.ctsh"
+#include "bindpoints.ctsh"
 #include "templates/simple_vert_frag.ctsh"
 
 
@@ -49,8 +50,10 @@ CT_STORAGE_BUFFER_ARRAY(sIndexBuffer, indexBuffers, {
 })
 
 CT_MAIN(){
-    CT_SET_ATTRIBUTE(vertexColor,float4(0,0,0,1));
-    CT_SET_POSITION(float4(0));
+	const uint index = indexBuffers[CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES].data[CT_VERTEX_INDEX];
+	sVertexData vertex = vertexBuffers[CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES].data[index];
+    CT_SET_ATTRIBUTE(vertexColor,unpackUnorm4x8(vertex.icolor));
+    CT_SET_POSITION(float4(vertex.pos, 0.0, 1.0));
 }
 #endif
 
