@@ -178,6 +178,7 @@ AsyncSchedulerCallback(ctGPUAsyncWorkFn fpWork, void* data, ctAsyncManager* pAsy
 }
 
 ctResults ctKeyLimeRenderer::Startup() {
+   ZoneScoped;
 #if !CITRUS_HEADLESS
    /* OS Events */
    Engine->OSEventManager->WindowEventHandlers.Append(
@@ -343,6 +344,7 @@ ctResults ctKeyLimeRenderer::Startup() {
 }
 
 ctResults ctKeyLimeRenderer::Shutdown() {
+   ZoneScoped;
 #if !CITRUS_HEADLESS
    ctGPUDeviceWaitForIdle(pGPUDevice);
    Engine->Im3dIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool);
@@ -358,6 +360,7 @@ ctResults ctKeyLimeRenderer::Shutdown() {
 }
 
 ctResults ctKeyLimeRenderer::RenderFrame() {
+   ZoneScoped;
 #if !CITRUS_HEADLESS
    ImGui::Render();
 
