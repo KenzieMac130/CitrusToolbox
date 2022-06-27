@@ -21,15 +21,6 @@
 #define PACKAGE_NAME_1 "TEST_PACKAGE_1"
 #define PACKAGE_NAME_2 "TEST_PACKAGE_2"
 
-void debugCallback(int level, const char* format, va_list args) {
-   char tmp[CT_MAX_LOG_LENGTH];
-   memset(tmp, 0, CT_MAX_LOG_LENGTH);
-   vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
-   TracyMessage(tmp, strlen(tmp));
-   vprintf(format, args);
-   putchar('\n');
-}
-
 int write_test(const char* path,
                size_t dataCount,
                const char** ppNames,

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,19 @@
    limitations under the License.
 */
 
-#pragma once
+/* GENERATED HEADER */
 
-#include "catch/catch.hpp"
+/* ----------------------- Tests -------------------------- */
+
+#define CT_TEST_ENTRY(NAME)
+#define CT_ALL_TESTS @CT_ALL_TESTS@
+
+/* -------------------------------------------------------- */
+#undef CT_TEST_ENTRY
+#define CT_TEST_ENTRY(NAME) void NAME(void);
+CT_ALL_TESTS
+
+#undef CT_TEST_ENTRY
+#define CT_TEST_ENTRY(NAME) {#NAME, NAME},
+
+TEST_LIST = { CT_ALL_TESTS {NULL, NULL} };

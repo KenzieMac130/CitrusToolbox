@@ -21,143 +21,162 @@
 #include "utilities/HandledList.hpp"
 #include "utilities/GUID.hpp"
 
+#define TEST_NO_MAIN
+#include "acutest/acutest.h"
+
 int life_notifier_comp(const int* A, const int* B) {
    return *A - *B;
 }
 
-int dynamic_array_test() {
+void array_test(void) {
    ZoneScoped;
-   ctDebugLog("Dynamic Array");
-   ctDebugWarning("Warning test");
    {
-      ctDynamicArray<int> arr = {};
+      ctDynamicArray<int> d_arr = {};
+      ctStaticArray<int, 64> s_arr = {};
       /*Reserve*/
-      ctDebugLog("Reserve");
-      arr.Reserve(64);
+      d_arr.Reserve(64);
+      TEST_CHECK(d_arr.Capacity() >= 64);
+      /*Resize*/
+      d_arr.Resize(1);
+      s_arr.Resize(1);
+      TEST_CHECK(d_arr.Count() == 1);
+      TEST_CHECK(s_arr.Count() == 1);
       /*Memset*/
-      ctDebugLog("Memset");
-      arr.Memset(0);
+      d_arr.Memset(0);
+      TEST_CHECK(s_arr.Count() == 1);
+      d_arr.Clear();
       /*Append*/
-      ctDebugLog("Append");
       for (int i = 0; i < 32; i++) {
-         arr.Append(32 - i);
+         d_arr.Append(32 - i);
+         s_arr.Append(32 - i);
+         TEST_CHECK(d_arr.Last() == 32 - i);
+         TEST_CHECK(s_arr.Last() == 32 - i);
       }
       /*Insert*/
-      ctDebugLog("Insert");
-      arr.Insert(-32, 0);
-      arr.Insert(-64, 8);
-      arr.Insert(-128, -2);
+      d_arr.Insert(-32, 0);
+      s_arr.Insert(-32, 0);
+      TEST_CHECK(d_arr[0] == -32);
+      TEST_CHECK(s_arr[0] == -32);
+      d_arr.Insert(-64, 8);
+      s_arr.Insert(-64, 8);
+      TEST_CHECK(d_arr[8] == -64);
+      TEST_CHECK(s_arr[8] == -64);
+      d_arr.Insert(-128, -2);
+      s_arr.Insert(-128, -2);
+      TEST_CHECK(d_arr[d_arr.Count() - 2] == -128);
+      TEST_CHECK(s_arr[s_arr.Count() - 2] == -128);
       /*Remove*/
-      ctDebugLog("Remove");
-      arr.RemoveAt(-2);
-      arr.RemoveAt(8);
-      arr.RemoveAt(0);
+      size_t d_originalCount = d_arr.Count();
+      size_t s_originalCount = s_arr.Count();
+      TEST_CHECK(d_arr[d_arr.Count() - 2] == s_arr[s_arr.Count() - 2]);
+      TEST_CHECK(d_arr[8] == s_arr[8]);
+      TEST_CHECK(d_arr[0] == s_arr[0]);
+      int origAtM2 = d_arr[d_arr.Count() - 2];
+      int origAt8 = d_arr[8];
+      int origAt0 = d_arr[0];
+      d_arr.RemoveAt(-2);
+      s_arr.RemoveAt(-2);
+      d_arr.RemoveAt(8);
+      s_arr.RemoveAt(8);
+      d_arr.RemoveAt(0);
+      s_arr.RemoveAt(0);
+      TEST_CHECK(d_arr.Count() == d_originalCount - 3 && !d_arr.Exists(origAt0) &&
+                 !d_arr.Exists(origAt8) && !d_arr.Exists(origAtM2));
+      TEST_CHECK(s_arr.Count() == s_originalCount - 3 && !s_arr.Exists(origAt0) &&
+                 !s_arr.Exists(origAt8) && !s_arr.Exists(origAtM2));
       /*Exists*/
-      ctDebugLog("Exists");
-      if (arr.Exists(4)) { ctDebugLog("Found 4"); }
+      TEST_CHECK(d_arr.Exists(4));
+      TEST_CHECK(s_arr.Exists(4));
       /*Find*/
-      ctDebugLog("Find");
       int* ln = NULL;
-      ln = arr.FindPtr(12, 0, 1);
-      ln = arr.FindPtr(7, -1, -1);
+      ln = d_arr.FindPtr(12, 0, 1);
+      TEST_ASSERT(ln != NULL);
+      ln = d_arr.FindPtr(7, -1, -1);
+      TEST_ASSERT(ln != NULL);
+      ln = s_arr.FindPtr(12, 0, 1);
+      TEST_ASSERT(ln != NULL);
+      ln = s_arr.FindPtr(7, -1, -1);
+      TEST_ASSERT(ln != NULL);
       /*Sort*/
-      ctDebugLog("Sort");
-      arr.QSort(life_notifier_comp);
-      /*Hash*/
-      ctDebugLog("Hash");
+      d_arr.QSort(life_notifier_comp);
+      int last = -100;
+      for (size_t i = 0; i < d_arr.Count(); i++) {
+         TEST_CHECK(last <= d_arr[i]);
+         last = d_arr[i];
+      }
       /*Verify*/
-      ctDebugLog("Verify");
-      int previous = arr[0];
-      for (int i = 1; i < arr.Count(); i++) {
-         if (arr[i] - 1 != previous) { return -1; }
-         previous = arr[i];
+      int previous = d_arr[0];
+      for (int i = 1; i < d_arr.Count(); i++) {
+         TEST_CHECK(!(d_arr[i] - 1 != previous));
+         previous = d_arr[i];
       }
       /*End*/
-      arr.Clear();
-      ctDebugLog("End");
+      d_arr.Clear();
+      s_arr.Clear();
+      TEST_CHECK(d_arr.Count() == 0);
+      TEST_CHECK(s_arr.Count() == 0);
    }
-   return 0;
 }
 
-int static_array_test() {
-   ZoneScoped;
-   ctStaticArray<int, 32> arr;
-   arr.SetBytes(0);
-   for (int i = 0; i < 32; i++) {
-      arr.Append(32 - i);
-   }
-   arr.RemoveLast();
-   arr.Insert(8, 2);
-   arr.Capacity();
-   arr.QSort(0, arr.Count(), life_notifier_comp);
-   arr.RemoveAt(0);
-   return 0;
-}
-
-int dynamic_string_test() {
+void dynamic_string_test(void) {
    ZoneScoped;
    ctStringUtf8 mystring = ctStringUtf8("Hello world!");
-   if (mystring.Cmp("Hello world!") == 0) { ctDebugLog("Cmp 0"); }
-   if (mystring == "Hello world!") { ctDebugLog("Compare"); };
-   mystring += "This is a test!";
+   TEST_CHECK(mystring == "Hello world!");
+   TEST_CHECK(ctCStrEql(mystring.CStr(), "Hello world!"));
+   mystring += " This is a test!";
    mystring += '?';
    mystring += ' ';
+   TEST_CHECK(mystring == "Hello world! This is a test!? ");
    ctStringUtf8 str2 = ctStringUtf8("Very nice! ");
    mystring += str2;
-   mystring.Printf(32, "The lucky number is: %u", ctXXHash32("LUCKY", 0));
+   TEST_CHECK(mystring == "Hello world! This is a test!? Very nice! ");
+   mystring.Printf(32, "The lucky number is: %u", 0);
+   TEST_CHECK(mystring ==
+              "Hello world! This is a test!? Very nice! The lucky number is: 0");
    ctStringUtf8 secondstring = mystring;
    mystring.ToUpper();
+   TEST_CHECK(mystring ==
+              "HELLO WORLD! THIS IS A TEST!? VERY NICE! THE LUCKY NUMBER IS: 0");
    mystring += "!!!";
-   ctDebugLog("My String is %s", mystring.CStr());
-   ctDebugLog("My String is %s", secondstring.CStr());
-   return 0;
+   TEST_CHECK(mystring ==
+              "HELLO WORLD! THIS IS A TEST!? VERY NICE! THE LUCKY NUMBER IS: 0!!!");
 }
 
-int file_path_test() {
+void file_path_test(void) {
    ZoneScoped;
-   ctDebugLog("File path...");
    ctStringUtf8 path = "C:\\test\\bin\\cfg.ini";
-   ctDebugLog("Path is %s", path.CStr());
-   ctDebugLog("Name is %s", path.FilePathGetName().CStr());
-   ctDebugLog("No extension is %s", path.FilePathRemoveExtension().CStr());
-   ctDebugLog("Pop is %s", path.FilePathPop().CStr());
-   ctDebugLog("Append is %s", path.FilePathAppend("/test.cfg").CStr());
-   ctDebugLog("Local is %s", path.FilePathLocalize().CStr());
-   return 0;
+   TEST_CHECK(path.FilePathGetName() == "cfg");
+   TEST_CHECK(path.FilePathRemoveExtension() == "C:\\test\\bin\\cfg");
+   TEST_CHECK(path.FilePathPop() == "C:\\test\\bin");
+   TEST_CHECK(path.FilePathUnify() == "C:/test/bin");
+   TEST_CHECK(path.FilePathAppend("/test.cfg") == "C:/test/bin/test.cfg");
 }
 
-int bloom_filter_test() {
+void bloom_filter_test(void) {
    ZoneScoped;
-   ctDebugLog("Bloom filter...");
    const int numTests = 500;
    ctBloomFilter<int32_t, 2048, 10> bloom;
    for (int32_t i = 0; i < numTests; i++) {
       bloom.Insert(i);
    }
-   ctDebugLog("These must all exist!");
    for (int32_t i = 0; i < numTests; i++) {
-      if (bloom.MightExist(i)) {
-      } else {
-         ctDebugError("A ENTRY WHICH EXISTS WAS NOT FOUND!!!");
-         return -1;
-      }
+      TEST_CHECK(bloom.MightExist(i));
    }
-   ctDebugLog("The less of these exist the better!");
    int32_t falsePositives = 0;
    for (int32_t i = numTests; i < numTests + numTests; i++) {
       if (bloom.MightExist(i)) { falsePositives++; }
    }
-   ctDebugLog("Bloom filter test:"
+   /*ctDebugLog("Bloom filter test:"
               "\n\tCorrectly Found: %d"
               "\n\tFalse Negatives: %d"
               "\n\tFalse Positives: %d",
               numTests,
               0,
-              falsePositives);
-   return 0;
+              falsePositives);*/
 }
 
-int spacial_query_test() {
+/* todo: port rest to new test framework */
+void spacial_query_test(void) {
    ZoneScoped;
    ctDebugLog("Spacial query...");
    ctDebugLog("Size of key %d", sizeof(ctSpacialCellKey));
@@ -174,12 +193,10 @@ int spacial_query_test() {
       spacial.GetBucketCount(ctSpacialCellKey(ctVec3((float)i, 0, 0)));
    }
    ctDebugLog("Finished!");
-   return 0;
 }
 
-int hash_table_test() {
+void hash_table_test(void) {
    ZoneScoped;
-   ctDebugLog("Hash Table (POD)...");
    {
       ctHashTable<int, uint32_t> hashTable;
       uint32_t findhash = 0;
@@ -189,9 +206,8 @@ int hash_table_test() {
          hashTable.Insert(hash, i);
       }
       int* iptr = hashTable.FindPtr(findhash);
-      if (iptr) { ctDebugLog("Number %d", *iptr); }
+      TEST_ASSERT(iptr != NULL);
    }
-   ctDebugLog("Hash Table (Iterate)...");
    {
       ctHashTable<char, uint32_t> hashTable;
       hashTable.Insert(1, 'A');
@@ -201,12 +217,15 @@ int hash_table_test() {
       hashTable.Insert(5, 'E');
       hashTable.Insert(6, 'F');
       hashTable.Insert(7, 'G');
+      TEST_CHECK(*hashTable.FindPtr(3) == 'C');
+      hashTable.Remove(4);
+      TEST_CHECK(!hashTable.Exists(4));
 
       for (auto itt = hashTable.GetIterator(); itt; itt++) {
-         ctDebugLog("Key: %d - Value: %c", itt.Key(), itt.Value());
+         //ctDebugLog("Key: %d - Value: %c", itt.Key(), itt.Value());
       }
    }
-   ctDebugLog("Hash Table (Worst Case Dynamic String)...");
+   /*ctDebugLog("Hash Table (Worst Case Dynamic String)...");
    {
       ctHashTable<ctStringUtf8, uint32_t> hashTable;
       uint32_t findhash = 0;
@@ -219,11 +238,10 @@ int hash_table_test() {
       }
       ctStringUtf8* strptr = hashTable.FindPtr(findhash);
       if (strptr) { ctDebugLog("%s", strptr->CStr()); }
-   }
-   return 0;
+   }*/
 }
 
-int json_test() {
+void json_test(void) {
    ZoneScoped;
    ctJSONWriter jsonOut;
    ctStringUtf8 str = "";
@@ -332,14 +350,12 @@ int json_test() {
    ctStringUtf8 str2;
    entry.GetString(str2);
    ctDebugLog("%f", value);
-   return 0;
 }
 
-int math_3d_test() {
-   return 0;
+void math_3d_test(void) {
 }
 
-int handled_list_test() {
+void handled_list_test(void) {
    ctDynamicArray<ctHandle> handles;
    ctDynamicArray<int*> pointers;
    ctHandledList<int> list;
@@ -358,39 +374,4 @@ int handled_list_test() {
                  *pointers[i],
                  list[handles[i]]);
    }
-   return 0;
-}
-
-int guid_test() {
-   const int count = 100000;
-   for (int i = 0; i < 100000; i++) {
-      ctGUID guid = ctGUID();
-   }
-   return 0;
-}
-
-void debugCallback(int level, const char* format, va_list args) {
-   char tmp[CT_MAX_LOG_LENGTH];
-   memset(tmp, 0, CT_MAX_LOG_LENGTH);
-   vsnprintf(tmp, CT_MAX_LOG_LENGTH - 1, format, args);
-   TracyMessage(tmp, strlen(tmp));
-   vprintf(format, args);
-   putchar('\n');
-}
-
-int main(int argc, char* argv[]) {
-   ZoneScoped;
-   _ctDebugLogSetCallback(debugCallback);
-   dynamic_array_test();
-   static_array_test();
-   dynamic_string_test();
-   hash_table_test();
-   json_test();
-   math_3d_test();
-   file_path_test();
-   bloom_filter_test();
-   spacial_query_test();
-   handled_list_test();
-   guid_test();
-   return 0;
 }

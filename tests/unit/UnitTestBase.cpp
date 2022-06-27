@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,5 +14,5 @@
    limitations under the License.
 */
 
-#define CATCH_CONFIG_MAIN
-#include "catch/catch.hpp"
+#include "acutest/acutest.h"
+#include "AllTests.h"
