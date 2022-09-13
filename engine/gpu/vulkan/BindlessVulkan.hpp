@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@
 #include "DeviceVulkan.hpp"
 #include "gpu/Bindless.h"
 
-class CT_API ctVkDescriptorManager {
+class CT_API ctVkBindlessSlotManager {
 public:
-   ctVkDescriptorManager() {
+   ctVkBindlessSlotManager() {
       nextNewIdx = 0;
       _max = 0;
    }
-   ctVkDescriptorManager(int32_t max) {
-      nextNewIdx = 0;
+   ctVkBindlessSlotManager(int32_t begin, int32_t max) {
+      nextNewIdx = begin;
       _max = max;
    }
 
@@ -54,33 +54,80 @@ private:
 };
 
 struct ctGPUBindlessManager {
+   ctResults Startup(ctGPUDevice* pDevice, ctGPUBindlessManagerCreateInfo* pCreateInfo);
+   ctResults Shutdown(ctGPUDevice* pDevice);
+   ctResults PrepareFrame(ctGPUDevice* pDevice,
+                          uint32_t architectCount,
+                          struct ctGPUArchitectVulkan** ppArchitects);
+   /* Automatics */
+   int32_t fixedTextureBindUpperBound;
+   int32_t fixedStorageBufferBindUpperBound;
    /* Bindless System */
    VkDescriptorSetLayout vkGlobalDescriptorSetLayout;
    VkDescriptorPool vkDescriptorPool;
-   VkDescriptorSet vkGlobalDescriptorSet;
+   int32_t currentFrame = 0;
+   VkDescriptorSet vkGlobalDescriptorSet[CT_MAX_INFLIGHT_FRAMES];
    VkPipelineLayout vkGlobalPipelineLayout;
-   ctVkDescriptorManager descriptorsSamplers;
-   ctVkDescriptorManager descriptorsSampledImage;
-   ctVkDescriptorManager descriptorsStorageImage;
-   ctVkDescriptorManager descriptorsStorageBuffer;
+   ctVkBindlessSlotManager slotManagerSamplers;
+   ctVkBindlessSlotManager slotManagerSampledImage;
+   ctVkBindlessSlotManager slotManagerStorageImage;
+   ctVkBindlessSlotManager slotManagerStorageBuffer;
    int32_t maxSamplers = CT_MAX_GFX_SAMPLERS;
    int32_t maxSampledImages = CT_MAX_GFX_SAMPLED_IMAGES;
    int32_t maxStorageImages = CT_MAX_GFX_STORAGE_IMAGES;
    int32_t maxStorageBuffers = CT_MAX_GFX_STORAGE_BUFFERS;
    int32_t maxUniformBuffers = CT_MAX_GFX_UNIFORM_BUFFERS;
 
-   // todo: better api for filling in descriptors
-   void ExposeBindlessStorageBuffer(ctGPUDevice* pDevice,
-                                    int32_t& outIdx,
-                                    VkBuffer buffer,
-                                    VkDeviceSize range = VK_WHOLE_SIZE,
-                                    VkDeviceSize offset = 0);
-   void ReleaseBindlessStorageBuffer(ctGPUDevice* pDevice, int32_t idx);
-   void ExposeBindlessSampledImage(
-     ctGPUDevice* pDevice,
-     int32_t& outIdx,
-     VkImageView view,
-     VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-     VkSampler sampler = VK_NULL_HANDLE);
-   void ReleaseBindlessSampledImage(int32_t idx);
+   inline ctResults AddBufferWrite(int32_t dstFrame, int32_t idx, VkBuffer buffer) {
+      VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      write.dstBinding = GLOBAL_BIND_STORAGE_BUFFER;
+      write.dstSet = vkGlobalDescriptorSet[dstFrame];
+      write.descriptorCount = 1;
+      write.dstArrayElement = idx;
+
+      VkDescriptorBufferInfo buffInfo = {};
+      buffInfo.buffer = buffer;
+      buffInfo.offset = 0;
+      buffInfo.range = VK_WHOLE_SIZE;
+      if (buffInfos[dstFrame].Count() >= buffInfos[dstFrame].Capacity()) {
+         return CT_FAILURE_OUT_OF_MEMORY;
+      }
+      buffInfos[dstFrame].Append(buffInfo);
+      write.pBufferInfo = &buffInfos[dstFrame].Last();
+      descriptorSetWrites[dstFrame].Append(write);
+      return CT_SUCCESS;
+   }
+   inline ctResults AddTextureWrite(int32_t dstFrame, int32_t idx, VkImageView view) {
+      VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+      write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+      write.dstBinding = GLOBAL_BIND_SAMPLED_IMAGE;
+      write.dstSet = vkGlobalDescriptorSet[dstFrame];
+      write.descriptorCount = 1;
+      write.dstArrayElement = idx;
+
+      VkDescriptorImageInfo imageInfo = {};
+      imageInfo.imageView = view;
+      imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      if (imageInfos[dstFrame].Count() >= imageInfos[dstFrame].Capacity()) {
+         return CT_FAILURE_OUT_OF_MEMORY;
+      }
+      imageInfos[dstFrame].Append(imageInfo);
+      write.pImageInfo = &imageInfos[dstFrame].Last();
+      descriptorSetWrites[dstFrame].Append(write);
+      return CT_SUCCESS;
+   }
+   ctDynamicArray<VkDescriptorBufferInfo>
+     buffInfos[CT_MAX_INFLIGHT_FRAMES]; /* don't resize at runtime */
+   ctDynamicArray<VkDescriptorImageInfo>
+     imageInfos[CT_MAX_INFLIGHT_FRAMES]; /* don't resize at runtime */
+   ctDynamicArray<VkWriteDescriptorSet> descriptorSetWrites[CT_MAX_INFLIGHT_FRAMES];
+
+   ctDynamicArray<int32_t> trackedDynamicBufferIndices;
+   ctDynamicArray<int32_t> trackedDynamicBufferLastFrames;
+   ctDynamicArray<ctGPUExternalBuffer*> trackedDynamicBuffers;
+
+   ctDynamicArray<int32_t> trackedDynamicTextureIndices;
+   ctDynamicArray<int32_t> trackedDynamicTextureLastFrames;
+   ctDynamicArray<ctGPUExternalTexture*> trackedDynamicTextures;
 };

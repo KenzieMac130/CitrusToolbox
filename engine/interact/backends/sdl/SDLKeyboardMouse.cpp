@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -107,8 +107,8 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
-   directory.configHotReload.RegisterPath("input/keyboard.json");
-   directory.configHotReload.RegisterPath("input/mouse.json");
+   directory.configHotReload.RegisterData(CT_CDATA("Input_Keyboard"));
+   directory.configHotReload.RegisterData(CT_CDATA("Input_Mouse"));
 #endif
 
    return CT_SUCCESS;

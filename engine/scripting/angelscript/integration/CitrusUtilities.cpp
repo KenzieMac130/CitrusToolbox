@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,28 +14,4 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
-
-#include "lua.hpp"
-
-#include "api/CommonApi.hpp"
-
-class CT_API ctLuaContext {
-public:
-   ctResults Startup(bool trusted);
-   ctResults Shutdown();
-
-   ctResults OpenEngineLibrary(const char* name);
-
-   ctResults LoadFromBuffer(const char* data, size_t size, const char* name);
-   ctResults LoadFromFile(const char* path);
-
-   ctResults RunScript();
-
-   ctResults CallFunction(const char* name, const char* signature, ...);
-
-   lua_State* L;
-};
+#include "../AngelScript.hpp"

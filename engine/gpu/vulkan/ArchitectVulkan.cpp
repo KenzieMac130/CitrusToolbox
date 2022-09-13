@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,9 +66,9 @@ ctResults ctGPUArchitectVulkan::BackendStartup(ctGPUDevice* pDevice) {
    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkCreateSemaphore(
-        pDevice->vkDevice, &semaphoreInfo, &pDevice->vkAllocCallback, &outputReady[i]);
+        pDevice->vkDevice, &semaphoreInfo, pDevice->GetAllocCallback(), &outputReady[i]);
       vkCreateFence(
-        pDevice->vkDevice, &fenceInfo, &pDevice->vkAllocCallback, &finishedFence[i]);
+        pDevice->vkDevice, &fenceInfo, pDevice->GetAllocCallback(), &finishedFence[i]);
    }
    return CT_SUCCESS;
 }
@@ -77,8 +77,8 @@ ctResults ctGPUArchitectVulkan::BackendShutdown(ctGPUDevice* pDevice) {
    ZoneScoped;
    vkDeviceWaitIdle(pDevice->vkDevice);
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroyFence(pDevice->vkDevice, finishedFence[i], &pDevice->vkAllocCallback);
-      vkDestroySemaphore(pDevice->vkDevice, outputReady[i], &pDevice->vkAllocCallback);
+      vkDestroyFence(pDevice->vkDevice, finishedFence[i], pDevice->GetAllocCallback());
+      vkDestroySemaphore(pDevice->vkDevice, outputReady[i], pDevice->GetAllocCallback());
    }
    DereferenceAll();
    GarbageCollect(pDevice);
@@ -91,14 +91,23 @@ ctResults ctGPUArchitectVulkan::BackendShutdown(ctGPUDevice* pDevice) {
 ctResults ctGPUArchitectVulkan::BackendBuild(ctGPUDevice* pDevice) {
    ZoneScoped;
    DereferenceAll();
+   bufferBindings.Clear();
+   imageBindings.Clear();
    for (auto it = cpLogicalBufferPayloads.GetIterator(); it; it++) {
       MapToBuffer(pDevice, it.Value());
+      bufferBindings.Append(
+        BufferBind {it.Value()->bindSlot,
+                    ((ctGPUArchVkPhysicalBuffer*)(it.Value()->apiData))->data.buffer});
    }
    for (auto it = cpLogicalImagePayloads.GetIterator(); it; it++) {
       MapToImage(pDevice, it.Value());
+      imageBindings.Append(
+        ImageBind {it.Value()->bindSlot,
+                   ((ctGPUArchVkPhysicalImage*)(it.Value()->apiData))->sampleableView});
    }
    GarbageCollect(pDevice);
    isRenderable = true;
+   needsBindUpdate = true;
    return CT_SUCCESS;
 }
 
@@ -108,7 +117,7 @@ void ctGPUArchitectVulkan::CommandBufferManager::Startup(ctGPUDevice* pDevice,
    VkCommandPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
    poolInfo.queueFamilyIndex = queueFamilyIdx;
    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   vkCreateCommandPool(pDevice->vkDevice, &poolInfo, &pDevice->vkAllocCallback, &pool);
+   vkCreateCommandPool(pDevice->vkDevice, &poolInfo, pDevice->GetAllocCallback(), &pool);
    VkCommandBufferAllocateInfo allocInfo = {
      VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
    allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
@@ -121,7 +130,7 @@ void ctGPUArchitectVulkan::CommandBufferManager::Startup(ctGPUDevice* pDevice,
 
 void ctGPUArchitectVulkan::CommandBufferManager::Shutdown(ctGPUDevice* pDevice) {
    vkFreeCommandBuffers(pDevice->vkDevice, pool, CT_MAX_INFLIGHT_FRAMES, cmd);
-   vkDestroyCommandPool(pDevice->vkDevice, pool, &pDevice->vkAllocCallback);
+   vkDestroyCommandPool(pDevice->vkDevice, pool, pDevice->GetAllocCallback());
 }
 
 VkCommandBuffer ctGPUArchitectVulkan::CommandBufferManager::GetCmd() {
@@ -144,6 +153,7 @@ void ctGPUArchitectVulkan::CommandBufferManager::NextFrame() {
    ctAssert(frame >= 0);
    VkCommandBuffer result = cmd[frame];
    VkCommandBufferBeginInfo begin = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+   vkResetCommandBuffer(cmd[frame], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
    vkBeginCommandBuffer(result, &begin);
 }
 
@@ -178,22 +188,24 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice,
    VkCommandBuffer ccmd = pComputeCommands->GetCmd();
    VkCommandBuffer tcmd = pTransferCommands->GetCmd();
 
-   vkCmdBindDescriptorSets(gcmd,
-                           VK_PIPELINE_BIND_POINT_GRAPHICS,
-                           pBindingModel->vkGlobalPipelineLayout,
-                           0,
-                           1,
-                           &pBindingModel->vkGlobalDescriptorSet,
-                           0,
-                           NULL);
-   vkCmdBindDescriptorSets(gcmd,
-                           VK_PIPELINE_BIND_POINT_COMPUTE,
-                           pBindingModel->vkGlobalPipelineLayout,
-                           0,
-                           1,
-                           &pBindingModel->vkGlobalDescriptorSet,
-                           0,
-                           NULL);
+   vkCmdBindDescriptorSets(
+     gcmd,
+     VK_PIPELINE_BIND_POINT_GRAPHICS,
+     pBindingModel->vkGlobalPipelineLayout,
+     0,
+     1,
+     &pBindingModel->vkGlobalDescriptorSet[pBindingModel->currentFrame],
+     0,
+     NULL);
+   vkCmdBindDescriptorSets(
+     gcmd,
+     VK_PIPELINE_BIND_POINT_COMPUTE,
+     pBindingModel->vkGlobalPipelineLayout,
+     0,
+     1,
+     &pBindingModel->vkGlobalDescriptorSet[pBindingModel->currentFrame],
+     0,
+     NULL);
 
    ctGPUArchitectTaskCategory lastTaskCategory = CT_GPU_TASK_UNDEFINED;
    ctGPUArchitectTaskCategory lastOutputTouchCategory = CT_GPU_TASK_UNDEFINED;
@@ -203,8 +215,8 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice,
       /* Do Raster Commands */
       if (task.category == CT_GPU_TASK_RASTER) {
          /* Build render info */
-         VkRenderingAttachmentInfoKHR colorInfos[8];
-         VkRenderingAttachmentInfoKHR depthStencilInfo;
+         VkRenderingAttachmentInfo colorInfos[8];
+         VkRenderingAttachmentInfo depthStencilInfo;
          bool hasStencil = false;
          bool hasDepth = false;
          VkRenderingInfoKHR renderInfo = {VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
@@ -445,13 +457,13 @@ ctResults ctGPUArchitectVulkan::MapToBuffer(ctGPUDevice* pDevice,
          pPhysicalBuffers[i]->refCount++;
          pPhysicalBuffers[i]->mappings.Append(pPayloadData->identifier);
          pPayloadData->apiData = pPhysicalBuffers[i];
-         //ctDebugLog("Aliased Buffer %s->%s",
+         // ctDebugLog("Aliased Buffer %s->%s",
          //           pPayloadData->debugName,
          //           pPhysicalBuffers[i]->debugName);
          return CT_SUCCESS;
       }
    }
-   //ctDebugLog("Created New Buffer %s", pPayloadData->debugName);
+   // ctDebugLog("Created New Buffer %s", pPayloadData->debugName);
    return CreateNewBuffer(pDevice, pPayloadData);
 }
 
@@ -463,13 +475,13 @@ ctResults ctGPUArchitectVulkan::MapToImage(ctGPUDevice* pDevice,
          pPhysicalImages[i]->refCount++;
          pPhysicalImages[i]->mappings.Append(pPayloadData->identifier);
          pPayloadData->apiData = pPhysicalImages[i];
-         //ctDebugLog("Aliased Image %s->%s",
+         // ctDebugLog("Aliased Image %s->%s",
          //           pPayloadData->debugName,
          //           pPhysicalImages[i]->debugName);
          return CT_SUCCESS;
       }
    }
-   //ctDebugLog("Created New Image %s", pPayloadData->debugName);
+   // ctDebugLog("Created New Image %s", pPayloadData->debugName);
    return CreateNewImage(pDevice, pPayloadData);
 }
 
@@ -484,6 +496,12 @@ ctResults ctGPUArchitectVulkan::GarbageCollect(ctGPUDevice* pDevice) {
    }
    for (size_t i = 0; i < pPhysicalImages.Count(); i++) {
       if (pPhysicalImages[i]->refCount <= 0) {
+         /* edge case sampleable views */
+         if (pPhysicalImages[i]->sampleableView != pPhysicalImages[i]->data.view) {
+            vkDestroyImageView(pDevice->vkDevice,
+                               pPhysicalImages[i]->sampleableView,
+                               pDevice->GetAllocCallback());
+         }
          pDevice->TryDestroyCompleteImage(pPhysicalImages[i]->data);
          delete pPhysicalImages[i];
          pPhysicalImages[i] = NULL;
@@ -525,8 +543,8 @@ bool ctGPUArchitectVulkan::GetOutput(ctGPUDevice* pDevice,
    width = GetPhysicalImageWidth(pPayload->flags, pPayload->width);
    height = GetPhysicalImageHeight(pPayload->flags, pPayload->height);
    layout = ((ctGPUArchVkPhysicalImage*)pPayload->apiData)->currentLayout;
-   access = 0;                                  // todo
-   stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;  // todo
+   access = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+   stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
    return true;
 }
 
@@ -634,6 +652,9 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
    VkImageUsageFlags knownUsage = VK_IMAGE_USAGE_SAMPLED_BIT |
                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+   bool allowSampleView = true;
+   bool useUnqiqueSampleView = false;
    VkImageAspectFlags aspect;
    if (TinyImageFormat_IsDepthOnly(pPayloadData->format)) {
       pPhysicalImage->hasDepth = true;
@@ -645,11 +666,13 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
       pPhysicalImage->hasStencil = true;
       knownUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
       aspect = VK_IMAGE_ASPECT_STENCIL_BIT;
+      allowSampleView = false;
    } else if (TinyImageFormat_IsDepthAndStencil(pPayloadData->format)) {
       pPhysicalImage->hasDepth = true;
       pPhysicalImage->hasStencil = true;
       knownUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
       aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+      useUnqiqueSampleView = true;
    } else {
       pPhysicalImage->hasDepth = false;
       pPhysicalImage->hasStencil = false;
@@ -700,6 +723,32 @@ ctResults ctGPUArchitectVulkan::CreateNewImage(ctGPUDevice* pDevice,
       ctAssert(0);
       return CT_FAILURE_UNKNOWN;
    }
+
+   if (allowSampleView) {
+      if (useUnqiqueSampleView) {
+         /* create sample view without stencil */
+         VkImageViewCreateInfo viewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+         viewInfo.image = pPhysicalImage->data.image;
+         viewInfo.components = {VK_COMPONENT_SWIZZLE_IDENTITY,
+                                VK_COMPONENT_SWIZZLE_IDENTITY,
+                                VK_COMPONENT_SWIZZLE_IDENTITY,
+                                VK_COMPONENT_SWIZZLE_IDENTITY};
+         viewInfo.viewType = viewType;
+         viewInfo.format = pPhysicalImage->format;
+         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+         viewInfo.subresourceRange.baseArrayLayer = 0;
+         viewInfo.subresourceRange.layerCount = pPhysicalImage->layers;
+         viewInfo.subresourceRange.baseMipLevel = 0;
+         viewInfo.subresourceRange.levelCount = pPhysicalImage->miplevels;
+         vkCreateImageView(pDevice->vkDevice,
+                           &viewInfo,
+                           pDevice->GetAllocCallback(),
+                           &pPhysicalImage->sampleableView);
+      } else {
+         /* sampleable is regular view */
+         pPhysicalImage->sampleableView = pPhysicalImage->data.view;
+      }
+   }
    pPayloadData->apiData = pPhysicalImage;
    return CT_SUCCESS;
 }
@@ -735,11 +784,10 @@ VkClearValue GetClearValue(const ctGPUArchVkPhysicalImage& image,
    return clearValue;
 }
 
-VkRenderingAttachmentInfoKHR ctGPUArchitectVulkan::RenderingAttachmentInfoFromImage(
+VkRenderingAttachmentInfo ctGPUArchitectVulkan::RenderingAttachmentInfoFromImage(
   ctGPUArchVkPhysicalImage* image, ctGPUArchitectDependencyEntry currentDep) {
    ZoneScoped;
-   VkRenderingAttachmentInfoKHR info = {
-     VK_STRUCTURE_TYPE_MAX_ENUM /* todo: struct type*/};
+   VkRenderingAttachmentInfo info = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
    if (image->hasDepth && !image->hasStencil) {
       info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
    } else if (!image->hasDepth && image->hasStencil) {
@@ -761,7 +809,7 @@ VkRenderingAttachmentInfoKHR ctGPUArchitectVulkan::RenderingAttachmentInfoFromIm
    }
    info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
    info.imageView = image->data.view;
-   /* todo: msaa support */
+   /* todo: msaa support? */
    info.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
    info.resolveMode = VK_RESOLVE_MODE_NONE;
    info.resolveImageView = VK_NULL_HANDLE;

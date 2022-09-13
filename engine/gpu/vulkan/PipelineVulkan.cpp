@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
        raster.depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
        raster.blendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
        raster.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-       raster.dynamicRendering.sType = (VkStructureType)VK_STRUCTURE_TYPE_MAX_ENUM; /* todo: use final */
+       raster.dynamicRendering.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
       // clang-format on
       raster.createInfo.pInputAssemblyState = &raster.inputAssembly;
       raster.createInfo.pTessellationState = &raster.tessellation;
@@ -127,7 +127,7 @@ CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
    info.codeSize = size;
    info.pCode = (uint32_t*)pData;
    VkResult result = vkCreateShaderModule(
-     pDevice->vkDevice, &info, &pDevice->vkAllocCallback, (VkShaderModule*)pShaderOut);
+     pDevice->vkDevice, &info, pDevice->GetAllocCallback(), (VkShaderModule*)pShaderOut);
    return result == VK_SUCCESS ? CT_SUCCESS : CT_FAILURE_RUNTIME_ERROR;
 }
 
@@ -135,7 +135,7 @@ CT_API void ctGPUShaderSoftRelease(ctGPUDevice* pDevice, ctGPUShaderModule shade
    ctAssert(pDevice);
    ctAssert(shader);
    vkDestroyShaderModule(
-     pDevice->vkDevice, (VkShaderModule)shader, &pDevice->vkAllocCallback);
+     pDevice->vkDevice, (VkShaderModule)shader, pDevice->GetAllocCallback());
 }
 
 CT_API ctResults ctGPUPipelineBuilderClearShaders(ctGPUPipelineBuilder* pBuilder) {
@@ -493,7 +493,7 @@ CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
                                     pDevice->vkPipelineCache,
                                     1,
                                     &pBuilder->raster.createInfo,
-                                    &pDevice->vkAllocCallback,
+                                    pDevice->GetAllocCallback(),
                                     (VkPipeline*)pPipeline) != VK_SUCCESS) {
          return CT_FAILURE_RUNTIME_ERROR;
       }
@@ -505,5 +505,5 @@ CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
 CT_API void ctGPUPipelineDestroy(ctGPUDevice* pDevice, ctGPUPipeline pipeline) {
    ctAssert(pDevice);
    ctAssert(pipeline);
-   vkDestroyPipeline(pDevice->vkDevice, (VkPipeline)pipeline, &pDevice->vkAllocCallback);
+   vkDestroyPipeline(pDevice->vkDevice, (VkPipeline)pipeline, pDevice->GetAllocCallback());
 }

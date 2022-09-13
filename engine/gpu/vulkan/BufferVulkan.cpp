@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -50,21 +50,11 @@ CT_API bool ctGPUExternalBufferPoolNeedsDispatch(ctGPUDevice* pDevice,
    return needsUpdate;
 }
 
-CT_API bool ctGPUExternalBufferPoolNeedsRebind(ctGPUDevice* pDevice,
-                                               ctGPUExternalBufferPool* pPool) {
-   return CT_API bool();
-}
-
-CT_API ctResults ctGPUExternalBufferPoolRebind(ctGPUDevice* pDevice,
-                                               ctGPUBindingModel* pBindingModel) {
-   return CT_API ctResults();
-}
-
 CT_API ctResults ctGPUExternalBufferPoolDispatch(ctGPUDevice* pDevice,
                                                  ctGPUExternalBufferPool* pPool,
                                                  ctGPUCommandBuffer cmd) {
    VkCommandBuffer vkcmd = (VkCommandBuffer)cmd;
-   pPool->CommitHotList();
+   pPool->CommitCmdHotList();
    for (size_t i = 0; i < pPool->gpuCmdUpdateList.Count(); i++) {
       pPool->gpuCmdUpdateList[i]->ExecuteCommands(vkcmd);
    }
@@ -145,6 +135,12 @@ CT_API ctResults ctGPUExternalBufferRebuild(ctGPUDevice* pDevice,
                                  pPool->pAsyncUserData);
       } else {
          ppBuffers[i]->GenerateContents();
+         if (ppBuffers[i]->updateMode == CT_GPU_UPDATE_STREAM) {
+            vmaFlushAllocation(pDevice->vmaAllocator,
+                               ppBuffers[i]->contents[ppBuffers[i]->currentFrame].alloc,
+                               0,
+                               VK_WHOLE_SIZE);
+         }
       }
    }
    return CT_SUCCESS;
@@ -171,14 +167,6 @@ CT_API ctResults ctGPUExternalBufferGetCurrentAccessor(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUExternalBufferGetBindlessIndex(ctGPUDevice* pDevice,
-                                                     ctGPUExternalBufferPool* pPool,
-                                                     ctGPUExternalBuffer* pBuffer,
-                                                     int32_t* pIndex) {
-   *pIndex = pBuffer->bindlessIndices[pBuffer->currentFrame];
-   return CT_SUCCESS;
-}
-
 ctGPUExternalBufferPool::ctGPUExternalBufferPool(
   ctGPUExternalBufferPoolCreateInfo* pInfo) {
    fpAsyncScheduler = pInfo->fpAsyncScheduler;
@@ -190,7 +178,10 @@ void ctGPUExternalBufferPool::GarbageCollect(ctGPUDevice* pDevice) {
    for (size_t i = 0; i < garbageList.Count(); i++) {
       ctGPUExternalBuffer* pBuffer = garbageList[i];
       /* Don't release if it is still in use */
-      if (!pBuffer->isReady()) { incompleteGarbageList.Append(pBuffer); }
+      if (!pBuffer->isReady()) {
+         incompleteGarbageList.Append(pBuffer);
+         continue;
+      }
 
       /* Release internals */
       pBuffer->FreeMappings(pDevice);
@@ -204,7 +195,7 @@ void ctGPUExternalBufferPool::GarbageCollect(ctGPUDevice* pDevice) {
    incompleteGarbageList.Clear();
 }
 
-void ctGPUExternalBufferPool::CommitHotList() {
+void ctGPUExternalBufferPool::CommitCmdHotList() {
    ctSpinLockEnterCritical(uploadListLock);
    gpuCmdUpdateList.Resize(gpuCmdUpdateListHot.Count());
    memcpy(gpuCmdUpdateList.Data(),
@@ -282,7 +273,7 @@ void ctGPUExternalBuffer::FreeMappings(ctGPUDevice* pDevice) {
 void ctGPUExternalBuffer::GenerateContents() {
    generationFunction(mappings[currentFrame], size, userData);
    MakeReady(true);
-   pPool->AddToUpload(this);
+   if (updateMode != CT_GPU_UPDATE_STREAM) { pPool->AddToUpload(this); }
 }
 
 void ctGPUExternalBuffer::ExecuteCommands(VkCommandBuffer cmd) {

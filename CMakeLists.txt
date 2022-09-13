@@ -1,5 +1,5 @@
 #
-#   Copyright 2021 MacKenzie Strand
+#   Copyright 2022 MacKenzie Strand
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ set(CT_MAX_MIP_LEVELS 12)
 set(CT_MAX_VERTEX_UV_CHANNELS 4)
 set(CT_MAX_VERTEX_COLOR_CHANNELS 4)
 set(CT_MAX_MESH_MATERIALS 32)
+set(CT_MAX_KINNOW_REFLECT_ENUMS 128)
+set(CT_MAX_KINNOW_REFLECT_STRUCTS 256)
 
 # ---------- Alignment ----------
 set(CT_ALIGNMENT_CACHE 64)
@@ -73,6 +75,11 @@ set(CT_ALIGNMENT_VEC3 16)
 set(CT_ALIGNMENT_VEC4 16)
 set(CT_ALIGNMENT_QUAT 16)
 set(CT_ALIGNMENT_MAT4 32)
+
+# ---------- Scene Engine ----------
+set(CITRUS_SCENE_ENGINES HONEYBELL KINNOW)
+set(CITRUS_SCENE_ENGINE KINNOW CACHE STRING "Scene engine")
+set_property(CACHE CITRUS_SCENE_ENGINE PROPERTY STRINGS ${CITRUS_SCENE_ENGINES})
 
 # ---------- Other Defines ----------
 option(USE_STDOUT "Enable STD Out" ON)
@@ -126,9 +133,6 @@ endif()
 
 # ---------- Find ISPC ----------
 set(ISPC_COMPILER_PATH ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc)
-
-# ---------- Find SWIG ----------
-set(SWIG_EXECUTABLE_PATH ${BASE_LIBRARY_DIRECTORY}/SWIG/swig)
 
 # ---------- Find SDL2 ----------
 set(CITRUS_SDL 1)
@@ -187,11 +191,19 @@ if(CITRUS_PHYSX)
 endif()
 
 # ---------- Find Lua ----------
-set(CITRUS_LUA 1)
+set(CITRUS_LUA 0)
 if(CITRUS_LUA)
     set(LUA_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/LuaJIT)
     set(LUA_LIBRARIES 
         ${BASE_LIBRARY_DIRECTORY}/LuaJIT/lua51.lib)
+endif()
+
+# ---------- Find Angel Script ----------
+set(CITRUS_ANGELSCRIPT 1)
+if(CITRUS_ANGELSCRIPT)
+    set(ANGELSCRIPT_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/AngelScript)
+    set(ANGELSCRIPT_LIBRARIES 
+        ${BASE_LIBRARY_DIRECTORY}/AngelScript/angelscript.lib)
 endif()
 
 # ---------- Tracy Profiler ---------- 
@@ -204,8 +216,6 @@ else()
    set(TRACY_FILES "")
    set(CITRUS_TRACY 0)
 endif()
-
-# ---------- Catch2 Unit Testing ---------- 
 
 # ---------- Audition Live Development ----------
 option(USE_AUDITION "Enable Audition Live Development" ON)

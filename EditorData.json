@@ -1,0 +1,10 @@
+{
+  "kinnow": [
+	  "engine/scene/kinnow/components/",
+    "game/components/"
+    ],
+  "honeybell": [
+    "engine/scene/honeybell/",
+    "game/toys/"
+    ]
+}

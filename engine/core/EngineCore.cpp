@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
-   Interact = new ctInteractionEngine();
+   Interact = new ctInteractionEngine(true);
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -212,7 +212,7 @@ ctResults ctKeyLimeRenderer::Startup() {
 
    /* Bindless */
    ctGPUBindlessManagerCreateInfo bindlessCreateInfo = {};
-   bindlessCreateInfo.fixedBufferBindUpperBound = 512;
+   bindlessCreateInfo.fixedStorageBufferBindUpperBound = 512;
    bindlessCreateInfo.fixedTextureBindUpperBound = 512;
    ctGPUBindlessManagerStartup(pGPUDevice, &pGPUBindless, &bindlessCreateInfo);
 
@@ -395,6 +395,16 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
       rebuildRequired = false;
       ctDebugLog("Rebuilt Rendergraph!");
    }
+   Engine->ImguiIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
+   ctGPUBindlessManagerPrepareFrame(pGPUDevice,
+                                    pGPUBindless,
+                                    1,
+                                    &pGPUBufferPool,
+                                    1,
+                                    &pGPUTexturePool,
+                                    1,
+                                    &pGPUArchitect,
+                                    NULL);
    ctGPUArchitectExecute(pGPUDevice, pGPUArchitect, pGPUBindless);
    ctGPUPresenterExecute(pGPUDevice, pGPUPresenter, pGPUArchitect);
 #endif
@@ -534,7 +544,7 @@ ctResults
 ctKeyLimeRenderer::PostProcessS::DefineGUIPass(ctGPUArchitectDefinitionContext* pCtx,
                                                ctKeyLimeRenderer* pRenderer) {
    // clang-format off
-    ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_WRITE, NULL);
+    ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_WRITE, &depthClear);
     ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_READ_WRITE, 0, NULL);
     ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"));
    // clang-format on

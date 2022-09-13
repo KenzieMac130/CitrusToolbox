@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,22 +14,4 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include "CommonApi.hpp"
-
-namespace ctScriptApi {
-namespace Honeybell {
-   int spawnToy(ctScriptTypedLightData* scene,
-                const char* type,
-                float x,
-                float y,
-                float z,
-                float yaw,
-                float pitch,
-                float roll,
-                float scale,
-                const char* message,
-                const char* prefabPath);
-}
-}
+#include "../AngelScript.hpp"

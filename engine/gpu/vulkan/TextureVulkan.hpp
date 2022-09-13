@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 #include "gpu/Texture.h"
 #include "DeviceVulkan.hpp"
+#include "BindlessVulkan.hpp"
 
 struct ctGPUExternalTexture {
    VkMemoryRequirements memreq;
@@ -56,10 +57,6 @@ struct ctGPUExternalTexture {
 
    /* Copies */
    ctDynamicArray<VkBufferImageCopy> copyCommands;
-
-   /* Bindless */
-   int32_t bindlessIndices[CT_MAX_INFLIGHT_FRAMES];
-   bool bindlessDirty[CT_MAX_INFLIGHT_FRAMES];
 
    /* Generation */
    ctGPUExternalTexturePool* pPool;

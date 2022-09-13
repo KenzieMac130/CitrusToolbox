@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -51,12 +51,22 @@ struct ctGPUDeviceCreateInfo {
    void* pAssetCallbackCustomData;
 };
 
+enum ctGPUFeatureLevel {
+   CT_GPU_FEATURE_LEVEL_INCOMPATIBLE,
+   CT_GPU_FEATURE_LEVEL_DESKTOP_2020_Q1 /* Assumed on current-gen desktop/console */
+};
+
 struct ctGPUDeviceCapabilities {
+   enum ctGPUFeatureLevel featureLevel;
+
    bool hasRobustIndirect;
    bool hasMeshShaders;
    bool hasRaytracing;
+
    bool hasMultiWindow;
 };
+
+/* todo: format support */
 
 CT_API enum ctResults
 ctGPUDeviceStartup(struct ctGPUDevice** ppDevice,

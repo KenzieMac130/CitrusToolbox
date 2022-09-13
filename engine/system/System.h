@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,8 +16,14 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <stdbool.h>
+
 int ctSystemCreateGUID(void* guidPtr);
 int ctSystemFilePathLocalize(char* str);
 int ctSystemInitialGetLanguage(char* buff, size_t max);
 int ctSystemExecuteCommand(const char* commandAlias, int argc, const char* argv[]);
 int ctSystemShowFileToDeveloper(const char* path);
+int ctSystemPositionalPrintToString(char* dest, size_t capacity, const char* format, ...);
+void* ctSystemMapVirtualFile(const char* path, bool write, size_t reserve, size_t* pSize);
+int ctSystemUnmapVirtualFile(void* buff, size_t length);

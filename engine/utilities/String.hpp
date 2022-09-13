@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 class CT_API ctStringUtf8 {
 public:
    ctStringUtf8();
+   ~ctStringUtf8();
    ctStringUtf8(ctStringUtf8& str);
    ctStringUtf8(const ctStringUtf8& str);
    ctStringUtf8(const char* input, const size_t count);

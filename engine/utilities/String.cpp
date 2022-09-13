@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,14 @@
 #include "cute/cute_utf.h"
 #include <ctype.h>
 
+/* ------------------------ Global String Pool ------------------------ */
+
+/* ------------------------ String Type ------------------------ */
+
 ctStringUtf8::ctStringUtf8() {
+}
+
+ctStringUtf8::~ctStringUtf8() {
 }
 
 ctStringUtf8::ctStringUtf8(ctStringUtf8& str) {

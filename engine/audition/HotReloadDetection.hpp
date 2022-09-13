@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 
 class CT_API ctHotReloadCategory {
 public:
+   void RegisterData(const ctGUID& guid);
+   void UnregisterData(const ctGUID& guid);
    void RegisterPath(const char* relativePath);
    void UnregisterPath(const char* relativePath);
    void Reset();
@@ -33,10 +35,10 @@ public:
 
    void _AddFileUpdate(const char* path);
    class ctHotReloadDetection* _pOwner;
-protected: 
 
+protected:
 private:
-   ctDynamicArray<uint64_t> watchedPathHashes;
+   ctDynamicArray<uint64_t> watchedPathHashes; /* todo: hash set */
    ctDynamicArray<ctStringUtf8> updatedPaths;
 };
 

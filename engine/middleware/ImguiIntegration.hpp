@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ public:
    ctResults ShutdownGPU(struct ctGPUDevice* pGPUDevice,
                          struct ctGPUExternalBufferPool* pGPUBufferPool,
                          struct ctGPUExternalTexturePool* pGPUTexturePool);
+   ctResults PrepareFrameGPU(struct ctGPUDevice* pGPUDevice,
+                             struct ctGPUExternalBufferPool* pGPUBufferPool);
    static ctResults DrawCallback(struct ctGPUArchitectExecutionContext* pCtx,
                                  void* pUserData);
 

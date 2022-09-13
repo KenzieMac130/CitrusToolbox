@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ ctHoneybell::SceneChunk::SceneChunk(ConstructContext& ctx) : ToyBase(ctx) {
    ctWADFindLump(&ctx.prefab.wadReader, "LUA", &luaLumpData, &luaLumpSize);
    sceneScript.LoadFromBuffer((const char*)luaLumpData, luaLumpSize, "SceneScript");
    sceneScript.Startup(false);
-   sceneScript.OpenEngineLibrary("scene");
+   //sceneScript.OpenEngineLibrary("scene");
    sceneScript.CallFunction("OnConstruct", "");
 }
 

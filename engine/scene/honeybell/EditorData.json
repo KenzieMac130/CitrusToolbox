@@ -1,0 +1,17 @@
+{
+  "description": "Used edit toy properties in the DCC",
+  "toys": {
+    "citrus/base": {
+      "properties": {
+      }
+    },
+	"citrus/groundPlane": {
+      "properties": {
+      }
+    }
+	"citrus/testShape": {
+	  "properties": {
+      }
+	}
+  }
+}

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -85,14 +85,6 @@ ctGPUExternalTexturePoolDispatch(struct ctGPUDevice* pDevice,
                                  struct ctGPUExternalTexturePool* pPool,
                                  ctGPUCommandBuffer cmd);
 
-CT_API bool ctGPUExternalTexturePoolNeedsRebind(struct ctGPUDevice* pDevice,
-                                                struct ctGPUExternalTexturePool* pPool);
-
-CT_API enum ctResults
-ctGPUExternalTexturePoolRebind(struct ctGPUDevice* pDevice,
-                               struct ctGPUExternalTexturePool* pPool,
-                               ctGPUBindingModel* pBindingModel);
-
 /* ------------------------------------------------------------------------------------ */
 
 struct ctGPUExternalTextureCreateFuncInfo {
@@ -149,12 +141,6 @@ ctGPUExternalTextureGetCurrentAccessor(struct ctGPUDevice* pDevice,
                                        struct ctGPUExternalTexturePool* pPool,
                                        struct ctGPUExternalTexture* pTexture,
                                        ctGPUImageAccessor* pAccessor);
-/* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalTextureIsReady()! */
-CT_API enum ctResults
-ctGPUExternalTextureGetBindlessIndex(struct ctGPUDevice* pDevice,
-                                     struct ctGPUExternalTexturePool* pPool,
-                                     struct ctGPUExternalTexture* pTexture,
-                                     int32_t* pIndex);
 
 #ifdef __cplusplus
 }

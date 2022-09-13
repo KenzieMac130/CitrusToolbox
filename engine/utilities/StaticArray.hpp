@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -233,7 +233,7 @@ template<class T, size_t TCAPACITY>
 inline ctResults ctStaticArray<T, TCAPACITY>::Insert(const T& val,
                                                      const int64_t position) {
    if (Count() >= Capacity()) { return CT_FAILURE_OUT_OF_BOUNDS; }
-   int64_t finalposition = position < 0 ? Count() + position + 1 : position;
+   int64_t finalposition = position < 0 ? Count() + 1 + position : position;
    if (finalposition < 0) { finalposition = 0; }
    if (finalposition > (int64_t)Count()) { finalposition = Count(); }
    for (int64_t i = Count(); i > finalposition; i--) {

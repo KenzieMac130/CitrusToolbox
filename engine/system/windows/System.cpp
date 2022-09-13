@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "../System.h"
 #include <Windows.h>
+#include <stdio.h>
 
 int ctSystemCreateGUID(void* guidPtr) {
    static_assert(sizeof(GUID) == 16, "Windows GUID no longer is 128bit!");
@@ -62,4 +63,26 @@ int ctSystemExecuteCommand(const char* commandAlias, int argc, const char* argv[
 
 int ctSystemShowFileToDeveloper(const char* path) {
    return system(path);
+}
+
+int ctSystemPositionalPrintToString(char* dest,
+                                    size_t capacity,
+                                    const char* format,
+                                    ...) {
+   va_list vl;
+   va_start(vl, format);
+   const int result = _vsprintf_p(dest, capacity, format, vl);
+   va_end(vl);
+   return result;
+}
+
+void* ctSystemMapVirtualFile(const char* path,
+                             bool write,
+                             size_t reserve,
+                             size_t* pSize) {
+   return NULL;
+}
+
+int ctSystemUnmapVirtualFile(void* buff, size_t length) {
+   return -1;
 }

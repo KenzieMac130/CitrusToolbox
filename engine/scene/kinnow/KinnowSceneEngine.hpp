@@ -16,5 +16,19 @@
 
 #pragma once
 
-#define CT_SCRIPTOBTYPE_NULL 0
-#define CT_SCRIPTOBTYPE_HBSCENE 1
+#include "utilities/Common.h"
+#include "scene/SceneEngineBase.hpp"
+
+#define CITRUS_SCENE_ENGINE_CLASS ctKinnowSceneEngine
+
+class CT_API ctKinnowSceneEngine : public ctSceneEngineBase {
+public:
+    virtual ctResults Startup();
+    virtual ctResults Shutdown();
+   /* Called at the end of a frame */
+   virtual ctResults NextFrame();
+   /* Get ctCameraInfo for a camera (NULL must return the "main camera")*/
+   virtual ctCameraInfo GetCameraInfo(const char* cameraId); //todo: depreciate
+   /* Load scene/level */
+   virtual ctResults LoadScene(const char* name, const char* message = NULL);
+};

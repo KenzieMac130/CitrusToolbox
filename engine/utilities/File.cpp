@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,6 +15,20 @@
 */
 
 #include "File.hpp"
+#include "system/System.h"
+
+SDL_RWops* SDL_RWFromLargeMem(void* mem, size_t size, bool write) {
+   SDL_RWops* ops = NULL;
+   if (write) {
+      ops = SDL_RWFromMem(mem, 1);
+   } else {
+      ops = SDL_RWFromConstMem(mem, 1);
+   }
+   if (!ops) { return NULL; }
+   ops->hidden.mem.stop = (uint8_t*)mem + size;
+
+   return ops;
+}
 
 const char* modestr[] = {"rb", "wb", "r", "w"};
 
@@ -44,13 +58,24 @@ ctFile::ctFile(const void* memory, size_t size, const ctFileOpenMode mode) {
    _mode = mode;
 }
 
-ctFile::ctFile(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent) :
+ctFile::ctFile(const char* filePath,
+               const ctFileOpenMode mode,
+               bool silent,
+               size_t reserve) :
     ctFile() {
-   Open(filePath, mode, silent);
+   Open(filePath, mode, silent, reserve);
+}
+
+ctFile::ctFile(const ctStringUtf8& filePath,
+               const ctFileOpenMode mode,
+               bool silent,
+               size_t reserve) :
+    ctFile() {
+   Open(filePath, mode, silent, reserve);
 }
 
 ctFile::~ctFile() {
-   //if (isOpen()) { Close(); } (explicit close is now required)
+   // if (isOpen()) { Close(); } (explicit close is now required)
 }
 
 void ctFile::FromCStream(FILE* fp, const ctFileOpenMode mode, bool allowClose) {
@@ -60,18 +85,31 @@ void ctFile::FromCStream(FILE* fp, const ctFileOpenMode mode, bool allowClose) {
    _mode = mode;
 }
 
-ctResults
-ctFile::Open(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent) {
+ctResults ctFile::Open(const ctStringUtf8& filePath,
+                       const ctFileOpenMode mode,
+                       bool silent,
+                       size_t reserve) {
+   return Open(filePath.CStr(), mode, silent, reserve);
+}
+
+ctResults ctFile::Open(const char* filePath,
+                       const ctFileOpenMode mode,
+                       bool silent,
+                       size_t reserve) {
    ZoneScoped;
-   if (mode > 3 || mode < 0) { return CT_FAILURE_INVALID_PARAMETER; }
-   _ctx = SDL_RWFromFile(filePath.CStr(), modestr[mode]);
+   if (_mode == CT_FILE_OPEN_READ_VIRTUAL || _mode == CT_FILE_OPEN_WRITE_VIRTUAL) {
+      size_t mapSize = 0;
+      void* map = ctSystemMapVirtualFile(filePath, false, reserve, &mapSize);
+      if (!map) { return CT_FAILURE_INACCESSIBLE; }
+      _ctx = SDL_RWFromLargeMem(map, mapSize, _mode == CT_FILE_OPEN_WRITE_VIRTUAL);
+   } else {
+      _ctx = SDL_RWFromFile(filePath, modestr[mode]);
+   }
    _mode = mode;
    if (_ctx) {
       return CT_SUCCESS;
    } else {
-      if (!silent) {
-         ctDebugError("COULD NOT OPEN: %s - %s", filePath.CStr(), modestr[mode])
-      };
+      if (!silent) { ctDebugError("COULD NOT OPEN: %s - %s", filePath, modestr[mode]) };
       return CT_FAILURE_INACCESSIBLE;
    }
 }
@@ -127,6 +165,17 @@ size_t ctFile::GetText(ctStringUtf8& outString) {
    outString.Append('\0', fsize + 1);
    ReadRaw(outString.Data(), 1, fsize);
    return fsize;
+}
+
+size_t ctFile::GetVirtualMemory(uint8_t** ppOutBytes) {
+   if (_mode == CT_FILE_OPEN_READ_VIRTUAL || _mode == CT_FILE_OPEN_WRITE_VIRTUAL) {
+      if (_ctx->type == SDL_RWOPS_MEMORY || _ctx->type == SDL_RWOPS_MEMORY_RO) {
+         *ppOutBytes = _ctx->hidden.mem.base;
+         return (size_t)(_ctx->hidden.mem.stop - _ctx->hidden.mem.base);
+      }
+   }
+   *ppOutBytes = NULL;
+   return 0;
 }
 
 int64_t ctFile::Tell() {
@@ -189,7 +238,6 @@ size_t ctFile::VPrintf(const char* format, va_list va) {
 #endif
 
 void ctFile::Flush() {
-   /* Bending the rules a little bit and messing with SDL guts */
    if (!_ctx) { return; }
 #if defined(__WIN32__)
    if (_ctx->type == SDL_RWOPS_WINFILE) {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -247,7 +247,7 @@ ctResults ctGPUPresenter::GetSwapchain(ctGPUDevice* pDevice) {
    }
    CT_VK_CHECK(
      vkCreateSwapchainKHR(
-       pDevice->vkDevice, &swapChainInfo, &pDevice->vkAllocCallback, &swapchain),
+       pDevice->vkDevice, &swapChainInfo, pDevice->GetAllocCallback(), &swapchain),
      CT_NCT("FAIL:vkCreateSwapchainKHR",
             "vkCreateSwapchainKHR() failed to create swapchain."));
 
@@ -258,7 +258,7 @@ ctResults ctGPUPresenter::GetSwapchain(ctGPUDevice* pDevice) {
 
    /* Destroy dangling swapchain*/
    if (oldSwapchain != VK_NULL_HANDLE) {
-      vkDestroySwapchainKHR(pDevice->vkDevice, oldSwapchain, &pDevice->vkAllocCallback);
+      vkDestroySwapchainKHR(pDevice->vkDevice, oldSwapchain, pDevice->GetAllocCallback());
    }
 
    return CT_SUCCESS;
@@ -270,7 +270,7 @@ ctResults ctGPUPresenter::CreatePresentResources(ctGPUDevice* pDevice) {
    VkSemaphoreCreateInfo semaphoreInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkCreateSemaphore(
-        pDevice->vkDevice, &semaphoreInfo, &pDevice->vkAllocCallback, &imageAvailible[i]);
+        pDevice->vkDevice, &semaphoreInfo, pDevice->GetAllocCallback(), &imageAvailible[i]);
    }
    /* Create present finished fences */
    VkFenceCreateInfo fenceInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
@@ -278,7 +278,7 @@ ctResults ctGPUPresenter::CreatePresentResources(ctGPUDevice* pDevice) {
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       vkCreateFence(pDevice->vkDevice,
                     &fenceInfo,
-                    &pDevice->vkAllocCallback,
+                    pDevice->GetAllocCallback(),
                     &finishedPresentFence[i]);
    }
    /* Blitting command buffer */
@@ -286,7 +286,7 @@ ctResults ctGPUPresenter::CreatePresentResources(ctGPUDevice* pDevice) {
    poolInfo.queueFamilyIndex = pDevice->queueFamilyIndices.transferIdx;
    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
    vkCreateCommandPool(
-     pDevice->vkDevice, &poolInfo, &pDevice->vkAllocCallback, &blitCommandPool);
+     pDevice->vkDevice, &poolInfo, pDevice->GetAllocCallback(), &blitCommandPool);
    VkCommandBufferAllocateInfo allocInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
@@ -298,7 +298,7 @@ ctResults ctGPUPresenter::CreatePresentResources(ctGPUDevice* pDevice) {
 ctResults ctGPUPresenter::DestroySwapchain(ctGPUDevice* pDevice) {
    ZoneScoped;
    if (swapchain == VK_NULL_HANDLE) { return CT_FAILURE_NOT_FOUND; }
-   vkDestroySwapchainKHR(pDevice->vkDevice, swapchain, &pDevice->vkAllocCallback);
+   vkDestroySwapchainKHR(pDevice->vkDevice, swapchain, pDevice->GetAllocCallback());
    swapchain = VK_NULL_HANDLE;
    return CT_SUCCESS;
 }
@@ -306,11 +306,11 @@ ctResults ctGPUPresenter::DestroySwapchain(ctGPUDevice* pDevice) {
 ctResults ctGPUPresenter::DestroyPresentResources(ctGPUDevice* pDevice) {
    ZoneScoped;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroySemaphore(pDevice->vkDevice, imageAvailible[i], &pDevice->vkAllocCallback);
+      vkDestroySemaphore(pDevice->vkDevice, imageAvailible[i], pDevice->GetAllocCallback());
       vkDestroyFence(
-        pDevice->vkDevice, finishedPresentFence[i], &pDevice->vkAllocCallback);
+        pDevice->vkDevice, finishedPresentFence[i], pDevice->GetAllocCallback());
    }
-   vkDestroyCommandPool(pDevice->vkDevice, blitCommandPool, &pDevice->vkAllocCallback);
+   vkDestroyCommandPool(pDevice->vkDevice, blitCommandPool, pDevice->GetAllocCallback());
    return CT_SUCCESS;
 }
 
@@ -461,6 +461,29 @@ VkResult ctGPUPresenter::BlitAndPresent(ctGPUDevice* pDevice,
                            NULL,
                            1,
                            &dstToPresent);
+      VkImageMemoryBarrier srcToInitial {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+      srcToInitial.image = srcImage;
+      srcToInitial.srcQueueFamilyIndex = blitQueueIdx;
+      srcToInitial.dstQueueFamilyIndex = srcQueueFamily;
+      srcToInitial.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      srcToInitial.newLayout = srcLayout;
+      srcToInitial.srcAccessMask = 0;
+      srcToInitial.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      srcToInitial.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      srcToInitial.subresourceRange.baseArrayLayer = 0;
+      srcToInitial.subresourceRange.baseMipLevel = 0;
+      srcToInitial.subresourceRange.levelCount = 1;
+      srcToInitial.subresourceRange.layerCount = 1;
+      vkCmdPipelineBarrier(cmd,
+                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_DEPENDENCY_BY_REGION_BIT,
+                           0,
+                           NULL,
+                           0,
+                           NULL,
+                           1,
+                           &srcToInitial);
       pDevice->MarkEndRegion(cmd);
       vkEndCommandBuffer(cmd);
       VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};

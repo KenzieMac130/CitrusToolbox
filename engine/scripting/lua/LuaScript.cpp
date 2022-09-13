@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
 */
 
 #include "LuaScript.hpp"
-
-/* Wrapped libraries */
-extern "C" {
-extern int luaopen_scene(lua_State* L);
-}
 
 /* Debug logging */
 static int ctLuaPrint(lua_State* L) {
@@ -72,11 +67,17 @@ ctResults ctLuaContext::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults ctLuaContext::OpenEngineLibrary(const char* name) {
-   ZoneScoped;
-   if (!L) { return CT_FAILURE_NOT_UPDATABLE; }
+ctResults ctLuaContext::RegisterType(const char* name, lua_CFunction garbageCollect) {
+   luaL_newmetatable(L, name);
+   if (garbageCollect) {
+      luaL_Reg regs = {"__gc", garbageCollect};
+      luaL_register(L, NULL, &regs);
+   }
+   return CT_SUCCESS;
+}
 
-   if (ctCStrEql(name, "scene")) { luaopen_scene(L); }
+ctResults ctLuaContext::RegisterFunction(const char* name, lua_CFunction function) {
+   lua_register(L, name, function);
    return CT_SUCCESS;
 }
 
@@ -135,7 +136,25 @@ ctResults ctLuaContext::CallFunction(const char* function, const char* signature
          case 'd': lua_pushnumber(L, va_arg(vlist, double)); break;
          case 'i': lua_pushnumber(L, va_arg(vlist, int)); break;
          case 's': lua_pushstring(L, va_arg(vlist, const char*)); break;
-         case 'u': lua_pushlightuserdata(L, va_arg(vlist, void*)); break;
+         case 'u':
+            /* Enforce typing */
+            {
+               const char* tnext = signature;
+               if (*tnext++ == '<') {
+                  char typeName[32];
+                  memset(typeName, 0, 32);
+
+                  while (*tnext && tnext - signature < 32 && *tnext != '>') {
+                     typeName[tnext - signature] = *tnext;
+                  }
+                  signature = tnext;
+                  lua_pushlightuserdata(L, va_arg(vlist, void*));
+                  luaL_setmetatable(L, typeName);
+               } else {
+                  return CT_FAILURE_SYNTAX_ERROR;
+               }
+            }
+            break;
          case ':': goto endwhile;
          default: return CT_FAILURE_INVALID_PARAMETER; break;
       }

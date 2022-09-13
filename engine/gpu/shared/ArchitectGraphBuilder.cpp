@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -577,6 +577,7 @@ ctGPUArchitectImagePayload::ctGPUArchitectImagePayload(
   const ctGPUArchitectImagePayloadDesc& desc, ctGPUDependencyID id) :
     ctGPUArchitectImagePayload() {
    strncpy(debugName, desc.debugName, 31);
+   bindSlot = desc.globalBindSlot;
    flags = desc.flags;
    height = desc.height;
    width = desc.width;
@@ -591,6 +592,7 @@ ctGPUArchitectBufferPayload::ctGPUArchitectBufferPayload(
   const ctGPUArchitectBufferPayloadDesc& desc, ctGPUDependencyID id) :
     ctGPUArchitectBufferPayload() {
    strncpy(debugName, desc.debugName, 31);
+   bindSlot = desc.globalBindSlot;
    flags = desc.flags;
    size = desc.size;
    identifier = id;

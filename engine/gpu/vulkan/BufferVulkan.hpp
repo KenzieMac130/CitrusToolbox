@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 #include "gpu/Buffer.h"
 #include "DeviceVulkan.hpp"
+#include "BindlessVulkan.hpp"
 
 struct ctGPUExternalBuffer {
    size_t size;
@@ -46,10 +47,6 @@ struct ctGPUExternalBuffer {
    uint8_t* mappings[CT_MAX_INFLIGHT_FRAMES];
    void GenMappings(ctGPUDevice* pDevice);
    void FreeMappings(ctGPUDevice* pDevice);
-
-   /* Bindless */
-   int32_t bindlessIndices[CT_MAX_INFLIGHT_FRAMES];
-   bool bindlessDirty[CT_MAX_INFLIGHT_FRAMES];
 
    /* Generation */
    ctGPUExternalBufferPool* pPool;
@@ -85,7 +82,7 @@ struct ctGPUExternalBufferPool {
    /* Hot list is protected by the spinlock and access is in critical section */
    ctSpinLock uploadListLock;
    ctDynamicArray<ctGPUExternalBuffer*> gpuCmdUpdateListHot;
-   void CommitHotList();
+   void CommitCmdHotList();
    void AddToUpload(ctGPUExternalBuffer* pBuffer);
    /* This list will be commited from the hot list and is threadsafe */
    ctDynamicArray<ctGPUExternalBuffer*> gpuCmdUpdateList;

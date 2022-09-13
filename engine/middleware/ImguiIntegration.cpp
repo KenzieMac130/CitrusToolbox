@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include "gpu/Device.h"
 #include "gpu/Texture.h"
 #include "gpu/Buffer.h"
+#include "gpu/Bindless.h"
 
 void processImguiEvent(SDL_Event* event, void* pData) {
    ZoneScoped;
@@ -129,6 +130,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    CT_RETURN_FAIL(ctGPUExternalTextureCreateFunc(
      pGPUDevice, pGPUTexturePool, &pFontTexture, &fontTexInfo));
    ImGui::GetIO().Fonts->SetTexID(fontBind);
+   ctGPUBindlessManagerMapTexture(pGPUDevice, pBindless, fontBind, pFontTexture);
 
    /* Index Buffer */
    ctGPUExternalBufferCreateFuncInfo iBufferInfo = {};
@@ -141,6 +143,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    iBufferInfo.generationFunction = ctImguiUploadIndices;
    iBufferInfo.userData = NULL;
    ctGPUExternalBufferCreateFunc(pGPUDevice, pGPUBufferPool, &pIndexBuffer, &iBufferInfo);
+   ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, idxBind, pIndexBuffer);
 
    /* Vertex Buffer */
    ctGPUExternalBufferCreateFuncInfo vBufferInfo = {};
@@ -154,6 +157,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    vBufferInfo.userData = NULL;
    ctGPUExternalBufferCreateFunc(
      pGPUDevice, pGPUBufferPool, &pVertexBuffer, &iBufferInfo);
+   ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
 
    /* Pipeline */
    ctFile wadFile;
@@ -204,6 +208,13 @@ ctImguiIntegration::ShutdownGPU(struct ctGPUDevice* pGPUDevice,
    return CT_SUCCESS;
 }
 
+ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
+                                              ctGPUExternalBufferPool* pGPUBufferPool) {
+   ctGPUExternalBuffer* externBuffers[2] = {pVertexBuffer, pIndexBuffer};
+   ctGPUExternalBufferRebuild(pGPUDevice, pGPUBufferPool, 2, externBuffers);
+   return CT_SUCCESS;
+}
+
 #include "gpu/Architect.h"
 
 void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
@@ -232,7 +243,8 @@ void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
          const uint32_t offsetY = (uint32_t)(
            (float)((pCmd->ClipRect.y) / pDrawData->DisplaySize.y) * pCtx->raster.height);
          ctGPUCmdSetScissor(gpuCmd, offsetX, offsetY, width, height);
-         ctGPUCmdSetDynamicInteger(gpuCmd, pCtx->pBindingModel, 0, (int32_t)pCmd->TextureId);
+         ctGPUCmdSetDynamicInteger(
+           gpuCmd, pCtx->pBindingModel, 0, (int32_t)pCmd->TextureId);
          ctGPUCmdDraw(gpuCmd, pCmd->ElemCount, 1, pCmd->IdxOffset + offset, 0);
       }
       offset += pList->IdxBuffer.Size;

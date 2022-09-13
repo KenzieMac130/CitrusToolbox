@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include "utilities/Common.h"
 
 #include "vulkan/vulkan.h"
+#include "vulkan/vk_enum_string_helper.h"
 #include "SDL_vulkan.h"
 #include "vma/vk_mem_alloc.h"
 
@@ -39,7 +40,10 @@
 #define CT_VK_CHECK(_func, _msg)                                                         \
    {                                                                                     \
       const VkResult _tmpvresult = _func;                                                \
-      if (_tmpvresult != VK_SUCCESS) { ctFatalError((int)_tmpvresult, _msg); }           \
+      if (_tmpvresult != VK_SUCCESS) {                                                   \
+         ctFatalError(                                                                   \
+           (int)_tmpvresult, "(%s)\n %s", string_VkResult(_tmpvresult), _msg);           \
+      }                                                                                  \
    }
 #define PIPELINE_CACHE_FILE_PATH "VK_PIPELINE_CACHE"
 
@@ -86,6 +90,7 @@ struct ctGPUDevice : ctGPUDeviceBase {
    int32_t nextFrameTimeout;
 
    /* Vulkan Objects */
+   VkAllocationCallbacks* GetAllocCallback();
    VkAllocationCallbacks vkAllocCallback;
    VkDebugReportCallbackEXT vkDebugCallback;
    ctDynamicArray<const char*> validationLayers;
@@ -171,7 +176,7 @@ struct ctGPUDevice : ctGPUDeviceBase {
 
    /* Just in time renderpass (for lack of dynamic rendering) */
    inline bool isDynamicRenderingSupported() {
-      return false;
+      return true;
    }
    void DestroyJITRenderpasses();
    VkRenderPass GetJITPipelineRenderpass(VkPipelineRenderingCreateInfoKHR& info);

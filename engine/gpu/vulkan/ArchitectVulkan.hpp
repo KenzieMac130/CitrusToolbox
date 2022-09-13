@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ struct ctGPUArchVkPhysicalImage {
 
    /* for now we just alias the whole image */
    ctVkCompleteImage data;
+   VkImageView sampleableView; /* view which can be sampled (needed for depth only) */
 
    VkImageLayout currentLayout;
    int32_t lastQueueFamilyIdx;
@@ -73,6 +74,18 @@ struct ctGPUArchitectVulkan : ctGPUArchitect {
    ctResults MapToImage(ctGPUDevice* pDevice, ctGPUArchitectImagePayload* pPayloadData);
    ctResults GarbageCollect(ctGPUDevice* pDevice);
    ctResults DereferenceAll();
+
+   bool needsBindUpdate;
+   struct BufferBind {
+      int32_t idx;
+      VkBuffer buff;
+   };
+   struct ImageBind {
+      int32_t idx;
+      VkImageView view;
+   };
+   ctDynamicArray<BufferBind> bufferBindings;
+   ctDynamicArray<ImageBind> imageBindings;
 
    ctDynamicArray<ctGPUArchVkPhysicalBuffer*> pPhysicalBuffers;
    ctDynamicArray<ctGPUArchVkPhysicalImage*> pPhysicalImages;
@@ -98,7 +111,7 @@ struct ctGPUArchitectVulkan : ctGPUArchitect {
                              ctGPUArchitectBufferPayload* pPayloadData);
    ctResults CreateNewImage(ctGPUDevice* pDevice,
                             ctGPUArchitectImagePayload* pPayloadData);
-   struct VkRenderingAttachmentInfoKHR
+   struct VkRenderingAttachmentInfo
    RenderingAttachmentInfoFromImage(ctGPUArchVkPhysicalImage* image,
                                     ctGPUArchitectDependencyEntry currentDep);
    void DoResourceTransition(ctGPUCommandBuffer cmd,

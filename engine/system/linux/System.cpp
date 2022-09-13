@@ -20,7 +20,7 @@
 int ctSystemCreateGUID(void* guidPtr){
    /* This is dirty and probably very bad... better than nothing! */
    for (int i = 0; i < 16; i++) {
-      data[i] = rand() % 255;
+      ((char*)data)[guidPtr] = rand() % 255;
    }
    return 0;
 }

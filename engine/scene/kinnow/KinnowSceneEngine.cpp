@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,26 @@
    limitations under the License.
 */
 
-#pragma once
+#include "KinnowSceneEngine.hpp"
 
-#include "Config.h"
-#include "../ObjTypes.h"
+ctResults ctKinnowSceneEngine::Startup()
+{
+    return ctResults();
+}
 
-#include <stdint.h>
+ctResults ctKinnowSceneEngine::Shutdown()
+{
+    return ctResults();
+}
 
-struct ctScriptTypedLightData {
-    int32_t typeId;
-    void* ptr;
-};
+ctResults ctKinnowSceneEngine::NextFrame() {
+   return CT_SUCCESS;
+}
+
+ctCameraInfo ctKinnowSceneEngine::GetCameraInfo(const char* cameraId) {
+   return ctCameraInfo();
+}
+
+ctResults ctKinnowSceneEngine::LoadScene(const char* name, const char* message) {
+   return CT_SUCCESS;
+}

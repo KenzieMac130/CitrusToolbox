@@ -1,6 +1,6 @@
 #include "HotReloadDetection.hpp"
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -80,6 +80,20 @@ void ctHotReloadDetection::_PushPathUpdate(const char* path) {
    for (int i = 0; i < hotReloads.Count(); i++) {
       hotReloads[i]->_AddFileUpdate(path);
    }
+}
+
+void ctHotReloadCategory::RegisterData(const ctGUID& guid) {
+   char path[33];
+   memset(path, 0, 33);
+   guid.ToHex(path);
+   RegisterPath(path);
+}
+
+void ctHotReloadCategory::UnregisterData(const ctGUID& guid) {
+   char path[33];
+   memset(path, 0, 33);
+   guid.ToHex(path);
+   UnregisterPath(path);
 }
 
 void ctHotReloadCategory::RegisterPath(const char* relativePath) {

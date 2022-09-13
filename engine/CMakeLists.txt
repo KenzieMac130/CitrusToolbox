@@ -1,5 +1,5 @@
 #
-#	Copyright 2021 MacKenzie Strand
+#	Copyright 2022 MacKenzie Strand
 #
 #	Licensed under the Apache License, Version 2.0 (the "License");
 #	you may not use this file except in compliance with the License.
@@ -66,49 +66,6 @@ ${ISPC_OPT_FLAGS}
 DEPENDS ${ISPC_IN} 
 ${LIBRARY_INSTALL_DEPENDENCY})
 endforeach()
-
-#---------- Generate Scripting Bindings ----------
-set(SWIG_INPUTS
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/SwigWrap.i
-)
-set(SWIG_DEPENDS
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/HoneybellScript.hpp
-)
-set(SWIG_OUTPUTS
-${CITRUS_CODEGEN_DIR}/bind_lua/Bind_Lua.gen.cpp
-)
-
-add_custom_command(OUTPUT ${SWIG_OUTPUTS}
-COMMAND
-${SWIG_EXECUTABLE_PATH} -lua -c++
--outdir ${CITRUS_CODEGEN_DIR}/bind_lua
--o \"${CITRUS_CODEGEN_DIR}/bind_lua/Bind_Lua.gen.cpp\"
-\"${CMAKE_CURRENT_SOURCE_DIR}/scripting/SwigWrap.i\" 
-DEPENDS
-${SWIG_INPUTS}
-${SWIG_DEPENDS}
-${LIBRARY_INSTALL_DEPENDENCY})
-
-
-#file(MAKE_DIRECTORY ${CITRUS_CODEGEN_DIR}/bind_lua)
-#foreach(FILE_IN IN LISTS SWIG_INPUTS)
-#get_filename_component(FILE_IN_NAME ${FILE_IN} NAME_WLE)
-#get_filename_component(FILE_IN_REL_PATH ${FILE_IN} DIRECTORY)
-#string(CONCAT SWIG_OUT 
-#	${CITRUS_CODEGEN_DIR}/bind_lua/${FILE_IN_NAME}_Lua.gen.cpp)
-#string(CONCAT SWIG_OUT_H 
-#	${CITRUS_CODEGEN_DIR}/bind_lua/${FILE_IN_NAME}_Lua.gen.hpp)
-#add_custom_command(OUTPUT ${SWIG_OUT}
-#COMMAND
-#${SWIG_EXECUTABLE_PATH} -lua
-#-outdir ${CITRUS_CODEGEN_DIR}/bind_lua
-#-o \""${SWIG_OUT}"\"
-#\"${FILE_IN}\" 
-#DEPENDS
-#${FILE_IN}
-#${LIBRARY_INSTALL_DEPENDENCY})
-#list(APPEND SWIG_OUTPUTS ${SWIG_OUT})
-#endforeach()
 
 # ---------- Utility Libraries ----------
 set(ENGINE_SOURCE_FILES_UTILITIES
@@ -229,6 +186,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.hpp
 # ---------- Graphics Backend Files ----------
 set(ENGINE_HEADER_FILES_GPU_INTERFACE
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Architect.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Bindless.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Commands.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
@@ -249,6 +207,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.cpp)
@@ -258,6 +217,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.hpp)
@@ -272,6 +232,12 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
 
 # ---------- Scene Engine ---------- 
+set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 0)
+set(CITRUS_SCENE_ENGINE_IS_KINNOW 0)
+
+# Honeybell: actor based scene system
+if(${CITRUS_SCENE_ENGINE} STREQUAL "HONEYBELL")
+set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 1)
 set(CITRUS_SCENE_ENGINE_HEADER
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
 )
@@ -306,6 +272,27 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/SceneChunk.hpp
 )
+
+# Kinnow: entity component system
+elseif(${CITRUS_SCENE_ENGINE} STREQUAL "KINNOW")
+set(CITRUS_SCENE_ENGINE_IS_KINNOW 1)
+set(CITRUS_SCENE_ENGINE_HEADER
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
+)
+
+set(ENGINE_SOURCE_FILES_SCENE
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowHeaderParser.cpp
+)
+
+set(ENGINE_HEADER_FILES_SCENE
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.h
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowReflection.h
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowHeaderParser.h
+)
+endif()
 
 # ---------- Third Party Implementation ---------- 
 set(THIRD_PARTY_IMPL_FILES
@@ -345,14 +332,21 @@ endif()
 # ---------- Scripting Integration ---------- 
 if(CITRUS_LUA)
 set(ENGINE_SOURCE_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/LuaScript.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/LuaScript.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/ObjTypes.h
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/CommonApi.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/HoneybellScript.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.hpp
+)
+elseif(CITRUS_ANGELSCRIPT)
+set(ENGINE_SOURCE_FILES_SCRIPTING
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/AngelScript.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/integration/CitrusUtilities.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/integration/CitrusEngine.cpp
+)
+
+set(ENGINE_HEADER_FILES_SCRIPTING
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/AngelScript.hpp
 )
 endif()
 
@@ -394,8 +388,7 @@ ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
 ${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
 ${ENGINE_SOURCE_FILES_ASSET_SYSTEM} ${ENGINE_HEADER_FILES_ASSET_SYSTEM}
 ${ENGINE_SOURCE_FILES_FORMAT} ${ENGINE_HEADER_FILES_FORMAT}
-${ISPC_KERNEL_INPUTS}
-${SWIG_INPUTS})
+${ISPC_KERNEL_INPUTS})
 
 # ---------- Generate Config Files ----------
 configure_file (
@@ -456,6 +449,11 @@ endif()
 if(CITRUS_LUA)
 	target_link_libraries(engine ${LUA_LIBRARIES})
 	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
+endif()
+
+if(CITRUS_ANGELSCRIPT)
+	target_link_libraries(engine ${ANGELSCRIPT_LIBRARIES})
+	target_include_directories(engine PUBLIC ${ANGELSCRIPT_INCLUDE_DIR})
 endif()
 
 # ---------- Copy Shared Libraries and Config ----------

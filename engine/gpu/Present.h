@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ struct ctGPUPresenter;
 struct ctGPUPresenterCreateInfo {
    void* pWindow; /* Expects an SDL window if applicable */
    bool useVSync;
+   bool useHDR;
 };
 
 enum ctGPUPresenterState {
@@ -44,6 +45,9 @@ CT_API enum ctResults ctGPUPresenterShutdown(struct ctGPUDevice* pDevice,
 CT_API enum ctResults ctGPUPresenterExecute(struct ctGPUDevice* pDevice,
                                             struct ctGPUPresenter* pPresenter,
                                             struct ctGPUArchitect* pArchitect);
+											
+CT_API enum TinyImageFormat ctGPUPresenterGetFormat(struct ctGPUDevice* pDevice,
+                                                    struct ctGPUPresenter* pPresenter);
 CT_API enum ctGPUPresenterState
 ctGPUPresenterHandleState(struct ctGPUDevice* pDevice,
                           struct ctGPUPresenter* pPresenter,

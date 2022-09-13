@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -151,35 +151,13 @@ enum ctResults {
 
 #define ctErrorCheck(_msg) (_msg != CT_SUCCESS)
 
-/**
- * @brief should behave just like malloc but with messages to track leaks
- */
 CT_API void* ctMalloc(size_t size);
-/**
- * @brief should behave just like realloc but with messages to track leaks
- */
 CT_API void* ctRealloc(void* old, size_t size);
-/**
- * @brief should behave just like free
- */
 CT_API void ctFree(void* block);
-/**
- * @brief should behave similarly to malloc with alignment but with messages to track
- * leaks
- */
 CT_API void* ctAlignedMalloc(size_t size, size_t alignment);
-/**
- * @brief should behave similarly to realloc with alignment but with messages to track
- * leaks
- */
 CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
-/**
- * @brief should behave similarly to free with alignment
- */
 CT_API void ctAlignedFree(void* block);
-/**
- * @brief should behave similarly to alloca
- */
+
 #pragma warning(disable : 6255)
 #define ctStackAlloc(_SIZE) alloca(_SIZE)
 

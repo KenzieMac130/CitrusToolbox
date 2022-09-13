@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -318,7 +318,7 @@ inline ctResults ctDynamicArray<T>::Append(const T& val, const size_t amount) {
 
 template<class T>
 inline ctResults ctDynamicArray<T>::Insert(const T& val, const int64_t position) {
-   int64_t finalposition = position < 0 ? Count() + position + 1 : position;
+   int64_t finalposition = position < 0 ? Count() + 1 + position : position;
    const ctResults result = _expand_size(1);
    if (result != CT_SUCCESS) { return result; }
    if (finalposition < 0) { finalposition = 0; }

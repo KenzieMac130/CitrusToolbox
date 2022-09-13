@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -237,14 +237,6 @@ CT_API ctResults ctGPUExternalTextureGetCurrentAccessor(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUExternalTextureGetBindlessIndex(ctGPUDevice* pDevice,
-                                                      ctGPUExternalTexturePool* pPool,
-                                                      ctGPUExternalTexture* pTexture,
-                                                      int32_t* pIndex) {
-   *pIndex = pTexture->bindlessIndices[pTexture->currentFrame];
-   return CT_SUCCESS;
-}
-
 ctGPUExternalTexturePool::ctGPUExternalTexturePool(
   ctGPUExternalTexturePoolCreateInfo* pInfo) {
    fpAsyncScheduler = pInfo->fpAsyncScheduler;
@@ -256,7 +248,10 @@ void ctGPUExternalTexturePool::GarbageCollect(ctGPUDevice* pDevice) {
    for (size_t i = 0; i < garbageList.Count(); i++) {
       ctGPUExternalTexture* pTexture = garbageList[i];
       /* Don't release if it is still in use */
-      if (!pTexture->isReady()) { incompleteGarbageList.Append(pTexture); }
+      if (!pTexture->isReady()) {
+         incompleteGarbageList.Append(pTexture);
+         continue;
+      }
 
       /* Release internals */
       pTexture->FreeMappings(pDevice);
@@ -457,7 +452,7 @@ void ctGPUExternalTexture::GenerateContents() {
       GenSlices();
    }
    MakeReady(true);
-   pPool->AddToUpload(this);
+   if (updateMode != CT_GPU_UPDATE_STREAM) { pPool->AddToUpload(this); }
 }
 
 void ctGPUExternalTexture::ExecuteCommands(VkCommandBuffer cmd) {

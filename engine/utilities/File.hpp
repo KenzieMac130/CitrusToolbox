@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,7 +28,9 @@ enum ctFileOpenMode {
    CT_FILE_OPEN_READ = 0,
    CT_FILE_OPEN_WRITE = 1,
    CT_FILE_OPEN_READ_TEXT = 2,
-   CT_FILE_OPEN_WRITE_TEXT = 3
+   CT_FILE_OPEN_WRITE_TEXT = 3,
+   CT_FILE_OPEN_READ_VIRTUAL = 4,
+   CT_FILE_OPEN_WRITE_VIRTUAL = 5
 };
 
 class CT_API ctFile {
@@ -37,11 +39,24 @@ public:
    ctFile(FILE* fp, const ctFileOpenMode mode);
    ctFile(void* memory, size_t size, const ctFileOpenMode mode);
    ctFile(const void* memory, size_t size, const ctFileOpenMode mode);
-   ctFile(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent = false);
+   ctFile(const char* filePath,
+          const ctFileOpenMode mode,
+          bool silent = false,
+          size_t reserve = 0);
+   ctFile(const ctStringUtf8& filePath,
+          const ctFileOpenMode mode,
+          bool silent = false,
+          size_t reserve = 0);
    ~ctFile();
    void FromCStream(FILE* fp, const ctFileOpenMode mode, bool allowClose = true);
-   ctResults
-   Open(const ctStringUtf8& filePath, const ctFileOpenMode mode, bool silent = false);
+   ctResults Open(const char* filePath,
+                  const ctFileOpenMode mode,
+                  bool silent = false,
+                  size_t reserve = 0);
+   ctResults Open(const ctStringUtf8& filePath,
+                  const ctFileOpenMode mode,
+                  bool silent = false,
+                  size_t reserve = 0);
    void Close();
 
    int64_t GetFileSize();
@@ -49,6 +64,7 @@ public:
    size_t GetBytes(ctDynamicArray<uint8_t>& outArray);
    size_t GetBytes(ctDynamicArray<char>& outArray);
    size_t GetText(ctStringUtf8& outString);
+   size_t GetVirtualMemory(uint8_t** ppOutBytes);
 
    int64_t Tell();
    ctResults Seek(const int64_t offset, const ctFileSeekMode mode);

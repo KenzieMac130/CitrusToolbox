@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -205,7 +205,8 @@ bool vDeviceHasSwapChainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
 
 bool vDeviceHasRequiredFeatures(const VkPhysicalDeviceFeatures& features,
                                 const VkPhysicalDeviceVulkan11Features& features_1_1,
-                                const VkPhysicalDeviceVulkan12Features& features_1_2) {
+                                const VkPhysicalDeviceVulkan12Features& features_1_2,
+                                const VkPhysicalDeviceVulkan13Features& features_1_3) {
    if (!features.shaderFloat64 || !features.depthClamp || !features.depthBounds ||
        !features.fillModeNonSolid || !features.shaderSampledImageArrayDynamicIndexing ||
        !features.shaderStorageBufferArrayDynamicIndexing ||
@@ -216,7 +217,8 @@ bool vDeviceHasRequiredFeatures(const VkPhysicalDeviceFeatures& features,
        !features_1_2.descriptorBindingStorageImageUpdateAfterBind ||
        !features_1_2.shaderSampledImageArrayNonUniformIndexing ||
        !features_1_2.shaderStorageBufferArrayNonUniformIndexing ||
-       !features_1_2.shaderStorageImageArrayNonUniformIndexing) {
+       !features_1_2.shaderStorageImageArrayNonUniformIndexing ||
+       !features_1_3.dynamicRendering) {
       return false;
    }
    return true;
@@ -240,10 +242,13 @@ VkPhysicalDevice ctGPUDevice::PickBestDevice(VkPhysicalDevice* pGpus,
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
       VkPhysicalDeviceVulkan12Features vk12Features {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+      VkPhysicalDeviceVulkan13Features vk13Features {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
       VkPhysicalDeviceFeatures2 deviceFeatures2 = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
       deviceFeatures2.pNext = &vk11Features;
       vk11Features.pNext = &vk12Features;
+      vk12Features.pNext = &vk13Features;
 
       ctDebugLog("Getting Device Features 1/2...");
       vkGetPhysicalDeviceProperties(pGpus[i], &deviceProperties);
@@ -253,7 +258,8 @@ VkPhysicalDevice ctGPUDevice::PickBestDevice(VkPhysicalDevice* pGpus,
 
       /*Disqualifications*/
       ctDebugLog("Checking Disqualifications...");
-      if (!vDeviceHasRequiredFeatures(deviceFeatures, vk11Features, vk12Features))
+      if (!vDeviceHasRequiredFeatures(
+            deviceFeatures, vk11Features, vk12Features, vk13Features))
          continue; /*Device doesn't meet the minimum features spec*/
       if (!vIsQueueFamilyComplete(FindQueueFamilyIndices(pGpus[i])))
          continue; /*Queue families are incomplete*/
@@ -325,7 +331,7 @@ ctResults ctGPUDevice::Startup() {
                                                 CITRUS_ENGINE_VERSION_MINOR,
                                                 CITRUS_ENGINE_VERSION_PATCH);
       vkAppInfo.pEngineName = "Citrus Toolbox";
-      vkAppInfo.apiVersion = VK_API_VERSION_1_2;
+      vkAppInfo.apiVersion = VK_API_VERSION_1_3;
 
       vkAllocCallback = VkAllocationCallbacks {};
       vkAllocCallback.pUserData = NULL;
@@ -386,7 +392,7 @@ ctResults ctGPUDevice::Startup() {
       instanceInfo.ppEnabledExtensionNames = instanceExtensions.Data();
       ctDebugLog("Creating Instance...");
       CT_VK_CHECK(
-        vkCreateInstance(&instanceInfo, &vkAllocCallback, &vkInstance),
+        vkCreateInstance(&instanceInfo, GetAllocCallback(), &vkInstance),
         CT_NCT("FAIL:vkCreateInstance",
                "vkCreateInstance() Failed to create vulkan instance.\n"
                "Please update the graphics drivers to the latest version available.\n"
@@ -407,7 +413,7 @@ ctResults ctGPUDevice::Startup() {
       vkDebugCallback = VK_NULL_HANDLE;
       if (vkCreateDebugReportCallback) {
          vkCreateDebugReportCallback(
-           vkInstance, &createInfo, &vkAllocCallback, &vkDebugCallback);
+           vkInstance, &createInfo, GetAllocCallback(), &vkDebugCallback);
       } else {
          ctFatalError(-1,
                       CT_NCT("FAIL:vkCreateDebugReportCallbackEXT",
@@ -447,17 +453,20 @@ ctResults ctGPUDevice::Startup() {
            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
          VkPhysicalDeviceVulkan12Features vk12Features {
            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+         VkPhysicalDeviceVulkan13Features vk13Features {
+           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
          VkPhysicalDeviceFeatures2 deviceFeatures2 = {
            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
          deviceFeatures2.pNext = &vk11Features;
          vk11Features.pNext = &vk12Features;
+         vk12Features.pNext = &vk13Features;
 
          vkGetPhysicalDeviceProperties(vkPhysicalDevice, &vPhysicalDeviceProperties);
          vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &vPhysicalDeviceFeatures);
          vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &vPhysicalDeviceFeatures2);
 
          if (!vDeviceHasRequiredFeatures(
-               vPhysicalDeviceFeatures, vk11Features, vk12Features) ||
+               vPhysicalDeviceFeatures, vk11Features, vk12Features, vk13Features) ||
              !DeviceHasRequiredExtensions(vkPhysicalDevice) ||
              !(vkInitialSurface != VK_NULL_HANDLE
                  ? vDeviceHasSwapChainSupport(vkPhysicalDevice, vkInitialSurface)
@@ -572,13 +581,18 @@ ctResults ctGPUDevice::Startup() {
       indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
       deviceInfo.pNext = &indexingFeatures;
 
+      VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES};
+      dynamicRenderingFeatures.dynamicRendering = true;
+      indexingFeatures.pNext = &dynamicRenderingFeatures;
+
       ApplyOptionalDeviceExtensions(vkPhysicalDevice);
 
       deviceInfo.enabledExtensionCount = (uint32_t)deviceExtensions.Count();
       deviceInfo.ppEnabledExtensionNames = deviceExtensions.Data();
       ctDebugLog("Creating Device...");
       CT_VK_CHECK(
-        vkCreateDevice(vkPhysicalDevice, &deviceInfo, &vkAllocCallback, &vkDevice),
+        vkCreateDevice(vkPhysicalDevice, &deviceInfo, GetAllocCallback(), &vkDevice),
         CT_NCT("FAIL:vkCreateDevice", "vkCreateDevice() failed to create the device."));
 
       /* Debug Markers*/
@@ -629,7 +643,7 @@ ctResults ctGPUDevice::Startup() {
          cacheInfo.pInitialData = cacheData;
          cacheInfo.initialDataSize = cacheSize;
          CT_VK_CHECK(vkCreatePipelineCache(
-                       vkDevice, &cacheInfo, &vkAllocCallback, &vkPipelineCache),
+                       vkDevice, &cacheInfo, GetAllocCallback(), &vkPipelineCache),
                      CT_NCT("FAIL:vkCreatePipelineCache",
                             "vkCreatePipelineCache() failed to create cache."));
          if (cacheData) { ctFree(cacheData); }
@@ -664,22 +678,26 @@ ctResults ctGPUDevice::Shutdown() {
       }
    }
    if (vkPipelineCache) {
-      vkDestroyPipelineCache(vkDevice, vkPipelineCache, &vkAllocCallback);
+      vkDestroyPipelineCache(vkDevice, vkPipelineCache, GetAllocCallback());
    }
 
    if (vkInitialSurface) { vkDestroySurfaceKHR(vkInstance, vkInitialSurface, NULL); }
    vmaDestroyAllocator(vmaAllocator);
-   vkDestroyDevice(vkDevice, &vkAllocCallback);
+   vkDestroyDevice(vkDevice, GetAllocCallback());
 
    if (vkDebugCallback != VK_NULL_HANDLE) {
       PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallback =
         (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(
           vkInstance, "vkDestroyDebugReportCallbackEXT");
-      vkDestroyDebugReportCallback(vkInstance, vkDebugCallback, &vkAllocCallback);
+      vkDestroyDebugReportCallback(vkInstance, vkDebugCallback, GetAllocCallback());
    }
 
-   vkDestroyInstance(vkInstance, &vkAllocCallback);
+   vkDestroyInstance(vkInstance, GetAllocCallback());
    return CT_SUCCESS;
+}
+
+VkAllocationCallbacks* ctGPUDevice::GetAllocCallback() {
+   return &vkAllocCallback;
 }
 
 VkResult ctGPUDevice::CreateCompleteImage(const char* name,
@@ -736,6 +754,10 @@ VkResult ctGPUDevice::CreateCompleteImage(const char* name,
 
    VkImageViewCreateInfo viewInfo {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
    viewInfo.image = fullImage.image;
+   viewInfo.components = {VK_COMPONENT_SWIZZLE_IDENTITY,
+                          VK_COMPONENT_SWIZZLE_IDENTITY,
+                          VK_COMPONENT_SWIZZLE_IDENTITY,
+                          VK_COMPONENT_SWIZZLE_IDENTITY};
    viewInfo.viewType = viewType;
    viewInfo.format = format;
    viewInfo.subresourceRange.aspectMask = aspect;
@@ -743,7 +765,7 @@ VkResult ctGPUDevice::CreateCompleteImage(const char* name,
    viewInfo.subresourceRange.layerCount = layers;
    viewInfo.subresourceRange.baseMipLevel = 0;
    viewInfo.subresourceRange.levelCount = mip;
-   result = vkCreateImageView(vkDevice, &viewInfo, &vkAllocCallback, &fullImage.view);
+   result = vkCreateImageView(vkDevice, &viewInfo, GetAllocCallback(), &fullImage.view);
    if (result != VK_SUCCESS) { return result; }
    memset(fullName, 0, 40);
    snprintf(fullName, 39, "%s - View", name);
@@ -783,8 +805,9 @@ VkResult ctGPUDevice::CreateCompleteBuffer(const char* name,
 
 void ctGPUDevice::TryDestroyCompleteImage(ctVkCompleteImage& fullImage) {
    ZoneScoped;
+   /* todo: deferred deletion */
    if (fullImage.view == VK_NULL_HANDLE) { return; }
-   vkDestroyImageView(vkDevice, fullImage.view, &vkAllocCallback);
+   vkDestroyImageView(vkDevice, fullImage.view, GetAllocCallback());
    if (fullImage.image == VK_NULL_HANDLE || fullImage.alloc == VK_NULL_HANDLE) { return; }
    vmaDestroyImage(vmaAllocator, fullImage.image, fullImage.alloc);
 }
@@ -794,6 +817,7 @@ void ctGPUDevice::TryDestroyCompleteBuffer(ctVkCompleteBuffer& fullBuffer) {
    if (fullBuffer.buffer == VK_NULL_HANDLE || fullBuffer.alloc == VK_NULL_HANDLE) {
       return;
    }
+   /* todo: deferred deletion */
    vmaDestroyBuffer(vmaAllocator, fullBuffer.buffer, fullBuffer.alloc);
 }
 
@@ -853,11 +877,11 @@ void ctGPUDevice::DestroyAllStagingBuffers() {
 
 void ctGPUDevice::DestroyJITRenderpasses() {
    for (auto it = pipelineRenderpasses.GetIterator(); it; it++) {
-      vkDestroyRenderPass(vkDevice, it.Value(), &vkAllocCallback);
+      vkDestroyRenderPass(vkDevice, it.Value(), GetAllocCallback());
    }
    for (auto it = usableRenderInfo.GetIterator(); it; it++) {
-      vkDestroyRenderPass(vkDevice, it.Value().renderpass, &vkAllocCallback);
-      vkDestroyFramebuffer(vkDevice, it.Value().framebuffer, &vkAllocCallback);
+      vkDestroyRenderPass(vkDevice, it.Value().renderpass, GetAllocCallback());
+      vkDestroyFramebuffer(vkDevice, it.Value().framebuffer, GetAllocCallback());
    }
 }
 
@@ -944,7 +968,7 @@ ctGPUDevice::GetJITPipelineRenderpass(VkPipelineRenderingCreateInfoKHR& info) {
    renderpassInfo.subpassCount = 1;
    renderpassInfo.pSubpasses = &subpassInfo;
    CT_VK_CHECK(
-     vkCreateRenderPass(vkDevice, &renderpassInfo, &vkAllocCallback, &newRenderpass),
+     vkCreateRenderPass(vkDevice, &renderpassInfo, GetAllocCallback(), &newRenderpass),
      CT_NC("vkCreateRenderPass() failed to create temporary pipeline renderpass."));
 
    /* Insert new */
@@ -1019,9 +1043,10 @@ ctGPUDevice::CreateCompleteRenderInfo(const VkRenderingInfoKHR* pRenderingInfo,
    renderpassInfo.pAttachments = attachments.Data();
    renderpassInfo.subpassCount = 1;
    renderpassInfo.pSubpasses = &subpassInfo;
-   CT_VK_CHECK(vkCreateRenderPass(
-                 vkDevice, &renderpassInfo, &vkAllocCallback, &newRenderInfo.renderpass),
-               CT_NC("vkCreateRenderPass() failed to create just-in-time renderpass."));
+   CT_VK_CHECK(
+     vkCreateRenderPass(
+       vkDevice, &renderpassInfo, GetAllocCallback(), &newRenderInfo.renderpass),
+     CT_NC("vkCreateRenderPass() failed to create just-in-time renderpass."));
 
    /* Create framebuffer */
    ctStaticArray<VkImageView, 9> imageViews;
@@ -1040,7 +1065,7 @@ ctGPUDevice::CreateCompleteRenderInfo(const VkRenderingInfoKHR* pRenderingInfo,
    framebufferInfo.pAttachments = imageViews.Data();
    CT_VK_CHECK(
      vkCreateFramebuffer(
-       vkDevice, &framebufferInfo, &vkAllocCallback, &newRenderInfo.framebuffer),
+       vkDevice, &framebufferInfo, GetAllocCallback(), &newRenderInfo.framebuffer),
      CT_NC("vkCreateFramebuffer() failed to create just-in-time framebuffer."));
    return newRenderInfo;
 }
@@ -1112,47 +1137,54 @@ void ctGPUDevice::BeginJITRenderPass(VkCommandBuffer commandBuffer,
                                      VkFormat* pColorFormats,
                                      VkImageLayout lastDepthLayout,
                                      VkImageLayout* pLastColorLayouts) {
-   /* Fetch existing */
-   uint32_t hash = HashRenderingInfo(pRenderingInfo);
-   ctXXHash32(&depthStencilFormat, sizeof(depthStencilFormat), hash);
-   ctXXHash32(pColorFormats,
-              sizeof(pColorFormats[0]) * pRenderingInfo->colorAttachmentCount,
-              hash);
-   ctXXHash32(&lastDepthLayout, sizeof(lastDepthLayout), hash);
-   ctXXHash32(pLastColorLayouts,
-              sizeof(pLastColorLayouts[0]) * pRenderingInfo->colorAttachmentCount,
-              hash);
-   ctSpinLockEnterCritical(jitUsableRenderInfoLock);
-   CompleteRenderInfo* pCompleteRenderInfo = usableRenderInfo.FindPtr(hash);
-   ctSpinLockExitCritical(jitUsableRenderInfoLock);
-   if (!pCompleteRenderInfo) {
-      CompleteRenderInfo newRenderInfo = CreateCompleteRenderInfo(pRenderingInfo,
-                                                                  depthStencilFormat,
-                                                                  pColorFormats,
-                                                                  lastDepthLayout,
-                                                                  pLastColorLayouts);
-      ctSpinLockEnterCritical(jitUsableRenderInfoLock);
-      pCompleteRenderInfo = usableRenderInfo.Insert(hash, newRenderInfo);
-      ctSpinLockExitCritical(jitUsableRenderInfoLock);
-   }
-
-   ctStaticArray<VkClearValue, 9> clears;
-   if (pRenderingInfo->pDepthAttachment) {
-      clears.Append(pRenderingInfo->pDepthAttachment->clearValue);
+   if (isDynamicRenderingSupported()) {
+      vkCmdBeginRendering(commandBuffer, pRenderingInfo);
    } else {
+      uint32_t hash = HashRenderingInfo(pRenderingInfo);
+      ctXXHash32(&depthStencilFormat, sizeof(depthStencilFormat), hash);
+      ctXXHash32(pColorFormats,
+                 sizeof(pColorFormats[0]) * pRenderingInfo->colorAttachmentCount,
+                 hash);
+      ctXXHash32(&lastDepthLayout, sizeof(lastDepthLayout), hash);
+      ctXXHash32(pLastColorLayouts,
+                 sizeof(pLastColorLayouts[0]) * pRenderingInfo->colorAttachmentCount,
+                 hash);
+      ctSpinLockEnterCritical(jitUsableRenderInfoLock);
+      CompleteRenderInfo* pCompleteRenderInfo = usableRenderInfo.FindPtr(hash);
+      ctSpinLockExitCritical(jitUsableRenderInfoLock);
+      if (!pCompleteRenderInfo) {
+         CompleteRenderInfo newRenderInfo = CreateCompleteRenderInfo(pRenderingInfo,
+                                                                     depthStencilFormat,
+                                                                     pColorFormats,
+                                                                     lastDepthLayout,
+                                                                     pLastColorLayouts);
+         ctSpinLockEnterCritical(jitUsableRenderInfoLock);
+         pCompleteRenderInfo = usableRenderInfo.Insert(hash, newRenderInfo);
+         ctSpinLockExitCritical(jitUsableRenderInfoLock);
+      }
+
+      ctStaticArray<VkClearValue, 9> clears;
+      if (pRenderingInfo->pDepthAttachment) {
+         clears.Append(pRenderingInfo->pDepthAttachment->clearValue);
+      } else {
+      }
+      for (uint32_t i = 0; i < pRenderingInfo->colorAttachmentCount; i++) {
+         clears.Append(pRenderingInfo->pColorAttachments[i].clearValue);
+      }
+      VkRenderPassBeginInfo begin = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+      begin.framebuffer = pCompleteRenderInfo->framebuffer;
+      begin.renderArea = pRenderingInfo->renderArea;
+      begin.renderPass = pCompleteRenderInfo->renderpass;
+      begin.clearValueCount = (uint32_t)clears.Count();
+      begin.pClearValues = clears.Data();
+      vkCmdBeginRenderPass(commandBuffer, &begin, VK_SUBPASS_CONTENTS_INLINE);
    }
-   for (uint32_t i = 0; i < pRenderingInfo->colorAttachmentCount; i++) {
-      clears.Append(pRenderingInfo->pColorAttachments[i].clearValue);
-   }
-   VkRenderPassBeginInfo begin = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-   begin.framebuffer = pCompleteRenderInfo->framebuffer;
-   begin.renderArea = pRenderingInfo->renderArea;
-   begin.renderPass = pCompleteRenderInfo->renderpass;
-   begin.clearValueCount = (uint32_t)clears.Count();
-   begin.pClearValues = clears.Data();
-   vkCmdBeginRenderPass(commandBuffer, &begin, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 void ctGPUDevice::EndJITRenderpass(VkCommandBuffer commandBuffer) {
-   vkCmdEndRenderPass(commandBuffer);
+   if (isDynamicRenderingSupported()) {
+      vkCmdEndRendering(commandBuffer);
+   } else {
+      vkCmdEndRenderPass(commandBuffer);
+   }
 }

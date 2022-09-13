@@ -1,6 +1,6 @@
 #include "Translation.hpp"
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,11 +19,12 @@
 #include "EngineCore.hpp"
 #include "FileSystem.hpp"
 #include "Settings.hpp"
+#include <locale.h>
 
-ctTranslation* mainTranslationSystem;
+ctTranslation* gMainTranslationSystem = NULL;
 
 ctTranslation::ctTranslation(bool shared) {
-   if (shared) { mainTranslationSystem = this; }
+   if (shared) { gMainTranslationSystem = this; }
    for (int i = 0; i < CT_TRANSLATION_CATAGORY_COUNT; i++) {
       dictionaries.Append(new _dictionary());
    }
@@ -100,21 +101,20 @@ bool languageCompare(const char* a, const char* b) {
 ctResults ctTranslation::LoadLanguage(const char* isoCode) {
    /* Find language file */
    {
-    // Todo: Move to MO format
-      //ctFile file;
-      //ctDynamicArray<uint8_t> fileContents = {};
-      //CT_RETURN_FAIL(Engine->FileSystem->OpenDataFileByGUID(file, "text/languages.json")); // todo
-      //file.GetBytes(fileContents);
-      //file.Close();
-      //ctJSONReader jsonReader = ctJSONReader();
-      //CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
+      // Todo: Move to MO format
+      // ctFile file;
+      // ctDynamicArray<uint8_t> fileContents = {};
+      // CT_RETURN_FAIL(Engine->FileSystem->OpenDataFileByGUID(file,
+      // "text/languages.json")); // todo file.GetBytes(fileContents); file.Close();
+      // ctJSONReader jsonReader = ctJSONReader();
+      // CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
       //                                          fileContents.Count()));
       //
-      //ctJSONReadEntry languagesJson = ctJSONReadEntry();
-      //jsonReader.GetRootEntry(languagesJson);
-      //int languageEntryCount = languagesJson.GetObjectEntryCount();
-      //bool found = false;
-      //for (int i = 0; i < languageEntryCount; i++) {
+      // ctJSONReadEntry languagesJson = ctJSONReadEntry();
+      // jsonReader.GetRootEntry(languagesJson);
+      // int languageEntryCount = languagesJson.GetObjectEntryCount();
+      // bool found = false;
+      // for (int i = 0; i < languageEntryCount; i++) {
       //   ctJSONReadEntry entry = ctJSONReadEntry();
       //   ctStringUtf8 name = ctStringUtf8();
       //   languagesJson.GetObjectEntry(i, entry, &name);
@@ -124,7 +124,7 @@ ctResults ctTranslation::LoadLanguage(const char* isoCode) {
       //      found = true;
       //   }
       //}
-      //if (found) {
+      // if (found) {
       //   isoLanguage = isoCode;
       //} else {
       //   ctDebugWarning("Could not find language: %s", isoCode);
@@ -137,45 +137,45 @@ ctResults ctTranslation::LoadLanguage(const char* isoCode) {
 ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
    ZoneScoped;
    /* Load strings */
-//   {
-//      // todo: move to gettext PO format
-//      ctStringUtf8 path;
-//      path.Printf(4096,
-//                  "%s/%s.json",
-//                  dictionaries[category]->basePath.CStr(),
-//                  fullLanguageName.ToLower().CStr());
-//#if CITRUS_INCLUDE_AUDITION
-//      TextHotReload.RegisterPath(path.CStr());
-//#endif
-//      ctFile file;
-//      ctDynamicArray<uint8_t> fileContents = {};
-//      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFileNamed(file, path.CStr()));
-//      file.GetBytes(fileContents);
-//      file.Close();
-//      ctJSONReader jsonReader = ctJSONReader();
-//      CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
-//                                                fileContents.Count()));
-//
-//      dictionaries[category]->bloom.Reset();
-//      dictionaries[category]->strings.Clear();
-//
-//      ctJSONReadEntry textJson = ctJSONReadEntry();
-//      jsonReader.GetRootEntry(textJson);
-//      int entryCount = textJson.GetObjectEntryCount();
-//      dictionaries[category]->strings.Reserve(entryCount);
-//      for (int i = 0; i < entryCount; i++) {
-//         ctJSONReadEntry entry = ctJSONReadEntry();
-//         ctStringUtf8 name = ctStringUtf8();
-//         ctStringUtf8 content = ctStringUtf8();
-//         textJson.GetObjectEntry(i, entry, &name);
-//         entry.GetString(content);
-//         if (content.isEmpty()) { continue; }
-//         content.ProcessEscapeCodes();
-//         const uint64_t hash = name.xxHash64();
-//         dictionaries[category]->bloom.Insert(hash);
-//         dictionaries[category]->strings.Insert(hash, content);
-//      }
-//   }
+   //   {
+   //      // todo: move to gettext PO format
+   //      ctStringUtf8 path;
+   //      path.Printf(4096,
+   //                  "%s/%s.json",
+   //                  dictionaries[category]->basePath.CStr(),
+   //                  fullLanguageName.ToLower().CStr());
+   //#if CITRUS_INCLUDE_AUDITION
+   //      TextHotReload.RegisterPath(path.CStr());
+   //#endif
+   //      ctFile file;
+   //      ctDynamicArray<uint8_t> fileContents = {};
+   //      CT_RETURN_FAIL(Engine->FileSystem->OpenAssetFileNamed(file, path.CStr()));
+   //      file.GetBytes(fileContents);
+   //      file.Close();
+   //      ctJSONReader jsonReader = ctJSONReader();
+   //      CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
+   //                                                fileContents.Count()));
+   //
+   //      dictionaries[category]->bloom.Reset();
+   //      dictionaries[category]->strings.Clear();
+   //
+   //      ctJSONReadEntry textJson = ctJSONReadEntry();
+   //      jsonReader.GetRootEntry(textJson);
+   //      int entryCount = textJson.GetObjectEntryCount();
+   //      dictionaries[category]->strings.Reserve(entryCount);
+   //      for (int i = 0; i < entryCount; i++) {
+   //         ctJSONReadEntry entry = ctJSONReadEntry();
+   //         ctStringUtf8 name = ctStringUtf8();
+   //         ctStringUtf8 content = ctStringUtf8();
+   //         textJson.GetObjectEntry(i, entry, &name);
+   //         entry.GetString(content);
+   //         if (content.isEmpty()) { continue; }
+   //         content.ProcessEscapeCodes();
+   //         const uint64_t hash = name.xxHash64();
+   //         dictionaries[category]->bloom.Insert(hash);
+   //         dictionaries[category]->strings.Insert(hash, content);
+   //      }
+   //   }
    return CT_SUCCESS;
 }
 
@@ -208,8 +208,8 @@ const char* ctTranslation::GetLocalString(ctTranslationCatagory category,
 const char* ctGetLocalString(ctTranslationCatagory category,
                              const char* tag,
                              const char* nativeText) {
-   if (mainTranslationSystem) {
-      return mainTranslationSystem->GetLocalString(category, tag, nativeText);
+   if (gMainTranslationSystem) {
+      return gMainTranslationSystem->GetLocalString(category, tag, nativeText);
    }
    return nativeText;
 }

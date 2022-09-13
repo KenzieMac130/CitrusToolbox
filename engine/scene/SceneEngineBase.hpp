@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ public:
    virtual ctResults NextFrame() = 0;
 
    /* Get ctCameraInfo for a camera (NULL must return the "main camera")*/
-   virtual ctCameraInfo GetCameraInfo(const char* cameraId) = 0;
+   virtual ctCameraInfo GetCameraInfo(const char* cameraId) = 0; /* todo: depreciate */
    /* Load scene/level */
    virtual ctResults LoadScene(const char* name, const char* message = NULL) = 0;
 };

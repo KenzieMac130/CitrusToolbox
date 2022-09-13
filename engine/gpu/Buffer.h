@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ struct ctGPUExternalBuffer;
 
 enum ctGPUExternalBufferType {
    CT_GPU_EXTERN_BUFFER_TYPE_STORAGE,
+   CT_GPU_EXTERN_BUFFER_TYPE_UNIFORM,
    CT_GPU_EXTERN_BUFFER_TYPE_INDIRECT,
    CT_GPU_EXTERN_BUFFER_TYPE_COUNT
 };
@@ -62,16 +63,8 @@ CT_API enum ctResults
 ctGPUExternalBufferPoolGarbageCollect(struct ctGPUDevice* pDevice,
                                       struct ctGPUExternalBufferPool* pPool);
 
-CT_API bool ctGPUExternalBufferPoolNeedsDispatch(struct ctGPUDevice* pDevice,
-                                                 struct ctGPUExternalBufferPool* pPool);
-
-CT_API bool ctGPUExternalBufferPoolNeedsRebind(struct ctGPUDevice* pDevice,
-                                               struct ctGPUExternalBufferPool* pPool);
-
-CT_API enum ctResults
-ctGPUExternalBufferPoolRebind(struct ctGPUDevice* pDevice,
-                              struct ctGPUExternalTexturePool* pPool,
-                              ctGPUBindingModel* pBindingModel);
+CT_API bool ctGPUExternalBufferPoolNeedsDispatch(ctGPUDevice* pDevice,
+                                                 ctGPUExternalBufferPool* pPool);
 
 CT_API enum ctResults
 ctGPUExternalBufferPoolDispatch(struct ctGPUDevice* pDevice,
@@ -128,11 +121,6 @@ CT_API enum ctResults ctGPUExternalBufferGetCurrentAccessor(struct ctGPUDevice* 
                                                        struct ctGPUExternalBufferPool* pPool,
                                                        struct ctGPUExternalBuffer* pBuffer,
                                                        ctGPUBufferAccessor* pAccessor);
-/* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalBufferIsReady()! */
-CT_API enum ctResults ctGPUExternalBufferGetBindlessIndex(struct ctGPUDevice* pDevice,
-                                                     struct ctGPUExternalBufferPool* pPool,
-                                                     struct ctGPUExternalBuffer* pBuffer,
-                                                     int32_t* pIndex);
 
 // clang-format on
 
