@@ -106,23 +106,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.hpp
 )
 
-# ---------- Reflection System ----------
-set(ENGINE_SOURCE_FILES_REFLECT
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/Reflect.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/GeneratorBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/AngelScriptGenerator.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/ImguiGenerator.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/SerializationGenerator.hpp
-)
-
-set(ENGINE_HEADER_FILES_REFLECT
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/Reflect.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/ReflectExtractor.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/AngelScriptGenerator.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/ImguiGenerator.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/SerializationGenerator.cpp
-)
-
 
 # ---------- Engine Core Framework ----------
 set(ENGINE_SOURCE_FILES_CORE
@@ -254,46 +237,8 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
 set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 0)
 set(CITRUS_SCENE_ENGINE_IS_KINNOW 0)
 
-# Honeybell: actor based scene system
-if(${CITRUS_SCENE_ENGINE} STREQUAL "HONEYBELL")
-set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 1)
-set(CITRUS_SCENE_ENGINE_HEADER
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
-)
-
-set(ENGINE_SOURCE_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Signal.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/BuiltinToys.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/MeshRendererComponent.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/SceneChunk.cpp
-)
-
-set(ENGINE_HEADER_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Component.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Scene.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Signal.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/Toy.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/DebugShapeComponent.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXActorComponent.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/PhysXControllerComponent.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/components/MeshRendererComponent.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/SceneChunk.hpp
-)
-
 # Kinnow: entity component system
-elseif(${CITRUS_SCENE_ENGINE} STREQUAL "KINNOW")
+if(${CITRUS_SCENE_ENGINE} STREQUAL "KINNOW")
 set(CITRUS_SCENE_ENGINE_IS_KINNOW 1)
 set(CITRUS_SCENE_ENGINE_HEADER
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
@@ -301,12 +246,10 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
 
 set(ENGINE_SOURCE_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.h
 )
 endif()
 
@@ -392,7 +335,6 @@ endif()
 set(ENGINE_FILES 
 ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
 ${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
-${ENGINE_SOURCE_FILES_REFLECT} ${ENGINE_HEADER_FILES_REFLECT}
 ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
 ${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
 ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}

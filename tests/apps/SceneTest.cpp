@@ -42,7 +42,6 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
-   Engine->SceneEngine->LoadScene("game/scene/test/test.wad");
    return CT_SUCCESS;
 }
 

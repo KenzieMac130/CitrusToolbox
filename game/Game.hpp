@@ -19,25 +19,10 @@
 #include "GameCommon.hpp"
 #include "gamelayer/GameLayer.hpp"
 
-#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
-#include "scene/honeybell/Toy.hpp"
-#endif
-
 namespace Game {
-
-#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
-/* ---------------- Game Toys Defined Here ---------------- */
-/* clang-format off */
-#define HB_TOY_REGISTRIES() \
-HB_TOY_REGISTER_ENTRY(ClassName)
-/* clang-format on */
-#endif
 
 class GAME_API GameCore : public ctGameLayer {
 public:
-#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
-   virtual void HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry);
-#endif
 };
 
 }

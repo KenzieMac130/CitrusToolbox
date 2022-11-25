@@ -31,7 +31,3 @@ ctResults ctGameLayer::Startup() {
 ctResults ctGameLayer::Shutdown() {
    return CT_SUCCESS;
 }
-
-void ctGameLayer::HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry)
-{
-}
