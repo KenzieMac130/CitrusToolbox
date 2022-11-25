@@ -20,7 +20,6 @@ enable_testing()
 add_executable(Test_Units UnitTestBase.cpp AllTests.h.in
 utilities/UtilitiesTest.cpp
 ecs/ECSBasics.cpp
-reflect/ReflectTest.cpp
 )
 
 set_property(TARGET Test_Units PROPERTY FOLDER "tests")
@@ -44,8 +43,6 @@ ct_add_test(kinnow_test_routine)
 ct_add_test(kinnow_test_lots_of_component_types)
 ct_add_test(kinnow_add_entities)
 ct_add_test(kinnow_add_components)
-
-ct_add_test(basic_reflect)
 
 configure_file (
 ${CMAKE_CURRENT_SOURCE_DIR}/AllTests.h.in
