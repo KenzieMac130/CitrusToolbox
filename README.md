@@ -21,6 +21,3 @@
   * [Code Style](/docs/CodeStyleGuide.md)
   * [GPU Abstraction Layer](/engine/gpu)
   * ["Interact" Design](/docs/InteractNotes.md)
-
-## Todo
-Dependency distribution
