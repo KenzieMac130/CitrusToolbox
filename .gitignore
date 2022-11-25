@@ -40,6 +40,11 @@ waf3-*-*/
 # Lockfile
 .lock-waf_*_build
 
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Games Assets (Needs to be handled by binary source control)
 assets/game/
 

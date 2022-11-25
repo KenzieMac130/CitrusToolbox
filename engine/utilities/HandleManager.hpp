@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public:
    };
    inline ctHandle GetNewHandle();
    inline void FreeHandle(ctHandle hndl);
+   inline void Clear(); /* only do this if handles no-longer matter! */
 
 private:
    ctDynamicArray<_ctInternalHandleRep> _freeList;
@@ -66,4 +67,8 @@ inline void ctHandleManager::FreeHandle(ctHandle hndl) {
    _ctInternalHandleRep toInsert;
    toInsert.data = hndl;
    _freeList.Append(toInsert);
+}
+
+inline void ctHandleManager::Clear() {
+   _freeList.Clear();
 }

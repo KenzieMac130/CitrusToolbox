@@ -1,0 +1,10 @@
+/* CT_COMPILE_INFO: 
+{
+	"fx":[
+		{
+			"name":"DEFAULT",
+			"stages":["VERTEX_SHADER","FRAGMENT_SHADER"],
+		}
+	]
+}
+*/

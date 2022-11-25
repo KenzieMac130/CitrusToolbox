@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -392,9 +392,9 @@ ctResults ctSettingsSection::LoadConfigs(ctFileSystem* pFileSystem) {
    }
    ctFile defFile;
    path = "";
-   path.Printf(256, "defaults/%s.json", _name.CStr());
-   if (pFileSystem->OpenAssetFileNamed(defFile, path.CStr(), CT_FILE_OPEN_READ, false) ==
-       CT_SUCCESS) {
+   path.Printf(256, "Settings_%s", _name.CStr());
+   if (pFileSystem->OpenDataFileByGUID(
+         defFile, CT_DDATA(path.CStr()), CT_FILE_OPEN_READ, false) == CT_SUCCESS) {
       /* Load default data */
       defFile.GetBytes(defaultJsonBytes);
       if (defaultJson.BuildJsonForPtr(defaultJsonBytes.Data(),

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 
 #include "core/JobSystem.hpp"
 
-#include "scripting/api/HoneybellScript.hpp"
 #include "Toy.hpp"
 
 #if CITRUS_PHYSX

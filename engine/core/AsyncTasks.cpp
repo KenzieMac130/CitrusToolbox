@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -82,6 +82,13 @@ bool ctAsyncManager::isFinished(ctAsyncTaskHandle handle, ctResults* pResultsOut
    }
    ctMutexUnlock(stateLock);
    return finished;
+}
+
+bool ctAsyncManager::isEmpty() {
+   ctMutexLock(stateLock);
+   bool result = activeTasks.isEmpty();
+   ctMutexUnlock(stateLock);
+   return result;
 }
 
 void ctAsyncManager::ReleaseTask(ctHandle handle) {

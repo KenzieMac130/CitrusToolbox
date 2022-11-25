@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "Game.hpp"
 
+#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
 /* --------- This is all boilerplate code you probably don't need to touch... --------- */
 #undef HB_TOY_REGISTER_ENTRY
 #define HB_TOY_REGISTER_ENTRY(_CLASS)                                                    \
@@ -32,3 +33,4 @@ void Game::GameCore::HoneybellRegisterToys(class ctHoneybell::ToyTypeRegistry& r
    ZoneScoped;
    HB_TOY_REGISTRIES()
 }
+#endif

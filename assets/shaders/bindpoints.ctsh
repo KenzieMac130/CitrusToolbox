@@ -1,0 +1,36 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#define CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES  0
+#define CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES 1
+
+#define CT_KEYLIME_BIND_BUFFER_IM3D_VIEW     2
+#define CT_KEYLIME_BIND_BUFFER_IM3D_VERTICES 3
+
+#define CT_KEYLIME_BIND_BUFFER_SCENE_OCCLUSION 0 + 8
+
+#define CT_KEYLIME_BIND_TEXTURE_IMGUI_FONT     0
+#define CT_KEYLIME_BIND_TEXTURE_SCENE_DEPTH    0 + 8
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_COLOR  1 + 8
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_NORMAL 2 + 8
+#define CT_KEYLIME_BIND_TEXTURE_GBUFFER_PBR    3 + 8
+#define CT_KEYLIME_BIND_TEXTURE_LIGHTING       4 + 8
+#define CT_KEYLIME_BIND_TEXTURE_TONEMAP        5 + 8
+
+#define CT_KEYLIME_FORMAT_COLOR  TinyImageFormat_R8G8B8A8_UNORM
+#define CT_KEYLIME_FORMAT_DEPTH  TinyImageFormat_D24_UNORM_S8_UINT
+#define CT_KEYLIME_FORMAT_NORMAL TinyImageFormat_B10G10R10A2_UNORM
+#define CT_KEYLIME_FORMAT_HDR    TinyImageFormat_B10G10R10A2_UNORM

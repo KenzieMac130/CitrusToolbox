@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -419,6 +419,17 @@ inline ctVec4 lerp(const ctVec4& a, const ctVec4& b, float t) {
 }
 
 /* --- Colors --- */
+
+enum ctColorComponents {
+   CT_COLOR_COMPONENT_NONE = 0x00,
+   CT_COLOR_COMPONENT_R = 0x01,
+   CT_COLOR_COMPONENT_G = 0x02,
+   CT_COLOR_COMPONENT_B = 0x04,
+   CT_COLOR_COMPONENT_A = 0x08,
+   CT_COLOR_COMPONENT_RG = CT_COLOR_COMPONENT_R | CT_COLOR_COMPONENT_G,
+   CT_COLOR_COMPONENT_RGB = CT_COLOR_COMPONENT_RG | CT_COLOR_COMPONENT_B,
+   CT_COLOR_COMPONENT_RGBA = CT_COLOR_COMPONENT_RGB | CT_COLOR_COMPONENT_A,
+};
 
 #define CT_COLOR_BLACK           ctVec4(0.0f, 0.0f, 0.0f, 1.0f);
 #define CT_COLOR_GREY            ctVec4(0.5f, 0.5f, 0.5f, 1.0f);

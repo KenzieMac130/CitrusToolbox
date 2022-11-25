@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,14 @@
 #include "utilities/Common.h"
 #include "ModuleBase.hpp"
 
+/* Defined via codegen */
+extern const char* ctGetDataGuidFromHash(size_t hash);
+
+/* Get a guid for the nickname from the asset system with constant string */
+#define CT_CDATA(_constname) ctGUID(ctGetDataGuidFromHash(CT_COMPILE_HORNER_HASH(_constname)))
+/* Get a guid for the nickname from the asset system with dynamic string  */
+#define CT_DDATA(_name) ctGUID(ctGetDataGuidFromHash(ctHornerHash(_name)))
+
 class CT_API ctFileSystem : public ctModuleBase {
 public:
    ctFileSystem(const ctStringUtf8& appName, const ctStringUtf8& organizationName);
@@ -26,40 +34,35 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
 
-   const ctStringUtf8& GetPreferencesPath();
-   const ctStringUtf8& GetDataPath();
-   const ctStringUtf8& GetAssetPath();
-
-   ctResults BuildAssetManifest();
    const void LogPaths();
 
    const ctResults OpenPreferencesFile(ctFile& file,
                                        const ctStringUtf8& relativePath,
                                        const ctFileOpenMode mode = CT_FILE_OPEN_READ,
                                        bool silent = false) const;
-   const ctResults OpenExeRelativeFile(ctFile& file,
-                                       const ctStringUtf8& relativePath,
-                                       const ctFileOpenMode mode = CT_FILE_OPEN_READ,
-                                       bool silent = false) const;
-   const ctResults OpenAssetFileNamed(ctFile& file,
-                                      const char* name,
+   const ctResults OpenBaseRelativeFile(ctFile& file,
+                                        const ctStringUtf8& relativePath,
+                                        const ctFileOpenMode mode = CT_FILE_OPEN_READ,
+                                        bool silent = false) const;
+   const ctResults OpenDataFileByGUID(ctFile& file,
+                                      const ctGUID& guid,
                                       const ctFileOpenMode mode = CT_FILE_OPEN_READ,
                                       bool silent = false) const;
-   const ctResults OpenAssetFileGUID(ctFile& file,
-                                     const ctGUID& guid,
-                                     const ctFileOpenMode mode = CT_FILE_OPEN_READ,
-                                     bool silent = false) const;
+
+   inline const char* GetPreferencesPath() const {
+      return _prefPath.CStr();
+   }
+   inline const char* GetBasePath() const {
+      return _basePath.CStr();
+   }
+   inline const char* GetDataPath() const {
+      return _dataPath.CStr();
+   }
 
 private:
    ctStringUtf8 _organizationName;
    ctStringUtf8 _appName;
    ctStringUtf8 _prefPath;
+   ctStringUtf8 _basePath;
    ctStringUtf8 _dataPath;
-   ctStringUtf8 _assetPath;
-
-   struct AssetInfo {
-      ctGUID guid;
-      char relativePath[CT_MAX_FILE_PATH_LENGTH];
-   };
-   ctHashTable<AssetInfo, uint64_t> assetsByGuidHash;
 };

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,10 +23,24 @@
 
 class CT_API ctIm3dIntegration : public ctModuleBase {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup() final;
+   ctResults Shutdown() final;
 
-    void DrawImguiText(ctMat4 viewProj);
+   ctResults StartupGPU(struct ctGPUDevice* pGPUDevice,
+                        struct ctGPUBindlessManager* pBindless,
+                        struct ctGPUExternalBufferPool* pGPUBufferPool,
+                        size_t maxVerts,
+                        int32_t viewBind,
+                        int32_t vtxBind,
+                        enum TinyImageFormat colorFormat,
+                        enum TinyImageFormat depthFormat);
+   ctResults ShutdownGPU(struct ctGPUDevice* pGPUDevice,
+                         struct ctGPUExternalBufferPool* pGPUBufferPool);
 
-    ctResults NextFrame();
+   void DrawImguiText(ctMat4 viewProj);
+
+   ctResults NextFrame();
+
+private:
+   void* pPipelines[Im3d::DrawPrimitive_Count];
 };

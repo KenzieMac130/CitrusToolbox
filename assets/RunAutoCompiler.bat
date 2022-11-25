@@ -1,4 +1,2 @@
-python waf build -v
-python -m pip install -U watchdog
-python autocompiler.py
+python AutoCompiler.py
 pause

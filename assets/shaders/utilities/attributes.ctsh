@@ -1,0 +1,51 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#undef CT_ATTRIBUTES_BEGIN
+#undef CT_ATTRIBUTES_VAR
+#undef CT_ATTRIBUTES_END
+#undef CT_GET_ATTRIBUTE
+#undef CT_SET_ATTRIBUTE
+
+#if IS_ACTUALLY_GLSL
+   /* Getters and setters */
+   #define CT_GET_ATTRIBUTE(TYPE,NAME) /* not needed in glsl, unpack struct in hlsl */
+   #define CT_SET_ATTRIBUTE(NAME,VALUE) NAME=VALUE
+   /* Fragment input enclosure */
+   #ifdef CT_ATTRIBUTES_FRAG_IN
+      #ifdef FRAGMENT_SHADER /* is frag input */
+         #define CT_ATTRIBUTES_BEGIN()
+         #define CT_ATTRIBUTES_VAR(IDX,TYPE,NAME) layout(location = IDX) in TYPE NAME;
+         #define CT_ATTRIBUTES_END()
+      #else /* from other stages (eg, vert/dom)*/
+         #define CT_ATTRIBUTES_BEGIN()
+         #define CT_ATTRIBUTES_VAR(IDX,TYPE,NAME) layout(location = IDX) out TYPE NAME;
+         #define CT_ATTRIBUTES_END()
+      #endif
+   #endif
+   /* Fragment output enclosure */
+   #ifdef CT_ATTRIBUTES_FRAG_OUT
+      #ifdef FRAGMENT_SHADER /* is frag input */
+         #define CT_ATTRIBUTES_BEGIN()
+         #define CT_ATTRIBUTES_VAR(IDX,TYPE,NAME) layout(location = IDX) out TYPE NAME;
+         #define CT_ATTRIBUTES_END()
+      #else /* not accessible from other stages */
+	     #define CT_ATTRIBUTES_BEGIN()
+		 #define CT_ATTRIBUTES_VAR(IDX,TYPE,NAME)
+	     #define CT_ATTRIBUTES_END()
+	  #endif
+   #endif
+#endif 

@@ -1,5 +1,5 @@
 #
-#   Copyright 2021 MacKenzie Strand
+#   Copyright 2022 MacKenzie Strand
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -48,17 +48,25 @@ set(CT_MAX_SPACIAL_QUERY_ENTRIES_PER_CELL 16)
 set(CT_MAX_FILE_PATH_LENGTH 4096)
 set(CT_MAX_LOG_LENGTH 4096)
 set(CT_MAX_SETTINGS_SECTIONS 64)
+set(CT_MAX_GFX_DYNAMIC_INTS 8)
 set(CT_MAX_GFX_SAMPLERS 8)
 set(CT_MAX_GFX_SAMPLED_IMAGES 2048)
 set(CT_MAX_GFX_STORAGE_IMAGES 64)
 set(CT_MAX_GFX_STORAGE_BUFFERS 16192)
+set(CT_MAX_GFX_UNIFORM_BUFFERS 16192)
 set(CT_MAX_INFLIGHT_FRAMES 3)
+set(CT_MAX_GFX_TASK_DEPENDENCIES 64)
+set(CT_MAX_GFX_TASK_BUFFERS 8)
+set(CT_MAX_GFX_TASK_IMAGES 9)
+set(CT_MAX_GFX_TASK_BARRIERS 4)
 set(CT_MAX_INTERACT_PATH_SIZE 1024)
 set(CT_MAX_JOB_GROUPS 1024)
 set(CT_MAX_MIP_LEVELS 12)
 set(CT_MAX_VERTEX_UV_CHANNELS 4)
 set(CT_MAX_VERTEX_COLOR_CHANNELS 4)
 set(CT_MAX_MESH_MATERIALS 32)
+set(CT_MAX_KINNOW_REFLECT_ENUMS 128)
+set(CT_MAX_KINNOW_REFLECT_STRUCTS 256)
 
 # ---------- Alignment ----------
 set(CT_ALIGNMENT_CACHE 64)
@@ -68,8 +76,10 @@ set(CT_ALIGNMENT_VEC4 16)
 set(CT_ALIGNMENT_QUAT 16)
 set(CT_ALIGNMENT_MAT4 32)
 
-# ---------- Collision Mitigation ----------
-set(CT_HASH_RESEED_ASSET_PATH 0)
+# ---------- Scene Engine ----------
+set(CITRUS_SCENE_ENGINES HONEYBELL KINNOW)
+set(CITRUS_SCENE_ENGINE KINNOW CACHE STRING "Scene engine")
+set_property(CACHE CITRUS_SCENE_ENGINE PROPERTY STRINGS ${CITRUS_SCENE_ENGINES})
 
 # ---------- Other Defines ----------
 option(USE_STDOUT "Enable STD Out" ON)
@@ -124,9 +134,6 @@ endif()
 # ---------- Find ISPC ----------
 set(ISPC_COMPILER_PATH ${BASE_LIBRARY_DIRECTORY}/ISPC/ispc)
 
-# ---------- Find SWIG ----------
-set(SWIG_EXECUTABLE_PATH ${BASE_LIBRARY_DIRECTORY}/SWIG/swig)
-
 # ---------- Find SDL2 ----------
 set(CITRUS_SDL 1)
 find_package(SDL2 
@@ -134,9 +141,9 @@ NAMES sdl2
 HINTS ${BASE_LIBRARY_DIRECTORY}/SDL2 REQUIRED)
 
 # ---------- Find Vulkan ----------
-set(CITRUS_GFX_VULKAN 1)
-if(CITRUS_GFX_VULKAN)
-   find_package(Vulkan REQUIRED)
+set(CITRUS_GPU_VULKAN 1)
+if(CITRUS_GPU_VULKAN)
+   find_package(Vulkan)
    if(NOT Vulkan_FOUND)
       set(Vulkan_INCLUDE_DIRS ${BASE_LIBRARY_DIRECTORY}/Vulkan/Include)
       set(Vulkan_INCLUDE_DIR ${Vulkan_INCLUDE_DIRS}/vulkan)
@@ -184,11 +191,19 @@ if(CITRUS_PHYSX)
 endif()
 
 # ---------- Find Lua ----------
-set(CITRUS_LUA 1)
+set(CITRUS_LUA 0)
 if(CITRUS_LUA)
     set(LUA_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/LuaJIT)
     set(LUA_LIBRARIES 
         ${BASE_LIBRARY_DIRECTORY}/LuaJIT/lua51.lib)
+endif()
+
+# ---------- Find Angel Script ----------
+set(CITRUS_ANGELSCRIPT 1)
+if(CITRUS_ANGELSCRIPT)
+    set(ANGELSCRIPT_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/AngelScript)
+    set(ANGELSCRIPT_LIBRARIES 
+        ${BASE_LIBRARY_DIRECTORY}/AngelScript/angelscript.lib)
 endif()
 
 # ---------- Tracy Profiler ---------- 
@@ -221,8 +236,8 @@ set(CITRUS_IM3D 1)
 option(IS_HEADLESS "Command line only" OFF)
 if(IS_HEADLESS)
    set(CITRUS_HEADLESS 1)
-   set(CITRUS_GFX_VULKAN 0)
-   set(CITRUS_GFX_NULL 1)
+   set(CITRUS_GPU_VULKAN 0)
+   set(CITRUS_GPU_NULL 1)
    set(CITRUS_INTERACT_INPUT_SDL 0)
    set(CITRUS_INTERACT_INPUT_NULL 1)
    set(CITRUS_IMGUI 0)

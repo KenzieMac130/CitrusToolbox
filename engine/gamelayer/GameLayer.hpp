@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public:
    virtual ctResults Startup();
    virtual ctResults Shutdown();
    /* Note, this will be run before full startup! Do not rely on Engine! */
-   virtual void HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry) = 0;
+   virtual void HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry);
 };
 
 ctGameLayer& ctGetGameLayer();

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,10 +20,16 @@
 /* Todo: Signal filtering (inverter, pulse, on-release, smoothing, etc)*/
 /* Todo: Input buffering to avoid dropped inputs at high framerates */
 
+ctInteractionEngine* gMainInteractEngine = NULL;
+
+ctInteractionEngine::ctInteractionEngine(bool shared) {
+   if (shared) { gMainInteractEngine = this; }
+}
+
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
 #if CITRUS_INCLUDE_AUDITION
-   Engine->HotReload->RegisterAssetCategory(&Directory.configHotReload);
+   Engine->HotReload->RegisterDataCategory(&Directory.configHotReload);
 #endif
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
@@ -39,10 +45,11 @@ ctResults ctInteractionEngine::Shutdown() {
 
 ctResults ctInteractionEngine::RegisterAll() {
    ctFile file;
-   Engine->FileSystem->OpenAssetFileNamed(file, "input/actions.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
    Directory.CreateActionSetsFromFile(file);
 #if CITRUS_INCLUDE_AUDITION
-   Directory.configHotReload.RegisterPath("input/actions.json");
+   Directory.configHotReload.RegisterData(CT_CDATA("Input_Actions"));
 #endif
    file.Close();
    for (int i = 0; i < pBackends.Count(); i++) {
@@ -83,9 +90,8 @@ ctInteractPath::ctInteractPath() {
 
 ctInteractPath::ctInteractPath(const char* ptr, size_t count) {
    memset(str, 0, CT_MAX_INTERACT_PATH_SIZE);
-   strncpy(str,
-           ptr,
-           count > CT_MAX_INTERACT_PATH_SIZE - 1 ? CT_MAX_INTERACT_PATH_SIZE - 1 : count);
+   strncpy(
+     str, ptr, count > CT_MAX_INTERACT_PATH_SIZE ? CT_MAX_INTERACT_PATH_SIZE : count);
 }
 
 ctInteractPath::ctInteractPath(const char* ptr) {
@@ -152,9 +158,6 @@ ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
          if (actionPath.isEmpty()) { continue; }
          ctStringUtf8 actionVelocityPath;
          actionVelocityPath.Printf(1024, "%s/velocity", actionPath.CStr());
-         ctJSONReadEntry jsonActionDispatch = ctJSONReadEntry();
-         jsonAction.GetObjectEntry("dispatch", jsonActionDispatch);
-         jsonActionDispatch.GetString(dispatchPhase);
 
          ctInteractNode node = ctInteractNode();
          node.type = CT_INTERACT_NODETYPE_SCALAR;
@@ -168,11 +171,6 @@ ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
          ctInteractActionEntry actionEntry = ctInteractActionEntry();
          actionEntry.path = actionPath;
          actionEntry.velocityPath = actionVelocityPath;
-         if (dispatchPhase == "tick") {
-            actionEntry.phase = CT_INTERACT_ACTIONDISPATCH_TICK;
-         } else if (dispatchPhase == "update") {
-            actionEntry.phase = CT_INTERACT_ACTIONDISPATCH_UPDATE;
-         }
          pActionSet->actions.Append(actionEntry);
       }
    }
@@ -339,28 +337,6 @@ float ctInteractDirectorySystem::GetSignal(ctInteractPath& path) {
    return pNode->GetScalar();
 }
 
-void ctInteractDirectorySystem::FireActions(ctInteractActionDispatchPhase phase,
-                                            void (*callback)(const char* path,
-                                                             float value,
-                                                             void* user),
-                                            void* userdata) {
-   ZoneScoped;
-   for (size_t i = 0; i < activeActionSets.Count(); i++) {
-      ctInteractNode* pSetNode = NULL;
-      GetNode(activeActionSets[i], pSetNode);
-      ctInteractActionSet* pActionSet = pSetNode->GetAsActionSet();
-      if (!pActionSet) { continue; }
-      for (size_t j = 0; j < pActionSet->actions.Count(); j++) {
-         // if (pActionSet->actions[j].phase != phase) { continue; }
-         ctInteractNode* pActionNode = NULL;
-         GetNode(pActionSet->actions[j].path, pActionNode);
-         if (!pActionNode) { continue; }
-         float value = pActionNode->GetScalar();
-         if (value) { callback(pActionSet->actions[j].path.str, value, userdata); }
-      }
-   }
-}
-
 void ctInteractDirectorySystem::LogContents() {
    ZoneScoped;
    for (auto it = nodes.GetIterator(); it; it++) {
@@ -446,4 +422,13 @@ void ctInteractBinding::Process(ctInteractDirectorySystem& dir) {
    dir.GetNode(output, pNode);
    if (!pNode) { return; }
    pNode->SetScalar(value);
+}
+
+float ctGetSignal(const char* path) {
+   if (!gMainInteractEngine) { return 0.0f; }
+   return gMainInteractEngine->Directory.GetSignal(ctInteractPath(path));
+}
+
+bool ctGetButton(const char* path) {
+   return !ctFloatCompare(ctGetSignal(path), 0.0f);
 }

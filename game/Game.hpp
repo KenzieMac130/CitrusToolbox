@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,22 +19,25 @@
 #include "GameCommon.hpp"
 #include "gamelayer/GameLayer.hpp"
 
+#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
 #include "scene/honeybell/Toy.hpp"
-
-/* Include toys */
-#include "toys/FPSDemoPlayer.hpp"
+#endif
 
 namespace Game {
 
+#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
 /* ---------------- Game Toys Defined Here ---------------- */
 /* clang-format off */
 #define HB_TOY_REGISTRIES() \
-HB_TOY_REGISTER_ENTRY(FPSPlayer)
+HB_TOY_REGISTER_ENTRY(ClassName)
 /* clang-format on */
+#endif
 
 class GAME_API GameCore : public ctGameLayer {
 public:
+#if CITRUS_SCENE_ENGINE_IS_HONEYBELL
    virtual void HoneybellRegisterToys(ctHoneybell::ToyTypeRegistry& registry);
+#endif
 };
 
 }

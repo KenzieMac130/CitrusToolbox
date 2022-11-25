@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 #include "core/EngineCore.hpp"
 
 #include "middleware/PhysXIntegration.hpp"
-#include "scripting/api/HoneybellScript.hpp"
 
 //#include "asset/types/WADAsset.hpp"
 #include "formats/wad/prototypes/Header.h"
@@ -243,21 +242,4 @@ ctHoneybell::ToyBase* ctHoneybell::Scene::FindToyByHandle(ctHandle handle) {
    ToyBase** ppToy = toys.FindPtr(handle);
    if (ppToy) { return *ppToy; }
    return NULL;
-}
-
-int ctScriptApi::Honeybell::spawnToy(ctScriptTypedLightData* ldata,
-                                     const char* type,
-                                     float x,
-                                     float y,
-                                     float z,
-                                     float yaw,
-                                     float pitch,
-                                     float roll,
-                                     float scale,
-                                     const char* message,
-                                     const char* prefabPath) {
-   ctTransform transform =
-     ctTransform(ctVec3(x, y, z), ctQuatYawPitchRoll(yaw, pitch, roll), ctVec3(scale));
-   ((ctHoneybell::Scene*)(ldata->ptr))->SpawnToy(type, transform, message, prefabPath);
-   return 0;
 }

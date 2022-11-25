@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -61,17 +61,22 @@ enum ctResults ctWADFindLumpInMarker(struct ctWADReader* pReader,
                                      int32_t* ppSizeOut) {
    if (!pReader->pInfo) { return CT_FAILURE_INACCESSIBLE; }
    const int32_t numlumps = pReader->pInfo->numlumps;
-   int32_t currentOccurence = 0;
+   int32_t currentOccurence = -1;
+   bool inMarker = false;
    for (int32_t i = 0; i < numlumps; i++) {
       const struct ctWADLump lump = pReader->pLumps[i];
-      if (ctCStrNEql(beginName, name, 8)) { currentOccurence++; }
-      if (currentOccurence == occurrence) {
+      if (ctCStrNEql(beginName, lump.name, 8)) {
+         currentOccurence++;
+         inMarker = true;
+      } else if (ctCStrNEql(endName, lump.name, 8)) {
+         inMarker = false;
+      }
+      if (inMarker && currentOccurence == occurrence) {
          if (ctCStrNEql(lump.name, name, 8)) {
             if (ppDataOut) { *ppDataOut = pReader->blob + lump.filepos; }
             if (ppSizeOut) { *ppSizeOut = lump.size; }
             return CT_SUCCESS;
          }
-         if (ctCStrNEql(endName, name, 8)) { return CT_FAILURE_NOT_FOUND; }
       }
    }
    return CT_FAILURE_NOT_FOUND;

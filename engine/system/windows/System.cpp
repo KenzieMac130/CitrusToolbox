@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "../System.h"
 #include <Windows.h>
+#include <stdio.h>
 
 int ctSystemCreateGUID(void* guidPtr) {
    static_assert(sizeof(GUID) == 16, "Windows GUID no longer is 128bit!");
@@ -37,4 +38,51 @@ int ctSystemInitialGetLanguage(char* buff, size_t max) {
    WideCharToMultiByte(
      CP_UTF8, 0, data, LOCALE_NAME_MAX_LENGTH, buff, (int)max, NULL, NULL);
    return 0;
+}
+
+int ctSystemExecuteCommand(const char* commandAlias, int argc, const char* argv[]) {
+   size_t argStrSize = strlen(commandAlias) + 1;
+   for (int i = 0; i < argc; i++) {
+      argStrSize += strlen(argv[i]) + 1;
+   }
+   char* argStr = (char*)malloc(argStrSize);
+   if (!argStr) { return -1000000; }
+   memset(argStr, 0, argStrSize);
+   argStrSize -= strlen(commandAlias) + 1;
+   strncat(argStr, commandAlias, argStrSize);
+   for (int i = 0; i < argc; i++) {
+      strncat(argStr, " ", argStrSize);
+      argStrSize -= 1;
+      strncat(argStr, argv[i], argStrSize);
+      argStrSize -= strlen(argv[i]);
+   }
+   int result = system(argStr);
+   free(argStr);
+   return result;
+}
+
+int ctSystemShowFileToDeveloper(const char* path) {
+   return system(path);
+}
+
+int ctSystemPositionalPrintToString(char* dest,
+                                    size_t capacity,
+                                    const char* format,
+                                    ...) {
+   va_list vl;
+   va_start(vl, format);
+   const int result = _vsprintf_p(dest, capacity, format, vl);
+   va_end(vl);
+   return result;
+}
+
+void* ctSystemMapVirtualFile(const char* path,
+                             bool write,
+                             size_t reserve,
+                             size_t* pSize) {
+   return NULL;
+}
+
+int ctSystemUnmapVirtualFile(void* buff, size_t length) {
+   return -1;
 }

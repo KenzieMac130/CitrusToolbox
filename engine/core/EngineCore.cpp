@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 
 #include "gamelayer/GameLayer.hpp"
 
+#include "reflect/Reflect.hpp"
 #include "AsyncTasks.hpp"
 #include "JobSystem.hpp"
 #include "FileSystem.hpp"
@@ -38,7 +39,7 @@
 #endif
 
 #include "interact/InteractionEngine.hpp"
-#include "renderer/KeyLime.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
 #include "scene/SceneEngineBase.hpp"
 
 #include CITRUS_SCENE_ENGINE_HEADER
@@ -60,6 +61,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    };
 
    /* Create Modules */
+   //_ctInitGlobalReflectionData();
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
    Settings = new ctSettingsManager(argc, argv);
    Debug = new ctDebugSystem(32, true);
@@ -71,7 +73,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    JobSystem = new ctJobSystem(2);
    OSEventManager = new ctOSEventManager();
    WindowManager = new ctWindowManager();
-   Interact = new ctInteractionEngine();
+   Interact = new ctInteractionEngine(true);
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();

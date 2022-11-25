@@ -1,5 +1,5 @@
 #
-#	Copyright 2021 MacKenzie Strand
+#	Copyright 2022 MacKenzie Strand
 #
 #	Licensed under the Apache License, Version 2.0 (the "License");
 #	you may not use this file except in compliance with the License.
@@ -67,49 +67,6 @@ DEPENDS ${ISPC_IN}
 ${LIBRARY_INSTALL_DEPENDENCY})
 endforeach()
 
-#---------- Generate Scripting Bindings ----------
-set(SWIG_INPUTS
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/SwigWrap.i
-)
-set(SWIG_DEPENDS
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/HoneybellScript.hpp
-)
-set(SWIG_OUTPUTS
-${CITRUS_CODEGEN_DIR}/bind_lua/Bind_Lua.gen.cpp
-)
-
-add_custom_command(OUTPUT ${SWIG_OUTPUTS}
-COMMAND
-${SWIG_EXECUTABLE_PATH} -lua -c++
--outdir ${CITRUS_CODEGEN_DIR}/bind_lua
--o \"${CITRUS_CODEGEN_DIR}/bind_lua/Bind_Lua.gen.cpp\"
-\"${CMAKE_CURRENT_SOURCE_DIR}/scripting/SwigWrap.i\" 
-DEPENDS
-${SWIG_INPUTS}
-${SWIG_DEPENDS}
-${LIBRARY_INSTALL_DEPENDENCY})
-
-
-#file(MAKE_DIRECTORY ${CITRUS_CODEGEN_DIR}/bind_lua)
-#foreach(FILE_IN IN LISTS SWIG_INPUTS)
-#get_filename_component(FILE_IN_NAME ${FILE_IN} NAME_WLE)
-#get_filename_component(FILE_IN_REL_PATH ${FILE_IN} DIRECTORY)
-#string(CONCAT SWIG_OUT 
-#	${CITRUS_CODEGEN_DIR}/bind_lua/${FILE_IN_NAME}_Lua.gen.cpp)
-#string(CONCAT SWIG_OUT_H 
-#	${CITRUS_CODEGEN_DIR}/bind_lua/${FILE_IN_NAME}_Lua.gen.hpp)
-#add_custom_command(OUTPUT ${SWIG_OUT}
-#COMMAND
-#${SWIG_EXECUTABLE_PATH} -lua
-#-outdir ${CITRUS_CODEGEN_DIR}/bind_lua
-#-o \""${SWIG_OUT}"\"
-#\"${FILE_IN}\" 
-#DEPENDS
-#${FILE_IN}
-#${LIBRARY_INSTALL_DEPENDENCY})
-#list(APPEND SWIG_OUTPUTS ${SWIG_OUT})
-#endforeach()
-
 # ---------- Utility Libraries ----------
 set(ENGINE_SOURCE_FILES_UTILITIES
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.cpp
@@ -117,6 +74,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
@@ -138,7 +96,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Meta.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
@@ -148,6 +105,24 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.hpp
 )
+
+# ---------- Reflection System ----------
+set(ENGINE_SOURCE_FILES_REFLECT
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/Reflect.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/GeneratorBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/AngelScriptGenerator.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/ImguiGenerator.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/SerializationGenerator.hpp
+)
+
+set(ENGINE_HEADER_FILES_REFLECT
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/Reflect.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/ReflectExtractor.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/AngelScriptGenerator.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/ImguiGenerator.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/SerializationGenerator.cpp
+)
+
 
 # ---------- Engine Core Framework ----------
 set(ENGINE_SOURCE_FILES_CORE
@@ -211,23 +186,77 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Camera.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Light.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Material.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/RenderMesh.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/MarkersAndBlobs.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/mesh/RenderMesh.h
 )
 
 # ---------- Renderer Frontend ---------- 
 set(ENGINE_SOURCE_FILES_RENDERER
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeShared.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.cpp
 )
 
 set(ENGINE_HEADER_FILES_RENDERER
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLime.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeDataTypes.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.hpp
 )
 
-# ---------- Scene Engine ---------- 
+# ---------- Graphics Backend Files ----------
+set(ENGINE_HEADER_FILES_GPU_INTERFACE
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Architect.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Bindless.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Commands.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Pipeline.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Present.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Texture.h)
+set(ENGINE_SOURCE_FILES_GPU_INTERFACE)
 
+if(CITRUS_GPU_NULL)
+set(ENGINE_SOURCE_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/null/DeviceNull.cpp)
+set(ENGINE_HEADER_FILES_GPU_BACKEND)
+endif()
+
+if(CITRUS_GPU_VULKAN)
+set(ENGINE_SOURCE_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.cpp)
+
+set(ENGINE_HEADER_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.hpp)
+endif()
+
+list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.cpp)
+list(APPEND ENGINE_HEADER_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/DeviceBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
+
+# ---------- Scene Engine ---------- 
+set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 0)
+set(CITRUS_SCENE_ENGINE_IS_KINNOW 0)
+
+# Honeybell: actor based scene system
+if(${CITRUS_SCENE_ENGINE} STREQUAL "HONEYBELL")
+set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 1)
 set(CITRUS_SCENE_ENGINE_HEADER
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/HoneybellSceneEngine.hpp
 )
@@ -262,6 +291,24 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/TestShape.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/GroundPlane.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/honeybell/toys/SceneChunk.hpp
 )
+
+# Kinnow: entity component system
+elseif(${CITRUS_SCENE_ENGINE} STREQUAL "KINNOW")
+set(CITRUS_SCENE_ENGINE_IS_KINNOW 1)
+set(CITRUS_SCENE_ENGINE_HEADER
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
+)
+
+set(ENGINE_SOURCE_FILES_SCENE
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.cpp
+)
+
+set(ENGINE_HEADER_FILES_SCENE
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.h
+)
+endif()
 
 # ---------- Third Party Implementation ---------- 
 set(THIRD_PARTY_IMPL_FILES
@@ -301,38 +348,22 @@ endif()
 # ---------- Scripting Integration ---------- 
 if(CITRUS_LUA)
 set(ENGINE_SOURCE_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/LuaScript.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/LuaScript.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/ObjTypes.h
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/CommonApi.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/api/HoneybellScript.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.hpp
 )
-endif()
+elseif(CITRUS_ANGELSCRIPT)
+set(ENGINE_SOURCE_FILES_SCRIPTING
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/AngelScript.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/integration/CitrusUtilities.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/integration/CitrusEngine.cpp
+)
 
-# ---------- Graphics Backend Files ----------
-if(CITRUS_GFX_NULL)
-set(ENGINE_SOURCE_FILES_GFX_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/null/KeyLimeAdapterNull.cpp)
-
-set(ENGINE_HEADER_FILES_GFX_BACKEND)
-endif()
-
-if(CITRUS_GFX_VULKAN)
-set(ENGINE_SOURCE_FILES_GFX_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/KeyLimeAdapterVk.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.cpp)
-
-set(ENGINE_HEADER_FILES_GFX_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkKeyLimeCore.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkBackend.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkIm3d.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/vulkan/VkImgui.hpp)
+set(ENGINE_HEADER_FILES_SCRIPTING
+${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/AngelScript.hpp
+)
 endif()
 
 # ---------- Interaction Engine ----------
@@ -361,29 +392,35 @@ endif()
 set(ENGINE_FILES 
 ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
 ${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
+${ENGINE_SOURCE_FILES_REFLECT} ${ENGINE_HEADER_FILES_REFLECT}
 ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
 ${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
 ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
+${ENGINE_SOURCE_FILES_GPU_INTERFACE} ${ENGINE_HEADER_FILES_GPU_INTERFACE}
+${ENGINE_SOURCE_FILES_GPU_BACKEND} ${ENGINE_HEADER_FILES_GPU_BACKEND}
 ${ENGINE_SOURCE_FILES_INTERACT} ${ENGINE_HEADER_FILES_INTERACT}
 ${ENGINE_SOURCE_FILES_INTERACT_BACKEND} ${ENGINE_SOURCE_FILES_INTERACT_BACKEND}
 ${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
-${ENGINE_SOURCE_FILES_GFX_BACKEND} ${ENGINE_HEADER_FILES_GFX_BACKEND}
 ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
 ${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
 ${ENGINE_SOURCE_FILES_ASSET_SYSTEM} ${ENGINE_HEADER_FILES_ASSET_SYSTEM}
 ${ENGINE_SOURCE_FILES_FORMAT} ${ENGINE_HEADER_FILES_FORMAT}
-${ISPC_KERNEL_INPUTS}
-${SWIG_INPUTS})
+${ISPC_KERNEL_INPUTS})
 
-# ----------Generate Config Files ----------
+# ---------- Generate Config Files ----------
 configure_file (
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
 ${CITRUS_CODEGEN_DIR}/Config.h)
 
+# ---------- Asset System Codegen ----------
+add_library(data ${CITRUS_CODEGEN_DIR}/DataNicknames.cpp)
+
 # ---------- Create Engine Library ----------
 add_library(engine 
 ${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
+${CMAKE_CURRENT_SOURCE_DIR}/../citrus.natvis
 ${ENGINE_FILES}
+${ASSET_SYSTEM_CODEGEN}
 ${TRACY_FILES}
 ${THIRD_PARTY_IMPL_FILES}
 ${NATIVE_SOURCE_FILES}
@@ -394,8 +431,12 @@ ${SWIG_OUTPUTS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../ FILES ${THIRD_PARTY_IMPL_FILES})
 source_group(tracy FILES ${TRACY_FILES})
-source_group(generated FILES ${CITRUS_REFLECT_OUTPUTS} ${SWIG_OUTPUTS} ${ISPC_KERNEL_OUTPUTS})
 source_group(native FILES ${NATIVE_SOURCE_FILES})
+source_group(generated FILES 
+${CITRUS_REFLECT_OUTPUTS}
+${SWIG_OUTPUTS}
+${ISPC_KERNEL_OUTPUTS}
+${ASSET_SYSTEM_CODEGEN})
 
 # ---------- Include and Link ----------
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
@@ -403,6 +444,7 @@ target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
+target_link_libraries(engine data)
 target_link_libraries(engine system)
 
 if(CITRUS_SDL)
@@ -410,7 +452,7 @@ if(CITRUS_SDL)
 	target_include_directories(engine PUBLIC ${SDL2_INCLUDE_DIRS})
 endif()
 
-if(CITRUS_GFX_VULKAN)
+if(CITRUS_GPU_VULKAN)
 	target_link_libraries(engine ${Vulkan_LIBRARIES})
 	target_include_directories(engine PUBLIC ${Vulkan_INCLUDE_DIRS})
 endif()
@@ -426,6 +468,11 @@ if(CITRUS_LUA)
 	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
 endif()
 
+if(CITRUS_ANGELSCRIPT)
+	target_link_libraries(engine ${ANGELSCRIPT_LIBRARIES})
+	target_include_directories(engine PUBLIC ${ANGELSCRIPT_INCLUDE_DIR})
+endif()
+
 # ---------- Copy Shared Libraries and Config ----------
 add_custom_command(TARGET engine POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -433,7 +480,7 @@ COMMAND ${CMAKE_COMMAND} -E copy_if_different
 $<TARGET_FILE_DIR:engine>)
 add_custom_command(TARGET engine POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-"${SHARED_LIBRARY_DIRECTORY}/assets.redirect"
+"${SHARED_LIBRARY_DIRECTORY}/data.redirect"
 $<TARGET_FILE_DIR:engine>)
 
 if(CITRUS_SDL)

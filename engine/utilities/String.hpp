@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 class CT_API ctStringUtf8 {
 public:
    ctStringUtf8();
+   ~ctStringUtf8();
    ctStringUtf8(ctStringUtf8& str);
    ctStringUtf8(const ctStringUtf8& str);
    ctStringUtf8(const char* input, const size_t count);
@@ -82,6 +83,7 @@ public:
    uint32_t xxHash32() const;
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
+   size_t HornerHash() const;
 
    void MakeUTF16Array(ctDynamicArray<char16_t>& arr) const;
    void CopyToArray(char* dest, size_t destSize);
@@ -91,7 +93,5 @@ private:
    void _removeNullTerminator();
    void _nullTerminate();
 
-   /* Todo: Small string optimization */
-   // ctStaticArray<char, 32> _smallData;
    ctDynamicArray<char> _data;
 };

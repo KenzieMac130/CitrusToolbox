@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include "core/Translation.hpp"
 #include "gamelayer/GameLayer.hpp"
 #include "interact/InteractionEngine.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
 
 /* Defined in TypeRegistration */
 namespace ctHoneybell {
@@ -74,7 +75,7 @@ ctResults ctHoneybellSceneEngine::Startup() {
    debugCamera = CurrentCamera;
 
 #if CITRUS_INCLUDE_AUDITION
-   Engine->HotReload->RegisterAssetCategory(&hotReload);
+   Engine->HotReload->RegisterDataCategory(&hotReload);
 #endif
    return CT_SUCCESS;
 }
@@ -210,7 +211,7 @@ ctResults ctHoneybellSceneEngine::NextFrame() {
       debugCameraActive = true;
    }
 
-   LastCamera = CurrentCamera;
+   Engine->Renderer->UpdateCamera(CurrentCamera);
    return CT_SUCCESS;
 }
 
@@ -220,10 +221,6 @@ void ctHoneybellSceneEngine::SetCameraInfo(ctCameraInfo camera, const char* came
 
 ctCameraInfo ctHoneybellSceneEngine::GetCameraInfo(const char* cameraId) {
    return CurrentCamera;
-}
-
-ctCameraInfo ctHoneybellSceneEngine::GetCameraInfoLastFrame(const char* cameraId) {
-   return LastCamera;
 }
 
 ctResults ctHoneybellSceneEngine::LoadScene(const char* path, const char* message) {

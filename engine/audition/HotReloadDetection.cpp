@@ -1,6 +1,6 @@
 #include "HotReloadDetection.hpp"
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -50,9 +50,10 @@ ctResults ctHotReloadDetection::Startup() {
    if (watchIsRunning) {
       ctDebugLog("Hot Reload Watch Enabled...");
       _callbackLock = ctMutexCreate();
-      ctStringUtf8 assetPath = Engine->FileSystem->GetAssetPath();
+      const char* dataPath = Engine->FileSystem->GetDataPath();
+      if (!dataPath) { return CT_FAILURE_INACCESSIBLE; }
       dmon_init();
-      dmon_watch(assetPath.CStr(), watch_callback, DMON_WATCHFLAGS_RECURSIVE, this);
+      dmon_watch(dataPath, watch_callback, DMON_WATCHFLAGS_RECURSIVE, this);
    }
    return CT_SUCCESS;
 }
@@ -68,7 +69,7 @@ ctResults ctHotReloadDetection::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults ctHotReloadDetection::RegisterAssetCategory(ctHotReloadCategory* pCategory) {
+ctResults ctHotReloadDetection::RegisterDataCategory(ctHotReloadCategory* pCategory) {
    pCategory->_pOwner = this;
    return hotReloads.Append(pCategory);
 }
@@ -79,6 +80,20 @@ void ctHotReloadDetection::_PushPathUpdate(const char* path) {
    for (int i = 0; i < hotReloads.Count(); i++) {
       hotReloads[i]->_AddFileUpdate(path);
    }
+}
+
+void ctHotReloadCategory::RegisterData(const ctGUID& guid) {
+   char path[33];
+   memset(path, 0, 33);
+   guid.ToHex(path);
+   RegisterPath(path);
+}
+
+void ctHotReloadCategory::UnregisterData(const ctGUID& guid) {
+   char path[33];
+   memset(path, 0, 33);
+   guid.ToHex(path);
+   UnregisterPath(path);
 }
 
 void ctHotReloadCategory::RegisterPath(const char* relativePath) {

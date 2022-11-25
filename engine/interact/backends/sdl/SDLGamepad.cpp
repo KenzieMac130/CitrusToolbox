@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -92,11 +92,12 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
       }
    }
    ctFile file;
-   Engine->FileSystem->OpenAssetFileNamed(file, "input/gamepad.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Gamepad"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
-   directory.configHotReload.RegisterPath("input/gamepad.json");
+   directory.configHotReload.RegisterData(CT_CDATA("Input_Gamepad"));
 #endif
    return CT_SUCCESS;
 }

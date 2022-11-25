@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -101,7 +101,9 @@ enum ctResults {
    CT_FAILURE_SYNTAX_ERROR = -19,
    CT_FAILURE_RUNTIME_ERROR = -19,
    CT_FAILURE_TYPE_ERROR = -20,
-   CT_FAILURE_NOT_FINISHED = -21
+   CT_FAILURE_NOT_FINISHED = -21,
+   CT_FAILURE_SKIPPED = -22,
+   CT_FAILURE_INCORRECT_VERSION = -23
 };
 
 #define CT_PANIC_FAIL(_arg, _message)                                                    \
@@ -143,42 +145,20 @@ enum ctResults {
 #define ctCStaticArrayLen(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 #define ctCStrEql(a, b)         strcmp(a, b) == 0
 #define ctCStrNEql(a, b, n)     strncmp(a, b, n) == 0
-#define ctCFlagCheck(v, f)      ((v) & (1 << (f)))
+#define ctCFlagCheck(v, f)      ((v & f) == f)
 
 /*Assert*/
 #define ctAssert(e) assert(e)
 
-#define ctErrorCheck(_msg) (_msg != NE_SUCCESS)
+#define ctErrorCheck(_msg) (_msg != CT_SUCCESS)
 
-/**
- * @brief should behave just like malloc but with messages to track leaks
- */
 CT_API void* ctMalloc(size_t size);
-/**
- * @brief should behave just like realloc but with messages to track leaks
- */
 CT_API void* ctRealloc(void* old, size_t size);
-/**
- * @brief should behave just like free
- */
 CT_API void ctFree(void* block);
-/**
- * @brief should behave similarly to malloc with alignment but with messages to track
- * leaks
- */
 CT_API void* ctAlignedMalloc(size_t size, size_t alignment);
-/**
- * @brief should behave similarly to realloc with alignment but with messages to track
- * leaks
- */
 CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
-/**
- * @brief should behave similarly to free with alignment
- */
 CT_API void ctAlignedFree(void* block);
-/**
- * @brief should behave similarly to alloca
- */
+
 #pragma warning(disable : 6255)
 #define ctStackAlloc(_SIZE) alloca(_SIZE)
 
@@ -201,7 +181,6 @@ CT_API size_t ctGetAliveAllocations();
 #include "Hash.hpp"
 #include "String.hpp"
 #include "HashTable.hpp"
-#include "Meta.hpp"
 #include "Sync.hpp"
 #include "JSON.hpp"
 #include "Time.hpp"

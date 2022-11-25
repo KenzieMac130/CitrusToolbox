@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,14 @@
 #include "cute/cute_utf.h"
 #include <ctype.h>
 
+/* ------------------------ Global String Pool ------------------------ */
+
+/* ------------------------ String Type ------------------------ */
+
 ctStringUtf8::ctStringUtf8() {
+}
+
+ctStringUtf8::~ctStringUtf8() {
 }
 
 ctStringUtf8::ctStringUtf8(ctStringUtf8& str) {
@@ -167,7 +174,7 @@ ctStringUtf8& ctStringUtf8::ToLower() {
 }
 
 ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
-   const size_t len = ByteLength();
+   const size_t len = ByteLength()+1;
    size_t outIdx = 0;
    bool escapeEntered = false;
    for (size_t inIdx = 0; inIdx < len; inIdx++) {
@@ -196,7 +203,6 @@ ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
       outIdx++;
    }
    _data.Resize(outIdx);
-   _nullTerminate();
    return *this;
 }
 
@@ -353,6 +359,11 @@ uint64_t ctStringUtf8::xxHash64(const int seed) const {
 
 uint64_t ctStringUtf8::xxHash64() const {
    return xxHash64(0);
+}
+
+size_t ctStringUtf8::HornerHash() const {
+   if (isEmpty()) { return 0; }
+   return ctHornerHash(CStr());
 }
 
 void ctStringUtf8::MakeUTF16Array(ctDynamicArray<char16_t>& arr) const {

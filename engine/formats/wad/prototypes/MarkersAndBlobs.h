@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,8 +19,12 @@
 #define CT_WADMARKER_NAME_EMBED_START "EM_START"
 #define CT_WADMARKER_NAME_EMBED_END   "EM_END"
 
-#define CT_WADMARKER_NAME_FX_START "FX_START"
-#define CT_WADMARKER_NAME_FX_END   "FX_END"
+
+#define CT_WADMARKER_NAME_FX_START    "FX_START"
+#define CT_WADMARKER_NAME_FX_END      "FX_END"
+
+#define CT_WADBLOB_NAME_FX_NAMES "FX_NAMES"
+#define CT_WADBLOB_NAME_FX_METADATA "FX_META"
 
 #define CT_WADBLOB_NAME_SHADER_VERT_SPIRV             "VERT_SPV"
 #define CT_WADBLOB_NAME_SHADER_FRAG_SPIRV             "FRAG_SPV"

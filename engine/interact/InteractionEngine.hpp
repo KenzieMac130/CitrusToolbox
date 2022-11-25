@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,6 +23,10 @@
 #if CITRUS_INCLUDE_AUDITION
 #include "audition/HotReloadDetection.hpp"
 #endif
+
+/* Simple Input API */
+float ctGetSignal(const char* path);
+bool ctGetButton(const char* path);
 
 /* --------------------------- Virtual Directory --------------------------- */
 
@@ -77,9 +81,6 @@ public:
    ctResults
    GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false);
    float GetSignal(ctInteractPath& path);
-   void FireActions(enum ctInteractActionDispatchPhase phase,
-                    void (*callback)(const char* path, float value, void* user),
-                    void* userdata = NULL);
    void LogContents();
    void DebugImGui();
    void _ReloadClear();
@@ -114,18 +115,9 @@ public:
 
 /* --------------------------- Actions --------------------------- */
 
-enum ctInteractActionDispatchPhase {
-   CT_INTERACT_ACTIONDISPATCH_NONE,
-   CT_INTERACT_ACTIONDISPATCH_UPDATE,
-   CT_INTERACT_ACTIONDISPATCH_TICK,
-   CT_INTERACT_ACTIONDISPATCH_COUNT,
-   CT_INTERACT_ACTIONDISPATCH_MAX = UINT8_MAX
-};
-
 struct ctInteractActionEntry {
    ctInteractPath path;
    ctInteractPath velocityPath;
-   ctInteractActionDispatchPhase phase;
 };
 
 /* --------------------------- Action Sets --------------------------- */
@@ -143,6 +135,7 @@ public:
 
 class CT_API ctInteractionEngine : public ctModuleBase {
 public:
+   ctInteractionEngine(bool shared);
    ctResults Startup() final;
    ctResults Shutdown() final;
 

@@ -1,0 +1,107 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2021-11-17 14:34-0500\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: jp\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.0\n"
+"X-Poedit-KeywordsList: CT_NC;CT_NCT\n"
+"X-Poedit-Basepath: ../../engine\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: gpu/vulkan/DeviceVulkan.cpp:410
+msgid "FAIL:vkCreateSwapchainKHR"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:660
+msgid "FAIL:NoValidation"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:667
+msgid "FAIL:SDL_Vulkan_GetInstanceExtensions"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:707
+msgid "FAIL:vkCreateInstance"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:730
+msgid "FAIL:vkCreateDebugReportCallbackEXT"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:741
+msgid "FAIL:vkEnumeratePhysicalDevices"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:745
+msgid "FAIL:VkNoGPU"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:769
+msgid "FAIL:GPUReqNotMet"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:779
+msgid "FAIL:CouldNotFindGoodGPU"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:805
+msgid "FAIL:VkQueueFamilyIncomplete"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:883
+msgid "FAIL:vkCreateDevice"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:909
+msgid "FAIL:vmaCreateAllocator"
+msgstr ""
+
+#: gpu/vulkan/DeviceVulkan.cpp:938
+msgid "FAIL:vkCreatePipelineCache"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:149
+msgid "Debug Camera"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:150
+msgid "Fov"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:151
+msgid "Position"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:152
+msgid "Yaw"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:153
+msgid "Pitch"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:154
+msgid "Camera Speed"
+msgstr "Testing Testing..."
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:155
+msgid "Pause Simulation"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:158
+msgid "Single Shot"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:159
+msgid "Reset Scene"
+msgstr ""
+
+#: scene/honeybell/HoneybellSceneEngine.cpp:160
+msgid "HB_DEBUGCAM_HELP"
+msgstr ""

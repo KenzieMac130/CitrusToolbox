@@ -1,6 +1,5 @@
-#include "JobSystem.hpp"
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,21 +15,6 @@
 */
 
 #include "JobSystem.hpp"
-#include "SDL.h"
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-#define CUTE_SYNC_IMPLEMENTATION
-#define CUTE_SYNC_SDL
-#include "cute/cute_sync.h"
-
-/* Stop windef's unwise macro definition from messing with Tracy */
-#ifdef _WIN32
-#ifdef max
-#undef max
-#endif
-#endif
-
 #include "EngineCore.hpp"
 #include "Settings.hpp"
 

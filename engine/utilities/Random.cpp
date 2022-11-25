@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include "mattias/rnd.h"
 
 ctRandomGenerator::ctRandomGenerator() {
-   SetSeed(0);
+   SetSeed((uint32_t)ctRand());
 }
 
 ctRandomGenerator::ctRandomGenerator(uint32_t seed) {
@@ -94,6 +94,11 @@ ctVec2 ctRandomGenerator::GetGaussian2D(ctVec2 mean, float standardDeviation) {
    return ctVec2(mean.x + scale * ctCos(theta), mean.y + scale * ctSin(theta));
 }
 
+ctVec3 ctRandomGenerator::GetInSphere(float radius) {
+   return ctVec3(
+     GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f));
+}
+
 ctVec3 ctRandomGenerator::GetOnSphere(float radius) {
    return normalize(ctVec3(
             GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f))) *
@@ -104,7 +109,7 @@ ctVec4 ctRandomGenerator::GetColor(float alpha) {
    return ctVec4(GetFloatUNorm(), GetFloatUNorm(), GetFloatUNorm(), alpha);
 }
 
-/* Not guaranteed to be threadsafe
+/* Guarantee threadsafety
 Windows: Multithreaded CRT is safe
 POSIX: Use rand_r() for safety */
 int32_t ctRand() {

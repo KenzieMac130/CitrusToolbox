@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -98,17 +98,17 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    }
 
    ctFile file;
-   Engine->FileSystem->OpenAssetFileNamed(
-     file, "input/keyboard.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
-   Engine->FileSystem->OpenAssetFileNamed(
-     file, "input/mouse.json", CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
-   directory.configHotReload.RegisterPath("input/keyboard.json");
-   directory.configHotReload.RegisterPath("input/mouse.json");
+   directory.configHotReload.RegisterData(CT_CDATA("Input_Keyboard"));
+   directory.configHotReload.RegisterData(CT_CDATA("Input_Mouse"));
 #endif
 
    return CT_SUCCESS;

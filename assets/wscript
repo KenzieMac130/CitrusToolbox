@@ -1,99 +1,6 @@
-import time
-import re
-import os
-import configparser
-import shutil
 import sys
-from waflib.Task import Task
-
-# Compile a prefab
-class CompilePrefab(Task):
-	def run(self):
-		params = self.inputs[1].read()
-		return self.exec_command('"%s" %s "%s" "%s"' % (self.env['GLTF2Citrus'][0], params, self.inputs[0].abspath(), self.outputs[0].abspath()))
-
-	def scan(self): #Find all output files
-		return (self.inputs, time.time())
-
-	def runnable_status(self):
-		ret = super(CompilePrefab, self).runnable_status()
-		bld = self.generator.bld
-		return ret
-
-# Compile a texture
-class CompileTexture(Task):
-	def run(self):
-		params = self.inputs[1].read()
-		if self.useGpu:
-			params += ' -EncodeWith GPU' # Quickly build textures with lesser formats
-			print("Encoding with GPU (not all formats availible)")
-		return self.exec_command('"%s" %s "%s" "%s"' % (self.env['Compressonator'][0], params, self.inputs[0].abspath(), self.outputs[0].abspath()))
-
-	def scan(self): #Find all output files
-		return (self.inputs, time.time())
-
-	def runnable_status(self):
-		ret = super(CompileTexture, self).runnable_status()
-		bld = self.generator.bld
-		return ret
-
-# Compile a shader
-class CompileShader(Task):
-	def run(self):
-		return self.exec_command('"%s" "%s" "%s"' % (self.env['GLSL2Citrus'][0], self.inputs[0].abspath(), self.outputs[0].abspath()))
-
-	def scan(self): #Find all output files
-		return (self.inputs, time.time())
-
-	def runnable_status(self):
-		ret = super(CompileShader, self).runnable_status()
-		bld = self.generator.bld
-		return ret
-
-# Install a File
-class InstallFile(Task):
-	def run(self):
-		shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
-		return 0;
-
-	def scan(self): #Find all output files
-		return (self.inputs, time.time())
-
-	def runnable_status(self):
-		ret = super(InstallFile, self).runnable_status()
-		bld = self.generator.bld
-		return ret
-
-# Generate a GUID List
-import json
-class BuildManifest(Task):
-	def run(self):
-		guidDict = {}
-		for file in self.inputs:
-			contents = file.read()
-			nameAndGuid = contents.split(':')
-			guidDict[nameAndGuid[1]] = nameAndGuid[0]
-		contents = json.dumps(guidDict)
-		self.outputs[0].write(contents)
-			
-		return 0;
-
-	def scan(self): #Find all output files
-		return (self.inputs, time.time())
-
-	def runnable_status(self):
-		ret = super(BuildManifest, self).runnable_status()
-		bld = self.generator.bld
-		return ret
-
-def setdir(ctx):
-	print(sys.argv)
-	
-import uuid
-def aquireGuid(ctx, inFile, outFile):
-	guidFile = ctx.path.make_node(inFile.relpath() + '.guid')
-	if not guidFile.exists():
-		guidFile.write(outFile.relpath().replace('\\','/')+':'+uuid.uuid4().hex)
+sys.path.insert(0, '../tools')
+import assetcompiler.Core
 
 # Define command line options
 def options(ctx):
@@ -110,130 +17,22 @@ def configure(ctx):
 	except:
 		raise ValueError("Could not find Compressonator!")
 	try:
-		ctx.find_program("Glsl2Citrus", path_list=outPathList, var='GLSL2Citrus')
+		ctx.find_program("luajit", path_list=ctx.options.libs+ '/LuaJIT/bin/', var='LuaJIT')
 	except:
-		raise ValueError("Could not find GLSL2Citrus! Please build tools and reconfigure")
+		raise ValueError("Could not find LuaJIT!")	
 	try:
-		ctx.find_program("Gltf2Citrus", path_list=outPathList, var='GLTF2Citrus')
+		ctx.find_program("CitrusShader", path_list=outPathList, var='CitrusShader')
 	except:
-		raise ValueError("Could not find Gltf2Citrus! Please build tools and reconfigure")
+		raise ValueError("Could not find CitrusShader! Please build tools and reconfigure")
+	try:
+		ctx.find_program("CitrusModel", path_list=outPathList, var='CitrusModel')
+	except:
+		raise ValueError("Could not find CitrusModel! Please build tools and reconfigure")
 	ctx.env.platform = ctx.options.platform
 	ctx.env.final = ctx.options.final
+	ctx.env.codegenPath = ctx.options.build+'/generated/'
 
 # On asset processing build
 def build(ctx):
 	print('Building: ' + ctx.path.abspath())
-
-	# Define parallel build groups
-	ctx.add_group('Text')
-	ctx.add_group('Configs')
-	ctx.add_group('Shaders')
-	ctx.add_group('Textures')
-	ctx.add_group('Prefabs')
-	ctx.add_group('GUID')
-
-
-	# Define text files to install
-	ctx.set_group('Text')
-	for file in ctx.path.ant_glob(['input/*.json', 'text/*.json']):
-		fileName = file.relpath()
-		outFile = ctx.path.find_or_declare(fileName)
-		task = InstallFile(env=ctx.env)
-		task.set_inputs(file);
-		task.set_outputs(outFile)
-		aquireGuid(ctx, file, outFile)
-		ctx.add_to_group(task)
-		
-	# Define configs to install
-	ctx.set_group('Configs')
-	configPaths = ['configs/' + ctx.env.platform + '/*.json', 'configs/shared/*.json']
-	processedFiles = {}
-	for file in ctx.path.ant_glob(configPaths):
-		fileName = os.path.basename(file.relpath())
-		filePath = os.path.dirname(file.relpath())
-		if 'shared' in filePath and fileName in processedFiles:
-			continue
-			
-		processedFiles[fileName] = file
-		#outFile = ctx.path.find_or_declare(fileName)
-		#task = InstallFile(env=ctx.env)
-		#task.set_inputs(file);
-		#task.set_outputs(outFile)
-		#ctx.add_to_group(task)
-	for file in processedFiles.items():
-		outFile = ctx.path.find_or_declare('defaults/' + file[0])
-		task = InstallFile(env=ctx.env)
-		task.set_inputs(file[1]);
-		task.set_outputs(outFile)
-		aquireGuid(ctx, file[1], outFile)
-		ctx.add_to_group(task)
-
-	# Define prefabs to compile
-	ctx.set_group('Prefabs')
-	for file in ctx.path.ant_glob(['**/*.gltf']):
-		wadName = file.relpath().split('.', 1)[0] + '.wad'
-		outWad = ctx.path.find_or_declare(wadName)
-		task = CompilePrefab(env=ctx.env)
-		defFile = ctx.path.make_node(file.relpath() + '.pdef')
-		inputs = [file, defFile]
-		basePath = os.path.dirname(file.relpath())
-		if not defFile.exists():
-			defFile.write('')
-		else:
-			defContents = defFile.read()
-			embeds = re.findall(r'(-embp)\s*"([^"]*)"',defContents)
-			for embed in embeds:
-				embedName = basePath + '/' + embed[1]
-				embedFile = ctx.path.make_node(embedName)
-				inputs.append(embedFile)
-		task.set_inputs(inputs)
-		task.set_outputs([outWad])
-		aquireGuid(ctx, file, outWad)
-		ctx.add_to_group(task)
-
-	# Define textures to compile
-	ctx.set_group('Textures')
-	for file in ctx.path.ant_glob(['**/*.png', '**/*.jpg', '**/*.jpeg']):
-		fileName = file.relpath().split('.', 1)[0] + '.ktx'
-		outFile = ctx.path.find_or_declare(fileName)
-		task = CompileTexture(env=ctx.env)
-		task.useGpu = ctx.options.final
-		defFile = ctx.path.make_node(file.relpath() + '.tdef')
-		if not defFile.exists():
-			defFile.write('-fd BC7 -miplevels 8')
-		task.set_inputs([file, defFile])
-		task.set_outputs(outFile)
-		aquireGuid(ctx, file, outFile)
-		ctx.add_to_group(task)
-
-	# Define shaders to compile
-	ctx.set_group('Shaders')
-	for file in ctx.path.ant_glob(['**/*.glsl']):
-		fileContents = file.read()
-		if 'CT_IMPLEMENTATION' not in fileContents:
-			continue
-		fileName = file.relpath().split('.', 1)[0] + '.wad'
-		outFile = ctx.path.find_or_declare(fileName)
-		task = CompileShader(env=ctx.env)
-		defFile = ctx.path.make_node(file.relpath() + '.sdef')
-		if not defFile.exists():
-			# -surface: necessary stages to render a surface (vert/frag/mesh/callable)
-			# -compute: a single stage compute program
-			# -raster: only basic raster stages, useful for UI/Post (vert/frag)
-			# -raytrace: ray trace stages
-			# -tess: add tessellation features to applicable modes
-			# -lod: compiles multiple fx for high/low end systems
-			defFile.write('-surface')
-		task.set_inputs([file, defFile]);
-		task.set_outputs(outFile)
-		aquireGuid(ctx, file, outFile)
-		ctx.add_to_group(task)
-
-	# Gather all GUIDs and Build the Manifest
-	ctx.set_group('GUID')
-	inputs = ctx.path.ant_glob(['**/*.guid'])
-	outFile = ctx.path.find_or_declare("MANIFEST")
-	task = BuildManifest(env=ctx.env)
-	task.set_inputs(inputs);
-	task.set_outputs(outFile)
-	ctx.add_to_group(task)
+	assetcompiler.Core.build(ctx)

@@ -16,11 +16,9 @@
 ### Project Structure
 * CitrusToolbox/
 	* assets/
-		* core/
-			* (...)/
-		* game/
-			* (GAME_NAME)/
-				* (GAME_ASSET_FILES)...
+		* .../
+		wscript
+		DataNicknames.json
 	* build/
 		* generated/
 			* ispc/
@@ -28,21 +26,15 @@
 				* .../
 			* shaders/
 		* output/
-			* assets/
+			* data/
 			* (BINARY_BUILDS)...
-		* ...
+		* .../
 	* docs/
 	* engine/
-		* core/
-		* ispc/
-		* renderer/
-			* lowlevel/
-				* (GFX_BACKEND_NAME)/
-			* shaders/
+		* .../
 		* utilities/
 	* game/
-		* (GAME_NAME)/
-			* (GAME_SOURCE_FILES)...
+		* (GAME_SOURCE_FILES)...
 	* libs/
 		* (PLATFORM_NAME)/
 			* FMOD/
@@ -56,7 +48,7 @@
 		* .../
 		* OpenSourceCredits.txt
 	* tools/
-		* reflect/
+		* .../
 		* tracy/
 			* (TRACY_REPO)...
 				
@@ -91,7 +83,7 @@
 ### Namespaces
 * C does not have namespaces so follow this:
 * "ct" is the engine wide namespace prefix
-* "ct" should be followed by the module name: (ex. "ctGfx...")
+* "ct" can be followed by the module name: (ex. "ctGPU...")
 
 ### Standard Libraries
 * Don't re-implement what is in the standard library unless there is a reason.
@@ -107,14 +99,17 @@
 ### Variables
 * AVOID GLOBAL VARIABLES!!!
 * Only use abbreviations for commonly understood terminology (ex: PBR vs Physically Based Rendering)
-* If you don't want the user to modify a variable use "_" to prefix it
+* (The following rules have been introduced and will be enforced in a cleanup project)
+* Member variables will be prefixed by m_ (ex: m_value or m_pValue...)
+* Global variables will be prefixed by g_ (ex: g_value or g_pValue)
+* If you don't want the user to modify a variable use "_" to prefix it (ex: _m_value)
 
 ### Functions
 * Naming: ctFunctionName()
 * MINIMIZE HIDDEN STATES!!! Only modify what is passed to a function! (Even if this is just a module context object)
 * You can break up function calls and definitions into multiple lines.
 
-### Current Hidden State Exceptions
+### Current Hidden/Global State Exceptions
 * Shared Logging
 * Shared String Translation
 * Tracy Profiling Markup
@@ -128,7 +123,7 @@
 * Use const char* wherever read-only string data needs to be passed.
 * Raw string pointers for modifiable strings are discouraged in favor of utilities.
 * Always assume data is UTF-8 unless otherwise marked and do not assume 1-byte per character.
-* Do not cache C string pointers, always copy to another structure to avoid dangling.
+* Do not cache C string pointers, copy to another structure to avoid dangling.
 * Text that can be presented to the user should be wrapped in a "CT_N*" prefix for translation.
 
 ### Function Pointers
@@ -136,6 +131,7 @@
 
 ### Const Correctness
 * WILL MY FUNCTION INPUT BE MODIFIED? (Y/N) (to const or not to const)
+* Admittedly this rule is not currently strictly enforced
 
 ### Returns
 * Generally try to only return type ctResult for error checking
@@ -174,7 +170,7 @@ enum myEnum {
 
 ### SIMD Intrinsics
 * Don't bother with handwritten SIMD, opt for ISPC if absolutely necessary.
-* Avoid small functions with internal SIMD implementations, one of SIMD's main benefits is that there are more registers to not get evicted from.
+* Avoid small functions with internal SIMD implementations, one of SIMD's main benefits is that there are more space/registers to not get evicted from.
 
 ### Additional Features
 * Bit packing is allowed but discouraged.
@@ -186,7 +182,7 @@ enum myEnum {
 
 ### Version
 
-**C++11**
+**C++14**
 
 ### File Extensions
 * Header: ".hpp"
@@ -230,6 +226,7 @@ enum myEnum {
 ### Namespaces
 * Namespaces will not be used in the engine in favor of the "ct" prefix.
 * Namespaces from 3rd party libraries should not be shortened by "using" unless it has a redundant prefix.
+* Namespaces for the scene engine is currently allowed as a compromise
 
 ### Templates
 * Avoid templates as much as possible outside of containers.
@@ -270,24 +267,8 @@ CMake 3.10
 * Use dynamic linking for large third party libraries.
 * Avoid deeply nested CMakeLists.txt trees, try to keep one per-library
 
-## GLSL
-
-### Version
-* GLSL STD 460
-https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
-* Vulkan Extension (Builtin)
-https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_vulkan_glsl.txt
-* Ray-Tracing
-https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_tracing.txt
-
-### Includes
-* Includes are allowed with the use of "#include "...""
-* Includes must be relative to the current path.
-* Include guards must be in-place
-
-### File Extensions
-* Vertex and fragment extensions to seperate stages are not welcome.
-* GLSL Shader: ".glsl"
+## Shaders
+* See [ShadingLanguage.md](docs/ShadingLanguage.md)
 
 ## ISPC
 * Todo

@@ -14,26 +14,5 @@
 #   limitations under the License.
 #
 
-enable_testing()
-
-#Utilities Test
-add_executable(Test_Utilities UtilitiesTest.cpp)
-set_property(TARGET Test_Utilities PROPERTY FOLDER "tests")
-target_link_libraries(Test_Utilities PUBLIC engine)
-
-#Package Test
-add_executable(Test_Package PackageTest.cpp)
-set_property(TARGET Test_Package PROPERTY FOLDER "tests")
-target_link_libraries(Test_Package PUBLIC engine)
-
-#App Test
-add_executable(Test_App AppTest.cpp)
-set_property(TARGET Test_App PROPERTY FOLDER "tests")
-target_link_libraries(Test_App PUBLIC engine)
-target_link_libraries(Test_App PUBLIC game)
-
-#Scene Test
-add_executable(Test_Scene SceneTest.cpp)
-set_property(TARGET Test_Scene PROPERTY FOLDER "tests")
-target_link_libraries(Test_Scene PUBLIC engine)
-target_link_libraries(Test_Scene PUBLIC game)
+add_subdirectory(unit)
+add_subdirectory(apps)

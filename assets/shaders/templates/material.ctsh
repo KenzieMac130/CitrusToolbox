@@ -1,0 +1,26 @@
+/* CT_COMPILE_INFO: 
+{
+	"fx":[
+		{
+			"name":"KL_VERT_MESH",
+			"stages":["VERTEX_SHADER"],
+			"defines":{"KL_VERT_MESH":"1"}
+		},
+		{
+			"name":"KL_VERT_PARTICLE",
+			"stages":["VERTEX_SHADER"],
+			"defines":{"KL_VERT_PARTICLE":"1"}
+		},
+		{
+			"name":"KL_FRAG_DEFERRED",
+			"stages":["FRAGMENT_SHADER"],
+			"defines":{"KL_FRAG_DEFERRED":"1"}
+		},
+		{
+			"name":"KL_FRAG_FORWARD",
+			"stages":["FRAGMENT_SHADER"],
+			"defines":{"KL_FRAG_FORWARD":"1"}
+		}
+	]
+}
+*/
