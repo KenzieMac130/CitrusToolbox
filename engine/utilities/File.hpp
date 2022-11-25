@@ -70,6 +70,7 @@ public:
    ctResults Seek(const int64_t offset, const ctFileSeekMode mode);
 
    size_t ReadRaw(void* pDest, const size_t size, const size_t count);
+   ctStringUtf8 ReadLine(char separator = '\n');
 
    size_t WriteRaw(const void* pData, size_t size, const size_t count);
    size_t Printf(const char* format, ...);

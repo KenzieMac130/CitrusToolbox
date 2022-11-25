@@ -174,7 +174,7 @@ ctStringUtf8& ctStringUtf8::ToLower() {
 }
 
 ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
-   const size_t len = ByteLength();
+   const size_t len = ByteLength()+1;
    size_t outIdx = 0;
    bool escapeEntered = false;
    for (size_t inIdx = 0; inIdx < len; inIdx++) {
@@ -203,7 +203,6 @@ ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
       outIdx++;
    }
    _data.Resize(outIdx);
-   _nullTerminate();
    return *this;
 }
 

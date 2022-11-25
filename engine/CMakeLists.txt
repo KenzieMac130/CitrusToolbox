@@ -74,6 +74,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
@@ -104,6 +105,24 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.hpp
 )
+
+# ---------- Reflection System ----------
+set(ENGINE_SOURCE_FILES_REFLECT
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/Reflect.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/GeneratorBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/AngelScriptGenerator.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/ImguiGenerator.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/SerializationGenerator.hpp
+)
+
+set(ENGINE_HEADER_FILES_REFLECT
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/Reflect.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/ReflectExtractor.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/AngelScriptGenerator.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/ImguiGenerator.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/generators/SerializationGenerator.cpp
+)
+
 
 # ---------- Engine Core Framework ----------
 set(ENGINE_SOURCE_FILES_CORE
@@ -283,14 +302,11 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
 set(ENGINE_SOURCE_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowHeaderParser.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentKernel.h
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowReflection.h
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowHeaderParser.h
 )
 endif()
 
@@ -376,6 +392,7 @@ endif()
 set(ENGINE_FILES 
 ${CMAKE_CURRENT_SOURCE_DIR}/ispc/IspcKernels.h
 ${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
+${ENGINE_SOURCE_FILES_REFLECT} ${ENGINE_HEADER_FILES_REFLECT}
 ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
 ${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
 ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}

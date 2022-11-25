@@ -102,7 +102,8 @@ enum ctResults {
    CT_FAILURE_RUNTIME_ERROR = -19,
    CT_FAILURE_TYPE_ERROR = -20,
    CT_FAILURE_NOT_FINISHED = -21,
-   CT_FAILURE_SKIPPED = -22
+   CT_FAILURE_SKIPPED = -22,
+   CT_FAILURE_INCORRECT_VERSION = -23
 };
 
 #define CT_PANIC_FAIL(_arg, _message)                                                    \

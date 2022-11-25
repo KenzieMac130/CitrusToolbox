@@ -167,6 +167,16 @@ size_t ctFile::GetText(ctStringUtf8& outString) {
    return fsize;
 }
 
+ctStringUtf8 ctFile::ReadLine(char separator) {
+   ctStringUtf8 outString = ctStringUtf8();
+   char nextByte;
+   do {
+      ReadRaw(&nextByte, 1, 1);
+      outString += nextByte;
+   } while (nextByte != separator);
+   return outString;
+}
+
 size_t ctFile::GetVirtualMemory(uint8_t** ppOutBytes) {
    if (_mode == CT_FILE_OPEN_READ_VIRTUAL || _mode == CT_FILE_OPEN_WRITE_VIRTUAL) {
       if (_ctx->type == SDL_RWOPS_MEMORY || _ctx->type == SDL_RWOPS_MEMORY_RO) {

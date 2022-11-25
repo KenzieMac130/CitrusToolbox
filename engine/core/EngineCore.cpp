@@ -21,6 +21,7 @@
 
 #include "gamelayer/GameLayer.hpp"
 
+#include "reflect/Reflect.hpp"
 #include "AsyncTasks.hpp"
 #include "JobSystem.hpp"
 #include "FileSystem.hpp"
@@ -60,6 +61,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    };
 
    /* Create Modules */
+   //_ctInitGlobalReflectionData();
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
    Settings = new ctSettingsManager(argc, argv);
    Debug = new ctDebugSystem(32, true);
