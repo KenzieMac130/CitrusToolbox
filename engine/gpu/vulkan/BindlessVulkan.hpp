@@ -55,6 +55,7 @@ private:
 
 struct ctGPUBindlessManager {
    ctResults Startup(ctGPUDevice* pDevice, ctGPUBindlessManagerCreateInfo* pCreateInfo);
+   void SetupSamplers(ctGPUDevice* pDevice);
    ctResults Shutdown(ctGPUDevice* pDevice);
    ctResults PrepareFrame(ctGPUDevice* pDevice,
                           uint32_t architectCount,
@@ -117,6 +118,21 @@ struct ctGPUBindlessManager {
       descriptorSetWrites[dstFrame].Append(write);
       return CT_SUCCESS;
    }
+
+   void SetupSampler(ctGPUDevice* pDevice,
+                     uint32_t idx,
+                     bool allowAnisotropy,
+                     bool clamp,
+                     VkCompareOp op,
+                     VkFilter min,
+                     VkFilter mag);
+   VkSampler MakeSampler(ctGPUDevice* pDevice,
+                         bool allowAnisotropy,
+                         bool clamp,
+                         VkCompareOp op,
+                         VkFilter min,
+                         VkFilter mag);
+
    ctDynamicArray<VkDescriptorBufferInfo>
      buffInfos[CT_MAX_INFLIGHT_FRAMES]; /* don't resize at runtime */
    ctDynamicArray<VkDescriptorImageInfo>
@@ -130,4 +146,5 @@ struct ctGPUBindlessManager {
    ctDynamicArray<int32_t> trackedDynamicTextureIndices;
    ctDynamicArray<int32_t> trackedDynamicTextureLastFrames;
    ctDynamicArray<ctGPUExternalTexture*> trackedDynamicTextures;
+   ctDynamicArray<VkSampler> samplers;
 };

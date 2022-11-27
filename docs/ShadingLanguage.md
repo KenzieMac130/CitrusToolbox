@@ -206,7 +206,7 @@ Worst case scenerio Vulkan padding is assumed: https://fvcaputo.github.io/2019/0
 
 ## Uniform/Constant Buffers?
 
-Not supported, this type of buffer only exists to accomodate legacy Nvidia hardware
+TBD
 
 # Stages
 
@@ -260,7 +260,7 @@ On the beginning of the main function you can use
 
 **Important!** The "CT_ATTRIBUTES_XXX" structure must be accessible from the recieving stage
 
-Eample:
+## Eample
 
 	#define CT_ATTRIBUTES_FRAG_IN
 	#include "utilities/attributes.ctsh"
@@ -287,6 +287,52 @@ Eample:
 		
 		...
 	}
+	#endif
+
+# Vertex Buffer Attributes
+
+Vertex buffer attributes due to legacy reasons (cough HLSL) are much more fixed in input type.
+These are specifically to be used in the vertex shader stage. 
+In ctGPU the order you define these as determines in what order your bindings are.
+
+Start with CT_DEFINE_VBUF_BEGIN() and end with CT_DEFINE_VBUF_END()
+
+## Definition
+
+* CT_DEFINE_VBUF_POSITION
+* CT_DEFINE_VBUF_NORMAL
+* CT_DEFINE_VBUF_TANGENT
+* CT_DEFINE_VBUF_COLOR(0-3)
+* CT_DEFINE_VBUF_TEXCOORD(0-6)
+* CT_DEFINE_VBUF_SKIN_INDICES
+* CT_DEFINE_VBUF_SKIN_WEIGHTS
+
+## Sampling
+
+* CT_VBUF_POSITION
+* CT_VBUF_NORMAL
+* CT_VBUF_TANGENT
+* CT_VBUF_COLOR(0-3)
+* CT_VBUF_TEXCOORD(0-6)
+* CT_VBUF_SKIN_INDICES
+* CT_VBUF_SKIN_WEIGHTS
+
+## Example 
+
+	#ifdef VERTEX_SHADER
+
+	CT_DEFINE_VBUF_BEGIN()
+	CT_DEFINE_VBUF_POSITION()
+	CT_DEFINE_VBUF_NORMAL()
+	CT_DEFINE_VBUF_TEXCOORD3()
+	...
+	CT_DEFINE_VBUF_END()
+
+	void main() {
+		float3 position = CT_GET_VBUF_POSITION().xyz
+		...
+	}
+
 	#endif
 
 # Entry Functions

@@ -158,6 +158,7 @@ set(ENGINE_SOURCE_FILES_FORMAT
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.c
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.cpp
 )
 
 set(ENGINE_HEADER_FILES_FORMAT
@@ -174,6 +175,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mesh/RenderMesh.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
 )
 
 # ---------- Renderer Frontend ---------- 

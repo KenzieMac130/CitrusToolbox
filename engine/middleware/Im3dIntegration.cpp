@@ -95,9 +95,8 @@ ctResults ctIm3dIntegration::ShutdownGPU(ctGPUDevice* pGPUDevice,
    return CT_SUCCESS;
 }
 
-void ctIm3dIntegration::DrawImguiText(ctMat4 viewProj) {
+void ctIm3dIntegration::DrawImguiText(ctMat4 viewProj, ctCameraInfo cameraInfo) {
    ZoneScoped;
-   const ctCameraInfo cameraInfo = Engine->SceneEngine->GetCameraInfo(NULL);
    Im3d::AppData& appData = Im3d::GetAppData();
    float n = 0.1f;
    float a = (float)appData.m_viewportSize.x / (float)appData.m_viewportSize.y;

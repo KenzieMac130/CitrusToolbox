@@ -138,7 +138,6 @@ CT_API bool ctGPUExternalTextureIsReady(struct ctGPUDevice* pDevice,
 /* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalTextureIsReady()! */
 CT_API enum ctResults
 ctGPUExternalTextureGetCurrentAccessor(struct ctGPUDevice* pDevice,
-                                       struct ctGPUExternalTexturePool* pPool,
                                        struct ctGPUExternalTexture* pTexture,
                                        ctGPUImageAccessor* pAccessor);
 

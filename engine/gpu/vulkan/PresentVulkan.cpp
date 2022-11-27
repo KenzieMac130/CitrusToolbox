@@ -86,6 +86,12 @@ CT_API ctResults ctGPUPresenterExecute(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
+CT_API TinyImageFormat ctGPUPresenterGetColorFormat(ctGPUDevice* pDevice,
+                                               ctGPUPresenter* pPresenter) {
+   return TinyImageFormat_FromVkFormat(
+     (TinyImageFormat_VkFormat)pPresenter->surfaceFormat.format);
+}
+
 CT_API ctGPUPresenterState ctGPUPresenterHandleState(ctGPUDevice* pDevice,
                                                      ctGPUPresenter* pPresenter,
                                                      uint32_t* pWidth,
@@ -101,9 +107,9 @@ CT_API ctGPUPresenterState ctGPUPresenterHandleState(ctGPUDevice* pDevice,
    return CT_GPU_PRESENTER_NORMAL;
 }
 
-CT_API void ctGPUPresenterSignalStateChange(ctGPUDevice* pDevice,
-                                            ctGPUPresenter* pPresenter,
-                                            ctGPUPresenterState state) {
+CT_API void ctGPUPresenterSignalStateChange(struct ctGPUDevice* pDevice,
+                                            struct ctGPUPresenter* pPresenter,
+                                            enum ctGPUPresenterState state) {
    if (state == CT_GPU_PRESENTER_RESIZED) { pPresenter->resizeTriggered = true; }
 }
 
@@ -269,8 +275,10 @@ ctResults ctGPUPresenter::CreatePresentResources(ctGPUDevice* pDevice) {
    /* Create image availible semaphore */
    VkSemaphoreCreateInfo semaphoreInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkCreateSemaphore(
-        pDevice->vkDevice, &semaphoreInfo, pDevice->GetAllocCallback(), &imageAvailible[i]);
+      vkCreateSemaphore(pDevice->vkDevice,
+                        &semaphoreInfo,
+                        pDevice->GetAllocCallback(),
+                        &imageAvailible[i]);
    }
    /* Create present finished fences */
    VkFenceCreateInfo fenceInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
@@ -306,7 +314,8 @@ ctResults ctGPUPresenter::DestroySwapchain(ctGPUDevice* pDevice) {
 ctResults ctGPUPresenter::DestroyPresentResources(ctGPUDevice* pDevice) {
    ZoneScoped;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
-      vkDestroySemaphore(pDevice->vkDevice, imageAvailible[i], pDevice->GetAllocCallback());
+      vkDestroySemaphore(
+        pDevice->vkDevice, imageAvailible[i], pDevice->GetAllocCallback());
       vkDestroyFence(
         pDevice->vkDevice, finishedPresentFence[i], pDevice->GetAllocCallback());
    }

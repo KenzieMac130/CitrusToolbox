@@ -121,6 +121,9 @@ D_: depth target
 B_: barrier */
 #define CT_ARCH_ID(_NAME)         (uint32_t)(CT_COMPILE_HORNER_HASH(_NAME) % UINT32_MAX)
 #define CT_ARCH_DYNAMIC_ID(_NAME) (uint32_t)(ctHornerHash(_NAME) % UINT32_MAX)
+#else
+#define CT_ARCH_ID(_NAME)         (uint32_t)(ctHornerHash(_NAME) % UINT32_MAX)
+#define CT_ARCH_DYNAMIC_ID(_NAME) (uint32_t)(ctHornerHash(_NAME) % UINT32_MAX)
 #endif
 
 enum ctGPUArchitectPayloadFlags {

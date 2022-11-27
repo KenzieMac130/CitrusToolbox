@@ -1,0 +1,27 @@
+/*
+   Copyright 2022 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#define CT_S_STANDARD 0
+#define CT_S_PIXEL 1
+#define CT_S_SHADOWMAP_GREATER 1
+#define CT_S_SHADOWMAP_LESS 1
+
+#if IS_ACTUALLY_GLSL
+#define CT_TEXTURE1D(samplerIdx, textureIdx, coord) texture(sampler1D(_bindlessSampledImages1D[nonuniformEXT(textureIdx)], _bindlessSamplers[samplerIdx]), coord)
+#define CT_TEXTURE2D(samplerIdx, textureIdx, coord) texture(sampler2D(_bindlessSampledImages2D[nonuniformEXT(textureIdx)], _bindlessSamplers[samplerIdx]), coord)
+#define CT_TEXTURE3D(samplerIdx, textureIdx, coord) texture(sampler3D(_bindlessSampledImages3D[nonuniformEXT(textureIdx)], _bindlessSamplers[samplerIdx]), coord)
+#define CT_TEXTURECUBE(samplerIdx, textureIdx, coord) texture(samplerCube(_bindlessSampledImagesCube[nonuniformEXT(textureIdx)], _bindlessSamplers[samplerIdx]), coord)
+#endif

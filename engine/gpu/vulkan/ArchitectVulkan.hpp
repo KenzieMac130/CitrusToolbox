@@ -122,14 +122,14 @@ struct ctGPUArchitectVulkan : ctGPUArchitect {
    struct CommandBufferManager {
       void Startup(ctGPUDevice* pDevice, uint32_t queueFamilyIdx, VkQueue targetQueue);
       void Shutdown(ctGPUDevice* pDevice);
-      void NextFrame();
+      void NextFrame(ctGPUDevice* pDevice);
       VkCommandBuffer GetCmd();
       void Submit(ctGPUDevice* pDevice);
 
       int frame;
       VkCommandBuffer cmd[CT_MAX_INFLIGHT_FRAMES];
+      VkCommandPool pools[CT_MAX_INFLIGHT_FRAMES];
       VkQueue queue;
-      VkCommandPool pool;
       VkSemaphore activeSemaphore;
       VkFence activeFence;
    };

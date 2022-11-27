@@ -4,8 +4,9 @@
 //#define IM3D_ASSERT(e) assert(e)
 
 // User-defined malloc/free. Define both or neither (default is cstdlib malloc()/free()).
-//#define IM3D_MALLOC(size) malloc(size)
-//#define IM3D_FREE(ptr) free(ptr)
+#include "utilities/Common.h"
+#define IM3D_MALLOC(size) ctMalloc(size)
+#define IM3D_FREE(ptr) ctFree(ptr)
 
 // User-defined API declaration (e.g. __declspec(dllexport)).
 //#define IM3D_API

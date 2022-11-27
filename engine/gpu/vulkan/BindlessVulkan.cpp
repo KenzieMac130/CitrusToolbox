@@ -155,7 +155,51 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
       buffInfos[i].Reserve((size_t)maxStorageBuffers + 1000);
       imageInfos[i].Reserve((size_t)maxSampledImages + maxStorageImages + 1000);
    }
+   SetupSamplers(pDevice);
    return CT_SUCCESS;
+}
+
+void ctGPUBindlessManager::SetupSamplers(ctGPUDevice* pDevice) {
+   SetupSampler(/* CT_S_STANDARD */
+                pDevice,
+                0,
+                true,
+                false,
+                VK_COMPARE_OP_ALWAYS,
+                VK_FILTER_LINEAR,
+                VK_FILTER_LINEAR);
+   SetupSampler(/* CT_S_PIXEL */
+                pDevice,
+                1,
+                true,
+                false,
+                VK_COMPARE_OP_ALWAYS,
+                VK_FILTER_LINEAR,
+                VK_FILTER_NEAREST);
+   SetupSampler(/* CT_S_STANDARD_CLAMP */
+                pDevice,
+                1,
+                false,
+                true,
+                VK_COMPARE_OP_GREATER,
+                VK_FILTER_LINEAR,
+                VK_FILTER_LINEAR);
+   SetupSampler(/* CT_S_SHADOWMAP_GREATER */
+                pDevice,
+                1,
+                false,
+                true,
+                VK_COMPARE_OP_LESS,
+                VK_FILTER_LINEAR,
+                VK_FILTER_LINEAR);
+   SetupSampler(/* CT_S_SHADOWMAP_LESS */
+                pDevice,
+                1,
+                false,
+                true,
+                VK_COMPARE_OP_LESS,
+                VK_FILTER_LINEAR,
+                VK_FILTER_LINEAR);
 }
 
 ctResults ctGPUBindlessManager::Shutdown(ctGPUDevice* pDevice) {
@@ -165,6 +209,10 @@ ctResults ctGPUBindlessManager::Shutdown(ctGPUDevice* pDevice) {
      pDevice->vkDevice, vkDescriptorPool, pDevice->GetAllocCallback());
    vkDestroyDescriptorSetLayout(
      pDevice->vkDevice, vkGlobalDescriptorSetLayout, pDevice->GetAllocCallback());
+   for (size_t i = 0; i < samplers.Count(); i++) {
+      vkDestroySampler(pDevice->vkDevice, samplers[i], &pDevice->vkAllocCallback);
+   }
+   samplers.Clear();
    return CT_SUCCESS;
 }
 
@@ -237,6 +285,62 @@ ctResults ctGPUBindlessManager::PrepareFrame(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
+void ctGPUBindlessManager::SetupSampler(ctGPUDevice* pDevice,
+                                        uint32_t idx,
+                                        bool allowAnisotropy,
+                                        bool clamp,
+                                        VkCompareOp op,
+                                        VkFilter min,
+                                        VkFilter mag) {
+   VkSampler sampler = MakeSampler(pDevice, allowAnisotropy, clamp, op, min, mag);
+   for (int frame = 0; frame < CT_MAX_INFLIGHT_FRAMES; frame++) {
+      VkWriteDescriptorSet write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+      write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+      write.dstBinding = GLOBAL_BIND_SAMPLER;
+      write.descriptorCount = 1;
+      write.dstArrayElement = idx;
+      write.dstSet = vkGlobalDescriptorSet[frame];
+
+      VkDescriptorImageInfo imageInfo = {};
+      imageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      imageInfo.imageView = VK_NULL_HANDLE;
+      imageInfo.sampler = sampler;
+      write.pImageInfo = &imageInfo;
+
+      vkUpdateDescriptorSets(pDevice->vkDevice, 1, &write, 0, NULL);
+   }
+}
+
+VkSampler ctGPUBindlessManager::MakeSampler(ctGPUDevice* pDevice,
+                                            bool allowAnisotropy,
+                                            bool clamp,
+                                            VkCompareOp op,
+                                            VkFilter min,
+                                            VkFilter mag) {
+   VkSamplerCreateInfo info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+   info.anisotropyEnable = pDevice->defaultAnisotropyLevel > 0 && allowAnisotropy;
+   info.maxAnisotropy = 1.0f;
+   info.addressModeU =
+     clamp ? VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE : VK_SAMPLER_ADDRESS_MODE_REPEAT;
+   info.addressModeV = info.addressModeU;
+   info.addressModeW = info.addressModeU;
+   info.borderColor = VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+   info.compareEnable = op == VK_COMPARE_OP_ALWAYS;
+   info.compareOp = op;
+   info.minFilter = min;
+   info.magFilter = mag;
+   info.minLod = 0.0f;
+   info.maxLod = VK_LOD_CLAMP_NONE;
+   info.mipLodBias = 0.0f;
+   info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+   info.unnormalizedCoordinates = false;
+
+   VkSampler sampler;
+   vkCreateSampler(pDevice->vkDevice, &info, &pDevice->vkAllocCallback, &sampler);
+   samplers.Append(sampler);
+   return sampler;
+}
+
 CT_API int32_t ctGPUBindlessManagerMapTexture(ctGPUDevice* pDevice,
                                               ctGPUBindlessManager* pBindless,
                                               int32_t desiredIdx,
@@ -286,6 +390,7 @@ CT_API int32_t ctGPUBindlessManagerMapStorageBuffer(ctGPUDevice* pDevice,
                                                     ctGPUBindlessManager* pBindless,
                                                     int32_t desiredIdx,
                                                     ctGPUExternalBuffer* pBuffer) {
+   if (pBuffer->type != CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) { return -1; }
    if (desiredIdx < 0) {
       desiredIdx = pBindless->slotManagerStorageBuffer.AllocateSlot();
    }
@@ -317,6 +422,7 @@ CT_API void ctGPUBindlessManagerUnmapStorageBuffer(ctGPUDevice* pDevice,
                                                    ctGPUBindlessManager* pBindless,
                                                    int32_t index,
                                                    ctGPUExternalBuffer* pBuffer) {
+   if (pBuffer->type != CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) { return; }
    pBindless->slotManagerStorageBuffer.ReleaseSlot(index);
    if (pBuffer->updateMode == CT_GPU_UPDATE_DYNAMIC) {
       const int64_t trackSlot = pBindless->trackedDynamicBufferIndices.FindIndex(index);

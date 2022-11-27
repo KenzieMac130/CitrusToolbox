@@ -51,6 +51,18 @@
     "path": "input/mouse.json",
 	"out": "OUTPUT"
   },
+  "LANGUAGES": {
+    "path": "text/languages.json",
+	"out": "OUTPUT"
+  },
+  "text-core-japanese": {
+    "path": "text/core-japanese.po",
+	"out": "OUTPUT"
+  },
+  "text-core-english": {
+    "path": "text/core-english.po",
+	"out": "OUTPUT"
+  },
   "Shader_Im3d": {
     "path": "shaders/im3d.ctsi",
 	"out": "OUTPUT"

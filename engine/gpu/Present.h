@@ -45,9 +45,10 @@ CT_API enum ctResults ctGPUPresenterShutdown(struct ctGPUDevice* pDevice,
 CT_API enum ctResults ctGPUPresenterExecute(struct ctGPUDevice* pDevice,
                                             struct ctGPUPresenter* pPresenter,
                                             struct ctGPUArchitect* pArchitect);
-											
-CT_API enum TinyImageFormat ctGPUPresenterGetFormat(struct ctGPUDevice* pDevice,
+
+CT_API enum TinyImageFormat ctGPUPresenterGetColorFormat(struct ctGPUDevice* pDevice,
                                                     struct ctGPUPresenter* pPresenter);
+
 CT_API enum ctGPUPresenterState
 ctGPUPresenterHandleState(struct ctGPUDevice* pDevice,
                           struct ctGPUPresenter* pPresenter,

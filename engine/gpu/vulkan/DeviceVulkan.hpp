@@ -88,6 +88,7 @@ struct ctGPUDevice : ctGPUDeviceBase {
    bool validationEnabled;
    int32_t preferredDevice;
    int32_t nextFrameTimeout;
+   int32_t defaultAnisotropyLevel;
 
    /* Vulkan Objects */
    VkAllocationCallbacks* GetAllocCallback();

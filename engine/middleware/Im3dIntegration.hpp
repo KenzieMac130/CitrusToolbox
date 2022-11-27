@@ -37,7 +37,7 @@ public:
    ctResults ShutdownGPU(struct ctGPUDevice* pGPUDevice,
                          struct ctGPUExternalBufferPool* pGPUBufferPool);
 
-   void DrawImguiText(ctMat4 viewProj);
+   void DrawImguiText(ctMat4 viewProj, ctCameraInfo cameraInfo);
 
    ctResults NextFrame();
 

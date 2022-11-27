@@ -19,6 +19,7 @@
 #include "utilities/Common.h"
 #include "utilities/BloomFilter.hpp"
 #include "ModuleBase.hpp"
+#include "formats/mo/MO.h"
 
 #if CITRUS_INCLUDE_AUDITION
 #include "audition/HotReloadDetection.hpp"
@@ -95,11 +96,8 @@ private:
 
    class _dictionary {
    public:
-      ctBloomFilter<uint64_t, 1024, 4> bloom;
-      ctHashTable<ctStringUtf8, uint64_t> strings;
+      ctMOReader mo;
       ctStringUtf8 basePath;
-      /* Used for dumping strings */
-      ctHashTable<ctStringUtf8, uint64_t> nativestrings;
    };
    ctStringUtf8 isoLanguage;
    ctStringUtf8 fullLanguageName;

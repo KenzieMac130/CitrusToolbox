@@ -41,6 +41,10 @@ struct ctGPUPipelineBuilder {
          VkPipelineRenderingCreateInfoKHR dynamicRendering;
          VkDynamicState dynamics[12];
          VkFormat colorFormats[8];
+
+         VkVertexInputBindingDescription vertexBindingDescs[16];
+         VkVertexInputAttributeDescription vertexAttribDescs[16];
+
       } raster;
       struct {
          VkComputePipelineCreateInfo createInfo;

@@ -35,31 +35,26 @@ CT_ATTRIBUTES_END()
 #undef CT_ATTRIBUTES_FRAG_OUT
 
 #ifdef VERTEX_SHADER
-struct sVertexData {
-    float2 pos;
-    float2 uv;
-    uint icolor;
-};
-
-CT_STORAGE_BUFFER_ARRAY(sVertexBuffer, vertexBuffers, {
-    sVertexData data[];
-})
-
-CT_STORAGE_BUFFER_ARRAY(sIndexBuffer, indexBuffers, {
-    uint data[];
-})
+CT_DEFINE_VBUF_BEGIN()
+CT_DEFINE_VBUF_POSITION()
+CT_DEFINE_VBUF_TEXCOORD0()
+CT_DEFINE_VBUF_COLOR0()
+CT_DEFINE_VBUF_END()
 
 CT_MAIN(){
-	const uint index = indexBuffers[CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES].data[CT_VERTEX_INDEX];
-	sVertexData vertex = vertexBuffers[CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES].data[index];
-    CT_SET_ATTRIBUTE(vertexColor,unpackUnorm4x8(vertex.icolor));
-    CT_SET_POSITION(float4(vertex.pos, 0.0, 1.0));
+    int width = CT_DYNAMIC_INT(0);
+    int height = CT_DYNAMIC_INT(1);
+    CT_SET_ATTRIBUTE(vertexColor, CT_VBUF_COLOR0);
+    CT_SET_ATTRIBUTE(uv, CT_VBUF_TEXCOORD0.xy);
+    CT_SET_POSITION(float4((CT_VBUF_POSITION.xy*2.0 / float2(width,height)) - float2(1.0), 0.0, 1.0));
 }
 #endif
 
 #ifdef FRAGMENT_SHADER
 CT_MAIN() {
     CT_GET_ATTRIBUTE(float4,vertexColor)
-	CT_SET_ATTRIBUTE(outColor,vertexColor);
+    CT_GET_ATTRIBUTE(float2,uv)
+    float4 color = vertexColor * CT_TEXTURE2D(CT_S_STANDARD, CT_DYNAMIC_INT(2), uv);
+	CT_SET_ATTRIBUTE(outColor, color);
 }
 #endif 

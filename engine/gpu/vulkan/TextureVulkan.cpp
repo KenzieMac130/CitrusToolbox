@@ -230,7 +230,6 @@ CT_API bool ctGPUExternalTextureIsReady(ctGPUDevice* pDevice,
 }
 
 CT_API ctResults ctGPUExternalTextureGetCurrentAccessor(ctGPUDevice* pDevice,
-                                                        ctGPUExternalTexturePool* pPool,
                                                         ctGPUExternalTexture* pTexture,
                                                         ctGPUImageAccessor* pAccessor) {
    *pAccessor = &pTexture->contents[pTexture->currentFrame];

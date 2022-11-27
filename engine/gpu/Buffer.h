@@ -36,6 +36,8 @@ enum ctGPUExternalBufferType {
    CT_GPU_EXTERN_BUFFER_TYPE_STORAGE,
    CT_GPU_EXTERN_BUFFER_TYPE_UNIFORM,
    CT_GPU_EXTERN_BUFFER_TYPE_INDIRECT,
+   CT_GPU_EXTERN_BUFFER_TYPE_VERTEX,
+   CT_GPU_EXTERN_BUFFER_TYPE_INDEX,
    CT_GPU_EXTERN_BUFFER_TYPE_COUNT
 };
 
@@ -118,7 +120,6 @@ CT_API bool ctGPUExternalBufferIsReady(struct ctGPUDevice* pDevice,
 
 /* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalBufferIsReady()! */
 CT_API enum ctResults ctGPUExternalBufferGetCurrentAccessor(struct ctGPUDevice* pDevice,
-                                                       struct ctGPUExternalBufferPool* pPool,
                                                        struct ctGPUExternalBuffer* pBuffer,
                                                        ctGPUBufferAccessor* pAccessor);
 

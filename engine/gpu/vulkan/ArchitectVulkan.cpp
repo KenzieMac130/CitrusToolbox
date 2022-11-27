@@ -116,21 +116,27 @@ void ctGPUArchitectVulkan::CommandBufferManager::Startup(ctGPUDevice* pDevice,
                                                          VkQueue targetQueue) {
    VkCommandPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
    poolInfo.queueFamilyIndex = queueFamilyIdx;
-   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   vkCreateCommandPool(pDevice->vkDevice, &poolInfo, pDevice->GetAllocCallback(), &pool);
-   VkCommandBufferAllocateInfo allocInfo = {
-     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-   allocInfo.commandBufferCount = CT_MAX_INFLIGHT_FRAMES;
-   allocInfo.commandPool = pool;
-   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   vkAllocateCommandBuffers(pDevice->vkDevice, &allocInfo, cmd);
+   poolInfo.flags = 0;
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkCreateCommandPool(
+        pDevice->vkDevice, &poolInfo, pDevice->GetAllocCallback(), &pools[i]);
+
+      VkCommandBufferAllocateInfo allocInfo = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+      allocInfo.commandBufferCount = 1;
+      allocInfo.commandPool = pools[i];
+      allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      vkAllocateCommandBuffers(pDevice->vkDevice, &allocInfo, &cmd[i]);
+   }
    frame = -1;
    queue = targetQueue;
 }
 
 void ctGPUArchitectVulkan::CommandBufferManager::Shutdown(ctGPUDevice* pDevice) {
-   vkFreeCommandBuffers(pDevice->vkDevice, pool, CT_MAX_INFLIGHT_FRAMES, cmd);
-   vkDestroyCommandPool(pDevice->vkDevice, pool, pDevice->GetAllocCallback());
+   for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
+      vkFreeCommandBuffers(pDevice->vkDevice, pools[i], 1, &cmd[i]);
+      vkDestroyCommandPool(pDevice->vkDevice, pools[i], pDevice->GetAllocCallback());
+   }
 }
 
 VkCommandBuffer ctGPUArchitectVulkan::CommandBufferManager::GetCmd() {
@@ -148,12 +154,13 @@ void ctGPUArchitectVulkan::CommandBufferManager::Submit(ctGPUDevice* pDevice) {
    vkQueueSubmit(queue, 1, &info, activeFence);
 }
 
-void ctGPUArchitectVulkan::CommandBufferManager::NextFrame() {
+void ctGPUArchitectVulkan::CommandBufferManager::NextFrame(ctGPUDevice* pDevice) {
    frame = (frame + 1) % CT_MAX_INFLIGHT_FRAMES;
    ctAssert(frame >= 0);
    VkCommandBuffer result = cmd[frame];
    VkCommandBufferBeginInfo begin = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-   vkResetCommandBuffer(cmd[frame], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+   vkResetCommandPool(
+     pDevice->vkDevice, pools[frame], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
    vkBeginCommandBuffer(result, &begin);
 }
 
@@ -181,7 +188,7 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice,
      pDevice->vkDevice, 1, &finishedFence[currentFrame], VK_TRUE, UINT64_MAX);
    vkResetFences(pDevice->vkDevice, 1, &finishedFence[currentFrame]);
    for (int i = 0; i < uniqueManagers.Count(); i++) {
-      uniqueManagers[i].NextFrame();
+      uniqueManagers[i].NextFrame(pDevice);
    }
 
    VkCommandBuffer gcmd = pGraphicsCommands->GetCmd();

@@ -34,21 +34,35 @@ void processImguiEvent(SDL_Event* event, void* pData) {
    ImGui_ImplSDL2_ProcessEvent(event);
 }
 
+void* ImguiCitrusMalloc(size_t sz, void* user_data) {
+   return ctMalloc(sz);
+}
+void ImguiCitrusFree(void* ptr, void* user_data) {
+   ctFree(ptr);
+}
+
 ctResults ctImguiIntegration::Startup() {
    ZoneScoped;
    ctDebugLog("Starting DearImgui...");
+   ImGui::SetAllocatorFunctions(ImguiCitrusMalloc, ImguiCitrusFree);
    ImGui::CreateContext();
+   ImGui::StyleColorsDark();
 #if !CITRUS_HEADLESS
 #ifdef CITRUS_GFX_VULKAN
    ImGui_ImplSDL2_InitForVulkan(Engine->WindowManager->mainWindow);
 #endif
+   ImGui::GetIO().Fonts->AddFontDefault();
+   ImGui::GetIO().Fonts->Build();
    Engine->OSEventManager->MiscEventHandlers.Append({processImguiEvent, this});
    Engine->OSEventManager->WindowEventHandlers.Append({processImguiEvent, this});
    iniPath = Engine->FileSystem->GetPreferencesPath();
    iniPath += "imgui.ini";
    ImGui::GetIO().IniFilename = iniPath.CStr();
-   ImGui::GetIO().Fonts->AddFontDefault();
-   ImGui::GetIO().Fonts->Build();
+
+   ImGui::GetIO().DisplaySize.x = 640.0f;
+   ImGui::GetIO().DisplaySize.y = 480.0f;
+   ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
+   ImGui::NewFrame();
 #else
    ImGui::GetIO().Fonts->AddFontDefault();
    ImGui::GetIO().Fonts->Build();
@@ -71,7 +85,10 @@ ctResults ctImguiIntegration::Shutdown() {
 
 void ctImguiUploadIndices(uint8_t* dest, size_t size, void* unused) {
    ImDrawData* pDrawData = ImGui::GetDrawData();
-   ctAssert(pDrawData);
+   if (!pDrawData) {
+      memset(dest, 0, size);
+      return;
+   }
    size_t offset = 0;
    for (int i = 0; i < pDrawData->CmdListsCount; i++) {
       const ImDrawList* pCmd = pDrawData->CmdLists[i];
@@ -84,7 +101,10 @@ void ctImguiUploadIndices(uint8_t* dest, size_t size, void* unused) {
 
 void ctImguiUploadVertices(uint8_t* dest, size_t size, void* unused) {
    ImDrawData* pDrawData = ImGui::GetDrawData();
-   ctAssert(pDrawData);
+   if (!pDrawData) {
+      memset(dest, 0, size);
+      return;
+   }
    size_t offset = 0;
    for (int i = 0; i < pDrawData->CmdListsCount; i++) {
       const ImDrawList* pCmd = pDrawData->CmdLists[i];
@@ -104,11 +124,9 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
                                          int32_t fontBind,
                                          int32_t idxBind,
                                          int32_t vtxBind,
-                                         TinyImageFormat colorFormat,
-                                         TinyImageFormat depthFormat) {
+                                         enum TinyImageFormat colorFormat,
+                                         enum TinyImageFormat depthFormat) {
 #if !CITRUS_HEADLESS
-   ImGui::Render();
-
    /* Font Texture */
    int32_t fontWidth;
    int32_t fontHeight;
@@ -129,15 +147,16 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    fontTexInfo.generationFunction = ctGPUTextureGenerateFnQuickMemcpy;
    CT_RETURN_FAIL(ctGPUExternalTextureCreateFunc(
      pGPUDevice, pGPUTexturePool, &pFontTexture, &fontTexInfo));
-   ImGui::GetIO().Fonts->SetTexID(fontBind);
-   ctGPUBindlessManagerMapTexture(pGPUDevice, pBindless, fontBind, pFontTexture);
+   fontBind =
+     ctGPUBindlessManagerMapTexture(pGPUDevice, pBindless, fontBind, pFontTexture);
+   ImGui::GetIO().Fonts->SetTexID((ImTextureID)(size_t)fontBind);
 
    /* Index Buffer */
    ctGPUExternalBufferCreateFuncInfo iBufferInfo = {};
    iBufferInfo.debugName = "Imgui Indices";
    iBufferInfo.async = false;
    iBufferInfo.pPlaceholder = NULL;
-   iBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
+   iBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_INDEX;
    iBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    iBufferInfo.size = maxIndices * sizeof(ImDrawIdx);
    iBufferInfo.generationFunction = ctImguiUploadIndices;
@@ -150,13 +169,13 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    vBufferInfo.debugName = "Imgui Vertices";
    vBufferInfo.async = false;
    vBufferInfo.pPlaceholder = NULL;
-   vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
+   vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_VERTEX;
    vBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    vBufferInfo.size = maxVerts * sizeof(ImDrawVert);
-   vBufferInfo.generationFunction = ctImguiUploadIndices;
+   vBufferInfo.generationFunction = ctImguiUploadVertices;
    vBufferInfo.userData = NULL;
    ctGPUExternalBufferCreateFunc(
-     pGPUDevice, pGPUBufferPool, &pVertexBuffer, &iBufferInfo);
+     pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
 
    /* Pipeline */
@@ -181,16 +200,39 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ctGPUPipelineBuilder* pPipelineBuilder =
      ctGPUPipelineBuilderNew(pGPUDevice, CT_GPU_PIPELINE_RASTER);
    ctGPUPipelineBuilderSetAttachments(pPipelineBuilder, depthFormat, 1, &colorFormat);
+   ctGPUPipelineBuilderSetBlendMode(pPipelineBuilder,
+                                    0,
+                                    true,
+                                    CT_COLOR_COMPONENT_RGBA,
+                                    CT_GPU_BLEND_LERP,
+                                    CT_GPU_BLEND_DISCARD);
 
    ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_VERT, vertShader);
    ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_FRAG, fragShader);
+
+   ctGPUPipelineBuilderAddVertexBufferBinding(
+     pPipelineBuilder, sizeof(ImDrawVert), false);
+   ctGPUPipelineBuilderAddVertexBufferAttribute(pPipelineBuilder,
+                                                CT_GPU_VERTEX_BUFFER_ATTRIBUTE_POSITION,
+                                                TinyImageFormat_R32G32_SFLOAT,
+                                                offsetof(ImDrawVert, pos),
+                                                0);
+   ctGPUPipelineBuilderAddVertexBufferAttribute(pPipelineBuilder,
+                                                CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD0,
+                                                TinyImageFormat_R32G32_SFLOAT,
+                                                offsetof(ImDrawVert, uv),
+                                                0);
+   ctGPUPipelineBuilderAddVertexBufferAttribute(pPipelineBuilder,
+                                                CT_GPU_VERTEX_BUFFER_ATTRIBUTE_COLOR0,
+                                                TinyImageFormat_R8G8B8A8_UNORM,
+                                                offsetof(ImDrawVert, col),
+                                                0);
+
    ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipeline, pBindless);
 
    ctGPUPipelineBuilderDelete(pPipelineBuilder);
    ctGPUShaderSoftRelease(pGPUDevice, fragShader);
    ctGPUShaderSoftRelease(pGPUDevice, vertShader);
-
-   ImGui::NewFrame();
 #endif
    return CT_SUCCESS;
 }
@@ -210,6 +252,7 @@ ctImguiIntegration::ShutdownGPU(struct ctGPUDevice* pGPUDevice,
 
 ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
                                               ctGPUExternalBufferPool* pGPUBufferPool) {
+   ImGui::EndFrame();
    ctGPUExternalBuffer* externBuffers[2] = {pVertexBuffer, pIndexBuffer};
    ctGPUExternalBufferRebuild(pGPUDevice, pGPUBufferPool, 2, externBuffers);
    return CT_SUCCESS;
@@ -222,8 +265,20 @@ void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
    ctGPUCommandBuffer gpuCmd = pCtx->cmd;
    ImDrawData* pDrawData = ImGui::GetDrawData();
    ctAssert(pDrawData);
-   uint32_t offset = 0;
+   uint32_t idxOffset = 0;
+   uint32_t vtxOffset = 0;
    ctGPUCmdSetGraphicsPipeline(gpuCmd, pPipeline);
+
+   ctGPUBufferAccessor vtxAccess, idxAccess;
+   ctGPUExternalBufferGetCurrentAccessor(pCtx->pDevice, pVertexBuffer, &vtxAccess);
+   ctGPUExternalBufferGetCurrentAccessor(pCtx->pDevice, pIndexBuffer, &idxAccess);
+   ctGPUCmdSetIndexBuffer(gpuCmd, idxAccess, 0, CT_GPU_INDEX_TYPE_UINT32);
+   ctGPUCmdSetVertexBuffers(gpuCmd, 1, &vtxAccess, NULL);
+   ctGPUCmdSetDynamicInteger(
+     gpuCmd, pCtx->pBindingModel, 0, (int32_t)ImGui::GetIO().DisplaySize.x);
+   ctGPUCmdSetDynamicInteger(
+     gpuCmd, pCtx->pBindingModel, 1, (int32_t)ImGui::GetIO().DisplaySize.y);
+
    ctGPUCmdSetViewport(
      gpuCmd, 0, 0, (float)pCtx->raster.width, (float)pCtx->raster.height, 0.0f, 1.0f);
    for (int i = 0; i < pDrawData->CmdListsCount; i++) {
@@ -232,22 +287,31 @@ void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
       ImVec2 clipMax = pList->GetClipRectMax();
       for (int j = 0; j < pList->CmdBuffer.Size; j++) {
          const ImDrawCmd* pCmd = &pList->CmdBuffer.Data[j];
-         const uint32_t width = (uint32_t)(
-           ((float)(pCmd->ClipRect.z - pCmd->ClipRect.x) / pDrawData->DisplaySize.x) *
-           pCtx->raster.width);
-         const uint32_t height = (uint32_t)(
-           ((float)(pCmd->ClipRect.w - pCmd->ClipRect.y) / pDrawData->DisplaySize.y) *
-           pCtx->raster.height);
-         const uint32_t offsetX = (uint32_t)(
-           (float)((pCmd->ClipRect.x) / pDrawData->DisplaySize.x) * pCtx->raster.width);
-         const uint32_t offsetY = (uint32_t)(
-           (float)((pCmd->ClipRect.y) / pDrawData->DisplaySize.y) * pCtx->raster.height);
+         const uint32_t width = (uint32_t)(((float)(pCmd->ClipRect.z - pCmd->ClipRect.x) /
+                                            pDrawData->DisplaySize.x) *
+                                           pCtx->raster.width);
+         const uint32_t height =
+           (uint32_t)(((float)(pCmd->ClipRect.w - pCmd->ClipRect.y) /
+                       pDrawData->DisplaySize.y) *
+                      pCtx->raster.height);
+         const uint32_t offsetX =
+           (uint32_t)((float)((pCmd->ClipRect.x) / pDrawData->DisplaySize.x) *
+                      pCtx->raster.width);
+         const uint32_t offsetY =
+           (uint32_t)((float)((pCmd->ClipRect.y) / pDrawData->DisplaySize.y) *
+                      pCtx->raster.height);
          ctGPUCmdSetScissor(gpuCmd, offsetX, offsetY, width, height);
          ctGPUCmdSetDynamicInteger(
-           gpuCmd, pCtx->pBindingModel, 0, (int32_t)pCmd->TextureId);
-         ctGPUCmdDraw(gpuCmd, pCmd->ElemCount, 1, pCmd->IdxOffset + offset, 0);
+           gpuCmd, pCtx->pBindingModel, 2, (int32_t)(size_t)pCmd->GetTexID());
+         ctGPUCmdDrawIndexed(gpuCmd,
+                             pCmd->ElemCount,
+                             1,
+                             pCmd->IdxOffset + idxOffset,
+                             pCmd->VtxOffset + vtxOffset,
+                             0);
       }
-      offset += pList->IdxBuffer.Size;
+      idxOffset += pList->IdxBuffer.Size;
+      vtxOffset += pList->VtxBuffer.Size;
    }
 #endif
 }
@@ -263,7 +327,7 @@ ctResults ctImguiIntegration::NextFrame() {
    ImGui::EndFrame();
    ImGui::NewFrame();
 #else
-   ImGui_ImplSDL2_NewFrame(Engine->WindowManager->mainWindow);
+   ImGui_ImplSDL2_NewFrame();
    ImGui::NewFrame();
    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
       Engine->Interact->isFrameActive = false;

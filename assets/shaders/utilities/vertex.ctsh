@@ -1,0 +1,55 @@
+/*
+   Copyright 2022 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+/* Legacy Vertex Buffer */
+#if IS_ACTUALLY_GLSL
+   #define CT_DEFINE_VBUF_BEGIN()
+   #define CT_DEFINE_VBUF_END()
+
+   #define CT_DEFINE_VBUF_POSITION()         layout(location = 0) in vec3 _VBUF_POSITION;
+   #define CT_DEFINE_VBUF_NORMAL()           layout(location = 1) in vec3 _VBUF_NORMAL;
+   #define CT_DEFINE_VBUF_TANGENT()          layout(location = 2) in vec4 _VBUF_TANGENT;
+   #define CT_DEFINE_VBUF_COLOR0()            layout(location = 3) in vec4 _VBUF_COLOR0;
+   #define CT_DEFINE_VBUF_COLOR1()            layout(location = 4) in vec4 _VBUF_COLOR1;
+   #define CT_DEFINE_VBUF_COLOR2()            layout(location = 5) in vec4 _VBUF_COLOR2;
+   #define CT_DEFINE_VBUF_COLOR3()            layout(location = 6) in vec4 _VBUF_COLOR3;
+   #define CT_DEFINE_VBUF_TEXCOORD0()        layout(location = 7) in vec4 _VBUF_TEXCOORD0;
+   #define CT_DEFINE_VBUF_TEXCOORD1()        layout(location = 8) in vec4 _VBUF_TEXCOORD1;
+   #define CT_DEFINE_VBUF_TEXCOORD2()        layout(location = 9) in vec4 _VBUF_TEXCOORD2;
+   #define CT_DEFINE_VBUF_TEXCOORD3()        layout(location = 10) in vec4 _VBUF_TEXCOORD3;
+   #define CT_DEFINE_VBUF_TEXCOORD4()        layout(location = 11) in vec4 _VBUF_TEXCOORD4;
+   #define CT_DEFINE_VBUF_TEXCOORD5()        layout(location = 12) in vec4 _VBUF_TEXCOORD5;
+   #define CT_DEFINE_VBUF_TEXCOORD6()        layout(location = 13) in vec4 _VBUF_TEXCOORD6;
+   #define CT_DEFINE_VBUF_SKIN_INDICES()     layout(location = 14) in ivec4 _VBUF_SKIN_INDICES;
+   #define CT_DEFINE_VBUF_SKIN_WEIGHTS()     layout(location = 15) in vec4 _VBUF_SKIN_WEIGHTS;
+
+   #define CT_VBUF_POSITION            _VBUF_POSITION
+   #define CT_VBUF_NORMAL              _VBUF_NORMAL
+   #define CT_VBUF_TANGENT             _VBUF_TANGENT
+   #define CT_VBUF_COLOR0               _VBUF_COLOR0
+   #define CT_VBUF_COLOR1               _VBUF_COLOR1
+   #define CT_VBUF_COLOR2               _VBUF_COLOR2
+   #define CT_VBUF_COLOR3               _VBUF_COLOR3
+   #define CT_VBUF_TEXCOORD0           _VBUF_TEXCOORD0
+   #define CT_VBUF_TEXCOORD1           _VBUF_TEXCOORD1
+   #define CT_VBUF_TEXCOORD2           _VBUF_TEXCOORD2
+   #define CT_VBUF_TEXCOORD3           _VBUF_TEXCOORD3
+   #define CT_VBUF_TEXCOORD4           _VBUF_TEXCOORD4
+   #define CT_VBUF_TEXCOORD5           _VBUF_TEXCOORD5
+   #define CT_VBUF_TEXCOORD6           _VBUF_TEXCOORD6
+   #define CT_VBUF_SKIN_INDICES        _VBUF_SKIN_INDICES
+   #define CT_VBUF_SKIN_WEIGHTS        _VBUF_SKIN_WEIGHTS
+#endif

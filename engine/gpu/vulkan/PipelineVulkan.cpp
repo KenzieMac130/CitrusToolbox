@@ -47,21 +47,32 @@ ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
       raster.createInfo.pColorBlendState = &raster.blendState;
       raster.createInfo.pDynamicState = &raster.dynamicState;
 
+      raster.dynamicState.pDynamicStates = raster.dynamics;
+      raster.blendState.pAttachments = raster.attachmentBlends;
+      raster.createInfo.pStages = stages;
+
+      raster.vertex.pVertexAttributeDescriptions = raster.vertexAttribDescs;
+      raster.vertex.pVertexBindingDescriptions = raster.vertexBindingDescs;
+
+      raster.dynamicRendering.pColorAttachmentFormats = raster.colorFormats;
+
       /* defaults */
       raster.viewport.viewportCount = 1;
       raster.viewport.scissorCount = 1;
       raster.msaa.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
       raster.rasterState.lineWidth = 1.0f;
 
-      raster.dynamicState.pDynamicStates = raster.dynamics;
-      raster.blendState.pAttachments = raster.attachmentBlends;
-      raster.createInfo.pStages = stages;
-
-      raster.dynamicRendering.pColorAttachmentFormats = raster.colorFormats;
-
       ctGPUPipelineBuilderSetTopology(this, CT_GPU_TOPOLOGY_TRIANGLE_LIST, false);
       ctGPUPipelineBuilderEnableDynamicState(this, CT_GPU_DYNAMICSTATE_VIEWPORT);
       ctGPUPipelineBuilderEnableDynamicState(this, CT_GPU_DYNAMICSTATE_SCISSOR);
+      for (int i = 0; i < 8; i++) {
+         ctGPUPipelineBuilderSetBlendMode(this,
+                                          i,
+                                          true,
+                                          CT_COLOR_COMPONENT_RGBA,
+                                          CT_GPU_BLEND_OVERWRITE,
+                                          CT_GPU_BLEND_DISCARD);
+      }
    }
 }
 
@@ -224,6 +235,19 @@ CT_API ctResults ctGPUPipelineBuilderSetBlendMode(ctGPUPipelineBuilder* pBuilder
    VkPipelineColorBlendAttachmentState& attachment =
      pBuilder->raster.attachmentBlends[attachmentIndex];
    attachment.blendEnable = enabled ? VK_TRUE : VK_FALSE;
+   if (ctCFlagCheck(writeMask, CT_COLOR_COMPONENT_R)) {
+      attachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+   }
+   if (ctCFlagCheck(writeMask, CT_COLOR_COMPONENT_G)) {
+      attachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+   }
+   if (ctCFlagCheck(writeMask, CT_COLOR_COMPONENT_B)) {
+      attachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+   }
+   if (ctCFlagCheck(writeMask, CT_COLOR_COMPONENT_A)) {
+      attachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+   }
+
    switch (colorMode) {
       case CT_GPU_BLEND_ADD:
          attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -502,8 +526,51 @@ CT_API ctResults ctGPUPipelineCreate(ctGPUDevice* pDevice,
    return CT_FAILURE_UNKNOWN;
 }
 
+CT_API ctResults ctGPUPipelineBuilderAddVertexBufferBinding(
+  ctGPUPipelineBuilder* pBuilder, size_t stride, bool instanceRate) {
+   if (pBuilder->raster.vertex.vertexBindingDescriptionCount >= 16) {
+      return CT_FAILURE_OUT_OF_BOUNDS;
+   }
+   VkVertexInputBindingDescription& bindDesc =
+     pBuilder->raster
+       .vertexBindingDescs[pBuilder->raster.vertex.vertexBindingDescriptionCount];
+
+   bindDesc.stride = (uint32_t)stride;
+   bindDesc.binding = pBuilder->raster.vertex.vertexBindingDescriptionCount;
+   bindDesc.inputRate =
+     instanceRate ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+
+   pBuilder->raster.vertex.vertexBindingDescriptionCount++;
+   return CT_SUCCESS;
+}
+
+CT_API ctResults
+ctGPUPipelineBuilderAddVertexBufferAttribute(struct ctGPUPipelineBuilder* pBuilder,
+                                             enum ctGPUVertexBufferAttributes type,
+                                             enum TinyImageFormat format,
+                                             uint32_t offset,
+                                             uint32_t bindingIndex) {
+   if (pBuilder->raster.vertex.vertexAttributeDescriptionCount >= 16) {
+      return CT_FAILURE_OUT_OF_BOUNDS;
+   }
+
+   VkVertexInputAttributeDescription& attribDesc =
+     pBuilder->raster
+       .vertexAttribDescs[pBuilder->raster.vertex.vertexAttributeDescriptionCount];
+
+   attribDesc.binding = bindingIndex;
+
+   attribDesc.format = (VkFormat)TinyImageFormat_ToVkFormat(format);
+   attribDesc.location = (uint32_t)type; /* prebaked slots in portability.ctsh */
+   attribDesc.offset = offset;
+
+   pBuilder->raster.vertex.vertexAttributeDescriptionCount++;
+   return CT_SUCCESS;
+}
+
 CT_API void ctGPUPipelineDestroy(ctGPUDevice* pDevice, ctGPUPipeline pipeline) {
    ctAssert(pDevice);
    ctAssert(pipeline);
-   vkDestroyPipeline(pDevice->vkDevice, (VkPipeline)pipeline, pDevice->GetAllocCallback());
+   vkDestroyPipeline(
+     pDevice->vkDevice, (VkPipeline)pipeline, pDevice->GetAllocCallback());
 }

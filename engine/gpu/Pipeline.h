@@ -184,6 +184,35 @@ ctGPUPipelineBuilderSetAttachments(struct ctGPUPipelineBuilder* pBuilder,
                                    uint32_t colorCount,
                                    enum TinyImageFormat* colorFormats);
 
+enum ctGPUVertexBufferAttributes {
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_POSITION = 0,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_NORMAL = 1,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TANGENT = 2,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_COLOR0 = 3,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_COLOR1 = 4,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_COLOR2 = 5,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_COLOR3 = 6,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD0 = 7,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD1 = 8,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD2 = 9,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD3 = 10,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD4 = 11,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD5 = 12,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_TEXCOORD6 = 13,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_SKIN_INDICES = 14,
+   CT_GPU_VERTEX_BUFFER_ATTRIBUTE_SKIN_WEIGHTS = 15
+};
+
+CT_API enum ctResults ctGPUPipelineBuilderAddVertexBufferBinding(
+  struct ctGPUPipelineBuilder* pBuilder, size_t stride, bool instanceRate);
+
+CT_API enum ctResults
+ctGPUPipelineBuilderAddVertexBufferAttribute(struct ctGPUPipelineBuilder* pBuilder,
+                                             enum ctGPUVertexBufferAttributes type,
+                                             enum TinyImageFormat format,
+                                             uint32_t offset,
+                                             uint32_t bindingIndex);
+
 /* Compile Pipelines */
 CT_API enum ctResults ctGPUPipelineCreate(struct ctGPUDevice* pDevice,
                                           struct ctGPUPipelineBuilder* pBuilder,

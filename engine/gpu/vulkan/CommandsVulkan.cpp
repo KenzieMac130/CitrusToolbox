@@ -33,6 +33,20 @@ CT_API void ctGPUCmdDraw(ctGPUCommandBuffer commandBuffer,
              firstInstance);
 }
 
+CT_API void ctGPUCmdDrawIndexed(ctGPUCommandBuffer commandBuffer,
+                                uint32_t indexCount,
+                                uint32_t instanceCount,
+                                uint32_t firstIndex,
+                                int32_t vertexOffset,
+                                uint32_t firstInstance) {
+   vkCmdDrawIndexed((VkCommandBuffer)commandBuffer,
+                    indexCount,
+                    instanceCount,
+                    firstIndex,
+                    vertexOffset,
+                    firstInstance);
+}
+
 CT_API void ctGPUCmdDrawIndirect(ctGPUCommandBuffer commandBuffer,
                                  ctGPUBufferAccessor buffer,
                                  size_t bufferOffset,
@@ -217,4 +231,28 @@ CT_API void ctGPUCmdSetComputePipeline(ctGPUCommandBuffer commandBuffer,
    vkCmdBindPipeline((VkCommandBuffer)commandBuffer,
                      VK_PIPELINE_BIND_POINT_COMPUTE,
                      (VkPipeline)pipeline);
+}
+
+CT_API void ctGPUCmdSetIndexBuffer(ctGPUCommandBuffer commandBuffer,
+                                   ctGPUBufferAccessor indexBuffer,
+                                   size_t offset,
+                                   ctGPUIndexType type) {
+   VkIndexType vtype =
+     type == CT_GPU_INDEX_TYPE_UINT32 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+   vkCmdBindIndexBuffer(
+     (VkCommandBuffer)commandBuffer, (VkBuffer)indexBuffer, offset, vtype);
+}
+
+size_t gDefaultOffsets[16] = {0};
+CT_API void ctGPUCmdSetVertexBuffers(ctGPUCommandBuffer commandBuffer,
+                                     size_t vertexBufferCount,
+                                     ctGPUBufferAccessor* pVertexBuffers,
+                                     size_t* pOffsets) {
+   if (!pOffsets) { pOffsets = gDefaultOffsets; }
+   ctAssert(sizeof(size_t) == sizeof(VkDeviceSize));
+   vkCmdBindVertexBuffers((VkCommandBuffer)commandBuffer,
+                          0,
+                          (uint32_t)vertexBufferCount,
+                          (VkBuffer*)pVertexBuffers,
+                          (VkDeviceSize*)pOffsets);
 }

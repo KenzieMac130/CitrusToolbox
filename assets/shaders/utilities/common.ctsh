@@ -14,8 +14,14 @@
    limitations under the License.
 */
 
+#if IS_ACTUALLY_GLSL
+#version 450
+#endif
+
 #include "portability.ctsh"
 #include "bindless.ctsh"
+#include "texture.ctsh"
+#include "vertex.ctsh"
 
 #if IS_ACTUALLY_GLSL
 //#extension GL_EXT_debug_printf : request

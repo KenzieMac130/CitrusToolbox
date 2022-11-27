@@ -33,6 +33,12 @@ CT_API void ctGPUCmdDraw(ctGPUCommandBuffer commandBuffer,
                          uint32_t instanceCount,
                          uint32_t firstVertex,
                          uint32_t firstInstance);
+CT_API void ctGPUCmdDrawIndexed(ctGPUCommandBuffer commandBuffer,
+                                uint32_t indexCount,
+                                uint32_t instanceCount,
+                                uint32_t firstIndex,
+                                int32_t vertexOffset,
+                                uint32_t firstInstance);
 CT_API void ctGPUCmdDrawIndirect(ctGPUCommandBuffer commandBuffer,
                                  ctGPUBufferAccessor buffer,
                                  size_t bufferOffset,
@@ -131,6 +137,16 @@ CT_API void ctGPUCmdSetGraphicsPipeline(ctGPUCommandBuffer commandBuffer,
                                         ctGPUPipeline pipeline);
 CT_API void ctGPUCmdSetComputePipeline(ctGPUCommandBuffer commandBuffer,
                                        ctGPUPipeline pipeline);
+
+enum ctGPUIndexType { CT_GPU_INDEX_TYPE_UINT16, CT_GPU_INDEX_TYPE_UINT32 };
+CT_API void ctGPUCmdSetIndexBuffer(ctGPUCommandBuffer commandBuffer,
+                                   ctGPUBufferAccessor indexBuffer,
+                                   size_t offset,
+                                   ctGPUIndexType type);
+CT_API void ctGPUCmdSetVertexBuffers(ctGPUCommandBuffer commandBuffer,
+                                     size_t vertexBufferCount,
+                                     ctGPUBufferAccessor* pVertexBuffers,
+                                     size_t* pOffsets);
 
 #ifdef __cplusplus
 }

@@ -20,12 +20,12 @@
    
    #define BINDLESS_IDX uint
    
-   layout(set = 0, binding = 0) uniform sampler bindlessSamplers[];
+   layout(set = 0, binding = 0) uniform sampler _bindlessSamplers[];
    
-   layout(set = 0, binding = 1) uniform texture1D bindlessSampledImages1D[];
-   layout(set = 0, binding = 1) uniform texture2D bindlessSampledImages2D[];
-   layout(set = 0, binding = 1) uniform texture3D bindlessSampledImages3D[];
-   layout(set = 0, binding = 1) uniform textureCube bindlessSampledImagesCube[];
+   layout(set = 0, binding = 1) uniform texture1D _bindlessSampledImages1D[];
+   layout(set = 0, binding = 1) uniform texture2D _bindlessSampledImages2D[];
+   layout(set = 0, binding = 1) uniform texture3D _bindlessSampledImages3D[];
+   layout(set = 0, binding = 1) uniform textureCube _bindlessSampledImagesCube[];
    
    //layout(set = 0, binding = 2) uniform writeonly image1D bindlessStorageImages1D[];
    //layout(set = 0, binding = 2) uniform writeonly image2D bindlessStorageImages2D[];
@@ -33,4 +33,8 @@
    //layout(set = 0, binding = 2) uniform writeonly imageCube bindlessStorageImagesCube[];
    
    #define CT_STORAGE_BUFFER_ARRAY(_BUFFNAME, _NAME, _CONTENTS) layout(set = 0, binding = 3) buffer _BUFFNAME _CONTENTS _NAME[];
+
+   layout(push_constant) uniform s_ctDynamicInts {int values[8];} _ctDynamicInts;
+
+   #define CT_DYNAMIC_INT(slot) _ctDynamicInts.values[slot]
 #endif 

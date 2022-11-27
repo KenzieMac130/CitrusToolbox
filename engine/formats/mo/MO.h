@@ -31,12 +31,12 @@ struct ctMOHeader {
     int32_t translatedOffset;
     int32_t _unused1; /* baked hash table size */
     int32_t _unused2; /* baked hash table offset */
-}
+};
 
 struct ctMOStringEntry {
     int32_t length;
     int32_t offset;
-}
+};
 
 struct CT_API ctMOReader {
     struct ctMOHeader* pHeader;
@@ -48,8 +48,7 @@ struct CT_API ctMOReader {
     void* searchStructure;
 };
 
-enum ctResults ctMOReaderInitialize(struct ctWADReader* pReader, uint8_t* blob, size_t size);
-enum ctResults ctMOReaderRelease(struct ctWADReader* pReader, uint8_t* blob, size_t size);
+enum ctResults ctMOReaderInitialize(struct ctMOReader* pReader, uint8_t* blob, size_t size);
+enum ctResults ctMOReaderRelease(struct ctMOReader* pReader);
 
-const char* ctMOFindTranslation(struct ctWADReader* pReader, const char* original);
-const char* ctMOFindTranslationPlural(struct ctWADReader* pReader, const char* original, uint32_t number);
+const char* ctMOFindTranslation(struct ctMOReader* pReader, const char* original);

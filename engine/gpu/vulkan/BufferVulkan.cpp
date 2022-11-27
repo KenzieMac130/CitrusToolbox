@@ -91,6 +91,9 @@ CT_API ctResults ctGPUExternalBufferCreateFunc(ctGPUDevice* pDevice,
       case CT_GPU_EXTERN_BUFFER_TYPE_INDIRECT:
          usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
          break;
+      case CT_GPU_EXTERN_BUFFER_TYPE_UNIFORM: usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+      case CT_GPU_EXTERN_BUFFER_TYPE_INDEX: usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+      case CT_GPU_EXTERN_BUFFER_TYPE_VERTEX: usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
       default: break;
    }
    VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -160,10 +163,9 @@ CT_API bool ctGPUExternalBufferIsReady(ctGPUDevice* pDevice,
 }
 
 CT_API ctResults ctGPUExternalBufferGetCurrentAccessor(ctGPUDevice* pDevice,
-                                                       ctGPUExternalBufferPool* pPool,
                                                        ctGPUExternalBuffer* pBuffer,
                                                        ctGPUBufferAccessor* pAccessor) {
-   *pAccessor = &pBuffer->contents[pBuffer->currentFrame];
+   *pAccessor = pBuffer->contents[pBuffer->currentFrame].buffer;
    return CT_SUCCESS;
 }
 

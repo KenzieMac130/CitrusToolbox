@@ -63,7 +63,7 @@ ctGPUArchitectClearContents baseColorClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
 ctGPUArchitectClearContents normalRoughClear = {{0.5f, 0.5f, 1.0f, 1.0f}};
 ctGPUArchitectClearContents pbrClear = {{0.0f, 0.0f, 0.0f, 0.0f}};
 ctGPUArchitectClearContents lightClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
-ctGPUArchitectClearContents tonemapClear = {{0.0f, 1.0f, 0.0f, 1.0f}};
+ctGPUArchitectClearContents tonemapClear = {{0.0f, 0.0f, 1.0f, 1.0f}};
 
 /*
 ----- GBuffer Layout -----
@@ -141,7 +141,7 @@ ctGPUArchitectImagePayloadDesc tonemapBufferDesc =      {CT_KEYLIME_BIND_TEXTURE
                                                          1.0f,
                                                          1,
                                                          1,
-                                                         CT_KEYLIME_FORMAT_HDR };
+                                                         CT_KEYLIME_FORMAT_COLOR };
 // clang-format on
 
 void GenerateTestBuffer(uint8_t* dest, size_t size, void* userData) {
@@ -183,14 +183,6 @@ ctResults ctKeyLimeRenderer::Startup() {
    /* OS Events */
    Engine->OSEventManager->WindowEventHandlers.Append(
      {(ctOSEventCallback)HandleWindowEvent, this});
-
-   /* ImGUI */
-   ImGui::GetIO().Fonts->AddFontDefault();
-   ImGui::GetIO().Fonts->Build();
-   ImGui::GetIO().DisplaySize.x = 640.0f;
-   ImGui::GetIO().DisplaySize.y = 480.0f;
-   ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
-   ImGui::NewFrame();
 
    /* Device */
    ctGPUDeviceCreateInfo deviceCreateInfo = {};
@@ -238,7 +230,7 @@ ctResults ctKeyLimeRenderer::Startup() {
                                         CT_KEYLIME_BIND_TEXTURE_IMGUI_FONT,
                                         CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES,
                                         CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES,
-                                        CT_KEYLIME_FORMAT_HDR,
+                                        CT_KEYLIME_FORMAT_COLOR,
                                         CT_KEYLIME_FORMAT_DEPTH);
    Engine->Im3dIntegration->StartupGPU(pGPUDevice,
                                        pGPUBindless,
@@ -246,7 +238,7 @@ ctResults ctKeyLimeRenderer::Startup() {
                                        30000,
                                        CT_KEYLIME_BIND_BUFFER_IM3D_VIEW,
                                        CT_KEYLIME_BIND_BUFFER_IM3D_VERTICES,
-                                       CT_KEYLIME_FORMAT_HDR,
+                                       CT_KEYLIME_FORMAT_COLOR,
                                        CT_KEYLIME_FORMAT_DEPTH);
 
    /* Render Graph */
@@ -380,7 +372,7 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
       ResourceUpload.needsUpload = false;
       rebuildRequired = true;
    }
-   if (ctGPUExternalBufferPoolNeedsDispatch(pGPUDevice, pGPUBufferPool) ||
+   if (ctGPUExternalTexturePoolNeedsDispatch(pGPUDevice, pGPUTexturePool) ||
        ctGPUExternalBufferPoolNeedsDispatch(pGPUDevice, pGPUBufferPool)) {
       ResourceUpload.needsUpload = true;
       rebuildRequired = true;
