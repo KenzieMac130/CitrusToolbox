@@ -260,7 +260,7 @@ ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
 
 #include "gpu/Architect.h"
 
-void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
+void ctImguiIntegration::DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
 #if !CITRUS_HEADLESS
    ctGPUCommandBuffer gpuCmd = pCtx->cmd;
    ImDrawData* pDrawData = ImGui::GetDrawData();
@@ -318,7 +318,7 @@ void ctImguiIntegration::_DrawGPU(struct ctGPUArchitectExecutionContext* pCtx) {
 
 ctResults ctImguiIntegration::DrawCallback(ctGPUArchitectExecutionContext* pCtx,
                                            void* pUserData) {
-   ((ctImguiIntegration*)pUserData)->_DrawGPU(pCtx);
+   ((ctImguiIntegration*)pUserData)->DrawGPU(pCtx);
    return CT_SUCCESS;
 }
 

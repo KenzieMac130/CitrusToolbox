@@ -48,7 +48,7 @@ public:
    ctResults NextFrame();
 
 private:
-   void _DrawGPU(struct ctGPUArchitectExecutionContext* pCtx);
+   void DrawGPU(struct ctGPUArchitectExecutionContext* pCtx);
    ctStringUtf8 iniPath;
    struct ctGPUExternalTexture* pFontTexture;
    struct ctGPUExternalBuffer* pIndexBuffer;

@@ -131,8 +131,8 @@ bool ctEngineCore::isExitRequested() const {
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
    Translation->NextFrame();
-   App->OnTick(deltatime);
-   SceneEngine->NextFrame();
+   App->OnFrameAdvance(deltatime);
+   SceneEngine->NextFrame(deltatime);
    App->OnUIUpdate();
    Renderer->RenderFrame();
    OSEventManager->PollOSEvents();

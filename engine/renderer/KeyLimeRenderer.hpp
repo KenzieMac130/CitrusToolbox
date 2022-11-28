@@ -39,6 +39,8 @@ public:
    bool rebuildRequired;
 
 private:
+   ctCameraInfo mainCamera;
+
    static void HandleWindowEvent(SDL_Event* event, ctKeyLimeRenderer* renderer);
 
    /* Features */

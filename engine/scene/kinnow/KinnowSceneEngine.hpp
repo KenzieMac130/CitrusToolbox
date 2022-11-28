@@ -26,9 +26,9 @@ public:
     virtual ctResults Startup();
     virtual ctResults Shutdown();
    /* Called at the end of a frame */
-   virtual ctResults NextFrame();
+   virtual ctResults OnNextFrame(double deltaTime);
    /* Get ctCameraInfo for a camera (NULL must return the "main camera")*/
-   virtual ctCameraInfo GetCameraInfo(const char* cameraId); //todo: depreciate
+   virtual ctCameraInfo OnGetCameraInfo(const char* cameraId); //todo: depreciate
    /* Load scene/level */
-   virtual ctResults LoadScene(const char* name, const char* message = NULL);
+   virtual ctResults OnLoadScene(const char* name, const char* message = NULL);
 };

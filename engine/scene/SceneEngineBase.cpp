@@ -14,19 +14,14 @@
    limitations under the License.
 */
 
-#pragma once
+#include "SceneEngineBase.hpp"
+#include "core/EngineCore.hpp"
+#include "interact/InteractionEngine.hpp"
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
+ctResults ctSceneEngineBase::NextFrame(double deltaTime) {
+   return OnNextFrame(deltaTime);
+}
 
-class CT_API ctSceneEngineBase : public ctModuleBase {
-public:
-   ctResults NextFrame(double deltaTime);
-   ctResults LoadScene(const char* name, const char* message = NULL);
-
-protected:
-   /* Called at the end of a frame */
-   virtual ctResults OnNextFrame(double deltaTime) = 0;
-   /* Load scene/level */
-   virtual ctResults OnLoadScene(const char* name, const char* message = NULL) = 0;
-};
+ctResults ctSceneEngineBase::LoadScene(const char* name, const char* message) {
+   return OnLoadScene(name, message);
+}

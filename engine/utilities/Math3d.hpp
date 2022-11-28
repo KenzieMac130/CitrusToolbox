@@ -766,12 +766,24 @@ struct CT_API ctCameraInfo {
       fov = 0.785f;
       cursorPosition = ctVec3();
       cursorDirection = CT_VEC3_FORWARD;
+      aspectRatio = 1.0f;
    }
    ctVec3 position;
    ctQuat rotation;
    float fov;
+   float aspectRatio;
    ctVec3 cursorPosition;
    ctVec3 cursorDirection;
+
+   inline ctMat4 GetViewMatrix() {
+      return ctMat4();
+   }
+   inline ctMat4 GetProjectionMatrix() {
+      return ctMat4();
+   }
+   inline ctMat4 GetViewProjectionMatrix() {
+      return GetViewMatrix() * GetProjectionMatrix();
+   }
 };
 
 /* --- Narrowing/Widening --- */

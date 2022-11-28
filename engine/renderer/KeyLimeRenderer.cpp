@@ -311,8 +311,8 @@ ctResults ctKeyLimeRenderer::Startup() {
      0,
      CT_GPU_TASK_RASTER,
      (ctGPUArchitectTaskDefinitionFn)PostProcess.DefineGizmoPass,
-     NULL,
-     this};
+     Engine->Im3dIntegration->DrawCallback,
+     Engine->Im3dIntegration};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gizmoPass);
 
    /* GUI */
@@ -354,6 +354,8 @@ ctResults ctKeyLimeRenderer::Shutdown() {
 ctResults ctKeyLimeRenderer::RenderFrame() {
    ZoneScoped;
 #if !CITRUS_HEADLESS
+   Engine->Im3dIntegration->SetCamera(mainCamera);
+   Engine->Im3dIntegration->DrawImguiText();
    ImGui::Render();
 
    /* Handle Presentation State */
@@ -387,6 +389,7 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
       rebuildRequired = false;
       ctDebugLog("Rebuilt Rendergraph!");
    }
+   Engine->Im3dIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
    Engine->ImguiIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
    ctGPUBindlessManagerPrepareFrame(pGPUDevice,
                                     pGPUBindless,
@@ -404,6 +407,7 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
 }
 
 ctResults ctKeyLimeRenderer::UpdateCamera(const ctCameraInfo& cameraInfo) {
+   mainCamera = cameraInfo;
    return CT_SUCCESS;
 }
 

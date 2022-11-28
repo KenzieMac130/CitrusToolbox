@@ -120,6 +120,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gamelayer/GameLayer.cpp
 )
 

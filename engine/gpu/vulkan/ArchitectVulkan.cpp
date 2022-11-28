@@ -332,6 +332,14 @@ ctResults ctGPUArchitectVulkan::BackendExecute(ctGPUDevice* pDevice,
          ctx.pBindingModel = pBindingModel;
          ctx.pDevice = pDevice;
          ctx._internalData = &internalData;
+         ctGPUCmdSetViewport(ctx.cmd,
+                             0.0f,
+                             0.0f,
+                             (float)ctx.raster.width,
+                             (float)ctx.raster.height,
+                             0.0f,
+                             1.0f);
+         ctGPUCmdSetScissor(ctx.cmd, 0, 0, ctx.raster.width, ctx.raster.height);
          if (task.fpExecution) { task.fpExecution(&ctx, task.pUserData); }
          pDevice->EndJITRenderpass(gcmd);
          pDevice->MarkEndRegion(gcmd);

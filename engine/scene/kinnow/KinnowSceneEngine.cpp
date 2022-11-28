@@ -16,24 +16,22 @@
 
 #include "KinnowSceneEngine.hpp"
 
-ctResults ctKinnowSceneEngine::Startup()
-{
-    return ctResults();
+ctResults ctKinnowSceneEngine::Startup() {
+   return ctResults();
 }
 
-ctResults ctKinnowSceneEngine::Shutdown()
-{
-    return ctResults();
+ctResults ctKinnowSceneEngine::Shutdown() {
+   return ctResults();
 }
 
-ctResults ctKinnowSceneEngine::NextFrame() {
+ctResults ctKinnowSceneEngine::OnNextFrame(double deltaTime) {
    return CT_SUCCESS;
 }
 
-ctCameraInfo ctKinnowSceneEngine::GetCameraInfo(const char* cameraId) {
+ctCameraInfo ctKinnowSceneEngine::OnGetCameraInfo(const char* cameraId) {
    return ctCameraInfo();
 }
 
-ctResults ctKinnowSceneEngine::LoadScene(const char* name, const char* message) {
+ctResults ctKinnowSceneEngine::OnLoadScene(const char* name, const char* message) {
    return CT_SUCCESS;
 }

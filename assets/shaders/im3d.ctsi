@@ -15,6 +15,7 @@
 */
 
 #include "utilities/common.ctsh"
+#include "bindpoints.ctsh"
 
 /* CT_COMPILE_INFO: 
 {
@@ -42,7 +43,6 @@
 #include "utilities/attributes.ctsh"
 CT_ATTRIBUTES_BEGIN()
 CT_ATTRIBUTES_VAR(0,float4,vertexColor)
-CT_ATTRIBUTES_VAR(1,float2,uv)
 CT_ATTRIBUTES_END()
 #undef CT_ATTRIBUTES_FRAG_IN
 
@@ -62,7 +62,6 @@ struct sVertexData {
 
 CT_STORAGE_BUFFER_ARRAY(sViewBuffer, viewBuffers, {
     float4x4 viewProj;
-    float2 viewSize;
 })
 
 CT_STORAGE_BUFFER_ARRAY(sVertexBuffer, vertexBuffers, {
@@ -70,10 +69,14 @@ CT_STORAGE_BUFFER_ARRAY(sVertexBuffer, vertexBuffers, {
 })
 
 CT_MAIN(){
-    CT_SET_ATTRIBUTE(vertexColor,float4(0,0,0,1));
-    CT_SET_POSITION(float4(0));
+	sVertexData vertex = vertexBuffers[CT_KEYLIME_BIND_BUFFER_IM3D_VERTICES].data[CT_VERTEX_INDEX];
+	vec4 position = float4(vertex.pos, 1.0);
+	vec4 color = unpackUnorm4x8(vertex.icolor).abgr;
+
+    CT_SET_ATTRIBUTE(vertexColor,color);
+    CT_SET_POSITION(position);
 	#ifdef IM3D_POINTS
-	CT_SET_POINT_SIZE(1.0);
+	CT_SET_POINT_SIZE(vertex.scale);
 	#endif
 }
 #endif
