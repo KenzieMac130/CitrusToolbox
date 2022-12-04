@@ -37,17 +37,17 @@ ctResults ctKinnowSceneEngine::OnNextFrame(double deltaTime) {
       ImGui::SliderFloat("FOV", &mainCamera.fov, 0.01f, CT_PI);
       ImGui::SliderFloat("Speed", &rotationSpeed, 0.0f, CT_PI);
       ImGui::DragFloat("rotationDistance", &rotationDistance);
-      ImGui::End();
-
-      cameraPos.x = ctSin(rotationPhase) * -rotationDistance;
-      cameraPos.z = ctCos(rotationPhase) * -rotationDistance;
-      mainCamera.position = cameraPos;
-      mainCamera.rotation = ctQuat(CT_VEC3_UP, rotationPhase);
-
-      int32_t width, height;
-      Engine->WindowManager->GetMainWindowDrawableSize(&width, &height);
-      mainCamera.aspectRatio = (float)width / (float)height;
-      Engine->Renderer->UpdateCamera(mainCamera);
    }
+   ImGui::End();
+
+   cameraPos.x = ctSin(rotationPhase) * -rotationDistance;
+   cameraPos.z = ctCos(rotationPhase) * -rotationDistance;
+   mainCamera.position = cameraPos;
+   mainCamera.rotation = ctQuat(CT_VEC3_UP, rotationPhase);
+
+   int32_t width, height;
+   Engine->WindowManager->GetMainWindowDrawableSize(&width, &height);
+   mainCamera.aspectRatio = (float)width / (float)height;
+   Engine->Renderer->UpdateCamera(mainCamera);
    return CT_SUCCESS;
 }

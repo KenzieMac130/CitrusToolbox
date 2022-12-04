@@ -46,6 +46,7 @@ ctResults ctImguiIntegration::Startup() {
    ctDebugLog("Starting DearImgui...");
    ImGui::SetAllocatorFunctions(ImguiCitrusMalloc, ImguiCitrusFree);
    ImGui::CreateContext();
+   ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
    ImGui::StyleColorsDark();
 #if !CITRUS_HEADLESS
 #ifdef CITRUS_GFX_VULKAN
