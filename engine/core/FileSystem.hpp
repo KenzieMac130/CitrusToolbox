@@ -33,6 +33,7 @@ public:
 
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    const void LogPaths();
 

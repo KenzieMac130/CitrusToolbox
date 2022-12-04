@@ -26,10 +26,9 @@
  * https://anki3d.org/resource-uniformity-bindless-access-in-vulkan/
  */
 
-CT_API ctResults
-ctGPUBindlessManagerStartup(ctGPUDevice* pDevice,
-                            ctGPUBindlessManager** ppBindless,
-                            ctGPUBindlessManagerCreateInfo* pCreateInfo) {
+CT_API ctResults ctGPUBindlessManagerStartup(ctGPUDevice* pDevice,
+                                             ctGPUBindlessManager** ppBindless,
+                                             ctGPUBindlessManagerCreateInfo* pCreateInfo) {
    ctDebugLog("Starting Bindless System...");
    *ppBindless = new ctGPUBindlessManager();
    ctGPUBindlessManager* pBindless = *ppBindless;
@@ -62,8 +61,8 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
    descriptorSetLayouts[1].descriptorCount = maxSampledImages;
    descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
    descriptorPoolSizes[1].descriptorCount = maxSampledImages;
-   bindFlags[1] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                  VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+   bindFlags[1] =
+     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
    slotManagerSampledImage =
      ctVkBindlessSlotManager(pCreateInfo->fixedTextureBindUpperBound, maxSampledImages);
    /* Storage Image */
@@ -73,8 +72,8 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
    descriptorSetLayouts[2].descriptorCount = maxStorageImages;
    descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
    descriptorPoolSizes[2].descriptorCount = maxStorageImages;
-   bindFlags[2] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                  VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+   bindFlags[2] =
+     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
    slotManagerStorageImage =
      ctVkBindlessSlotManager(pCreateInfo->fixedTextureBindUpperBound, maxStorageImages);
    /* Storage Buffer */
@@ -84,10 +83,10 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
    descriptorSetLayouts[3].descriptorCount = maxStorageBuffers;
    descriptorPoolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
    descriptorPoolSizes[3].descriptorCount = maxStorageBuffers;
-   bindFlags[3] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                  VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-   slotManagerStorageBuffer = ctVkBindlessSlotManager(
-     pCreateInfo->fixedStorageBufferBindUpperBound, maxStorageBuffers);
+   bindFlags[3] =
+     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+   slotManagerStorageBuffer =
+     ctVkBindlessSlotManager(pCreateInfo->fixedStorageBufferBindUpperBound, maxStorageBuffers);
 
    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingExtInfo = {
      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
@@ -100,13 +99,12 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
    descSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
    descSetLayoutInfo.bindingCount = ctCStaticArrayLen(descriptorSetLayouts);
    descSetLayoutInfo.pBindings = descriptorSetLayouts;
-   CT_VK_CHECK(
-     vkCreateDescriptorSetLayout(pDevice->vkDevice,
-                                 &descSetLayoutInfo,
-                                 pDevice->GetAllocCallback(),
-                                 &vkGlobalDescriptorSetLayout),
-     CT_NCT("FAIL:vkCreateDescriptorSetLayout",
-            "vkCreateDescriptorSetLayout() failed to create descriptor set layout."));
+   CT_VK_CHECK(vkCreateDescriptorSetLayout(pDevice->vkDevice,
+                                           &descSetLayoutInfo,
+                                           pDevice->GetAllocCallback(),
+                                           &vkGlobalDescriptorSetLayout),
+               CT_NCT("FAIL:vkCreateDescriptorSetLayout",
+                      "vkCreateDescriptorSetLayout() failed to create descriptor set layout."));
 
    VkDescriptorPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT |
@@ -114,21 +112,18 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
    poolInfo.poolSizeCount = ctCStaticArrayLen(descriptorPoolSizes);
    poolInfo.pPoolSizes = descriptorPoolSizes;
    poolInfo.maxSets = 3;
-   CT_VK_CHECK(
-     vkCreateDescriptorPool(
-       pDevice->vkDevice, &poolInfo, pDevice->GetAllocCallback(), &vkDescriptorPool),
-     CT_NCT("FAIL:vkCreateDescriptorPool",
-            "vkCreateDescriptorPool() failed to create descriptor pool."));
+   CT_VK_CHECK(vkCreateDescriptorPool(
+                 pDevice->vkDevice, &poolInfo, pDevice->GetAllocCallback(), &vkDescriptorPool),
+               CT_NCT("FAIL:vkCreateDescriptorPool",
+                      "vkCreateDescriptorPool() failed to create descriptor pool."));
 
-   VkDescriptorSetAllocateInfo allocInfo = {
-     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+   VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
    allocInfo.descriptorSetCount = 1;
    allocInfo.descriptorPool = vkDescriptorPool;
    allocInfo.pSetLayouts = &vkGlobalDescriptorSetLayout;
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       CT_VK_CHECK(
-        vkAllocateDescriptorSets(
-          pDevice->vkDevice, &allocInfo, &vkGlobalDescriptorSet[i]),
+        vkAllocateDescriptorSets(pDevice->vkDevice, &allocInfo, &vkGlobalDescriptorSet[i]),
         CT_NCT("FAIL:vkAllocateDescriptorSets",
                "vkAllocateDescriptorSets() failed to allocate global descriptor set."));
    }
@@ -137,19 +132,17 @@ ctResults ctGPUBindlessManager::Startup(ctGPUDevice* pDevice,
    range.stageFlags = VK_SHADER_STAGE_ALL;
    range.size = sizeof(int32_t) * CT_MAX_GFX_DYNAMIC_INTS;
    range.offset = 0;
-   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
-     VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
    pipelineLayoutInfo.setLayoutCount = 1;
    pipelineLayoutInfo.pSetLayouts = &vkGlobalDescriptorSetLayout;
    pipelineLayoutInfo.pushConstantRangeCount = 1;
    pipelineLayoutInfo.pPushConstantRanges = &range;
-   CT_VK_CHECK(
-     vkCreatePipelineLayout(pDevice->vkDevice,
-                            &pipelineLayoutInfo,
-                            pDevice->GetAllocCallback(),
-                            &vkGlobalPipelineLayout),
-     CT_NCT("FAIL:vkCreatePipelineLayout",
-            "vkCreatePipelineLayout() failed to allocate global pipeline layout."));
+   CT_VK_CHECK(vkCreatePipelineLayout(pDevice->vkDevice,
+                                      &pipelineLayoutInfo,
+                                      pDevice->GetAllocCallback(),
+                                      &vkGlobalPipelineLayout),
+               CT_NCT("FAIL:vkCreatePipelineLayout",
+                      "vkCreatePipelineLayout() failed to allocate global pipeline layout."));
 
    for (int i = 0; i < CT_MAX_INFLIGHT_FRAMES; i++) {
       buffInfos[i].Reserve((size_t)maxStorageBuffers + 1000);
@@ -203,10 +196,8 @@ void ctGPUBindlessManager::SetupSamplers(ctGPUDevice* pDevice) {
 }
 
 ctResults ctGPUBindlessManager::Shutdown(ctGPUDevice* pDevice) {
-   vkDestroyPipelineLayout(
-     pDevice->vkDevice, vkGlobalPipelineLayout, pDevice->GetAllocCallback());
-   vkDestroyDescriptorPool(
-     pDevice->vkDevice, vkDescriptorPool, pDevice->GetAllocCallback());
+   vkDestroyPipelineLayout(pDevice->vkDevice, vkGlobalPipelineLayout, pDevice->GetAllocCallback());
+   vkDestroyDescriptorPool(pDevice->vkDevice, vkDescriptorPool, pDevice->GetAllocCallback());
    vkDestroyDescriptorSetLayout(
      pDevice->vkDevice, vkGlobalDescriptorSetLayout, pDevice->GetAllocCallback());
    for (size_t i = 0; i < samplers.Count(); i++) {
@@ -216,16 +207,15 @@ ctResults ctGPUBindlessManager::Shutdown(ctGPUDevice* pDevice) {
    return CT_SUCCESS;
 }
 
-CT_API ctResults
-ctGPUBindlessManagerPrepareFrame(ctGPUDevice* pDevice,
-                                 ctGPUBindlessManager* pBindless,
-                                 uint32_t bufferPoolCount,
-                                 ctGPUExternalBufferPool** ppBufferPools,
-                                 uint32_t texturePoolCount,
-                                 ctGPUExternalTexturePool** ppTexturePools,
-                                 uint32_t architectCount,
-                                 struct ctGPUArchitect** ppArchitects,
-                                 void* pNext) {
+CT_API ctResults ctGPUBindlessManagerPrepareFrame(ctGPUDevice* pDevice,
+                                                  ctGPUBindlessManager* pBindless,
+                                                  uint32_t bufferPoolCount,
+                                                  ctGPUExternalBufferPool** ppBufferPools,
+                                                  uint32_t texturePoolCount,
+                                                  ctGPUExternalTexturePool** ppTexturePools,
+                                                  uint32_t architectCount,
+                                                  struct ctGPUArchitect** ppArchitects,
+                                                  void* pNext) {
    return pBindless->PrepareFrame(
      pDevice, architectCount, (struct ctGPUArchitectVulkan**)ppArchitects);
 }
@@ -248,25 +238,22 @@ ctResults ctGPUBindlessManager::PrepareFrame(ctGPUDevice* pDevice,
          trackedDynamicTextureLastFrames[i] = trackedDynamicTextures[i]->currentFrame;
          /* flush all upcoming frames with current frame */
          ctGPUExternalTexture* pTexture = trackedDynamicTextures[i];
-         CT_RETURN_FAIL(AddTextureWrite(currentFrame,
-                                        trackedDynamicTextureIndices[i],
-                                        pTexture->contents[currentFrame].view));
+         CT_RETURN_FAIL(AddTextureWrite(
+           currentFrame, trackedDynamicTextureIndices[i], pTexture->contents[currentFrame].view));
       }
    }
    for (size_t i = 0; i < architectCount; i++) {
       if (ppArchitect[i]->needsBindUpdate) {
          for (int j = 0; j < ppArchitect[i]->bufferBindings.Count(); j++) {
             for (int k = 0; k < CT_MAX_INFLIGHT_FRAMES; k++) {
-               AddBufferWrite(k,
-                              ppArchitect[i]->bufferBindings[j].idx,
-                              ppArchitect[i]->bufferBindings[j].buff);
+               AddBufferWrite(
+                 k, ppArchitect[i]->bufferBindings[j].idx, ppArchitect[i]->bufferBindings[j].buff);
             }
          }
          for (int j = 0; j < ppArchitect[i]->imageBindings.Count(); j++) {
             for (int k = 0; k < CT_MAX_INFLIGHT_FRAMES; k++) {
-               AddTextureWrite(k,
-                               ppArchitect[i]->imageBindings[j].idx,
-                               ppArchitect[i]->imageBindings[j].view);
+               AddTextureWrite(
+                 k, ppArchitect[i]->imageBindings[j].idx, ppArchitect[i]->imageBindings[j].view);
             }
          }
          ppArchitect[i]->needsBindUpdate = false;
@@ -282,6 +269,7 @@ ctResults ctGPUBindlessManager::PrepareFrame(ctGPUDevice* pDevice,
    buffInfos[currentFrame].Clear();
    imageInfos[currentFrame].Clear();
    descriptorSetWrites[currentFrame].Clear();
+   currentFrame = (currentFrame + 1) % CT_MAX_INFLIGHT_FRAMES;
    return CT_SUCCESS;
 }
 
@@ -363,9 +351,8 @@ CT_API int32_t ctGPUBindlessManagerMapTexture(ctGPUDevice* pDevice,
          } else {
             dstFrame = i;
          }
-         CT_RETURN_ON_FAIL(pBindless->AddTextureWrite(
-                             dstFrame, desiredIdx, pTexture->contents[srcFrame].view),
-                           -1);
+         CT_RETURN_ON_FAIL(
+           pBindless->AddTextureWrite(dstFrame, desiredIdx, pTexture->contents[srcFrame].view), -1);
       }
    }
    return desiredIdx;
@@ -391,9 +378,7 @@ CT_API int32_t ctGPUBindlessManagerMapStorageBuffer(ctGPUDevice* pDevice,
                                                     int32_t desiredIdx,
                                                     ctGPUExternalBuffer* pBuffer) {
    if (pBuffer->type != CT_GPU_EXTERN_BUFFER_TYPE_STORAGE) { return -1; }
-   if (desiredIdx < 0) {
-      desiredIdx = pBindless->slotManagerStorageBuffer.AllocateSlot();
-   }
+   if (desiredIdx < 0) { desiredIdx = pBindless->slotManagerStorageBuffer.AllocateSlot(); }
    if (pBuffer->updateMode == CT_GPU_UPDATE_DYNAMIC) {
       pBindless->trackedDynamicBufferIndices.Append(desiredIdx);
       pBindless->trackedDynamicBufferLastFrames.Append(-1);
@@ -410,9 +395,8 @@ CT_API int32_t ctGPUBindlessManagerMapStorageBuffer(ctGPUDevice* pDevice,
          } else {
             dstFrame = i;
          }
-         CT_RETURN_ON_FAIL(pBindless->AddBufferWrite(
-                             dstFrame, desiredIdx, pBuffer->contents[srcFrame].buffer),
-                           -1);
+         CT_RETURN_ON_FAIL(
+           pBindless->AddBufferWrite(dstFrame, desiredIdx, pBuffer->contents[srcFrame].buffer), -1);
       }
    }
    return desiredIdx;

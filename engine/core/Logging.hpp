@@ -28,6 +28,7 @@ public:
 
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    void Log(const char* format, ...);
    void LogArgs(const char* format, va_list args);

@@ -55,13 +55,13 @@ CT_ATTRIBUTES_END()
 
 #ifdef VERTEX_SHADER
 struct sVertexData {
-    float3 pos;
-    float scale;
+    float4 posScale;
     uint icolor;
 };
 
 CT_STORAGE_BUFFER_ARRAY(sViewBuffer, viewBuffers, {
     float4x4 viewProj;
+	float2 viewScale;
 })
 
 CT_STORAGE_BUFFER_ARRAY(sVertexBuffer, vertexBuffers, {
@@ -70,13 +70,15 @@ CT_STORAGE_BUFFER_ARRAY(sVertexBuffer, vertexBuffers, {
 
 CT_MAIN(){
 	sVertexData vertex = vertexBuffers[CT_KEYLIME_BIND_BUFFER_IM3D_VERTICES].data[CT_VERTEX_INDEX];
-	vec4 position = float4(vertex.pos, 1.0);
-	vec4 color = unpackUnorm4x8(vertex.icolor).abgr;
+	float4x4 viewProj = viewBuffers[CT_KEYLIME_BIND_BUFFER_IM3D_VIEW].viewProj;
+
+	float4 position = CT_MMULV(viewProj, float4(vertex.posScale.xyz, 1.0));
+	float4 color = unpackUnorm4x8(vertex.icolor).abgr;
 
     CT_SET_ATTRIBUTE(vertexColor,color);
     CT_SET_POSITION(position);
 	#ifdef IM3D_POINTS
-	CT_SET_POINT_SIZE(vertex.scale);
+	CT_SET_POINT_SIZE(8.0);
 	#endif
 }
 #endif

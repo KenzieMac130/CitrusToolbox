@@ -46,6 +46,7 @@ class CT_API ctHotReloadDetection : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults RegisterDataCategory(ctHotReloadCategory* pCategory);
 

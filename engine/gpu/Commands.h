@@ -59,7 +59,7 @@ CT_API void ctGPUCmdDispatch(ctGPUCommandBuffer commandBuffer,
                              uint32_t groupCountY,
                              uint32_t groupCountZ);
 
-/* ------------------ Transfer Command ------------------ */
+/* ------------------ Transfer Commands ------------------ */
 
 struct ctGPUBlitRegion {
    uint32_t sourceOffset[3];

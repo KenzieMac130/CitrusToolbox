@@ -25,6 +25,7 @@ class CT_API ctImguiIntegration : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults StartupGPU(struct ctGPUDevice* pGPUDevice,
                         struct ctGPUBindlessManager* pBindless,

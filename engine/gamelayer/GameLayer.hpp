@@ -23,6 +23,7 @@ class CT_API ctGameLayer : public ctModuleBase {
 public:
    virtual ctResults Startup();
    virtual ctResults Shutdown();
+   const char* GetModuleName() final;
 };
 
 ctGameLayer& ctGetGameLayer();

@@ -43,10 +43,13 @@ ctResults ctInteractionEngine::Shutdown() {
    return ctShutdownInteractBackends();
 }
 
+const char* ctInteractionEngine::GetModuleName() {
+   return "Interaction Engine";
+}
+
 ctResults ctInteractionEngine::RegisterAll() {
    ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
    Directory.CreateActionSetsFromFile(file);
 #if CITRUS_INCLUDE_AUDITION
    Directory.configHotReload.RegisterData(CT_CDATA("Input_Actions"));
@@ -90,8 +93,7 @@ ctInteractPath::ctInteractPath() {
 
 ctInteractPath::ctInteractPath(const char* ptr, size_t count) {
    memset(str, 0, CT_MAX_INTERACT_PATH_SIZE);
-   strncpy(
-     str, ptr, count > CT_MAX_INTERACT_PATH_SIZE ? CT_MAX_INTERACT_PATH_SIZE : count);
+   strncpy(str, ptr, count > CT_MAX_INTERACT_PATH_SIZE ? CT_MAX_INTERACT_PATH_SIZE : count);
 }
 
 ctInteractPath::ctInteractPath(const char* ptr) {
@@ -309,8 +311,7 @@ void ctInteractDirectorySystem::DisableActionSet(ctInteractPath& path) {
    }
 }
 
-ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path,
-                                                       bool accessible) {
+ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path, bool accessible) {
    ZoneScoped;
    ctInteractNode* result;
    CT_RETURN_FAIL(GetNode(path, result, true));
@@ -348,9 +349,7 @@ void ctInteractDirectorySystem::LogContents() {
 
 void ctInteractDirectorySystem::DebugImGui() {
    for (auto it = nodes.GetIterator(); it; it++) {
-      if (it.Value().GetScalar()) {
-         ImGui::Text("%s: %f", it.Value(), it.Value().GetScalar());
-      }
+      if (it.Value().GetScalar()) { ImGui::Text("%s: %f", it.Value(), it.Value().GetScalar()); }
    }
 }
 

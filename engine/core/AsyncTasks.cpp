@@ -49,6 +49,10 @@ ctResults ctAsyncManager::Shutdown() {
    return ctResults();
 }
 
+const char* ctAsyncManager::GetModuleName() {
+   return "Async Manager";
+}
+
 ctAsyncTaskHandle ctAsyncManager::CreateTask(const char* name,
                                              ctAsyncTaskFunction fpTask,
                                              void* userdata,

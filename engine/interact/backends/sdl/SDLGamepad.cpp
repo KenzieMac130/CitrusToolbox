@@ -51,6 +51,10 @@ ctResults ctInteractSDLGamepadBackend::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctInteractSDLGamepadBackend::GetModuleName() {
+   return "SDL Gamepad";
+}
+
 ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& directory) {
    ZoneScoped;
    /* Add mouse inputs */
@@ -82,18 +86,13 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
          ctInteractNode node = ctInteractNode();
          node.type = CT_INTERACT_NODETYPE_SCALAR;
          node.accessible = true;
-         snprintf(node.path.str,
-                  CT_MAX_INTERACT_PATH_SIZE,
-                  "dev/gamepad/%d%s",
-                  c,
-                  inputPaths[i]);
+         snprintf(node.path.str, CT_MAX_INTERACT_PATH_SIZE, "dev/gamepad/%d%s", c, inputPaths[i]);
          node.pData = &gamepads[c].data[i];
          directory.AddNode(node);
       }
    }
    ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Gamepad"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Gamepad"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION

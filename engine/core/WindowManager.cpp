@@ -67,23 +67,15 @@ ctResults ctWindowManager::Startup() {
                          "WindowHeight",
                          "Height of the main window.",
                          CT_SETTINGS_BOUNDS_UINT);
-   settings->BindInteger(&mainWindowMonitorIdx,
-                         true,
-                         true,
-                         "MonitorIndex",
-                         "Target monitor to place the window in.");
-   settings->BindString(
-     &mainWindowMode,
-     true,
-     true,
-     "WindowMode",
-     "Main Window Mode. (Windowed, Resizable, Fullscreen, Desktop, Borderless)");
-   settings->BindInteger(&mainWindowVSync,
-                         false,
-                         true,
-                         "VSync",
-                         "Enable vertical sync.",
-                         CT_SETTINGS_BOUNDS_BOOL);
+   settings->BindInteger(
+     &mainWindowMonitorIdx, true, true, "MonitorIndex", "Target monitor to place the window in.");
+   settings->BindString(&mainWindowMode,
+                        true,
+                        true,
+                        "WindowMode",
+                        "Main Window Mode. (Windowed, Resizable, Fullscreen, Desktop, Borderless)");
+   settings->BindInteger(
+     &mainWindowVSync, false, true, "VSync", "Enable vertical sync.", CT_SETTINGS_BOUNDS_BOOL);
 
 #if !CITRUS_HEADLESS
    uint32_t flags = windowModeFlags(mainWindowMode);
@@ -100,12 +92,8 @@ ctResults ctWindowManager::Startup() {
       windowDim.w = mainDesiredWindowWidth;
       windowDim.h = mainDesiredWindowHeight;
    }
-   SDL_Window* window = SDL_CreateWindow(Engine->App->GetAppName(),
-                                         windowDim.x,
-                                         windowDim.y,
-                                         windowDim.w,
-                                         windowDim.h,
-                                         flags);
+   SDL_Window* window = SDL_CreateWindow(
+     Engine->App->GetAppName(), windowDim.x, windowDim.y, windowDim.w, windowDim.h, flags);
    if (!window) { return CT_FAILURE_UNKNOWN; }
    SDL_SetWindowMinimumSize(window, 640, 480);
    mainWindow = window;
@@ -118,6 +106,10 @@ ctResults ctWindowManager::Shutdown() {
    SDL_DestroyWindow(mainWindow);
 #endif
    return CT_SUCCESS;
+}
+
+const char* ctWindowManager::GetModuleName() {
+   return "Window Manager";
 }
 
 ctCursorMode ctWindowManager::GetCursorMode() {
@@ -133,8 +125,7 @@ ctResults ctWindowManager::SetCursorMode(ctCursorMode mode) {
 
 ctResults ctWindowManager::ShowErrorMessage(const char* title, const char* msg) {
 #if !CITRUS_HEADLESS
-   if (SDL_ShowSimpleMessageBox(
-         SDL_MESSAGEBOX_ERROR, title, msg, mainWindow)) {
+   if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, mainWindow)) {
       return CT_FAILURE_UNKNOWN;
    }
 #endif

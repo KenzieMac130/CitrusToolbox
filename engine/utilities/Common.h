@@ -146,6 +146,7 @@ enum ctResults {
 #define ctCStrEql(a, b)         strcmp(a, b) == 0
 #define ctCStrNEql(a, b, n)     strncmp(a, b, n) == 0
 #define ctCFlagCheck(v, f)      ((v & f) == f)
+#define ctAlign(v, a)           ((v + (a - 1)) & -a)
 
 /*Assert*/
 #define ctAssert(e) assert(e)

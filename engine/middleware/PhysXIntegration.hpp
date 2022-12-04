@@ -25,24 +25,25 @@ using namespace physx;
 
 class CT_API ctPhysXIntegration : public ctModuleBase {
 public:
-    ctResults Startup() final;
-    ctResults Shutdown() final;
+   ctResults Startup() final;
+   ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
-    ctStringUtf8 pvdHostAddress;
-    int32_t pvdHostPort;
-    int32_t pvdTimeout;
-    int32_t recordAllocations;
-    int32_t connectPvd;
-    float toleranceLength;
-    float toleranceSpeed;
+   ctStringUtf8 pvdHostAddress;
+   int32_t pvdHostPort;
+   int32_t pvdTimeout;
+   int32_t recordAllocations;
+   int32_t connectPvd;
+   float toleranceLength;
+   float toleranceSpeed;
 
-    PxTolerancesScale toleranceScale;
-    PxFoundation* pFoundation;
-    PxPvd* pPvd;
-    PxPhysics* pPhysics;
-    PxCooking* pCooking;
-    PxCpuDispatcher* pCpuDispatcher;
+   PxTolerancesScale toleranceScale;
+   PxFoundation* pFoundation;
+   PxPvd* pPvd;
+   PxPhysics* pPhysics;
+   PxCooking* pCooking;
+   PxCpuDispatcher* pCpuDispatcher;
 
-    PxDefaultErrorCallback defaultErrorCallback;
-    PxDefaultAllocator defaultAllocatorCallback;
+   PxDefaultErrorCallback defaultErrorCallback;
+   PxDefaultAllocator defaultAllocatorCallback;
 };

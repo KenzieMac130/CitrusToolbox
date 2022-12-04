@@ -33,3 +33,12 @@ ctResults ctModuleBase::ModuleShutdown() {
 bool ctModuleBase::isStarted() const {
    return _started;
 }
+
+#if CITRUS_IMGUI
+#include "imgui/imgui.h"
+#endif
+void ctModuleBase::DebugUI(bool useGizmos) {
+#if CITRUS_IMGUI
+   ImGui::Text("%s has nothing to display.", GetModuleName());
+#endif
+}

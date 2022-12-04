@@ -68,6 +68,7 @@ public:
 
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults NextFrame();
 
@@ -76,9 +77,8 @@ public:
    ctResults LoadDictionary(ctTranslationCatagory category);
    ctResults LoadAll();
 
-   const char* GetLocalString(ctTranslationCatagory category,
-                              const char* tag,
-                              const char* nativeText) const;
+   const char*
+   GetLocalString(ctTranslationCatagory category, const char* tag, const char* nativeText) const;
 
    /* Returns the users preferred language if possible
     Ideally in RFC 4646 but the OS might have other plans

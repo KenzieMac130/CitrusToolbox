@@ -65,52 +65,45 @@ CT_API enum ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
                                                ctGPUShaderType type);
 CT_API void ctGPUShaderSoftRelease(ctGPUDevice* pDevice, ctGPUShaderModule shader);
 
-CT_API enum ctResults
-ctGPUPipelineBuilderClearShaders(struct ctGPUPipelineBuilder* pBuilder);
+CT_API enum ctResults ctGPUPipelineBuilderClearShaders(struct ctGPUPipelineBuilder* pBuilder);
 CT_API enum ctResults ctGPUPipelineBuilderAddShader(struct ctGPUPipelineBuilder* pBuilder,
                                                     enum ctGPUShaderType type,
                                                     ctGPUShaderModule shader);
 
 /* Raster Options */
 enum ctGPUDepthTestMode {
-   CT_GPU_DEPTHTEST_FRONT,
-   CT_GPU_DEPTHTEST_BEHIND,
+   CT_GPU_DEPTHTEST_GREATER,
+   CT_GPU_DEPTHTEST_LESS,
    CT_GPU_DEPTHTEST_EQUAL,
    CT_GPU_DEPTHTEST_ALWAYS
 };
-CT_API enum ctResults
-ctGPUPipelineBuilderSetDepthTest(struct ctGPUPipelineBuilder* pBuilder,
-                                 enum ctGPUDepthTestMode mode);
-CT_API enum ctResults
-ctGPUPipelineBuilderSetDepthWrite(struct ctGPUPipelineBuilder* pBuilder, bool enabled);
-CT_API enum ctResults
-ctGPUPipelineBuilderSetDepthBias(struct ctGPUPipelineBuilder* pBuilder,
-                                 bool enabled,
-                                 float constantFactor,
-                                 float slopeFactor,
-                                 float clamp);
+CT_API enum ctResults ctGPUPipelineBuilderSetDepthTest(struct ctGPUPipelineBuilder* pBuilder,
+                                                       enum ctGPUDepthTestMode passIf);
+CT_API enum ctResults ctGPUPipelineBuilderSetDepthWrite(struct ctGPUPipelineBuilder* pBuilder,
+                                                        bool enabled);
+CT_API enum ctResults ctGPUPipelineBuilderSetDepthBias(struct ctGPUPipelineBuilder* pBuilder,
+                                                       bool enabled,
+                                                       float constantFactor,
+                                                       float slopeFactor,
+                                                       float clamp);
 
-CT_API enum ctResults
-ctGPUPipelineBuilderSetBlendMode(struct ctGPUPipelineBuilder* pBuilder,
-                                 uint32_t attachmentIndex,
-                                 bool enabled,
-                                 enum ctColorComponents writeMask,
-                                 enum ctGPUBlendingMode colorMode,
-                                 enum ctGPUBlendingMode alphaMode);
+CT_API enum ctResults ctGPUPipelineBuilderSetBlendMode(struct ctGPUPipelineBuilder* pBuilder,
+                                                       uint32_t attachmentIndex,
+                                                       bool enabled,
+                                                       enum ctColorComponents writeMask,
+                                                       enum ctGPUBlendingMode colorMode,
+                                                       enum ctGPUBlendingMode alphaMode);
 
 enum ctGPUWinding { CT_GPU_WIND_CLOCKWISE, CT_GPU_WIND_COUNTER_CLOCKWISE };
-CT_API enum ctResults
-ctGPUPipelineBuilderSetWinding(struct ctGPUPipelineBuilder* pBuilder,
-                               enum ctGPUWinding winding);
+CT_API enum ctResults ctGPUPipelineBuilderSetWinding(struct ctGPUPipelineBuilder* pBuilder,
+                                                     enum ctGPUWinding winding);
 
 enum ctGPUFillMode { CT_GPU_FILL_SOLID, CT_GPU_FILL_LINES, CT_GPU_FILL_POINTS };
-CT_API enum ctResults
-ctGPUPipelineBuilderSetFillMode(struct ctGPUPipelineBuilder* pBuilder,
-                                enum ctGPUFillMode fill);
+CT_API enum ctResults ctGPUPipelineBuilderSetFillMode(struct ctGPUPipelineBuilder* pBuilder,
+                                                      enum ctGPUFillMode fill);
 
-CT_API enum ctResults
-ctGPUPipelineBuilderSetFaceCull(struct ctGPUPipelineBuilder* pBuilder,
-                                enum ctGPUFaceMask cull);
+CT_API enum ctResults ctGPUPipelineBuilderSetFaceCull(struct ctGPUPipelineBuilder* pBuilder,
+                                                      enum ctGPUFaceMask cull);
 enum ctGPUTopology {
    CT_GPU_TOPOLOGY_TRIANGLE_LIST,
    CT_GPU_TOPOLOGY_TRIANGLE_STRIP,
@@ -118,12 +111,11 @@ enum ctGPUTopology {
    CT_GPU_TOPOLOGY_LINE_LIST,
    CT_GPU_TOPOLOGY_LINE_STRIP
 };
-CT_API enum ctResults
-ctGPUPipelineBuilderSetTopology(struct ctGPUPipelineBuilder* pBuilder,
-                                enum ctGPUTopology topology,
-                                bool primativeRestart);
-CT_API enum ctResults
-ctGPUPipelineBuilderSetTessPoints(struct ctGPUPipelineBuilder* pBuilder, int32_t points);
+CT_API enum ctResults ctGPUPipelineBuilderSetTopology(struct ctGPUPipelineBuilder* pBuilder,
+                                                      enum ctGPUTopology topology,
+                                                      bool primativeRestart);
+CT_API enum ctResults ctGPUPipelineBuilderSetTessPoints(struct ctGPUPipelineBuilder* pBuilder,
+                                                        int32_t points);
 
 CT_API enum ctResults ctGPUPipelineBuilderSetMSAA(struct ctGPUPipelineBuilder* pBuilder,
                                                   enum ctGPUSampleCounts samples,
@@ -151,17 +143,16 @@ enum ctGPUStencilTest {
    CT_GPU_STENCIL_TEST_GREATER_EQUAL,
    CT_GPU_STENCIL_TEST_ALWAYS
 };
-CT_API enum ctResults
-ctGPUPipelineBuilderSetStencil(struct ctGPUPipelineBuilder* pBuilder,
-                               bool enable,
-                               enum ctGPUFaceMask face,
-                               enum ctGPUStencilOps failOp,
-                               enum ctGPUStencilOps passOp,
-                               enum ctGPUStencilOps depthFailOp,
-                               enum ctGPUStencilTest testMode,
-                               uint32_t compareMask,
-                               uint32_t writeMask,
-                               uint32_t referenceValue);
+CT_API enum ctResults ctGPUPipelineBuilderSetStencil(struct ctGPUPipelineBuilder* pBuilder,
+                                                     bool enable,
+                                                     enum ctGPUFaceMask face,
+                                                     enum ctGPUStencilOps failOp,
+                                                     enum ctGPUStencilOps passOp,
+                                                     enum ctGPUStencilOps depthFailOp,
+                                                     enum ctGPUStencilTest testMode,
+                                                     uint32_t compareMask,
+                                                     uint32_t writeMask,
+                                                     uint32_t referenceValue);
 
 enum ctGPUDynamicState {
    CT_GPU_DYNAMICSTATE_VIEWPORT,         /* Default: true */
@@ -174,15 +165,13 @@ enum ctGPUDynamicState {
    CT_GPU_DYNAMICSTATE_STENCIL_WRITE,    /* Default: false */
    CT_GPU_DYNAMICSTATE_STENCIL_REFERENCE /* Default: false */
 };
-CT_API enum ctResults
-ctGPUPipelineBuilderEnableDynamicState(struct ctGPUPipelineBuilder* pBuilder,
-                                       enum ctGPUDynamicState state);
+CT_API enum ctResults ctGPUPipelineBuilderEnableDynamicState(struct ctGPUPipelineBuilder* pBuilder,
+                                                             enum ctGPUDynamicState state);
 
-CT_API enum ctResults
-ctGPUPipelineBuilderSetAttachments(struct ctGPUPipelineBuilder* pBuilder,
-                                   enum TinyImageFormat depthFormat,
-                                   uint32_t colorCount,
-                                   enum TinyImageFormat* colorFormats);
+CT_API enum ctResults ctGPUPipelineBuilderSetAttachments(struct ctGPUPipelineBuilder* pBuilder,
+                                                         enum TinyImageFormat depthFormat,
+                                                         uint32_t colorCount,
+                                                         enum TinyImageFormat* colorFormats);
 
 enum ctGPUVertexBufferAttributes {
    CT_GPU_VERTEX_BUFFER_ATTRIBUTE_POSITION = 0,

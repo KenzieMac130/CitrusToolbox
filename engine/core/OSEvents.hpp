@@ -23,8 +23,8 @@ typedef void (*ctOSEventCallback)(SDL_Event*, void*);
 typedef void (*ctOSPrePollCallback)(void*);
 
 struct ctOSPrePollHandler {
-    ctOSPrePollCallback callback;
-    void* data;
+   ctOSPrePollCallback callback;
+   void* data;
 };
 
 struct ctOSEventHandler {
@@ -36,6 +36,7 @@ class CT_API ctOSEventManager : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults PollOSEvents();
 

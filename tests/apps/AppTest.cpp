@@ -16,8 +16,8 @@
 
 #include "core/Application.hpp"
 #include "core/Translation.hpp"
-#include "im3d/im3d.h"
-#include "imgui/imgui.h"
+#include "middleware/Im3dIntegration.hpp"
+#include "middleware/ImguiIntegration.hpp"
 #include "core/FileSystem.hpp"
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
@@ -37,7 +37,7 @@ class TestApp : public ctApplication {
    float phase = 0;
    float diskPos[2] = {0};
 
-   int gausPts = 256;
+   int gausPts = 0;
    int gausSeed = 0;
 
    int spherePts = 0;
@@ -79,11 +79,8 @@ ctResults TestApp::OnStartup() {
    Engine->Interact->Directory.LogContents();
    ctDebugLog("-----------------------------------------------------------");
    /* Test Geometry Load */
-   {
-   }
-   /* Test Texture Load */
-   {
-   }
+   {} /* Test Texture Load */
+   {}
 
    for (int i = 31; i > 0; i--) {
       ctStringUtf8 str = ctStringUtf8();
@@ -183,6 +180,26 @@ ctResults TestApp::OnUIUpdate() {
       ImGui::DragInt("Sphere Seed", &sphereSeed);
    }
    ImGui::End();
+
+   Im3d::PushColor(Im3d::Color_Pink);
+   Im3d::PushAlpha(0.9f);
+   Im3d::DrawAlignedBox(Im3d::Vec3(-1.0f), Im3d::Vec3(1.0f));
+   Im3d::PopAlpha();
+   Im3d::PopColor();
+
+   Im3d::PushLayerId(CT_IM3D_LAYER_XRAY);
+   Im3d::BeginTriangles();
+   Im3d::Vertex(Im3d::Vec3(-0.5f, -0.5f, 0.0f), Im3d::Color_Red);
+   Im3d::Vertex(Im3d::Vec3(0.5f, -0.5f, 0.0f), Im3d::Color_Green);
+   Im3d::Vertex(Im3d::Vec3(0.0f, 0.5f, 0.0f), Im3d::Color_Blue);
+   Im3d::End();
+   Im3d::SetColor(Im3d::Color_Red);
+   Im3d::Text(Im3d::Vec3(-0.5f, -0.5f, 0.0f), Im3d::TextFlags_Default, "Red");
+   Im3d::SetColor(Im3d::Color_Green);
+   Im3d::Text(Im3d::Vec3(0.5f, -0.5f, 0.0f), Im3d::TextFlags_Default, "Green");
+   Im3d::SetColor(Im3d::Color_Blue);
+   Im3d::Text(Im3d::Vec3(0.0f, 0.5f, 0.0f), Im3d::TextFlags_Default, "Blue");
+   Im3d::PopLayerId();
 
    ctRandomGenerator rng = ctRandomGenerator(gausSeed);
    for (int i = 0; i < gausPts; i++) {

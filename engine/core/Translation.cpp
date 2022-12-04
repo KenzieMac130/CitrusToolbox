@@ -52,11 +52,8 @@ ctResults ctTranslation::Startup() {
    ctDebugLog("OS Reported Language: %s", isoLanguage.CStr());
 
    ctSettingsSection* settings = Engine->Settings->CreateSection("Translation", 1);
-   settings->BindString(&isoLanguage,
-                        true,
-                        true,
-                        "Language",
-                        "Code for the language to use in RFC 4646 format.");
+   settings->BindString(
+     &isoLanguage, true, true, "Language", "Code for the language to use in RFC 4646 format.");
 
    SetDictionary(CT_TRANSLATION_CATAGORY_CORE, "core");
    LoadLanguage(isoLanguage.CStr());
@@ -70,6 +67,10 @@ ctResults ctTranslation::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctTranslation::GetModuleName() {
+   return "Translation";
+}
+
 ctResults ctTranslation::NextFrame() {
 #if CITRUS_INCLUDE_AUDITION
    if (TextHotReload.isContentUpdated()) {
@@ -80,8 +81,7 @@ ctResults ctTranslation::NextFrame() {
    return CT_SUCCESS;
 }
 
-ctResults ctTranslation::SetDictionary(ctTranslationCatagory category,
-                                       const char* basePath) {
+ctResults ctTranslation::SetDictionary(ctTranslationCatagory category, const char* basePath) {
    _dictionary& dict = *dictionaries[category];
    dict.basePath = basePath;
    ctMOReaderRelease(&dict.mo);
@@ -108,8 +108,8 @@ ctResults ctTranslation::LoadLanguage(const char* isoCode) {
       file.GetBytes(fileContents);
       file.Close();
       ctJSONReader jsonReader = ctJSONReader();
-      CT_RETURN_FAIL(jsonReader.BuildJsonForPtr((const char*)fileContents.Data(),
-                                                fileContents.Count()));
+      CT_RETURN_FAIL(
+        jsonReader.BuildJsonForPtr((const char*)fileContents.Data(), fileContents.Count()));
 
       ctJSONReadEntry languagesJson = ctJSONReadEntry();
       jsonReader.GetRootEntry(languagesJson);
@@ -154,11 +154,8 @@ ctResults ctTranslation::LoadDictionary(ctTranslationCatagory category) {
       file.GetBytes(fileContents);
       file.Close();
 
-      if (!&dictionaries[category]->mo) {
-         ctMOReaderRelease(&dictionaries[category]->mo);
-      }
-      ctMOReaderInitialize(
-        &dictionaries[category]->mo, fileContents.Data(), fileContents.Count());
+      if (!&dictionaries[category]->mo) { ctMOReaderRelease(&dictionaries[category]->mo); }
+      ctMOReaderInitialize(&dictionaries[category]->mo, fileContents.Data(), fileContents.Count());
    }
    return CT_SUCCESS;
 }
@@ -187,9 +184,8 @@ const char* ctTranslation::GetLocalString(ctTranslationCatagory category,
    return translation;
 }
 
-const char* ctGetLocalString(ctTranslationCatagory category,
-                             const char* tag,
-                             const char* nativeText) {
+const char*
+ctGetLocalString(ctTranslationCatagory category, const char* tag, const char* nativeText) {
    if (gMainTranslationSystem) {
       return gMainTranslationSystem->GetLocalString(category, tag, nativeText);
    }

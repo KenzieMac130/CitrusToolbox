@@ -124,7 +124,10 @@ CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
    if (!nameOffsets) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    for (int i = 0; i < nameByteSize / 4; i++) {
       const char* str = ctWADGetStringExt(pWad, nameOffsets[i]);
-      if (ctCStrEql(str, name)) { fxSegment = i; }
+      if (ctCStrEql(str, name)) {
+         fxSegment = i;
+         break;
+      }
    }
    if (fxSegment < 0) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
 
@@ -365,9 +368,9 @@ ctGPUPipelineBuilderSetFaceCull(struct ctGPUPipelineBuilder* pBuilder,
    ctAssert(pBuilder);
    ctAssert(pBuilder->type == CT_GPU_PIPELINE_RASTER);
    VkPipelineRasterizationStateCreateInfo& rasterState = pBuilder->raster.rasterState;
-   VkCullModeFlagBits nativeCull[] = {VK_CULL_MODE_FRONT_BIT,
+   VkCullModeFlagBits nativeCull[] = {VK_CULL_MODE_NONE,
+                                      VK_CULL_MODE_FRONT_BIT,
                                       VK_CULL_MODE_BACK_BIT,
-                                      VK_CULL_MODE_NONE,
                                       VK_CULL_MODE_FRONT_AND_BACK};
    rasterState.cullMode = nativeCull[cull];
    return CT_SUCCESS;

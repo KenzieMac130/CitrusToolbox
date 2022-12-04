@@ -23,12 +23,17 @@
 
 class CT_API ctKinnowSceneEngine : public ctSceneEngineBase {
 public:
-    virtual ctResults Startup();
-    virtual ctResults Shutdown();
+   virtual ctResults Startup();
+   virtual ctResults Shutdown();
    /* Called at the end of a frame */
    virtual ctResults OnNextFrame(double deltaTime);
-   /* Get ctCameraInfo for a camera (NULL must return the "main camera")*/
-   virtual ctCameraInfo OnGetCameraInfo(const char* cameraId); //todo: depreciate
-   /* Load scene/level */
-   virtual ctResults OnLoadScene(const char* name, const char* message = NULL);
+
+private:
+   ctCameraInfo mainCamera;
+
+   float rotationDistance = 3.0f;
+   float rotationSpeed = 0.02f;
+   float rotationPhase = 0.0f;
+   ctVec3 cameraPos = ctVec3(0.0f, 0.5f, -1.0f); /* todo: removeme!!! */
+   ctVec3 cameraTarget = ctVec3();              /* todo: removeme!!! */
 };

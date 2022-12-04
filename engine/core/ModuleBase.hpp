@@ -20,13 +20,19 @@
 
 class CT_API ctModuleBase {
 public:
-    virtual ctResults Startup() = 0;
-    virtual ctResults Shutdown() = 0;
-    ctResults ModuleStartup(class ctEngineCore* pEngine);
-    ctResults ModuleShutdown();
-    bool isStarted() const;
+   virtual ctResults Startup() = 0;
+   virtual ctResults Shutdown() = 0;
+   ctResults ModuleStartup(class ctEngineCore* pEngine);
+   ctResults ModuleShutdown();
+
+   bool isStarted() const;
+
+   virtual void DebugUI(bool useGizmos);
+   virtual const char* GetModuleName() = 0;
+
 protected:
-    class ctEngineCore* Engine = NULL;
+   class ctEngineCore* Engine = NULL;
+
 private:
-    bool _started = false;
+   bool _started = false;
 };

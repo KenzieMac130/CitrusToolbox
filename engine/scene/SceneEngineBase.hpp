@@ -22,11 +22,9 @@
 class CT_API ctSceneEngineBase : public ctModuleBase {
 public:
    ctResults NextFrame(double deltaTime);
-   ctResults LoadScene(const char* name, const char* message = NULL);
+   const char* GetModuleName();
 
 protected:
    /* Called at the end of a frame */
    virtual ctResults OnNextFrame(double deltaTime) = 0;
-   /* Load scene/level */
-   virtual ctResults OnLoadScene(const char* name, const char* message = NULL) = 0;
 };

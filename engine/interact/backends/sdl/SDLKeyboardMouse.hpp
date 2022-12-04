@@ -23,6 +23,7 @@ class CT_API ctInteractSDLKeyboardMouseBackend : public ctInteractAbstractBacken
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    virtual ctResults Register(class ctInteractDirectorySystem& directory);
    virtual ctResults Update(class ctInteractDirectorySystem& directory);

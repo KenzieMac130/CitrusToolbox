@@ -83,6 +83,10 @@ ctResults ctImguiIntegration::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctImguiIntegration::GetModuleName() {
+   return "ImGui";
+}
+
 void ctImguiUploadIndices(uint8_t* dest, size_t size, void* unused) {
    ImDrawData* pDrawData = ImGui::GetDrawData();
    if (!pDrawData) {
@@ -252,6 +256,7 @@ ctImguiIntegration::ShutdownGPU(struct ctGPUDevice* pGPUDevice,
 
 ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
                                               ctGPUExternalBufferPool* pGPUBufferPool) {
+   ImGui::Render();
    ImGui::EndFrame();
    ctGPUExternalBuffer* externBuffers[2] = {pVertexBuffer, pIndexBuffer};
    ctGPUExternalBufferRebuild(pGPUDevice, pGPUBufferPool, 2, externBuffers);

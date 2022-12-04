@@ -43,19 +43,12 @@ ctResults ctPhysXIntegration::Startup() {
                           "ConnectPvd",
                           "Connect to PhysX visual debugger",
                           CT_SETTINGS_BOUNDS_BOOL);
-   pSettings->BindString(&pvdHostAddress,
-                         false,
-                         true,
-                         "PvdHostAddress",
-                         "Address to host PhysX debug info on");
+   pSettings->BindString(
+     &pvdHostAddress, false, true, "PvdHostAddress", "Address to host PhysX debug info on");
    pSettings->BindInteger(
      &pvdHostPort, false, true, "PvdHostPort", "Port to host PhysX debug info on", 0);
-   pSettings->BindInteger(&pvdTimeout,
-                          false,
-                          true,
-                          "PvdTimeout",
-                          "Timeout to pvd connection",
-                          CT_SETTINGS_BOUNDS_UINT);
+   pSettings->BindInteger(
+     &pvdTimeout, false, true, "PvdTimeout", "Timeout to pvd connection", CT_SETTINGS_BOUNDS_UINT);
    pSettings->BindInteger(&recordAllocations,
                           false,
                           true,
@@ -80,8 +73,8 @@ ctResults ctPhysXIntegration::Startup() {
    toleranceScale.length = toleranceLength;
    toleranceScale.speed = toleranceSpeed;
 
-   pFoundation = PxCreateFoundation(
-     PX_PHYSICS_VERSION, defaultAllocatorCallback, defaultErrorCallback);
+   pFoundation =
+     PxCreateFoundation(PX_PHYSICS_VERSION, defaultAllocatorCallback, defaultErrorCallback);
    if (!pFoundation) { ctFatalError(-1, "PxCreateFoundation failed!"); }
 
    if (connectPvd) {
@@ -91,22 +84,19 @@ ctResults ctPhysXIntegration::Startup() {
       pPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
    }
 
-   pPhysics = PxCreateBasePhysics(
-     PX_PHYSICS_VERSION, *pFoundation, toleranceScale, recordAllocations, pPvd);
+   pPhysics =
+     PxCreateBasePhysics(PX_PHYSICS_VERSION, *pFoundation, toleranceScale, recordAllocations, pPvd);
    if (!pPhysics) { ctFatalError(-1, "PxCreatePhysics failed!"); }
 
    PxRegisterArticulations(*pPhysics);
    PxRegisterHeightFields(*pPhysics);
 
 #if CITRUS_PHYSX_RUNTIMECOOK
-   pCooking =
-     PxCreateCooking(PX_PHYSICS_VERSION, *pFoundation, PxCookingParams(toleranceScale));
+   pCooking = PxCreateCooking(PX_PHYSICS_VERSION, *pFoundation, PxCookingParams(toleranceScale));
    if (!pCooking) { ctFatalError(-1, "PxCreateCooking failed!"); }
 #endif
 
-   if (!PxInitExtensions(*pPhysics, pPvd)) {
-      ctFatalError(-1, "PxInitExtensions failed!");
-   }
+   if (!PxInitExtensions(*pPhysics, pPvd)) { ctFatalError(-1, "PxInitExtensions failed!"); }
 
    /* Todo: write CPU dispatcher tied into job system */
    pCpuDispatcher = PxDefaultCpuDispatcherCreate(2);
@@ -121,4 +111,8 @@ ctResults ctPhysXIntegration::Shutdown() {
    if (pPvd) { pPvd->release(); }
    if (pFoundation) { pFoundation->release(); }
    return CT_SUCCESS;
+}
+
+const char* ctPhysXIntegration::GetModuleName() {
+   return "PhysX";
 }

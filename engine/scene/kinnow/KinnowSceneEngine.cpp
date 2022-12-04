@@ -15,6 +15,11 @@
 */
 
 #include "KinnowSceneEngine.hpp"
+#include "core/EngineCore.hpp"
+
+#include "middleware/ImguiIntegration.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
+#include "core/WindowManager.hpp"
 
 ctResults ctKinnowSceneEngine::Startup() {
    return ctResults();
@@ -25,13 +30,24 @@ ctResults ctKinnowSceneEngine::Shutdown() {
 }
 
 ctResults ctKinnowSceneEngine::OnNextFrame(double deltaTime) {
-   return CT_SUCCESS;
-}
+   rotationPhase += (float)deltaTime * rotationSpeed;
+   /* todo: removeme!!! */
+   if (ImGui::Begin("Debug Camera")) {
+      ImGui::DragFloat3("Camera Position", cameraPos.data, 0.01f);
+      ImGui::SliderFloat("FOV", &mainCamera.fov, 0.01f, CT_PI);
+      ImGui::SliderFloat("Speed", &rotationSpeed, 0.0f, CT_PI);
+      ImGui::DragFloat("rotationDistance", &rotationDistance);
+      ImGui::End();
 
-ctCameraInfo ctKinnowSceneEngine::OnGetCameraInfo(const char* cameraId) {
-   return ctCameraInfo();
-}
+      cameraPos.x = ctSin(rotationPhase) * -rotationDistance;
+      cameraPos.z = ctCos(rotationPhase) * -rotationDistance;
+      mainCamera.position = cameraPos;
+      mainCamera.rotation = ctQuat(CT_VEC3_UP, rotationPhase);
 
-ctResults ctKinnowSceneEngine::OnLoadScene(const char* name, const char* message) {
+      int32_t width, height;
+      Engine->WindowManager->GetMainWindowDrawableSize(&width, &height);
+      mainCamera.aspectRatio = (float)width / (float)height;
+      Engine->Renderer->UpdateCamera(mainCamera);
+   }
    return CT_SUCCESS;
 }

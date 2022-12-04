@@ -22,6 +22,6 @@ ctResults ctSceneEngineBase::NextFrame(double deltaTime) {
    return OnNextFrame(deltaTime);
 }
 
-ctResults ctSceneEngineBase::LoadScene(const char* name, const char* message) {
-   return OnLoadScene(name, message);
+const char* ctSceneEngineBase::GetModuleName() {
+   return "Scene";
 }

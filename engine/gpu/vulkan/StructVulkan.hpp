@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 MacKenzie Strand
+   Copyright 2023 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,24 +14,14 @@
    limitations under the License.
 */
 
-#include "GameLayer.hpp"
+#pragma once
 
-/* Include game */
-#include "../game/Game.hpp"
-Game::GameCore game;
+#include "utilities/Common.h"
+#include "gpu/Struct.h"
 
-ctGameLayer& ctGetGameLayer() {
-   return game;
-}
-
-ctResults ctGameLayer::Startup() {
-   return CT_SUCCESS;
-}
-
-ctResults ctGameLayer::Shutdown() {
-   return CT_SUCCESS;
-}
-
-const char* ctGameLayer::GetModuleName() {
-   return "Game Layer";
-}
+struct ctGPUStructAssembler {
+   uint16_t size; /* unaligned by default */
+   uint16_t largestBaseAlignment;
+   uint16_t sizes[31];
+   uint16_t offsets[31]; /* UINT16_MAX is terminator */
+};

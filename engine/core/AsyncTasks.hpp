@@ -31,11 +31,10 @@ public:
    ctAsyncManager(bool shared = false);
    virtual ctResults Startup();
    virtual ctResults Shutdown();
+   virtual const char* GetModuleName();
 
-   ctAsyncTaskHandle CreateTask(const char* name,
-                                ctAsyncTaskFunction fpTask,
-                                void* userdata,
-                                int32_t priority);
+   ctAsyncTaskHandle
+   CreateTask(const char* name, ctAsyncTaskFunction fpTask, void* userdata, int32_t priority);
    bool isFinished(ctAsyncTaskHandle handle, ctResults* pResultsOut = NULL);
    inline void WaitForAllToExit() {
       while (!isEmpty()) {}

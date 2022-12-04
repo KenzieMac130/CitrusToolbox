@@ -26,6 +26,10 @@ ctResults ctOSEventManager::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctOSEventManager::GetModuleName() {
+   return "OS Event Manager";
+}
+
 ctResults ctOSEventManager::PollOSEvents() {
    ZoneScoped;
    for (size_t i = 0; i < PrePollHandlers.Count(); i++) {

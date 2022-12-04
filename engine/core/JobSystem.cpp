@@ -72,13 +72,16 @@ ctResults ctJobSystem::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctJobSystem::GetModuleName() {
+   return "Job System";
+}
+
 ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
    ZoneScoped;
    return PushJobs(1, &fpFunction, &pData);
 }
 
-ctResults
-ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
+ctResults ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
    ZoneScoped;
    ctSpinLockEnterCritical(jobLock);
    for (size_t i = 0; i < count; i++) {

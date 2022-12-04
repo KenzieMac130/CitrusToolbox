@@ -195,9 +195,11 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Bindless.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Commands.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/DebugUI.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Pipeline.h
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/Present.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Texture.h)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Texture.h
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/Struct.h)
 set(ENGINE_SOURCE_FILES_GPU_INTERFACE)
 
 if(CITRUS_GPU_NULL)
@@ -209,13 +211,15 @@ endif()
 if(CITRUS_GPU_VULKAN)
 set(ENGINE_SOURCE_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DebugUIVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/StructVulkan.cpp)
 
 set(ENGINE_HEADER_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
@@ -225,7 +229,8 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.hpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/StructVulkan.hpp)
 endif()
 
 list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND

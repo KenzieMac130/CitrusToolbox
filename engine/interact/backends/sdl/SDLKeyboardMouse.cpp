@@ -55,8 +55,11 @@ ctResults ctInteractSDLKeyboardMouseBackend::Shutdown() {
    return CT_SUCCESS;
 }
 
-ctResults
-ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory) {
+const char* ctInteractSDLKeyboardMouseBackend::GetModuleName() {
+   return "SDL Keyboard and Mouse";
+}
+
+ctResults ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory) {
    ZoneScoped;
    /* Add all key inputs */
    for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
@@ -64,8 +67,7 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
       node.type = CT_INTERACT_NODETYPE_BOOL;
       node.accessible = true;
       node.pData = &keyStates[i];
-      snprintf(
-        node.path.str, CT_MAX_INTERACT_PATH_SIZE, "dev/keyboard/input/scancode/%d", i);
+      snprintf(node.path.str, CT_MAX_INTERACT_PATH_SIZE, "dev/keyboard/input/scancode/%d", i);
       directory.AddNode(node);
    }
 
@@ -98,12 +100,10 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    }
 
    ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
@@ -114,8 +114,7 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
    return CT_SUCCESS;
 }
 
-ctResults
-ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) {
+ctResults ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) {
    ZoneScoped;
    int x, y;
    uint32_t mouseFlags = SDL_GetRelativeMouseState(&x, &y);

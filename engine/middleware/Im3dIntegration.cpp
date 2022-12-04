@@ -29,6 +29,7 @@
 #include "gpu/Bindless.h"
 #include "gpu/Commands.h"
 #include "gpu/Architect.h"
+#include "gpu/Struct.h"
 
 ctResults ctIm3dIntegration::Startup() {
    return CT_SUCCESS;
@@ -38,26 +39,46 @@ ctResults ctIm3dIntegration::Shutdown() {
    return CT_SUCCESS;
 }
 
-struct ctIm3dViewInfo {
-   ctMat4 viewProj;
-};
-
-void ctIm3dIntegration::ctIm3dUploadViewData(uint8_t* dest, size_t size, void* data) {
-   ctIm3dViewInfo* pViewData = (ctIm3dViewInfo*)dest;
-   ctIm3dIntegration* pIm3d = (ctIm3dIntegration*)data;
-   pViewData->viewProj = pIm3d->cameraInfo.GetViewProjectionMatrix();
+const char* ctIm3dIntegration::GetModuleName() {
+   return "Im3d";
 }
 
-void ctIm3dIntegration::ctIm3dUploadVertexData(uint8_t* dest, size_t size, void* unused) {
+void ctIm3dIntegration::ctIm3dUploadViewData(uint8_t* dest, size_t size, void* data) {
+   ctIm3dIntegration* pIm3d = (ctIm3dIntegration*)data;
+
+   ctMat4 viewProj = pIm3d->cameraInfo.GetViewInverseProjectionMatrix();
+   ctVec2 viewportSize = ctVec2FromIm3d(Im3d::GetAppData().m_viewportSize);
+   ctGPUStructSetVariable(
+     pIm3d->pViewStructAssembler, &viewProj, dest, pIm3d->viewProj, 0);
+   ctGPUStructSetVariable(
+     pIm3d->pViewStructAssembler, &viewportSize, dest, pIm3d->viewportSize, 0);
+}
+
+void ctIm3dIntegration::ctIm3dUploadVertexData(uint8_t* dest, size_t size, void* data) {
+   ctIm3dIntegration* pIm3d = (ctIm3dIntegration*)data;
    uint32_t drawListCount = Im3d::GetDrawListCount();
+
    const Im3d::DrawList* pDrawLists = Im3d::GetDrawLists();
-   size_t offset = 0;
+   size_t vtxoffset = 0;
    for (uint32_t i = 0; i < drawListCount; i++) {
       const Im3d::DrawList& drawList = pDrawLists[i];
-      memcpy(&dest[offset],
-             drawList.m_vertexData,
-             drawList.m_vertexCount * sizeof(Im3d::VertexData));
-      offset += drawList.m_vertexCount * sizeof(Im3d::VertexData);
+      ctGPUStructSetVariableMany(pIm3d->pVertexStructAssembler,
+                                 (void*)drawList.m_vertexData,
+                                 dest,
+                                 pIm3d->positionScale,
+                                 vtxoffset,
+                                 drawList.m_vertexCount,
+                                 offsetof(Im3d::VertexData, m_positionSize),
+                                 sizeof(Im3d::VertexData));
+      ctGPUStructSetVariableMany(pIm3d->pVertexStructAssembler,
+                                 (void*)drawList.m_vertexData,
+                                 dest,
+                                 pIm3d->icolor,
+                                 vtxoffset,
+                                 drawList.m_vertexCount,
+                                 offsetof(Im3d::VertexData, m_color),
+                                 sizeof(Im3d::VertexData));
+      vtxoffset += drawList.m_vertexCount;
    }
 }
 
@@ -69,6 +90,18 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
                                         int32_t vtxBind,
                                         enum TinyImageFormat colorFormat,
                                         enum TinyImageFormat depthFormat) {
+   /* Define Structs */
+   pVertexStructAssembler =
+     ctGPUStructAssemblerNew(pGPUDevice, CT_GPU_STRUCT_TYPE_STORAGE);
+   positionScale =
+     ctGPUStructDefineVariable(pVertexStructAssembler, CT_GPU_SVAR_FLOAT_VEC4);
+   icolor = ctGPUStructDefineVariable(pVertexStructAssembler, CT_GPU_SVAR_UINT);
+
+   pViewStructAssembler = ctGPUStructAssemblerNew(pGPUDevice, CT_GPU_STRUCT_TYPE_STORAGE);
+   viewProj =
+     ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_MATRIX4x4);
+   viewportSize = ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_VEC2);
+
    ctFile wadFile;
    ctDynamicArray<uint8_t> wadBytes;
    ctWADReader wadReader;
@@ -86,50 +119,48 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
                                  CT_GPU_TOPOLOGY_LINE_LIST,
                                  CT_GPU_TOPOLOGY_POINT_LIST};
    const char* fxNames[] = {"TRIS", "LINES", "POINTS"};
-   for (int i = 0; i < 2; i++) {
-      for (int j = 0; j < Im3d::DrawPrimitive_Count; j++) {
-         ctGPUShaderModule vertShader;
-         ctGPUShaderModule fragShader;
-         CT_PANIC_FAIL(
-           ctGPUShaderCreateFromWad(
-             pGPUDevice, &vertShader, &wadReader, fxNames[j], CT_GPU_SHADER_VERT),
-           CT_NC("Failed to create im3d shader!"));
-         CT_PANIC_FAIL(
-           ctGPUShaderCreateFromWad(
-             pGPUDevice, &fragShader, &wadReader, fxNames[j], CT_GPU_SHADER_FRAG),
-           CT_NC("Failed to create im3d shader!"));
+   for (int i = 0; i < Im3d::DrawPrimitive_Count; i++) {
+      ctGPUShaderModule vertShader;
+      ctGPUShaderModule fragShader;
+      CT_PANIC_FAIL(
+        ctGPUShaderCreateFromWad(
+          pGPUDevice, &vertShader, &wadReader, fxNames[i], CT_GPU_SHADER_VERT),
+        CT_NC("Failed to create im3d shader!"));
+      CT_PANIC_FAIL(
+        ctGPUShaderCreateFromWad(
+          pGPUDevice, &fragShader, &wadReader, fxNames[i], CT_GPU_SHADER_FRAG),
+        CT_NC("Failed to create im3d shader!"));
 
-         ctGPUPipelineBuilderSetFillMode(pPipelineBuilder, (ctGPUFillMode)j);
-         ctGPUPipelineBuilderSetTopology(pPipelineBuilder, fillToTopo[j], false);
-         ctGPUPipelineBuilderSetDepthTest(
-           pPipelineBuilder, i > 0 ? CT_GPU_DEPTHTEST_FRONT : CT_GPU_DEPTHTEST_ALWAYS);
-         ctGPUPipelineBuilderSetDepthWrite(pPipelineBuilder, true);
-         ctGPUPipelineBuilderSetBlendMode(pPipelineBuilder,
-                                          0,
-                                          true,
-                                          CT_COLOR_COMPONENT_RGBA,
-                                          CT_GPU_BLEND_LERP,
-                                          CT_GPU_BLEND_DISCARD);
-         ctGPUPipelineBuilderClearShaders(pPipelineBuilder);
-         ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_VERT, vertShader);
-         ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_FRAG, fragShader);
-         ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipelines[i][j], pBindless);
+      ctGPUPipelineBuilderSetFillMode(pPipelineBuilder, (ctGPUFillMode)i);
+      ctGPUPipelineBuilderSetFaceCull(pPipelineBuilder, CT_GPU_FACE_NONE);
+      ctGPUPipelineBuilderSetTopology(pPipelineBuilder, fillToTopo[i], false);
+      ctGPUPipelineBuilderSetDepthTest(pPipelineBuilder, CT_GPU_DEPTHTEST_GREATER);
+      ctGPUPipelineBuilderSetDepthWrite(pPipelineBuilder, true);
+      ctGPUPipelineBuilderSetBlendMode(pPipelineBuilder,
+                                       0,
+                                       true,
+                                       CT_COLOR_COMPONENT_RGBA,
+                                       CT_GPU_BLEND_LERP,
+                                       CT_GPU_BLEND_DISCARD);
+      ctGPUPipelineBuilderClearShaders(pPipelineBuilder);
+      ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_VERT, vertShader);
+      ctGPUPipelineBuilderAddShader(pPipelineBuilder, CT_GPU_SHADER_FRAG, fragShader);
+      ctGPUPipelineCreate(pGPUDevice, pPipelineBuilder, &pPipelines[i], pBindless);
 
-         ctGPUShaderSoftRelease(pGPUDevice, fragShader);
-         ctGPUShaderSoftRelease(pGPUDevice, vertShader);
-      }
+      ctGPUShaderSoftRelease(pGPUDevice, fragShader);
+      ctGPUShaderSoftRelease(pGPUDevice, vertShader);
    }
 
    ctGPUPipelineBuilderDelete(pPipelineBuilder);
 
-   /* Vertex Buffer */
+   /* View Buffer */
    ctGPUExternalBufferCreateFuncInfo viewBufferInfo = {};
    viewBufferInfo.debugName = "Im3d View";
    viewBufferInfo.async = false;
    viewBufferInfo.pPlaceholder = NULL;
    viewBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
    viewBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
-   viewBufferInfo.size = sizeof(ctIm3dViewInfo);
+   viewBufferInfo.size = ctGPUStructGetBufferSize(pViewStructAssembler, 1);
    viewBufferInfo.generationFunction = ctIm3dIntegration::ctIm3dUploadViewData;
    viewBufferInfo.userData = this;
    ctGPUExternalBufferCreateFunc(
@@ -143,7 +174,7 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    vBufferInfo.pPlaceholder = NULL;
    vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
    vBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
-   vBufferInfo.size = maxVerts * sizeof(Im3d::VertexData);
+   vBufferInfo.size = ctGPUStructGetBufferSize(pVertexStructAssembler, maxVerts);
    vBufferInfo.generationFunction = ctIm3dIntegration::ctIm3dUploadVertexData;
    vBufferInfo.userData = this;
    ctGPUExternalBufferCreateFunc(
@@ -154,13 +185,13 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
 
 ctResults ctIm3dIntegration::ShutdownGPU(ctGPUDevice* pGPUDevice,
                                          ctGPUExternalBufferPool* pGPUBufferPool) {
-   for (int i = 0; i < 2; i++) {
-      for (int j = 0; j < Im3d::DrawPrimitive_Count; j++) {
-         ctGPUPipelineDestroy(pGPUDevice, pPipelines[i][j]);
-      }
+   for (int i = 0; i < Im3d::DrawPrimitive_Count; i++) {
+      ctGPUPipelineDestroy(pGPUDevice, pPipelines[i]);
    }
    ctGPUExternalBufferRelease(pGPUDevice, pGPUBufferPool, pViewBuffer);
    ctGPUExternalBufferRelease(pGPUDevice, pGPUBufferPool, pVertexBuffer);
+   ctGPUStructAssemblerDelete(pGPUDevice, pViewStructAssembler);
+   ctGPUStructAssemblerDelete(pGPUDevice, pVertexStructAssembler);
    return CT_SUCCESS;
 }
 
@@ -172,28 +203,38 @@ ctResults ctIm3dIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
    return CT_SUCCESS;
 }
 
-ctResults ctIm3dIntegration::DrawCallback(ctGPUArchitectExecutionContext* pCtx,
-                                          void* pUserData) {
+ctResults ctIm3dIntegration::DrawCallbackMain(ctGPUArchitectExecutionContext* pCtx,
+                                              void* pUserData) {
    ctIm3dIntegration* pIntegration = (ctIm3dIntegration*)pUserData;
-   pIntegration->DrawGPU(pCtx);
+   pIntegration->DrawGPU(pCtx, false);
    return CT_SUCCESS;
 }
 
-void ctIm3dIntegration::DrawGPU(ctGPUArchitectExecutionContext* pCtx) {
+ctResults ctIm3dIntegration::DrawCallbackXRay(ctGPUArchitectExecutionContext* pCtx,
+                                              void* pUserData) {
+   ctIm3dIntegration* pIntegration = (ctIm3dIntegration*)pUserData;
+   pIntegration->DrawGPU(pCtx, true);
+   return CT_SUCCESS;
+}
+
+void ctIm3dIntegration::DrawGPU(ctGPUArchitectExecutionContext* pCtx, bool xray) {
    uint32_t drawListCount = Im3d::GetDrawListCount();
    const Im3d::DrawList* pDrawLists = Im3d::GetDrawLists();
+
+   /* draw main */
    uint32_t offset = 0;
    for (uint32_t i = 0; i < drawListCount; i++) {
       const Im3d::DrawList& drawList = pDrawLists[i];
-      /* bind pipeline of primitive type/layer */
-      int layer = drawList.m_layerId == CT_IM3D_LAYER_XRAY ? 1 : 0;
-      ctGPUCmdSetGraphicsPipeline(pCtx->cmd, pPipelines[layer][(int)drawList.m_primType]);
-      ctGPUCmdDraw(pCtx->cmd, drawList.m_vertexCount, 1, offset, 0);
-
+      if ((drawList.m_layerId != CT_IM3D_LAYER_XRAY && !xray) ||
+          (drawList.m_layerId == CT_IM3D_LAYER_XRAY && xray)) {
+         ctGPUCmdSetGraphicsPipeline(pCtx->cmd, pPipelines[(int)drawList.m_primType]);
+         ctGPUCmdDraw(pCtx->cmd, drawList.m_vertexCount, 1, offset, 0);
+      }
       offset += drawList.m_vertexCount;
    }
 }
 
+/* TODO: REWRITE ME TO WORK!!! */
 void ctIm3dIntegration::DrawImguiText() {
    ZoneScoped;
    Im3d::AppData& appData = Im3d::GetAppData();
@@ -298,11 +339,16 @@ void ctIm3dIntegration::SetCamera(ctCameraInfo camera) {
    cameraInfo = camera;
 }
 
+void ctIm3dIntegration::SetSelection(ctVec3 origin, ctVec3 direction) {
+   Im3d::AppData& appData = Im3d::GetAppData();
+   appData.m_cursorRayOrigin = ctVec3ToIm3d(origin);
+   appData.m_cursorRayDirection = ctVec3ToIm3d(direction);
+}
+
 ctResults ctIm3dIntegration::NextFrame() {
    ZoneScoped;
    Im3d::AppData& appData = Im3d::GetAppData();
-   appData.m_cursorRayOrigin = ctVec3ToIm3d(cameraInfo.cursorPosition);
-   appData.m_cursorRayDirection = ctVec3ToIm3d(cameraInfo.cursorDirection);
+
    appData.m_worldUp = CT_UP;
    appData.m_viewOrigin = ctVec3ToIm3d(cameraInfo.position);
    appData.m_viewDirection = ctVec3ToIm3d(cameraInfo.rotation.getForward());

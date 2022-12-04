@@ -24,6 +24,7 @@ public:
    ctJobSystem(int32_t threadReserve, bool shared = true);
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults PushJob(void (*fpFunction)(void*), void* pData);
    ctResults PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData);

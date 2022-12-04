@@ -18,8 +18,7 @@
 #include "EngineCore.hpp"
 #include "Translation.hpp"
 
-ctFileSystem::ctFileSystem(const ctStringUtf8& appName,
-                           const ctStringUtf8& organizationName) {
+ctFileSystem::ctFileSystem(const ctStringUtf8& appName, const ctStringUtf8& organizationName) {
    _appName = appName;
    _organizationName = organizationName;
 }
@@ -51,6 +50,10 @@ ctResults ctFileSystem::Startup() {
 
 ctResults ctFileSystem::Shutdown() {
    return CT_SUCCESS;
+}
+
+const char* ctFileSystem::GetModuleName() {
+   return "File System";
 }
 
 const void ctFileSystem::LogPaths() {

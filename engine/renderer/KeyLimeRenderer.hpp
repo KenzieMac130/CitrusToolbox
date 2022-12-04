@@ -23,6 +23,7 @@ class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
 
@@ -66,8 +67,10 @@ private:
    struct PostProcessS {
       static ctResults DefineTonemapPass(struct ctGPUArchitectDefinitionContext* pCtx,
                                          ctKeyLimeRenderer* pRenderer);
-      static ctResults DefineGizmoPass(struct ctGPUArchitectDefinitionContext* pCtx,
-                                       ctKeyLimeRenderer* pRenderer);
+      static ctResults DefineGizmoPassMain(struct ctGPUArchitectDefinitionContext* pCtx,
+                                           ctKeyLimeRenderer* pRenderer);
+      static ctResults DefineGizmoPassXray(struct ctGPUArchitectDefinitionContext* pCtx,
+                                           ctKeyLimeRenderer* pRenderer);
       static ctResults DefineGUIPass(struct ctGPUArchitectDefinitionContext* pCtx,
                                      ctKeyLimeRenderer* pRenderer);
    } PostProcess;

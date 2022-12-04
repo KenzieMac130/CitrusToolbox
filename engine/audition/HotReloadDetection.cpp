@@ -69,6 +69,10 @@ ctResults ctHotReloadDetection::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctHotReloadDetection::GetModuleName() {
+   return "Hot Reload";
+}
+
 ctResults ctHotReloadDetection::RegisterDataCategory(ctHotReloadCategory* pCategory) {
    pCategory->_pOwner = this;
    return hotReloads.Append(pCategory);

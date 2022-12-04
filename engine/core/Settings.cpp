@@ -29,6 +29,10 @@ ctResults ctSettingsManager::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctSettingsManager::GetModuleName() {
+   return "Settings Manager";
+}
+
 int ctSettingsManager::FindArgIdx(const char* name) {
    for (int i = 1; i < argc; i++) {
       if (ctCStrEql(argv[i], name)) { return i; }
@@ -48,8 +52,9 @@ ctSettingsManager::ctSettingsManager(int _argc, char** _argv) {
    argv = _argv;
 }
 
-ctSettingsSection* ctSettingsManager::CreateSection(
-  const char* name, int max, ctTranslationCatagory translationCatagory) {
+ctSettingsSection* ctSettingsManager::CreateSection(const char* name,
+                                                    int max,
+                                                    ctTranslationCatagory translationCatagory) {
    ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    ctSettingsSection* section =
@@ -87,16 +92,15 @@ ctResults ctSettingsSection::_bindvar(_setting_type type,
                                       const char* name,
                                       const char* help,
                                       void* ptr,
-                                      void (*setCallback)(const char* value,
-                                                          void* customData),
+                                      void (*setCallback)(const char* value, void* customData),
                                       void* customData,
                                       double min,
                                       double max) {
    ZoneScoped;
    if (!ptr) { return CT_FAILURE_INVALID_PARAMETER; }
    const uint32_t hash = XXH32(name, strlen(name), 0);
-   const _setting setting = _setting {
-     false, type, save, load, name, help, ptr, setCallback, customData, min, max};
+   const _setting setting =
+     _setting {false, type, save, load, name, help, ptr, setCallback, customData, min, max};
    _settings.Insert(hash, setting);
    return CT_SUCCESS;
 }
@@ -108,8 +112,7 @@ ctResults ctSettingsSection::BindFloat(float* ptr,
                                        const char* help,
                                        float min,
                                        float max,
-                                       void (*setCallback)(const char* value,
-                                                           void* customData),
+                                       void (*setCallback)(const char* value, void* customData),
                                        void* customData) {
    CT_RETURN_FAIL(_bindvar(SETTING_TYPE_FLOAT,
                            save,
@@ -133,8 +136,7 @@ ctResults ctSettingsSection::BindInteger(int32_t* ptr,
                                          const char* help,
                                          int32_t min,
                                          int32_t max,
-                                         void (*setCallback)(const char* value,
-                                                             void* customData),
+                                         void (*setCallback)(const char* value, void* customData),
                                          void* customData) {
    CT_RETURN_FAIL(_bindvar(SETTING_TYPE_INTEGER,
                            save,
@@ -156,11 +158,10 @@ ctResults ctSettingsSection::BindString(ctStringUtf8* ptr,
                                         bool load,
                                         const char* name,
                                         const char* help,
-                                        void (*setCallback)(const char* value,
-                                                            void* customData),
+                                        void (*setCallback)(const char* value, void* customData),
                                         void* customData) {
-   CT_RETURN_FAIL(_bindvar(
-     SETTING_TYPE_STRING, save, load, name, help, (void*)ptr, setCallback, customData));
+   CT_RETURN_FAIL(
+     _bindvar(SETTING_TYPE_STRING, save, load, name, help, (void*)ptr, setCallback, customData));
    if (load && ptr) { GetFallbackString(name, *ptr); }
    if (ptr) { ctDebugLog("%s.%s: %s", _name.CStr(), name, ptr->CStr()); }
    return CT_SUCCESS;
@@ -168,11 +169,10 @@ ctResults ctSettingsSection::BindString(ctStringUtf8* ptr,
 
 ctResults ctSettingsSection::BindFunction(const char* name,
                                           const char* help,
-                                          void (*setCallback)(const char* value,
-                                                              void* customData),
+                                          void (*setCallback)(const char* value, void* customData),
                                           void* customData) {
-   CT_RETURN_FAIL(_bindvar(
-     SETTING_TYPE_FUNCTION, false, false, name, help, NULL, setCallback, customData));
+   CT_RETURN_FAIL(
+     _bindvar(SETTING_TYPE_FUNCTION, false, false, name, help, NULL, setCallback, customData));
    return CT_SUCCESS;
 }
 
@@ -294,8 +294,7 @@ ctResults ctSettingsSection::GetFallbackString(const char* name, ctStringUtf8& o
    return CT_FAILURE_NOT_FOUND;
 }
 
-ctResults
-ctSettingsSection::ExecCommand(const char* name, const char* command, bool markChanged) {
+ctResults ctSettingsSection::ExecCommand(const char* name, const char* command, bool markChanged) {
    ZoneScoped;
    const uint32_t hash = XXH32(name, strlen(name), 0);
    _setting* pSetting = _settings.FindPtr(hash);
@@ -377,12 +376,10 @@ ctResults ctSettingsSection::LoadConfigs(ctFileSystem* pFileSystem) {
    ctFile prefFile;
    ctStringUtf8 path;
    path.Printf(256, "%s.json", _name.CStr());
-   if (pFileSystem->OpenPreferencesFile(prefFile, path, CT_FILE_OPEN_READ, true) ==
-       CT_SUCCESS) {
+   if (pFileSystem->OpenPreferencesFile(prefFile, path, CT_FILE_OPEN_READ, true) == CT_SUCCESS) {
       /* Load pref data */
       prefFile.GetBytes(userJsonBytes);
-      if (userJson.BuildJsonForPtr(userJsonBytes.Data(), userJsonBytes.Count()) !=
-          CT_SUCCESS) {
+      if (userJson.BuildJsonForPtr(userJsonBytes.Data(), userJsonBytes.Count()) != CT_SUCCESS) {
          ctDebugError("Bad %s user file!", _name.CStr());
       }
       prefFile.Close();
@@ -393,12 +390,12 @@ ctResults ctSettingsSection::LoadConfigs(ctFileSystem* pFileSystem) {
    ctFile defFile;
    path = "";
    path.Printf(256, "Settings_%s", _name.CStr());
-   if (pFileSystem->OpenDataFileByGUID(
-         defFile, CT_DDATA(path.CStr()), CT_FILE_OPEN_READ, false) == CT_SUCCESS) {
+   if (pFileSystem->OpenDataFileByGUID(defFile, CT_DDATA(path.CStr()), CT_FILE_OPEN_READ, false) ==
+       CT_SUCCESS) {
       /* Load default data */
       defFile.GetBytes(defaultJsonBytes);
-      if (defaultJson.BuildJsonForPtr(defaultJsonBytes.Data(),
-                                      defaultJsonBytes.Count()) != CT_SUCCESS) {
+      if (defaultJson.BuildJsonForPtr(defaultJsonBytes.Data(), defaultJsonBytes.Count()) !=
+          CT_SUCCESS) {
          ctDebugError("Bad %s defaults file!", _name.CStr());
       }
       defFile.Close();

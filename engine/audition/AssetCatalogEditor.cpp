@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 MacKenzie Strand
+   Copyright 2023 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,25 +13,3 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
-#include "GameLayer.hpp"
-
-/* Include game */
-#include "../game/Game.hpp"
-Game::GameCore game;
-
-ctGameLayer& ctGetGameLayer() {
-   return game;
-}
-
-ctResults ctGameLayer::Startup() {
-   return CT_SUCCESS;
-}
-
-ctResults ctGameLayer::Shutdown() {
-   return CT_SUCCESS;
-}
-
-const char* ctGameLayer::GetModuleName() {
-   return "Game Layer";
-}

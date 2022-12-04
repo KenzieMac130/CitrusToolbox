@@ -35,6 +35,7 @@ public:
 
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults ShowErrorMessage(const char* title, const char* msg);
    ctResults ShowMainWindow();

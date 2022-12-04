@@ -138,6 +138,7 @@ public:
    ctInteractionEngine(bool shared);
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults RegisterAll();
 

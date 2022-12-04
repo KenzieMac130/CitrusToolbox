@@ -16,8 +16,10 @@
 
 #define CT_S_STANDARD 0
 #define CT_S_PIXEL 1
-#define CT_S_SHADOWMAP_GREATER 1
-#define CT_S_SHADOWMAP_LESS 1
+#define CT_S_STANDARD_CLAMP 2
+#define CT_S_PIXEL_CLAMP 3
+#define CT_S_SHADOWMAP_GREATER 4
+#define CT_S_SHADOWMAP_LESS 5
 
 #if IS_ACTUALLY_GLSL
 #define CT_TEXTURE1D(samplerIdx, textureIdx, coord) texture(sampler1D(_bindlessSampledImages1D[nonuniformEXT(textureIdx)], _bindlessSamplers[samplerIdx]), coord)

@@ -120,14 +120,15 @@ private:
 class CT_API ctSettingsManager : public ctModuleBase {
 public:
    ctSettingsManager(int argc, char** argv);
-   ctSettingsSection* CreateSection(
-     const char* name,
-     int max,
-     ctTranslationCatagory translationCatagory = CT_TRANSLATION_CATAGORY_CORE);
+   ctSettingsSection*
+   CreateSection(const char* name,
+                 int max,
+                 ctTranslationCatagory translationCatagory = CT_TRANSLATION_CATAGORY_CORE);
    ctSettingsSection* GetSection(const char* name);
 
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    int FindArgIdx(const char* name);
    const char* FindArgPairValue(const char* name);

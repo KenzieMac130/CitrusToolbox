@@ -58,12 +58,12 @@
 #define CT_KEYLIME_FORMAT_NORMAL TinyImageFormat_B10G10R10A2_UNORM
 #define CT_KEYLIME_FORMAT_HDR    TinyImageFormat_B10G10R10A2_UNORM
 
-ctGPUArchitectClearContents depthClear = {{0.0f}, 1.0f, 0};
+ctGPUArchitectClearContents depthClear = {{0.0f}, 0.0f, 0};
 ctGPUArchitectClearContents baseColorClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
 ctGPUArchitectClearContents normalRoughClear = {{0.5f, 0.5f, 1.0f, 1.0f}};
 ctGPUArchitectClearContents pbrClear = {{0.0f, 0.0f, 0.0f, 0.0f}};
 ctGPUArchitectClearContents lightClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
-ctGPUArchitectClearContents tonemapClear = {{0.0f, 0.0f, 1.0f, 1.0f}};
+ctGPUArchitectClearContents tonemapClear = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
 /*
 ----- GBuffer Layout -----
@@ -305,15 +305,25 @@ ctResults ctKeyLimeRenderer::Startup() {
      this};
    ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &tonemapPass);
 
-   /* Gizmo */
-   ctGPUArchitectTaskInfo gizmoPass = {
-     "Gizmo Pass",
+   /* Gizmo Main */
+   ctGPUArchitectTaskInfo gizmoPassMain = {
+     "Gizmo Pass Main",
      0,
      CT_GPU_TASK_RASTER,
-     (ctGPUArchitectTaskDefinitionFn)PostProcess.DefineGizmoPass,
-     Engine->Im3dIntegration->DrawCallback,
+     (ctGPUArchitectTaskDefinitionFn)PostProcess.DefineGizmoPassMain,
+     Engine->Im3dIntegration->DrawCallbackMain,
      Engine->Im3dIntegration};
-   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gizmoPass);
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gizmoPassMain);
+
+   /* Gizmo XRay */
+   ctGPUArchitectTaskInfo gizmoPassXRay = {
+     "Gizmo Pass XRay",
+     0,
+     CT_GPU_TASK_RASTER,
+     (ctGPUArchitectTaskDefinitionFn)PostProcess.DefineGizmoPassXray,
+     Engine->Im3dIntegration->DrawCallbackXRay,
+     Engine->Im3dIntegration};
+   ctGPUArchitectAddTask(pGPUDevice, pGPUArchitect, &gizmoPassXRay);
 
    /* GUI */
    ctGPUArchitectTaskInfo guiPass = {
@@ -351,12 +361,13 @@ ctResults ctKeyLimeRenderer::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctKeyLimeRenderer::GetModuleName() {
+   return "Renderer";
+}
+
 ctResults ctKeyLimeRenderer::RenderFrame() {
    ZoneScoped;
 #if !CITRUS_HEADLESS
-   Engine->Im3dIntegration->SetCamera(mainCamera);
-   Engine->Im3dIntegration->DrawImguiText();
-   ImGui::Render();
 
    /* Handle Presentation State */
    uint32_t width;
@@ -368,6 +379,11 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
    } else if (presenterState == CT_GPU_PRESENTER_RESIZED) {
       rebuildRequired = true;
    }
+
+   Engine->Im3dIntegration->SetCamera(mainCamera);
+   Engine->Im3dIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
+   Engine->Im3dIntegration->DrawImguiText();
+   Engine->ImguiIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
 
    /* Check for new Uploads */
    if (ResourceUpload.needsUpload) /* no-longer needs upload */ {
@@ -389,8 +405,6 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
       rebuildRequired = false;
       ctDebugLog("Rebuilt Rendergraph!");
    }
-   Engine->Im3dIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
-   Engine->ImguiIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
    ctGPUBindlessManagerPrepareFrame(pGPUDevice,
                                     pGPUBindless,
                                     1,
@@ -523,15 +537,27 @@ ctKeyLimeRenderer::PostProcessS::DefineTonemapPass(ctGPUArchitectDefinitionConte
    return CT_SUCCESS;
 }
 
-ctResults
-ctKeyLimeRenderer::PostProcessS::DefineGizmoPass(ctGPUArchitectDefinitionContext* pCtx,
-                                                 ctKeyLimeRenderer* pRenderer) {
+ctResults ctKeyLimeRenderer::PostProcessS::DefineGizmoPassMain(
+  ctGPUArchitectDefinitionContext* pCtx, ctKeyLimeRenderer* pRenderer) {
    // clang-format off
     ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_READ_WRITE, NULL);
     ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_READ_WRITE, 0, NULL);
 
-    ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"), "Gizmo Drawn", 0);
-    ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"));
+    ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawnMain"), "Gizmo Drawn Main", 0);
+    ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawnMain"));
+   // clang-format on
+   return CT_SUCCESS;
+}
+
+ctResults ctKeyLimeRenderer::PostProcessS::DefineGizmoPassXray(
+  ctGPUArchitectDefinitionContext* pCtx, ctKeyLimeRenderer* pRenderer) {
+   // clang-format off
+    ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_WRITE, &depthClear);
+    ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_READ_WRITE, 0, NULL);
+
+    ctGPUTaskCreateBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawnXRay"), "Gizmo Drawn XRay", 0);
+    ctGPUTaskSignalBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawnXRay"));
+    ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawnMain"));
    // clang-format on
    return CT_SUCCESS;
 }
@@ -542,7 +568,7 @@ ctKeyLimeRenderer::PostProcessS::DefineGUIPass(ctGPUArchitectDefinitionContext* 
    // clang-format off
     ctGPUTaskUseDepthTarget(pCtx, CT_ARCH_ID("D_SceneDepth"), CT_GPU_ACCESS_WRITE, &depthClear);
     ctGPUTaskUseColorTarget(pCtx, CT_ARCH_ID("C_Tonemap_Color"), CT_GPU_ACCESS_READ_WRITE, 0, NULL);
-    ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawn"));
+    ctGPUTaskWaitBarrier(pCtx, CT_ARCH_ID("B_GizmoDrawnXRay"));
    // clang-format on
    return CT_SUCCESS;
 }

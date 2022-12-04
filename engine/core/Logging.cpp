@@ -94,6 +94,10 @@ ctResults ctDebugSystem::Shutdown() {
    return CT_SUCCESS;
 }
 
+const char* ctDebugSystem::GetModuleName() {
+   return "Debug System";
+}
+
 void ctDebugSystem::_EmergencExit() {
    Warning("Emergency Exit Triggered!");
    ctMutexLock(_logLock);

@@ -262,14 +262,15 @@ void PopulateFxSettings(const char* path, const char* data, int includeDepth) {
                }
             }
             /* Defines */
-            for (int j = 0; j < jDefines.GetArrayLength(); j++) {
+            for (int j = 0; j < jDefines.GetObjectEntryCount(); j++) {
                ctJSONReadEntry jDefValue;
                ctStringUtf8 defName;
                ctStringUtf8 defValue;
-               jFxArray.GetObjectEntry(j, jDefValue, &defName);
+               jDefines.GetObjectEntry(j, jDefValue, &defName);
                jDefValue.GetString(defValue);
                stagedFx.definitions.Append({defName, defValue});
             }
+
             /* Backends */
             stagedFx.backends.vulkan = true; /* todo once more backends are a thing */
             gFxLevels.Append(stagedFx);
@@ -355,6 +356,16 @@ int main(int argc, char* argv[]) {
            1);
          shaderc_compile_options_add_macro_definition(
            compilerOptions, "IS_ACTUALLY_GLSL", 16, "1", 1);
+
+         for (size_t k = 0; k < fxLevel.definitions.Count(); k++) {
+            shaderc_compile_options_add_macro_definition(
+              compilerOptions,
+              fxLevel.definitions[k].key.CStr(),
+              fxLevel.definitions[k].key.ByteLength(),
+              fxLevel.definitions[k].value.CStr(),
+              fxLevel.definitions[k].value.ByteLength());
+         }
+
          shaderc_compile_options_set_forced_version_profile(
            compilerOptions, 460, shaderc_profile_core);
 

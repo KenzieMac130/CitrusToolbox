@@ -21,15 +21,13 @@
 
 #include "im3d/im3d.h"
 
-enum ctIm3dLayer {
-    CT_IM3D_LAYER_DEFAULT = 0,
-    CT_IM3D_LAYER_XRAY = 1
-};
+enum ctIm3dLayer { CT_IM3D_LAYER_DEFAULT = 0, CT_IM3D_LAYER_XRAY = 1 };
 
 class CT_API ctIm3dIntegration : public ctModuleBase {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    ctResults StartupGPU(struct ctGPUDevice* pGPUDevice,
                         struct ctGPUBindlessManager* pBindless,
@@ -43,20 +41,31 @@ public:
                          struct ctGPUExternalBufferPool* pGPUBufferPool);
    ctResults PrepareFrameGPU(struct ctGPUDevice* pGPUDevice,
                              struct ctGPUExternalBufferPool* pGPUBufferPool);
-   static ctResults DrawCallback(struct ctGPUArchitectExecutionContext* pCtx,
-                                 void* pUserData);
+   static ctResults DrawCallbackMain(struct ctGPUArchitectExecutionContext* pCtx,
+                                     void* pUserData);
+   static ctResults DrawCallbackXRay(struct ctGPUArchitectExecutionContext* pCtx,
+                                     void* pUserData);
    void DrawImguiText();
-   void SetCamera(ctCameraInfo camera);
 
+   void SetCamera(ctCameraInfo camera);
+   void SetSelection(ctVec3 origin, ctVec3 direction);
    ctResults NextFrame();
 
 private:
    ctCameraInfo cameraInfo;
-   void DrawGPU(struct ctGPUArchitectExecutionContext* pCtx);
+   void DrawGPU(struct ctGPUArchitectExecutionContext* pCtx, bool xray);
    static void ctIm3dUploadViewData(uint8_t* dest, size_t size, void* data);
    static void ctIm3dUploadVertexData(uint8_t* dest, size_t size, void* data);
 
-   void* pPipelines[2][Im3d::DrawPrimitive_Count];
+   void* pPipelines[Im3d::DrawPrimitive_Count];
    struct ctGPUExternalBuffer* pViewBuffer;
    struct ctGPUExternalBuffer* pVertexBuffer;
+
+   struct ctGPUStructAssembler* pVertexStructAssembler;
+   uint32_t positionScale;
+   uint32_t icolor;
+
+   struct ctGPUStructAssembler* pViewStructAssembler;
+   uint32_t viewProj;
+   uint32_t viewportSize;
 };

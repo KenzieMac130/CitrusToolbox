@@ -58,6 +58,7 @@ class CT_API ctInteractSDLGamepadBackend : public ctInteractAbstractBackend {
 public:
    ctResults Startup() final;
    ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
    virtual ctResults Register(class ctInteractDirectorySystem& directory);
    virtual ctResults Update(class ctInteractDirectorySystem& directory);

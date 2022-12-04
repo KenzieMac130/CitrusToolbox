@@ -272,9 +272,10 @@ VkPhysicalDevice ctGPUDevice::PickBestDevice(VkPhysicalDevice* pGpus,
       if (deviceProperties.deviceType ==
           VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) /* Discrete GPU */
          currentGPUScore += 10000;
-      /* Favor well known vendors who have reliable drivers */
+      /* Favor well known vendors who have reliable Vulkan drivers */
       if (deviceProperties.vendorID == 0x10DE || /* NVIDIA */
-          deviceProperties.vendorID == 0x1002)   /* AMD */
+          deviceProperties.vendorID == 0x1002 || /* AMD */
+          deviceProperties.vendorID == 0x8086)   /* Intel */
          currentGPUScore += 5000;
 
       /*Set as GPU if its the best*/
@@ -567,6 +568,8 @@ ctResults ctGPUDevice::Startup() {
       features.depthClamp = VK_TRUE;
       features.samplerAnisotropy = VK_TRUE;
       features.fillModeNonSolid = VK_TRUE;
+      features.wideLines = VK_TRUE;
+      features.largePoints = VK_TRUE;
       deviceInfo.pEnabledFeatures = &features;
 
       VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures = {

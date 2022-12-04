@@ -20,18 +20,18 @@
 
 class CT_API ctKeyLimeRenderPassBase {
 public:
-const char* name;
+   const char* name;
 
-virtual bool Define(ctGPUArchitectDefinitionContext* ctx);
-virtual void Execute(ctGPUArchitectExecutionContext* ctx);
+   virtual bool Define(ctGPUArchitectDefinitionContext* ctx);
+   virtual void Execute(ctGPUArchitectExecutionContext* ctx);
 
-/* Features for definition */
-void RunAfter(ctGPUArchitectDefinitionContext* ctx, ctKeyLimeRenderPassBase* otherFeature);
+   /* Features for definition */
+   void RunAfter(ctGPUArchitectDefinitionContext* ctx, ctKeyLimeRenderPassBase* otherFeature);
 
-private:
-ctGPUDependencyID GetFinishedBarrier();
+   private:
+   ctGPUDependencyID GetFinishedBarrier();
 
-static ctResults DefinePassCallback(ctGPUArchitectDefinitionContext* ctx, void* pSelf);
-static ctResults (*ctGPUArchitectTaskExecutionFn)(ctGPUArchitectExecutionContext* pCtx,
-                                                   void* pUserData)
+   static ctResults DefinePassCallback(ctGPUArchitectDefinitionContext* ctx, void* pSelf);
+   static ctResults (*ctGPUArchitectTaskExecutionFn)(ctGPUArchitectExecutionContext* pCtx,
+                                                      void* pUserData)
 }
