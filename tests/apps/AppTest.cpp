@@ -193,12 +193,16 @@ ctResults TestApp::OnUIUpdate() {
    Im3d::Vertex(Im3d::Vec3(0.5f, -0.5f, 0.0f), Im3d::Color_Green);
    Im3d::Vertex(Im3d::Vec3(0.0f, 0.5f, 0.0f), Im3d::Color_Blue);
    Im3d::End();
+   Im3d::PushColor();
    Im3d::SetColor(Im3d::Color_Red);
+   Im3d::PushSize(2.0f);
    Im3d::Text(Im3d::Vec3(-0.5f, -0.5f, 0.0f), Im3d::TextFlags_Default, "Red");
    Im3d::SetColor(Im3d::Color_Green);
    Im3d::Text(Im3d::Vec3(0.5f, -0.5f, 0.0f), Im3d::TextFlags_Default, "Green");
    Im3d::SetColor(Im3d::Color_Blue);
    Im3d::Text(Im3d::Vec3(0.0f, 0.5f, 0.0f), Im3d::TextFlags_Default, "Blue");
+   Im3d::PopSize();
+   Im3d::PopColor();
    Im3d::PopLayerId();
 
    ctRandomGenerator rng = ctRandomGenerator(gausSeed);
