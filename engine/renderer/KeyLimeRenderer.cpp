@@ -374,17 +374,18 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
    uint32_t height;
    ctGPUPresenterState presenterState =
      ctGPUPresenterHandleState(pGPUDevice, pGPUPresenter, &width, &height);
+   if (presenterState == CT_GPU_PRESENTER_INVALID) {
+      Engine->Im3dIntegration->SkipGPU();
+      Engine->ImguiIntegration->SkipGPU();
+      return CT_FAILURE_SKIPPED;
+   } else if (presenterState == CT_GPU_PRESENTER_RESIZED) {
+      rebuildRequired = true;
+   }
 
    Engine->Im3dIntegration->SetCamera(mainCamera);
    Engine->Im3dIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
    Engine->Im3dIntegration->DrawImguiText();
    Engine->ImguiIntegration->PrepareFrameGPU(pGPUDevice, pGPUBufferPool);
-
-   if (presenterState == CT_GPU_PRESENTER_INVALID) {
-      return CT_FAILURE_SKIPPED;
-   } else if (presenterState == CT_GPU_PRESENTER_RESIZED) {
-      rebuildRequired = true;
-   }
 
    /* Check for new Uploads */
    if (ResourceUpload.needsUpload) /* no-longer needs upload */ {

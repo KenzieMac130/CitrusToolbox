@@ -39,6 +39,7 @@ public:
                         enum TinyImageFormat depthFormat);
    ctResults ShutdownGPU(struct ctGPUDevice* pGPUDevice,
                          struct ctGPUExternalBufferPool* pGPUBufferPool);
+   void SkipGPU();
    ctResults PrepareFrameGPU(struct ctGPUDevice* pGPUDevice,
                              struct ctGPUExternalBufferPool* pGPUBufferPool);
    static ctResults DrawCallbackMain(struct ctGPUArchitectExecutionContext* pCtx,

@@ -195,6 +195,10 @@ ctResults ctIm3dIntegration::ShutdownGPU(ctGPUDevice* pGPUDevice,
    return CT_SUCCESS;
 }
 
+void ctIm3dIntegration::SkipGPU() {
+   Im3d::EndFrame();
+}
+
 ctResults ctIm3dIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
                                              ctGPUExternalBufferPool* pGPUBufferPool) {
    Im3d::EndFrame();

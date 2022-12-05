@@ -255,6 +255,11 @@ ctImguiIntegration::ShutdownGPU(struct ctGPUDevice* pGPUDevice,
    return CT_SUCCESS;
 }
 
+void ctImguiIntegration::SkipGPU() {
+   ImGui::Render();
+   ImGui::EndFrame();
+}
+
 ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
                                               ctGPUExternalBufferPool* pGPUBufferPool) {
    ImGui::Render();

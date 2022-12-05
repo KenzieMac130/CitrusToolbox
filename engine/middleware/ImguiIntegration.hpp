@@ -41,6 +41,7 @@ public:
    ctResults ShutdownGPU(struct ctGPUDevice* pGPUDevice,
                          struct ctGPUExternalBufferPool* pGPUBufferPool,
                          struct ctGPUExternalTexturePool* pGPUTexturePool);
+   void SkipGPU();
    ctResults PrepareFrameGPU(struct ctGPUDevice* pGPUDevice,
                              struct ctGPUExternalBufferPool* pGPUBufferPool);
    static ctResults DrawCallback(struct ctGPUArchitectExecutionContext* pCtx,
