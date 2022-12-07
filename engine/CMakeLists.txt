@@ -175,7 +175,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/MarkersAndBlobs.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/mesh/RenderMesh.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
 )
 
