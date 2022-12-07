@@ -166,13 +166,7 @@ set(ENGINE_HEADER_FILES_FORMAT
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Header.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Bones.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Camera.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Light.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Material.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/RenderMesh.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/MarkersAndBlobs.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Spawner.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
