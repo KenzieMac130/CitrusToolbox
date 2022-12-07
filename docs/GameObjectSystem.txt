@@ -1,3 +1,0 @@
-Queries: Gives information about the outside world as of the last frame of the simulation
-GameObject: Contains game logic/manages lifespans/holds some data/reacts to stimuli
-Components: Provides functionality for the game object to interact with
