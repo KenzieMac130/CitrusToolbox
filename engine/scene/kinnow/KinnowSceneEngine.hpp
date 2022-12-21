@@ -30,10 +30,5 @@ public:
 
 private:
    ctCameraInfo mainCamera;
-
-   float rotationDistance = 3.0f;
-   float rotationSpeed = 0.02f;
-   float rotationPhase = 0.0f;
-   ctVec3 cameraPos = ctVec3(0.0f, 0.5f, -1.0f); /* todo: removeme!!! */
-   ctVec3 cameraTarget = ctVec3();              /* todo: removeme!!! */
+   void PushCameraToRenderer();
 };
