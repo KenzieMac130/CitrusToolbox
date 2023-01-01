@@ -358,8 +358,8 @@ void json_test(void) {
 }
 
 void noise_test(void) {
-   //uint8_t* image = new uint8_t[1024 * 1024 * 3];
-   //for (int x = 0; x < 1024; x++) {
+   // uint8_t* image = new uint8_t[1024 * 1024 * 3];
+   // for (int x = 0; x < 1024; x++) {
    //   for (int y = 0; y < 1024; y++) {
    //      float value = ctNoiseWhite3DScalar(ctVec3((float)x / 50, (float)y / 50, 0));
    //      ctVec3 color = ctVec3(value * 0.5f + 0.5f);
@@ -371,7 +371,7 @@ void noise_test(void) {
    //                           0)) *
    //          0.5f +
    //        ctVec3(0.5f);  */
-   //      
+   //
    //      //color = ctNoiseVorronoiRich(ctVec3((float)x / 50, (float)y / 50, 0));
 
    //      color = ctVec3(ctClamp(color.x, 0.0f, 1.0f),
@@ -382,9 +382,9 @@ void noise_test(void) {
    //      image[(x + y * 1024) * 3 + 2] = (uint8_t)(color.z * 255);
    //   }
    //}
-   //const char* path = "NoiseTest.bmp";
-   //stbi_write_bmp(path, 1024, 1024, 3, image);
-   //ctSystemShowFileToDeveloper(path);
+   // const char* path = "NoiseTest.bmp";
+   // stbi_write_bmp(path, 1024, 1024, 3, image);
+   // ctSystemShowFileToDeveloper(path);
 }
 
 void math_3d_test(void) {
@@ -409,4 +409,12 @@ void handled_list_test(void) {
                  *pointers[i],
                  list[handles[i]]);
    }
+}
+
+void output_direct(const char* text, void* userData) {
+   TEST_ASSERT(text != NULL);
+}
+
+void process_test(void) {
+   TEST_ASSERT(ctSystemExecuteCommand("help", 0, NULL, output_direct, NULL) == 0);
 }

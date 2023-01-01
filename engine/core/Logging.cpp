@@ -18,6 +18,7 @@
 #include "EngineCore.hpp"
 #include "Settings.hpp"
 #include "WindowManager.hpp"
+#include "middleware/ImguiIntegration.hpp"
 
 ctDynamicArray<ctDebugSystem*> danglingDebugSystems;
 bool savedExit = false;
@@ -95,7 +96,17 @@ ctResults ctDebugSystem::Shutdown() {
 }
 
 const char* ctDebugSystem::GetModuleName() {
-   return "Debug System";
+   return "Logging";
+}
+
+void ctDebugSystem::DebugUI(bool useGizmos) {
+   ctMutexLock(_logLock);
+   for (size_t i = 0; i < _messageMemory.Count(); i++) {
+      ctVec4 levelColors[] = {CT_COLOR_WHITE, CT_COLOR_ORANGE, CT_COLOR_RED};
+      ImGui::TextColored(ctVec4ToImGui(levelColors[_messageMemory[i].level]),
+                         _messageMemory[i].msg);
+   }
+   ctMutexUnlock(_logLock);
 }
 
 void ctDebugSystem::_EmergencExit() {
@@ -219,6 +230,7 @@ void ctDebugSystem::_flushMessageQueue() {
 void ctDebugSystem::_addToMessageQueue(const _internalMessage msg) {
    ZoneScoped;
    _messageQueue.Append(msg);
+   _messageMemory.Append(msg);
    if (_messageQueue.Count() >= _flushAfter) {
       _flushMessageQueue();
       _messageQueue.Clear();

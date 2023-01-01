@@ -35,6 +35,10 @@
     "path": "configs/Window.json",
 	"out": "OUTPUT"
   },
+  "Input_GamecontrollerDB": {
+    "path": "input/gamecontrollerdb.txt",
+	"out": "OUTPUT"
+  },
   "Input_Actions": {
     "path": "input/actions.json",
 	"out": "OUTPUT"

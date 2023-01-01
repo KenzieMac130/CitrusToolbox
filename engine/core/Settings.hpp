@@ -38,8 +38,8 @@ public:
                          bool load,
                          const char* name,
                          const char* help,
-                         int32_t min = INT32_MIN,
-                         int32_t max = INT32_MAX,
+                         int64_t min = INT32_MIN,
+                         int64_t max = INT32_MAX,
                          void (*setCallback)(const char* value, void* customData) = NULL,
                          void* customData = NULL);
    ctResults BindFloat(float* ptr,
@@ -74,15 +74,15 @@ public:
    ctResults LoadConfigs(ctFileSystem* pFileSystem);
    ctResults SaveChanged(ctFileSystem* pFileSystem);
 
-private:
-   enum _setting_type {
+protected:
+   enum SettingType {
       SETTING_TYPE_FLOAT,
       SETTING_TYPE_INTEGER,
       SETTING_TYPE_STRING,
       SETTING_TYPE_FUNCTION,
    };
 
-   ctResults _bindvar(_setting_type type,
+   ctResults BindVar(SettingType type,
                       bool save,
                       bool load,
                       const char* name,
@@ -93,9 +93,9 @@ private:
                       double min = -DBL_MAX,
                       double max = DBL_MAX);
 
-   struct _setting {
+   struct Setting {
       bool changed;
-      _setting_type type;
+      SettingType type;
       bool save;
       bool load;
       const char* name;
@@ -106,10 +106,10 @@ private:
       double minimum;
       double maximum;
    };
-   ctStringUtf8 _name;
-   ctTranslationCatagory _translationCatagory;
-   ctHashTable<_setting, uint32_t> _settings;
-   ctSettingsManager* _pManager;
+   ctStringUtf8 name;
+   ctTranslationCatagory translationCatagory;
+   ctHashTable<Setting, uint32_t> settings;
+   ctSettingsManager* pManager;
 
    ctDynamicArray<char> defaultJsonBytes;
    ctDynamicArray<char> userJsonBytes;
@@ -120,15 +120,20 @@ private:
 class CT_API ctSettingsManager : public ctModuleBase {
 public:
    ctSettingsManager(int argc, char** argv);
-   ctSettingsSection*
-   CreateSection(const char* name,
-                 int max,
-                 ctTranslationCatagory translationCatagory = CT_TRANSLATION_CATAGORY_CORE);
+   ctSettingsSection* CreateSection(
+     const char* name,
+     int max,
+     ctTranslationCatagory translationCatagory = CT_TRANSLATION_CATAGORY_CORE);
+   ctSettingsSection* GetOrCreateSection(
+     const char* name,
+     int max,
+     ctTranslationCatagory translationCatagory = CT_TRANSLATION_CATAGORY_CORE);
    ctSettingsSection* GetSection(const char* name);
 
    ctResults Startup() final;
    ctResults Shutdown() final;
    const char* GetModuleName() final;
+   virtual void DebugUI(bool useGizmos);
 
    int FindArgIdx(const char* name);
    const char* FindArgPairValue(const char* name);

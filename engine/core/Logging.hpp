@@ -29,6 +29,7 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
    const char* GetModuleName() final;
+   virtual void DebugUI(bool useGizmos);
 
    void Log(const char* format, ...);
    void LogArgs(const char* format, va_list args);
@@ -50,6 +51,7 @@ private:
    void _flushMessageQueue();
    void _addToMessageQueue(const _internalMessage msg);
    ctDynamicArray<_internalMessage> _messageQueue;
+   ctDynamicArray<_internalMessage> _messageMemory;
    ctFile _logFile;
    int32_t _writeToConsole;
    int32_t _flushAfter;

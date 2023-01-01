@@ -35,6 +35,9 @@
 
 #if CITRUS_INCLUDE_AUDITION
 #include "audition/HotReloadDetection.hpp"
+#include "audition/AuditionEditor.hpp"
+#include "audition/AssetCompilerBootstrap.hpp"
+#include "audition/LiveSync.hpp"
 #endif
 
 #include "interact/InteractionEngine.hpp"
@@ -78,6 +81,11 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    FrameTime = ctStopwatch();
    SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
    PhysXIntegration = new ctPhysXIntegration();
+#if CITRUS_INCLUDE_AUDITION
+   Editor = new ctAuditionEditor();
+   AssetCompiler = new ctAssetCompilerBootstrap();
+   LiveSync = new ctAuditionLiveSync();
+#endif
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
@@ -85,6 +93,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Debug->ModuleStartup(this);
 #if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleStartup(this);
+   LiveSync->ModuleStartup(this);
 #endif
    FileSystem->LogPaths();
    Translation->ModuleStartup(this);
@@ -100,6 +109,10 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    PhysXIntegration->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
    Renderer->ModuleStartup(this);
+#if CITRUS_INCLUDE_AUDITION
+   Editor->ModuleStartup(this);
+   AssetCompiler->ModuleStartup(this);
+#endif
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
@@ -134,6 +147,9 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    App->OnFrameAdvance(deltatime);
    SceneEngine->NextFrame(deltatime);
    App->OnUIUpdate();
+#if CITRUS_INCLUDE_AUDITION
+   Editor->UpdateEditor();
+#endif
    Renderer->RenderFrame();
    OSEventManager->PollOSEvents();
    Interact->PumpInput();
@@ -155,6 +171,11 @@ ctResults ctEngineCore::Shutdown() {
 
    /*Shutdown modules*/
    ctDebugLog("Citrus Toolbox is Shutting Down...");
+#if CITRUS_INCLUDE_AUDITION
+   LiveSync->ModuleShutdown();
+   AssetCompiler->ModuleShutdown();
+   Editor->ModuleShutdown();
+#endif
    SceneEngine->ModuleShutdown();
    PhysXIntegration->ModuleShutdown();
    Renderer->ModuleShutdown();
@@ -173,6 +194,10 @@ ctResults ctEngineCore::Shutdown() {
    Debug->ModuleShutdown();
    Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();
+#if CITRUS_INCLUDE_AUDITION
+   delete AssetCompiler;
+   delete Editor;
+#endif
    delete PhysXIntegration;
    delete Renderer;
    delete Im3dIntegration;
@@ -186,7 +211,9 @@ ctResults ctEngineCore::Shutdown() {
    delete Translation;
    delete JobSystem;
    delete AsyncTasks;
+#if CITRUS_INCLUDE_AUDITION
    delete HotReload;
+#endif
 
    /*SDL*/
    SDL_Quit();

@@ -1,4 +1,4 @@
- {
+{
 	"actions/debug": {
 		"actions/debug/enable": {
 			"type": "value"
@@ -26,25 +26,20 @@
 		}
 	},
 	"actions/player": {
-		"actions/player/moveForward":{
-			"type": "value",
-			"dispatch": "tick"
+		"actions/player/moveForward": {
+			"type": "value"
 		},
-		"actions/player/moveRight":{
-			"type": "value",
-			"dispatch": "tick"
+		"actions/player/moveRight": {
+			"type": "value"
 		},
-		"actions/player/lookUp":{
-			"type": "value",
-			"dispatch": "update"
+		"actions/player/lookUp": {
+			"type": "value"
 		},
-		"actions/player/lookRight":{
-			"type": "value",
-			"dispatch": "update"
+		"actions/player/lookRight": {
+			"type": "value"
 		},
-		"actions/player/jump":{
-			"type": "value",
-			"dispatch": "tick"
+		"actions/player/jump": {
+			"type": "value"
 		}
 	}
 }

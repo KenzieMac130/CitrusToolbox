@@ -22,23 +22,30 @@
 #define DMON_IMPL
 #include "dmon/dmon.h"
 
-static void watch_callback(dmon_watch_id watch_id,
-                           dmon_action action,
-                           const char* rootdir,
-                           const char* filepath,
-                           const char* oldfilepath,
-                           void* user) {
+void ctHotReloadDetection::WatchCallback(uint32_t watch_id,
+                                         uint32_t action,
+                                         const char* rootdir,
+                                         const char* filepath,
+                                         const char* oldfilepath,
+                                         void* user) {
    ctHotReloadDetection* pDetector = (ctHotReloadDetection*)user;
    if (action == DMON_ACTION_MODIFY) {
-      ctMutexLock(pDetector->_callbackLock);
-      pDetector->_PushPathUpdate(filepath);
-      ctMutexUnlock(pDetector->_callbackLock);
+      ctMutexLock(pDetector->callbackLock);
+      pDetector->PushPathUpdate(filepath);
+      ctMutexUnlock(pDetector->callbackLock);
    }
 }
 
+typedef void (*dmon_callback)(dmon_watch_id watch_id,
+                              dmon_action action,
+                              const char* dirname,
+                              const char* filename,
+                              const char* oldname,
+                              void* user);
+
 ctResults ctHotReloadDetection::Startup() {
    ZoneScoped;
-   ctSettingsSection* settings = Engine->Settings->CreateSection("Audition", 1);
+   ctSettingsSection* settings = Engine->Settings->GetOrCreateSection("Audition", 1);
    watchEnable = 1;
    settings->BindInteger(&watchEnable,
                          false,
@@ -49,11 +56,14 @@ ctResults ctHotReloadDetection::Startup() {
    watchIsRunning = watchEnable;
    if (watchIsRunning) {
       ctDebugLog("Hot Reload Watch Enabled...");
-      _callbackLock = ctMutexCreate();
+      callbackLock = ctMutexCreate();
       const char* dataPath = Engine->FileSystem->GetDataPath();
       if (!dataPath) { return CT_FAILURE_INACCESSIBLE; }
       dmon_init();
-      dmon_watch(dataPath, watch_callback, DMON_WATCHFLAGS_RECURSIVE, this);
+      dmon_watch(dataPath,
+                 (dmon_callback)ctHotReloadDetection::WatchCallback,
+                 DMON_WATCHFLAGS_RECURSIVE,
+                 this);
    }
    return CT_SUCCESS;
 }
@@ -62,8 +72,8 @@ ctResults ctHotReloadDetection::Shutdown() {
    ZoneScoped;
    if (watchIsRunning) {
       ctDebugLog("Hot Reload Watch is Shutting Down...");
-      ctMutexLock(_callbackLock);
-      ctMutexDestroy(_callbackLock);
+      ctMutexLock(callbackLock);
+      ctMutexDestroy(callbackLock);
       dmon_deinit();
    }
    return CT_SUCCESS;
@@ -73,12 +83,16 @@ const char* ctHotReloadDetection::GetModuleName() {
    return "Hot Reload";
 }
 
+void ctHotReloadDetection::DebugUI(bool useGizmos)
+{
+}
+
 ctResults ctHotReloadDetection::RegisterDataCategory(ctHotReloadCategory* pCategory) {
    pCategory->_pOwner = this;
    return hotReloads.Append(pCategory);
 }
 
-void ctHotReloadDetection::_PushPathUpdate(const char* path) {
+void ctHotReloadDetection::PushPathUpdate(const char* path) {
    ZoneScoped;
    ctDebugLog("Hot Reload: Modified %s", path);
    for (int i = 0; i < hotReloads.Count(); i++) {
@@ -124,7 +138,7 @@ bool ctHotReloadCategory::isContentUpdated() {
 
 void ctHotReloadCategory::BeginReadingChanges() {
    ZoneScoped;
-   ctMutexLock(_pOwner->_callbackLock);
+   ctMutexLock(_pOwner->callbackLock);
 }
 
 const ctDynamicArray<ctStringUtf8>& ctHotReloadCategory::GetUpdatedPaths() const {
@@ -134,7 +148,7 @@ const ctDynamicArray<ctStringUtf8>& ctHotReloadCategory::GetUpdatedPaths() const
 void ctHotReloadCategory::EndReadingChanges() {
    ZoneScoped;
    updatedPaths.Clear();
-   ctMutexUnlock(_pOwner->_callbackLock);
+   ctMutexUnlock(_pOwner->callbackLock);
 }
 
 void ctHotReloadCategory::ClearChanges() {

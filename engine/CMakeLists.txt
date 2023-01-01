@@ -147,10 +147,28 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/system)
 if(CITRUS_INCLUDE_AUDITION)
 set(ENGINE_SOURCE_FILES_AUDITION
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSyncSocket.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ImportSettings.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.cpp
 )
 
 set(ENGINE_HEADER_FILES_AUDITION
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ImportSettings.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/SpaceBase.hpp
 )
 endif()
 

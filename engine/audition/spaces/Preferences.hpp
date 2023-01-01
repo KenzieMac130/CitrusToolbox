@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 MacKenzie Strand
+   Copyright 2023 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,20 +17,3 @@
 #pragma once
 
 #include "utilities/Common.h"
-
-class CT_API ctStopwatch {
-public:
-   ctStopwatch();
-   void NextLap();
-
-   float GetDeltaTimeFloat();
-   double GetDeltaTime();
-
-private:
-   uint64_t freq;
-   uint64_t lastTick;
-   uint64_t currentTick;
-};
-
-uint64_t ctGetTimestamp();
-void ctWait(uint32_t ms);

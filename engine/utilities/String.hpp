@@ -34,6 +34,7 @@ public:
    size_t ByteLength() const;
    size_t Capacity() const;
    bool isEmpty() const;
+   ctResults ResizeBytes(const size_t amount);
    ctResults Reserve(const size_t amount);
    void Clear();
 

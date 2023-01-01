@@ -41,6 +41,9 @@ public:
    class ctSettingsManager* Settings;
 #if CITRUS_INCLUDE_AUDITION
    class ctHotReloadDetection* HotReload;
+   class ctAuditionEditor* Editor;
+   class ctAssetCompilerBootstrap* AssetCompiler;
+   class ctAuditionLiveSync* LiveSync;
 #endif
    class ctDebugSystem* Debug;
    class ctWindowManager* WindowManager;

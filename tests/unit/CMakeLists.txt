@@ -39,6 +39,8 @@ ct_add_test(bloom_filter_test)
 ct_add_test(hash_table_test)
 ct_add_test(noise_test)
 
+ct_add_test(process_test)
+
 ct_add_test(kinnow_test_routine)
 ct_add_test(kinnow_test_lots_of_component_types)
 ct_add_test(kinnow_add_entities)

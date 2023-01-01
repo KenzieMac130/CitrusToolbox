@@ -204,6 +204,14 @@ ctResults ctIm3dIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
    Im3d::EndFrame();
    ctGPUExternalBuffer* externBuffers[2] = {pVertexBuffer, pViewBuffer};
    ctGPUExternalBufferRebuild(pGPUDevice, pGPUBufferPool, 2, externBuffers);
+   triangleCount = 0;
+   lineCount = 0;
+   pointCount = 0;
+   textCount = 0;
+   for (uint32_t i = 0; i < Im3d::GetTextDrawListCount(); ++i) {
+      const Im3d::TextDrawList& textDrawList = Im3d::GetTextDrawLists()[i];
+      textCount += textDrawList.m_textDataCount;
+   }
    return CT_SUCCESS;
 }
 
@@ -222,7 +230,7 @@ ctResults ctIm3dIntegration::DrawCallbackXRay(ctGPUArchitectExecutionContext* pC
 }
 
 void ctIm3dIntegration::DrawGPU(ctGPUArchitectExecutionContext* pCtx, bool xray) {
-   uint32_t drawListCount = Im3d::GetDrawListCount();
+   drawListCount = Im3d::GetDrawListCount();
    const Im3d::DrawList* pDrawLists = Im3d::GetDrawLists();
 
    /* draw main */
@@ -233,12 +241,22 @@ void ctIm3dIntegration::DrawGPU(ctGPUArchitectExecutionContext* pCtx, bool xray)
           (drawList.m_layerId == CT_IM3D_LAYER_XRAY && xray)) {
          ctGPUCmdSetGraphicsPipeline(pCtx->cmd, pPipelines[(int)drawList.m_primType]);
          ctGPUCmdDraw(pCtx->cmd, drawList.m_vertexCount, 1, offset, 0);
+         switch (drawList.m_primType) {
+            case Im3d::DrawPrimitive_Triangles:
+               triangleCount += drawList.m_vertexCount / 3;
+               break;
+            case Im3d::DrawPrimitive_Lines:
+               lineCount += drawList.m_vertexCount / 2;
+               break;
+            case Im3d::DrawPrimitive_Points: pointCount += drawList.m_vertexCount; break;
+            default: break;
+         }
       }
       offset += drawList.m_vertexCount;
    }
+   vertexCount = offset;
 }
 
-/* TODO: REWRITE ME TO WORK!!! */
 void ctIm3dIntegration::DrawImguiText() {
    ZoneScoped;
    Im3d::AppData& appData = Im3d::GetAppData();
@@ -360,6 +378,30 @@ ctResults ctIm3dIntegration::NextFrame() {
    Engine->WindowManager->GetMainWindowDrawableSize(&iw, &ih);
    appData.m_viewportSize.x = (float)iw;
    appData.m_viewportSize.y = (float)ih;
+   appData.m_deltaTime = Engine->FrameTime.GetDeltaTimeFloat();
    Im3d::NewFrame();
    return CT_SUCCESS;
+}
+
+void ctIm3dIntegration::DebugUI(bool useGizmos) {
+   ImGui::Text("Im3d %s", IM3D_VERSION);
+   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+               Im3d::GetAppData().m_deltaTime * 1000.0f,
+               1.0f / Im3d::GetAppData().m_deltaTime);
+   ImGui::Separator();
+   ImGui::Text("Draw Lists: %u", drawListCount);
+   ImGui::Text("Vertices: %u", vertexCount);
+   ImGui::Text("Triangles: %u", triangleCount);
+   ImGui::Text("Lines: %u", lineCount);
+   ImGui::Text("Points: %u", pointCount);
+   ImGui::Text("Texts: %u", textCount);
+   ImGui::Separator();
+   ImGui::Text("Cursor Origin (%f,%f,%f)",
+               Im3d::GetAppData().m_cursorRayOrigin.x,
+               Im3d::GetAppData().m_cursorRayOrigin.y,
+               Im3d::GetAppData().m_cursorRayOrigin.z);
+   ImGui::Text("Cursor Direction (%f,%f,%f)",
+               Im3d::GetAppData().m_cursorRayDirection.x,
+               Im3d::GetAppData().m_cursorRayDirection.y,
+               Im3d::GetAppData().m_cursorRayDirection.z);
 }

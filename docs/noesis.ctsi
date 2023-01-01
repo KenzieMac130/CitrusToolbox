@@ -1,0 +1,130 @@
+/*
+   Copyright 2021 MacKenzie Strand
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+/* based off of ShaderPS.hlsl and ShaderVS.hlsl */
+
+#include "utilities/common.ctsh"
+
+/* unify vertex format on cpu */
+CT_DEFINE_VBUF_BEGIN()
+CT_DEFINE_VBUF_POSITION()
+CT_DEFINE_VBUF_COLOR0()
+CT_DEFINE_VBUF_TEXCOORD0()
+CT_DEFINE_VBUF_TEXCOORD1()
+CT_DEFINE_VBUF_TEXCOORD2() /* coverage */
+CT_DEFINE_VBUF_TEXCOORD3() /* rect */
+CT_DEFINE_VBUF_TEXCOORD4() /* tile */
+CT_DEFINE_VBUF_TEXCOORD5() /* imagePos */
+CT_DEFINE_VBUF_END()
+
+#define CT_ATTRIBUTES_FRAG_IN
+#include "utilities/attributes.ctsh"
+CT_ATTRIBUTES_BEGIN()
+CT_ATTRIBUTES_VAR_NOINTERP(0,float4,color)
+CT_ATTRIBUTES_VAR(1,float2,uv0)
+CT_ATTRIBUTES_VAR(2,float2,uv1)
+CT_ATTRIBUTES_VAR(3,float2,uv2) /* or st1 */
+CT_ATTRIBUTES_VAR(4,float2,uv3)
+CT_ATTRIBUTES_VAR(5,float,coverage)
+CT_ATTRIBUTES_VAR_NOINTERP(6,float4,rect)
+CT_ATTRIBUTES_VAR_NOINTERP(7,float4,tile)
+CT_ATTRIBUTES_VAR(8,float4,imagePos)
+CT_ATTRIBUTES_END()
+#undef CT_ATTRIBUTES_FRAG_IN
+
+#define CT_ATTRIBUTES_FRAG_OUT
+#include "utilities/attributes.ctsh"
+CT_ATTRIBUTES_BEGIN()
+CT_ATTRIBUTES_VAR(0,float4,outColor)
+CT_ATTRIBUTES_END()
+#undef CT_ATTRIBUTES_FRAG_OUT
+
+/* handle shaders in branching */
+#define NOESIS_SHADER_RGBA 1 /* output vertex color */
+#define NOESIS_SHADER_Mask 2 /* don't output color, stencil only */
+#define NOESIS_SHADER_Clear 3 /* fullscreen quad of clear color */
+#define NOESIS_SHADER_Path_Solid 4
+/* ... */
+
+/* renderstate pipeline variants:
+blend: src, lerp, mult, screen, add, (ignore dual)
+stencil: none, keep, incr, decr, clear
+wireframe: ignore in production builds
+25 pipeline varaints 
+Look into "IsValidState" for further culling */ 
+
+/* uniform data gets packed into a continuous flattened structured buffer */
+
+#ifdef VERTEX_SHADER
+
+struct sBuffer0Data {
+    float4x4 projectionMtx;
+}
+
+struct sBuffer1Data {
+    float2 textureSize;
+}
+
+CT_STORAGE_BUFFER_ARRAY(sBuffer0s, Buffer0s, {
+    sBuffer0Data data[];
+})
+
+CT_STORAGE_BUFFER_ARRAY(sBuffer1s, Buffer1s, {
+    sBuffer1Data data[];
+})
+
+CT_MAIN(){
+    /* todo */
+}
+#endif
+
+#ifdef FRAGMENT_SHADER
+
+/* buffer needs to be correctly packed on CPU */
+struct sBatchData {
+    float4 rgba;
+    float opacity;
+    float4 radialGrad0;
+    float4 radialGrad1;
+
+    float4 shadowColor;
+    float2 shadowOffset;
+    float blend;
+
+    int texturePattern;
+    int textureRamps;
+    int textureImage;
+    int textureGlyphs;
+    int textureShadow;
+
+    /* todo: needs samplers for each relevant pattern */
+    int samplerStatePattern;
+    int samplerStateRamps;
+    int samplerStateImage;
+    int samplerStateGlyphs;
+    int samplerStateShadow;
+
+    int shader;
+};
+
+CT_STORAGE_BUFFER_ARRAY(sBuffers, Buffers, {
+    sBatchData data[];
+})
+
+CT_MAIN() {
+    /* todo */
+}
+#endif 

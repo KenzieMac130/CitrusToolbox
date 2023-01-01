@@ -86,6 +86,12 @@ bool ctStringUtf8::isEmpty() const {
    return _data.isEmpty();
 }
 
+ctResults ctStringUtf8::ResizeBytes(const size_t amount) {
+   ctResults result = _data.Resize(amount);
+   _nullTerminate();
+   return result;
+}
+
 ctResults ctStringUtf8::Reserve(const size_t amount) {
    return _data.Reserve(amount);
 }
@@ -174,7 +180,7 @@ ctStringUtf8& ctStringUtf8::ToLower() {
 }
 
 ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
-   const size_t len = ByteLength()+1;
+   const size_t len = ByteLength() + 1;
    size_t outIdx = 0;
    bool escapeEntered = false;
    for (size_t inIdx = 0; inIdx < len; inIdx++) {

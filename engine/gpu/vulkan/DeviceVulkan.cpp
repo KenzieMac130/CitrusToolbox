@@ -326,6 +326,7 @@ ctVkQueueFamilyIndices ctGPUDevice::FindQueueFamilyIndices(VkPhysicalDevice gpu)
 ctResults ctGPUDevice::Startup() {
    ZoneScoped;
    ctDebugLog("Starting Vulkan Backend...");
+   SDL_Vulkan_LoadLibrary(NULL);
    /* Fill in AppInfo */
    {
       vkAppInfo.engineVersion = VK_MAKE_VERSION(CITRUS_ENGINE_VERSION_MAJOR,

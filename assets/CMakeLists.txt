@@ -65,7 +65,7 @@ add_custom_target(assets_configure
 COMMAND python waf configure 
 --platform ${ENGINE_PLATFORM_NAME}
 --final ${ASSET_IS_PRODUCTION}
--o ${CMAKE_BINARY_DIR}/output/assets
+-o ${CMAKE_BINARY_DIR}/output/data
 --libs ${BASE_LIBRARY_DIRECTORY}
 --build ${CMAKE_BINARY_DIR}
 DEPENDS Gltf2Citrus

@@ -431,19 +431,19 @@ enum ctColorComponents {
    CT_COLOR_COMPONENT_RGBA = CT_COLOR_COMPONENT_RGB | CT_COLOR_COMPONENT_A,
 };
 
-#define CT_COLOR_BLACK           ctVec4(0.0f, 0.0f, 0.0f, 1.0f);
-#define CT_COLOR_GREY            ctVec4(0.5f, 0.5f, 0.5f, 1.0f);
-#define CT_COLOR_WHITE           ctVec4(1.0f, 1.0f, 1.0f, 1.0f);
-#define CT_COLOR_INVISIBLE_BLACK ctVec4(0.0f, 0.0f, 0.0f, 0.0f);
-#define CT_COLOR_INVISIBLE_GREY  ctVec4(0.5f, 0.5f, 0.5f, 0.0f);
-#define CT_COLOR_INVISIBLE_WHITE ctVec4(1.0f, 1.0f, 1.0f, 0.0f);
-#define CT_COLOR_RED             ctVec4(1.0f, 0.0f, 0.0f, 1.0f);
-#define CT_COLOR_GREEN           ctVec4(0.0f, 1.0f, 0.0f, 1.0f);
-#define CT_COLOR_BLUE            ctVec4(0.0f, 0.0f, 1.0f, 1.0f);
-#define CT_COLOR_YELLOW          ctVec4(1.0f, 1.0f, 0.0f, 1.0f);
-#define CT_COLOR_ORANGE          ctVec4(1.0f, 0.5f, 0.0f, 1.0f);
-#define CT_COLOR_PURPLE          ctVec4(0.5f, 0.0f, 1.0f, 1.0f);
-#define CT_COLOR_PINK            ctVec4(1.0f, 0.0f, 1.0f, 1.0f);
+#define CT_COLOR_BLACK           ctVec4(0.0f, 0.0f, 0.0f, 1.0f)
+#define CT_COLOR_GREY            ctVec4(0.5f, 0.5f, 0.5f, 1.0f)
+#define CT_COLOR_WHITE           ctVec4(1.0f, 1.0f, 1.0f, 1.0f)
+#define CT_COLOR_INVISIBLE_BLACK ctVec4(0.0f, 0.0f, 0.0f, 0.0f)
+#define CT_COLOR_INVISIBLE_GREY  ctVec4(0.5f, 0.5f, 0.5f, 0.0f)
+#define CT_COLOR_INVISIBLE_WHITE ctVec4(1.0f, 1.0f, 1.0f, 0.0f)
+#define CT_COLOR_RED             ctVec4(1.0f, 0.0f, 0.0f, 1.0f)
+#define CT_COLOR_GREEN           ctVec4(0.0f, 1.0f, 0.0f, 1.0f)
+#define CT_COLOR_BLUE            ctVec4(0.0f, 0.0f, 1.0f, 1.0f)
+#define CT_COLOR_YELLOW          ctVec4(1.0f, 1.0f, 0.0f, 1.0f)
+#define CT_COLOR_ORANGE          ctVec4(1.0f, 0.5f, 0.0f, 1.0f)
+#define CT_COLOR_PURPLE          ctVec4(0.5f, 0.0f, 1.0f, 1.0f)
+#define CT_COLOR_PINK            ctVec4(1.0f, 0.0f, 1.0f, 1.0f)
 
 /* --- Bounding Box --- */
 
@@ -744,9 +744,12 @@ inline ctMat4 ctMat4InverseLossy(ctMat4 m) {
    return result;
 }
 
-/* By using this function you acknowledge you will never truely recover the original transform */
-/* This must ONLY be used as a last resort where a middleware passes a matrix and nothing else */
-inline void ctMat4AwkwardDecompose(ctMat4 m, ctVec3& translation, ctQuat& rotation, ctVec3& scale) {
+/* By using this function you acknowledge you will never truely recover the original
+ * transform */
+/* This must ONLY be used as a last resort where a middleware passes a matrix and nothing
+ * else */
+inline void
+ctMat4AwkwardDecompose(ctMat4 m, ctVec3& translation, ctQuat& rotation, ctVec3& scale) {
    ctMat4 rotmat;
    ctVec4 translate4d;
    glm_decompose(m.data, translate4d.data, rotmat.data, scale.data);
@@ -754,7 +757,8 @@ inline void ctMat4AwkwardDecompose(ctMat4 m, ctVec3& translation, ctQuat& rotati
    translation = ctVec3(translate4d);
 }
 
-inline void ctMat4PerspectiveInfinite(ctMat4& m, float fov, float aspect, float nearClip) {
+inline void
+ctMat4PerspectiveInfinite(ctMat4& m, float fov, float aspect, float nearClip) {
    glm_perspective_infinite(fov, aspect, nearClip, (vec4*)m.data);
 #ifdef CITRUS_GFX_VULKAN
    m.data[2][3] = 1.0f;
@@ -899,48 +903,52 @@ struct CT_API ctTransform {
 };
 
 /* --- Middleware Conversion --- */
+#define ctVec2ToImGui(v) ImVec2(v.x, v.y)
+#define ctVec3ToImGui(v) ImVector(v.x, v.y, v.z)
+#define ctVec4ToImGui(v) ImVec4(v.x, v.y, v.z, v.w)
+
 #define ctVec2ToIm3d(v)      Im3d::Vec2(v.x, v.y)
 #define ctVec3ToIm3d(v)      Im3d::Vec3(v.x, v.y, v.z)
 #define ctVec4ToIm3d(v)      Im3d::Vec4(v.x, v.y, v.z, v.w)
 #define ctVec4ToIm3dColor(v) Im3d::Color(v.r, v.g, v.b, v.a)
-#define ctMat4ToIm3d(v)                                                                            \
-   Im3d::Mat4(v.data[0][0],                                                                        \
-              v.data[1][0],                                                                        \
-              v.data[2][0],                                                                        \
-              v.data[3][0],                                                                        \
-              v.data[0][1],                                                                        \
-              v.data[1][1],                                                                        \
-              v.data[2][1],                                                                        \
-              v.data[3][1],                                                                        \
-              v.data[0][2],                                                                        \
-              v.data[1][2],                                                                        \
-              v.data[2][2],                                                                        \
-              v.data[3][2],                                                                        \
-              v.data[0][3],                                                                        \
-              v.data[1][3],                                                                        \
-              v.data[2][3],                                                                        \
+#define ctMat4ToIm3d(v)                                                                  \
+   Im3d::Mat4(v.data[0][0],                                                              \
+              v.data[1][0],                                                              \
+              v.data[2][0],                                                              \
+              v.data[3][0],                                                              \
+              v.data[0][1],                                                              \
+              v.data[1][1],                                                              \
+              v.data[2][1],                                                              \
+              v.data[3][1],                                                              \
+              v.data[0][2],                                                              \
+              v.data[1][2],                                                              \
+              v.data[2][2],                                                              \
+              v.data[3][2],                                                              \
+              v.data[0][3],                                                              \
+              v.data[1][3],                                                              \
+              v.data[2][3],                                                              \
               v.data[3][3])
 
 #define ctVec2FromIm3d(v)      ctVec2(v.x, v.y)
 #define ctVec3FromIm3d(v)      ctVec3(v.x, v.y, v.z)
 #define ctVec4FromIm3d(v)      ctVec4(v.x, v.y, v.z, v.w)
 #define ctVec4FromIm3dColor(v) ctVec4(v.r, v.g, v.b, v.a)
-#define ctMat4FromIm3d(v)                                                                          \
-   ctMat4(v(0, 0),                                                                                 \
-          v(0, 1),                                                                                 \
-          v(0, 2),                                                                                 \
-          v(0, 3),                                                                                 \
-          v(1, 0),                                                                                 \
-          v(1, 1),                                                                                 \
-          v(1, 2),                                                                                 \
-          v(1, 3),                                                                                 \
-          v(2, 0),                                                                                 \
-          v(2, 1),                                                                                 \
-          v(2, 2),                                                                                 \
-          v(2, 3),                                                                                 \
-          v(3, 0),                                                                                 \
-          v(3, 1),                                                                                 \
-          v(3, 2),                                                                                 \
+#define ctMat4FromIm3d(v)                                                                \
+   ctMat4(v(0, 0),                                                                       \
+          v(0, 1),                                                                       \
+          v(0, 2),                                                                       \
+          v(0, 3),                                                                       \
+          v(1, 0),                                                                       \
+          v(1, 1),                                                                       \
+          v(1, 2),                                                                       \
+          v(1, 3),                                                                       \
+          v(2, 0),                                                                       \
+          v(2, 1),                                                                       \
+          v(2, 2),                                                                       \
+          v(2, 3),                                                                       \
+          v(3, 0),                                                                       \
+          v(3, 1),                                                                       \
+          v(3, 2),                                                                       \
           v(3, 3))
 
 #define ctVec2ToPx(v)      PxVec2(v.x, v.y)
@@ -959,20 +967,20 @@ struct CT_API ctTransform {
 #define ctQuatFromPx(v)      ctQuat(v.x, v.y, v.z, v.w)
 #define ctTransformFromPx(v) ctTransform(ctVec3FromPx(v.p), ctQuatFromPx(v.q))
 #define ctBoundBoxFromPx(v)  ctBoundBox(ctVec3FromPx(v.minimum), ctVec3FromPx(v.maximum))
-#define ctMat4FromPx(v)                                                                            \
-   ctMat4(v[0],                                                                                    \
-          v[1],                                                                                    \
-          v[2],                                                                                    \
-          v[3],                                                                                    \
-          v[4],                                                                                    \
-          v[5],                                                                                    \
-          v[6],                                                                                    \
-          v[7],                                                                                    \
-          v[8],                                                                                    \
-          v[9],                                                                                    \
-          v[10],                                                                                   \
-          v[11],                                                                                   \
-          v[12],                                                                                   \
-          v[13],                                                                                   \
-          v[14],                                                                                   \
+#define ctMat4FromPx(v)                                                                  \
+   ctMat4(v[0],                                                                          \
+          v[1],                                                                          \
+          v[2],                                                                          \
+          v[3],                                                                          \
+          v[4],                                                                          \
+          v[5],                                                                          \
+          v[6],                                                                          \
+          v[7],                                                                          \
+          v[8],                                                                          \
+          v[9],                                                                          \
+          v[10],                                                                         \
+          v[11],                                                                         \
+          v[12],                                                                         \
+          v[13],                                                                         \
+          v[14],                                                                         \
           v[15])

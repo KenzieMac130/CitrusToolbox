@@ -52,6 +52,8 @@ public:
    void SetSelection(ctVec3 origin, ctVec3 direction);
    ctResults NextFrame();
 
+   virtual void DebugUI(bool useGizmos);
+
 private:
    ctCameraInfo cameraInfo;
    void DrawGPU(struct ctGPUArchitectExecutionContext* pCtx, bool xray);
@@ -69,4 +71,11 @@ private:
    struct ctGPUStructAssembler* pViewStructAssembler;
    uint32_t viewProj;
    uint32_t viewportSize;
+
+   uint32_t drawListCount = 0;
+   uint32_t vertexCount = 0;
+   uint32_t triangleCount = 0;
+   uint32_t lineCount = 0;
+   uint32_t pointCount = 0;
+   uint32_t textCount = 0;
 };

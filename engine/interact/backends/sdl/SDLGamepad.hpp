@@ -26,6 +26,8 @@ struct ctInteractSDLGamepadInstance {
 };
 
 struct ctInteractSDLGamepadPlayerContent {
+   uint32_t controllerId;
+   SDL_GameController* controller;
    union {
       struct {
          float a;
@@ -65,7 +67,7 @@ public:
 
    void AddController(int32_t id);
    void RemoveController(int32_t id);
-   void OnRemapController(int32_t id);
+   //void OnRemapController(int32_t id);
 
 private:
    ctInteractSDLGamepadPlayerContent gamepads[4] = {0};

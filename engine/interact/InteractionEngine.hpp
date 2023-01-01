@@ -98,9 +98,10 @@ private:
 
 struct ctInteractBindingEntry {
    ctInteractPath path;
-   float scale;
+   float scale = 1.0f;
    float clampMin = -FLT_MAX;
    float clampMax = FLT_MAX;
+   float deadzone;
    bool required;
    bool invert;
 };
@@ -143,7 +144,7 @@ public:
    ctResults RegisterAll();
 
    ctResults PumpInput();
-   void DebugImGui();
+   virtual void DebugUI(bool useGizmos);
 
    ctInteractDirectorySystem Directory;
    bool isFrameActive;

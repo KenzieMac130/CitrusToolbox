@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 MacKenzie Strand
+   Copyright 2023 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,23 +14,24 @@
    limitations under the License.
 */
 
-#pragma once
+#include "ModuleInspector.hpp"
+#include "core/ModuleBase.hpp"
 
-#include "utilities/Common.h"
+ctAuditionModuleInspector::ctAuditionModuleInspector(ctModuleBase* pModule) {
+   this->pModule = pModule;
+}
 
-class CT_API ctStopwatch {
-public:
-   ctStopwatch();
-   void NextLap();
+ctAuditionModuleInspector::~ctAuditionModuleInspector() {
+}
 
-   float GetDeltaTimeFloat();
-   double GetDeltaTime();
+const char* ctAuditionModuleInspector::GetTabName() {
+   return pModule->GetModuleName();
+}
 
-private:
-   uint64_t freq;
-   uint64_t lastTick;
-   uint64_t currentTick;
-};
+const char* ctAuditionModuleInspector::GetWindowName() {
+   return pModule->GetModuleName();
+}
 
-uint64_t ctGetTimestamp();
-void ctWait(uint32_t ms);
+void ctAuditionModuleInspector::OnGui(ctAuditionSpaceContext& ctx) {
+   pModule->DebugUI(ctx.allowGizmo);
+}

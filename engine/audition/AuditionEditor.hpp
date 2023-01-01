@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 MacKenzie Strand
+   Copyright 2023 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,20 +17,23 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "core/ModuleBase.hpp"
 
-class CT_API ctStopwatch {
+class CT_API ctAuditionEditor : public ctModuleBase {
 public:
-   ctStopwatch();
-   void NextLap();
+   ctResults Startup() final;
+   ctResults Shutdown() final;
+   const char* GetModuleName() final;
 
-   float GetDeltaTimeFloat();
-   double GetDeltaTime();
+   void UpdateEditor();
+
+protected:
+   class ctAuditionSpaceCompiler* pCompilerWindow;
+
+   void RegisterModule(class ctModuleBase* pModule);
+   ctDynamicArray<class ctAuditionModuleInspector*> pModuleInspectors;
 
 private:
-   uint64_t freq;
-   uint64_t lastTick;
-   uint64_t currentTick;
+   int allowEditor = true;
+   int isHidden = false;
 };
-
-uint64_t ctGetTimestamp();
-void ctWait(uint32_t ms);

@@ -1,3 +1,8 @@
 {
-	"WatchEnable": true
+	"WatchEnable": true,
+	"AllowEditor": true,
+	"IsEditorHidden": false,
+	"AllowLiveSync": true,
+	"SyncPort": "8239",
+	"CompileCommand": "python waf build -v"
 }

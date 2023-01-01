@@ -49,7 +49,8 @@ const char* ctInteractionEngine::GetModuleName() {
 
 ctResults ctInteractionEngine::RegisterAll() {
    ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
    Directory.CreateActionSetsFromFile(file);
 #if CITRUS_INCLUDE_AUDITION
    Directory.configHotReload.RegisterData(CT_CDATA("Input_Actions"));
@@ -79,7 +80,7 @@ ctResults ctInteractionEngine::PumpInput() {
    return CT_SUCCESS;
 }
 
-void ctInteractionEngine::DebugImGui() {
+void ctInteractionEngine::DebugUI(bool useGizmos) {
    ZoneScoped;
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->DebugImGui();
@@ -93,7 +94,8 @@ ctInteractPath::ctInteractPath() {
 
 ctInteractPath::ctInteractPath(const char* ptr, size_t count) {
    memset(str, 0, CT_MAX_INTERACT_PATH_SIZE);
-   strncpy(str, ptr, count > CT_MAX_INTERACT_PATH_SIZE ? CT_MAX_INTERACT_PATH_SIZE : count);
+   strncpy(
+     str, ptr, count > CT_MAX_INTERACT_PATH_SIZE ? CT_MAX_INTERACT_PATH_SIZE : count);
 }
 
 ctInteractPath::ctInteractPath(const char* ptr) {
@@ -154,7 +156,6 @@ ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
       for (int j = 0; j < numActions; j++) {
          ctStringUtf8 actionPath;
 
-         ctStringUtf8 dispatchPhase;
          ctJSONReadEntry jsonAction = ctJSONReadEntry();
          jsonActionSet.GetObjectEntry(j, jsonAction, &actionPath);
          if (actionPath.isEmpty()) { continue; }
@@ -230,6 +231,7 @@ ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
          ctJSONReadEntry invert = ctJSONReadEntry();
          ctJSONReadEntry min = ctJSONReadEntry();
          ctJSONReadEntry max = ctJSONReadEntry();
+         ctJSONReadEntry deadzone = ctJSONReadEntry();
          inputs.GetArrayEntry(j, jsonEntry);
          jsonEntry.GetObjectEntry("path", path);
          jsonEntry.GetObjectEntry("scale", scale);
@@ -237,6 +239,7 @@ ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
          jsonEntry.GetObjectEntry("invert", invert);
          jsonEntry.GetObjectEntry("min", min);
          jsonEntry.GetObjectEntry("max", max);
+         jsonEntry.GetObjectEntry("deadzone", deadzone);
 
          ctStringUtf8 pathStr;
          path.GetString(pathStr);
@@ -246,6 +249,7 @@ ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
          max.GetNumber(bindEntry.clampMax);
          required.GetBool(bindEntry.required);
          invert.GetBool(bindEntry.invert);
+         deadzone.GetNumber(bindEntry.deadzone);
          pBinding->inputs.Append(bindEntry);
       }
    }
@@ -311,7 +315,8 @@ void ctInteractDirectorySystem::DisableActionSet(ctInteractPath& path) {
    }
 }
 
-ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path, bool accessible) {
+ctResults ctInteractDirectorySystem::SetNodeAccessible(ctInteractPath& path,
+                                                       bool accessible) {
    ZoneScoped;
    ctInteractNode* result;
    CT_RETURN_FAIL(GetNode(path, result, true));
@@ -349,7 +354,9 @@ void ctInteractDirectorySystem::LogContents() {
 
 void ctInteractDirectorySystem::DebugImGui() {
    for (auto it = nodes.GetIterator(); it; it++) {
-      if (it.Value().GetScalar()) { ImGui::Text("%s: %f", it.Value(), it.Value().GetScalar()); }
+      if (it.Value().GetScalar()) {
+         ImGui::Text("%s: %f", it.Value(), it.Value().GetScalar());
+      }
    }
 }
 
@@ -405,6 +412,7 @@ void ctInteractBinding::Process(ctInteractDirectorySystem& dir) {
       dir.GetNode(entry.path, pNode);
       if (!pNode) { continue; }
       float entryValue = pNode->GetScalar();
+      if (ctAbs(entryValue) < entry.deadzone) { entryValue = 0.0f; }
       ctClamp(entryValue, entry.clampMin, entry.clampMax);
       if (entry.invert) { entryValue = 1.0f - entryValue; }
       if (entry.required) {

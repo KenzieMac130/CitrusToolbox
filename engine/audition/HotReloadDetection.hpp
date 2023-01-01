@@ -47,13 +47,21 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
    const char* GetModuleName() final;
+   virtual void DebugUI(bool useGizmos);
 
    ctResults RegisterDataCategory(ctHotReloadCategory* pCategory);
 
-   ctMutex _callbackLock;
-   void _PushPathUpdate(const char* path);
+protected:
+   friend class ctHotReloadCategory;
+   static void WatchCallback(uint32_t watch_id,
+                             uint32_t action,
+                             const char* rootdir,
+                             const char* filepath,
+                             const char* oldfilepath,
+                             void* user);
+   ctMutex callbackLock;
+   void PushPathUpdate(const char* path);
 
-private:
    ctDynamicArray<ctHotReloadCategory*> hotReloads;
    int32_t watchEnable;
    bool watchIsRunning;

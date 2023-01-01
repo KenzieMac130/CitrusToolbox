@@ -17,8 +17,10 @@
 #include "FileSystem.hpp"
 #include "EngineCore.hpp"
 #include "Translation.hpp"
+#include "middleware/ImguiIntegration.hpp"
 
-ctFileSystem::ctFileSystem(const ctStringUtf8& appName, const ctStringUtf8& organizationName) {
+ctFileSystem::ctFileSystem(const ctStringUtf8& appName,
+                           const ctStringUtf8& organizationName) {
    _appName = appName;
    _organizationName = organizationName;
 }
@@ -60,6 +62,12 @@ const void ctFileSystem::LogPaths() {
    ctDebugLog("Preference Path: %s", _prefPath.CStr());
    ctDebugLog("Executable Path: %s", _basePath.CStr());
    ctDebugLog("Data Path: %s", _dataPath.CStr());
+}
+
+void ctFileSystem::DebugUI(bool useGizmos) {
+   ImGui::Text("Preference Path: %s", _prefPath.CStr());
+   ImGui::Text("Executable Path: %s", _basePath.CStr());
+   ImGui::Text("Data Path: %s", _dataPath.CStr());
 }
 
 const ctResults ctFileSystem::OpenPreferencesFile(ctFile& file,

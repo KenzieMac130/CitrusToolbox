@@ -22,8 +22,18 @@
 int ctSystemCreateGUID(void* guidPtr);
 int ctSystemFilePathLocalize(char* str);
 int ctSystemInitialGetLanguage(char* buff, size_t max);
-int ctSystemExecuteCommand(const char* commandAlias, int argc, const char* argv[]);
+int ctSystemExecuteCommand(const char* commandAlias,
+                           int argc,
+                           const char* argv[],
+                           void (*outputCallback)(const char* output, void* userData),
+                           void* userData,
+                           const char* workingDirectory);
 int ctSystemShowFileToDeveloper(const char* path);
 int ctSystemPositionalPrintToString(char* dest, size_t capacity, const char* format, ...);
 void* ctSystemMapVirtualFile(const char* path, bool write, size_t reserve, size_t* pSize);
 int ctSystemUnmapVirtualFile(void* buff, size_t length);
+
+int ctSystemHostSocket(void* handle, int port, int timeoutMs);
+int ctSystemSocketRecv(void* handle, void* buff, int length);
+int ctSystemSocketSend(void* handle, void* buff, int length);
+void ctSystemCloseSocket(void* handle);

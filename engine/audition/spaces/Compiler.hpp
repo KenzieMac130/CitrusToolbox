@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 MacKenzie Strand
+   Copyright 2023 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,20 +17,17 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "SpaceBase.hpp"
 
-class CT_API ctStopwatch {
+class CT_API ctAuditionSpaceCompiler : public ctAuditionSpaceBase {
 public:
-   ctStopwatch();
-   void NextLap();
+   ctAuditionSpaceCompiler(class ctAssetCompilerBootstrap* pCompiler);
+   ~ctAuditionSpaceCompiler();
 
-   float GetDeltaTimeFloat();
-   double GetDeltaTime();
+   virtual const char* GetTabName();
+   virtual const char* GetWindowName();
+   virtual void OnGui(ctAuditionSpaceContext& ctx);
 
 private:
-   uint64_t freq;
-   uint64_t lastTick;
-   uint64_t currentTick;
+   class ctAssetCompilerBootstrap* pCompiler;
 };
-
-uint64_t ctGetTimestamp();
-void ctWait(uint32_t ms);

@@ -294,7 +294,8 @@ ctGPUArchitect::DumpGraphVis(const char* path, bool generateImage, bool showImag
       ctStringUtf8 imagePath = path;
       imagePath += ".png";
       const char* argArray[] = {"-Tpng", dotPath.CStr(), "-o", imagePath.CStr()};
-      ctSystemExecuteCommand("dot", ctCStaticArrayLen(argArray), argArray);
+      ctSystemExecuteCommand(
+        "dot", ctCStaticArrayLen(argArray), argArray, NULL, NULL, NULL);
       if (showImage) { ctSystemShowFileToDeveloper(imagePath.CStr()); }
    }
    return CT_SUCCESS;
