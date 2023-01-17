@@ -8,6 +8,9 @@ class Task(CitrusAssetCompileTask):
 	
 	def resolve_file_names(self, declarations):
 		return ['NICKNAME.TEMP']
+
+	def get_asset_type(self, relativePath):
+		return "legacy nickname"
 	
 	def run(self):
 		nicknames = self.inputs[0].read_json()

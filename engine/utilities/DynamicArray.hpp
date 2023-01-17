@@ -80,6 +80,9 @@ public:
    void QSort(int (*compare)(const T*, const T*),
               const size_t position = 0,
               const size_t amount = 0);
+   /* Reverse */
+   void Reverse();
+
    /* Hash */
    uint32_t xxHash32(const size_t position, const size_t amount, const int seed) const;
    uint32_t xxHash32(const int seed) const;
@@ -432,6 +435,20 @@ inline void ctDynamicArray<T>::QSort(int (*compare)(const T*, const T*),
    const size_t finalAmount =
      adjustedAmount > remainingCount ? remainingCount : adjustedAmount;
    qsort(Data(), finalAmount, sizeof(T), (int (*)(void const*, void const*))compare);
+}
+
+template<class T>
+inline void ctDynamicArray<T>::Reverse() {
+   if (isEmpty()) { return; }
+   size_t left = 0;
+   size_t right = Count() - 1;
+   while (left < right) {
+      T tmp = _pData[left];
+      _pData[left] = _pData[right];
+      _pData[right] = tmp;
+      left++;
+      right--;
+   }
 }
 
 template<class T>

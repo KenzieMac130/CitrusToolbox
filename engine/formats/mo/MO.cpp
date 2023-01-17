@@ -16,6 +16,13 @@
 
 #include "MO.h"
 
+#include "utilities/BloomFilter.hpp"
+
+struct ctMOReaderSearchStructure {
+   ctBloomFilter<uint32_t, 64, 3> bloom;
+   ctHashTable<int32_t, uint32_t> table;
+};
+
 ctResults ctMOReaderInitialize(ctMOReader* pReader, uint8_t* blob, size_t size) {
    pReader->blob = (uint8_t*)ctMalloc(size);
    memcpy(pReader->blob, blob, size);
@@ -28,15 +35,16 @@ ctResults ctMOReaderInitialize(ctMOReader* pReader, uint8_t* blob, size_t size) 
      (ctMOStringEntry*)&pReader->blob[pReader->pHeader->originalOffset];
    pReader->pTranslated =
      (ctMOStringEntry*)&pReader->blob[pReader->pHeader->translatedOffset];
-   pReader->searchStructure = new ctHashTable<int32_t, uint32_t>;
+   pReader->searchStructure = new ctMOReaderSearchStructure();
 
    /* build table */
-   ctHashTable<int32_t, uint32_t>* pTable =
-     (ctHashTable<int32_t, uint32_t>*)pReader->searchStructure;
-   (ctHashTable<int32_t, uint32_t>*)pReader->searchStructure;
+   ctMOReaderSearchStructure* pSearchStruct =
+     (ctMOReaderSearchStructure*)pReader->searchStructure;
    for (int32_t i = 0; i < pReader->pHeader->numStrings; i++) {
-      pTable->Insert(
-        ctXXHash32((const char*)&pReader->blob[pReader->pOriginal[i].offset]), i);
+      uint32_t hash =
+        ctXXHash32((const char*)&pReader->blob[pReader->pOriginal[i].offset]);
+      pSearchStruct->bloom.Insert(hash);
+      pSearchStruct->table.Insert(hash, i);
    }
    return CT_SUCCESS;
 }
@@ -46,18 +54,20 @@ ctResults ctMOReaderRelease(ctMOReader* pReader) {
    pReader->blob = NULL;
    pReader->blobSize = 0;
    pReader->searchStructure = NULL;
-   delete (ctHashTable<size_t, uint32_t>*)pReader->searchStructure;
+   delete (ctMOReaderSearchStructure*)pReader->searchStructure;
    return ctResults();
 }
 
 const char* ctMOFindTranslation(ctMOReader* pReader, const char* original) {
    if (!pReader->searchStructure) { return NULL; }
-   ctHashTable<int32_t, uint32_t>* pTable =
-     (ctHashTable<int32_t, uint32_t>*)pReader->searchStructure;
+   uint32_t hash = ctXXHash32(original);
+   ctMOReaderSearchStructure* pSearchStruct =
+     (ctMOReaderSearchStructure*)pReader->searchStructure;
+   if (!pSearchStruct->bloom.MightExist(hash)) { return NULL; }
    ctMOHeader* pHeader = pReader->pHeader;
    ctMOStringEntry* pOriginal = pReader->pOriginal;
    ctMOStringEntry* pTranslated = pReader->pTranslated;
-   int32_t* pIdx = pTable->FindPtr(ctXXHash32(original));
+   int32_t* pIdx = pSearchStruct->table.FindPtr(hash);
    if (!pIdx) { return NULL; }
    return (const char*)&pReader->blob[pTranslated[*pIdx].offset];
 }

@@ -15,11 +15,14 @@ class CitrusAssetCompileTask(waflib.Task.Task):
 	
 	# Declares a list of outputs that the task will generate for a given input
 	def get_outputs(self, relativePath):
-		return ["OUTPUT"]
+		return ["OUTPUT"] # todo: replace me
 		
 	# Get a list of dependencies which would trigger a recompile
 	def get_dependencies(self, relativePath):
 		return []
+
+	def get_asset_type(self, relativePath):
+		return None
 		
 	# Declares a method of filtering files
 	def filter(path):
@@ -47,6 +50,11 @@ class CitrusAssetCompileTask(waflib.Task.Task):
 				if decl not in settings["guids"].keys():
 					needsRedump = True
 					settings["guids"][decl] = uuid.uuid4().hex
+			if "type" not in settings:
+				assetType = self.get_asset_type(file.relpath())
+				if assetType:
+					settings["type"] = assetType
+					needsRedump = True
 			if needsRedump:
 				file.write_json(settings)
 			self.args.update(self.defaultArgs)

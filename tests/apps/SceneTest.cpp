@@ -50,11 +50,6 @@ ctResults TestApp::OnTick(const float deltatime) {
 }
 
 ctResults TestApp::OnUIUpdate() {
-   ImGui::ShowDemoWindow();
-   if (ImGui::Begin("Interact")) {
-      Engine->Interact->DebugImGui();
-      ImGui::End();
-   }
    return CT_SUCCESS;
 }
 

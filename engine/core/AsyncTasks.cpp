@@ -127,7 +127,7 @@ int ctAsyncManager::RunAsyncLoop() {
 }
 
 #include "imgui/imgui.h"
-void ctAsyncManager::DebugImGui() {
+void ctAsyncManager::DebugUI(bool useGizmos) {
    ctMutexLock(taskLock);
    for (int i = 0; i < activeTasks.Count(); i++) {
       ImGui::Text("%.*s", 32, activeTasks[i].name);

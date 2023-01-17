@@ -72,6 +72,9 @@ public:
    /* Sort */
    void
    QSort(const size_t position, const size_t amount, int (*compare)(const T*, const T*));
+   /* Reverse */
+   void Reverse();
+
    /* Hash */
    uint32_t xxHash32(const size_t position, const size_t amount, const int seed) const;
    uint32_t xxHash32(const int seed) const;
@@ -336,6 +339,20 @@ inline void ctStaticArray<T, TCAPACITY>::QSort(const size_t position,
    const size_t remaining_count = Count() - position;
    const size_t final_amount = amount > remaining_count ? remaining_count : amount;
    qsort(Data(), final_amount, sizeof(T), (int (*)(void const*, void const*))compare);
+}
+
+template<class T, size_t TCAPACITY>
+inline void ctStaticArray<T, TCAPACITY>::Reverse() {
+   if (isEmpty()) { return; }
+   size_t left = 0;
+   size_t right = Count() - 1;
+   while (left < right) {
+      T tmp = _pData[left];
+      _pData[left] = _pData[right];
+      _pData[right] = tmp;
+      left++;
+      right--;
+   }
 }
 
 template<class T, size_t TCAPACITY>

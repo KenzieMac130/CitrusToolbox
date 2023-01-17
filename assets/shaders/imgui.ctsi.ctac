@@ -2,5 +2,6 @@
   "args": {},
   "guids": {
     "OUTPUT": "2c0b738b78ff4cd793b31e63ede8b156"
-  }
+  },
+  "type": "shader"
 }

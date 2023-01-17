@@ -183,7 +183,7 @@ int ctSystemEnsurePosixSocket() {
    return 0;
 }
 
-int ctSystemHostSocket(void* handle, int port, int timeout) {
+int ctSystemHostTCPSocket(void* handle, int port, int timeout) {
    ctSystemEnsurePosixSocket();
    SOCKET sock;
    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -222,4 +222,78 @@ int ctSystemSocketSend(void* handle, void* buff, int length) {
 
 void ctSystemCloseSocket(void* handle) {
    closesocket((SOCKET)handle);
+}
+
+struct DirWalker {
+   WIN32_FIND_DATA ffd;
+   HANDLE hFile;
+};
+
+void* ctSystemOpenDir(const char* path) {
+   char searchpath[4096];
+   memset(searchpath, 0, 4096);
+   snprintf(searchpath, 4096, "%s\\*", path);
+   wchar_t wpath[4096];
+   memset(wpath, 0, 4096 * sizeof(wchar_t));
+   MultiByteToWideChar(CP_UTF8, 0, searchpath, (int)strlen(searchpath), wpath, 4096);
+   DirWalker* pDirWalk = (DirWalker*)malloc(sizeof(DirWalker));
+   if (!pDirWalk) { return NULL; }
+   memset(pDirWalk, 0, sizeof(DirWalker));
+   pDirWalk->hFile = INVALID_HANDLE_VALUE;
+   pDirWalk->hFile = FindFirstFile(wpath, &pDirWalk->ffd);
+   if (pDirWalk->hFile == INVALID_HANDLE_VALUE) {
+      free(pDirWalk);
+      return NULL;
+   }
+   return pDirWalk;
+}
+
+void ctSystemCloseDir(void* handle) {
+   if (!handle) { return; }
+   DirWalker* pDirWalk = (DirWalker*)handle;
+   FindClose(pDirWalk->hFile);
+   free(pDirWalk);
+}
+
+int ctSystemNextDir(void* handle) {
+   DirWalker* pDirWalk = (DirWalker*)handle;
+   return (int)FindNextFile(pDirWalk->hFile, &pDirWalk->ffd);
+}
+
+int ctSystemGetDirName(void* handle, char* dest, int max) {
+   DirWalker* pDirWalk = (DirWalker*)handle;
+   WideCharToMultiByte(
+     CP_UTF8, 0, pDirWalk->ffd.cFileName, MAX_PATH, dest, max, NULL, NULL);
+   return 0;
+}
+
+int ctSystemIsDirFile(void* handle) {
+   DirWalker* pDirWalk = (DirWalker*)handle;
+   return !(pDirWalk->ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+size_t ctSystemGetDirFileSize(void* handle) {
+   DirWalker* pDirWalk = (DirWalker*)handle;
+   return pDirWalk->ffd.nFileSizeLow;
+}
+
+/* https://www.gamedev.net/forums/topic/565693-converting-filetime-to-time_t-on-windows/
+ */
+time_t filetime_to_timet(FILETIME ft) {
+   ULARGE_INTEGER ull;
+   ull.LowPart = ft.dwLowDateTime;
+   ull.HighPart = ft.dwHighDateTime;
+   return ull.QuadPart / 10000000ULL - 11644473600ULL;
+}
+
+time_t ctSystemGetDirDate(void* handle) {
+   DirWalker* pDirWalk = (DirWalker*)handle;
+   return filetime_to_timet(pDirWalk->ffd.ftLastWriteTime);
+}
+
+int ctSystemFileExists(const char* path) {
+   wchar_t wpath[4096];
+   memset(wpath, 0, 4096 * sizeof(wchar_t));
+   MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), wpath, 4096);
+   return GetFileAttributes(wpath) == INVALID_FILE_ATTRIBUTES ? 0 : 1;
 }

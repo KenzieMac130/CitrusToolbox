@@ -5,7 +5,10 @@ class Task(CitrusAssetCompileTask):
 	name = "Texture"
 	globInfo = ['**/*.png', '**/*.jpg', '**/*.jpeg']
 	executableEnv = 'Compressonator' # Self.env path for the task
-		
+
+	def get_asset_type(self, relativePath):
+		return "texture"
+
 	def get_command(self):
 		return "{EXEC} -miplevels 8 \"{INPUT[0]}\" \"{OUTPUT[0]}.ktx\""
 		

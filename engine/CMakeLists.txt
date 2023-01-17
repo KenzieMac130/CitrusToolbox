@@ -153,9 +153,12 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSyncSocket.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ImportSettings.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextureImport.cpp
 )
 
 set(ENGINE_HEADER_FILES_AUDITION
@@ -165,10 +168,13 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ImportSettings.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/SpaceBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextureImport.hpp
 )
 endif()
 

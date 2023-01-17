@@ -13,3 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#pragma once
+
+#include "utilities/Common.h"
+#include "AssetEditorBase.hpp"
+
+class CT_API ctAuditionSpaceAssetEditorModelImport :
+    public ctAuditionSpaceAssetEditorBase {
+public:
+   virtual const char* GetAssetTypeName();
+   virtual void OnEditor();
+};

@@ -416,5 +416,5 @@ void output_direct(const char* text, void* userData) {
 }
 
 void process_test(void) {
-   TEST_ASSERT(ctSystemExecuteCommand("help", 0, NULL, output_direct, NULL) == 0);
+   TEST_ASSERT(ctSystemExecuteCommand("help", 0, NULL, output_direct, NULL, NULL) == 0);
 }

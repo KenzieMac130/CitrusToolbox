@@ -17,3 +17,11 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "AssetEditorBase.hpp"
+
+class CT_API ctAuditionSpaceAssetEditorTextureImport :
+    public ctAuditionSpaceAssetEditorBase {
+public:
+   virtual const char* GetAssetTypeName();
+   virtual void OnEditor();
+};

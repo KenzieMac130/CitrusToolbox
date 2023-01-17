@@ -32,6 +32,7 @@ public:
    virtual ctResults Startup();
    virtual ctResults Shutdown();
    virtual const char* GetModuleName();
+   virtual void DebugUI(bool useGizmos);
 
    ctAsyncTaskHandle
    CreateTask(const char* name, ctAsyncTaskFunction fpTask, void* userdata, int32_t priority);
@@ -44,7 +45,6 @@ public:
 
    int RunAsyncLoop();
 
-   void DebugImGui();
 
 protected:
    ctHandleManager handleManager;

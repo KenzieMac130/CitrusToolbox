@@ -15,3 +15,4 @@
 #
 
 add_library(system System.h ${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_PLATFORM_NAME}/System.cpp)
+target_include_directories(system PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../thirdparty/)

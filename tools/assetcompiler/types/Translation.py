@@ -4,6 +4,9 @@ import polib
 class Task(CitrusAssetCompileTask):
 	name = "Translation"
 	globInfo = ['**/*.po']
+
+	def get_asset_type(self, relativePath):
+		return "translation"
 		
 	def run(self):
 		po_file = polib.pofile(self.inputs[0].read())

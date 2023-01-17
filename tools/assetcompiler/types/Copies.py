@@ -4,6 +4,12 @@ class Task(CitrusAssetCompileTask):
 	name = "Copies"
 	globInfo = ['**/*.json','**/*.txt','**/*.lua']
 	isSimpleCopy = True # Only responsible for a simple copy operation
+
+	def get_asset_type(self, relativePath):
+		if ".lua" in relativePath:
+			return "lua"
+		else:
+			return "text"
 	
 	def filter(path):
 		banList = ["cmake","readme","license","datanicknames","assettypeinfo"]

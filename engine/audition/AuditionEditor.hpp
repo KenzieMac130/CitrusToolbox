@@ -19,6 +19,17 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
+class CT_API ctAuditionSpaceContext {
+public:
+   ctStringUtf8 assetBasePath = "";
+   ctStringUtf8 selectedAssetPath = "";
+   ctStringUtf8 selectedResourcePath = "";
+   ctStringUtf8 hoveredResourcePath = "";
+   bool allowGizmo = true;
+   class ctEngineCore* Engine;
+   class ctAuditionEditor* Editor;
+};
+
 class CT_API ctAuditionEditor : public ctModuleBase {
 public:
    ctResults Startup() final;
@@ -26,14 +37,24 @@ public:
    const char* GetModuleName() final;
 
    void UpdateEditor();
+   ctResults TryOpenEditorForAsset(const char* path);
+   ctResults TryOpenHexViewerForResource(ctGUID guid);
+   ctResults TryOpenHexViewerForFile(const char* path);
+   static ctResults GetTypeForPath(const char* path, char dest[32]);
 
 protected:
    class ctAuditionSpaceCompiler* pCompilerWindow;
+   class ctAuditionSpaceAssetBrowser* pAssetBrowser;
 
    void RegisterModule(class ctModuleBase* pModule);
    ctDynamicArray<class ctAuditionModuleInspector*> pModuleInspectors;
+   ctDynamicArray<class ctAuditionSpaceBase*> pDynamicSpaces;
+   void GarbageCollectDynamicSpaces();
+   ctResults AddDynamicSpace(class ctAuditionSpaceBase* pSpace);
+   ctResults AddAssetEditor(class ctAuditionSpaceAssetEditorBase*, const char* path);
 
 private:
+   ctAuditionSpaceContext ctx;
    int allowEditor = true;
    int isHidden = false;
 };

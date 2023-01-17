@@ -241,12 +241,33 @@ inline void ctHexToBytes(size_t byteCount, const char* hex, uint8_t* bytes) {
    }
 }
 
-/* https://stackoverflow.com/questions/6357031/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-in-c */
+/* https://stackoverflow.com/questions/6357031/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-in-c
+ */
 inline void ctBytesToHex(size_t byteCount, const uint8_t* bytes, char* hex) {
    const char table[] = "0123456789abcdef";
    for (; byteCount > 0; --byteCount) {
       unsigned char c = *bytes++;
       *hex++ = table[c >> 4];
       *hex++ = table[c & 0x0f];
+   }
+}
+
+inline void ctFormatBytes(size_t count, char* buffer, size_t max) {
+   double bcount = (double)count;
+   /* gb */
+   if (count / 1000000000 > 1) {
+      snprintf(buffer, max, "%.2lfGb", (double)count / 1000000000);
+   }
+   /* mb */
+   else if (count / 1000000 > 1) {
+      snprintf(buffer, max, "%.2lfMb", (double)count / 1000000);
+   }
+   /* kb */
+   else if (count / 1000 > 1) {
+      snprintf(buffer, max, "%.2lfKb", (double)count / 1000);
+   }
+   /* bytes */
+   else {
+      snprintf(buffer, max, "%zub", count);
    }
 }

@@ -59,7 +59,7 @@ int ctAuditionLiveSync::ServerLoop() {
    ctMutexUnlock(lock);
 
    void* socket = NULL;
-   int result = ctSystemHostSocket(socket, port, 10);
+   int result = ctSystemHostTCPSocket(socket, port, 10);
    if (result) {
       ctDebugError("Audition Live Socket Failed to bind port %d", port);
       return result;

@@ -17,3 +17,47 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "SpaceBase.hpp"
+
+class CT_API ctAuditionSpaceAssetBrowser : public ctAuditionSpaceBase {
+public:
+   ctAuditionSpaceAssetBrowser();
+   ~ctAuditionSpaceAssetBrowser();
+
+   virtual const char* GetTabName();
+   virtual const char* GetWindowName();
+
+   virtual void OnGui(ctAuditionSpaceContext& ctx);
+
+private:
+   ctStringUtf8 baseFolder = "";
+   ctStringUtf8 relativeFolder = "";
+   ctStringUtf8 currentFolder = "";
+
+   struct DirectoryEntry {
+      bool passedSearch;
+      bool isFile;
+      size_t size;
+      time_t date;
+      char type[32];
+      char name[CT_MAX_FILE_PATH_LENGTH];
+      char path[CT_MAX_FILE_PATH_LENGTH];
+
+      static int CmpName(const DirectoryEntry* a, const DirectoryEntry* b);
+      static int CmpDate(const DirectoryEntry* a, const DirectoryEntry* b);
+      static int CmpType(const DirectoryEntry* a, const DirectoryEntry* b);
+      static int CmpSize(const DirectoryEntry* a, const DirectoryEntry* b);
+   };
+   ctDynamicArray<DirectoryEntry> directories;
+   bool directoryValid;
+
+   void RefreshDirectories();
+
+   void SortByName();
+   void SortByDate();
+   void SortByType();
+   void SortBySize();
+
+   ctStringUtf8 searchKeyword = "";
+   void ApplySearch();
+};

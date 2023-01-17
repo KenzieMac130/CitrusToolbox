@@ -19,21 +19,16 @@
 #include "utilities/Common.h"
 #include "core/Translation.hpp"
 #include "middleware/ImguiIntegration.hpp"
-
-class CT_API ctAuditionSpaceContext {
-public:
-   ctStringUtf8 assetBasePath;
-   ctStringUtf8 selectedAssetPath;
-   ctStringUtf8 selectedResourcePath;
-   bool allowGizmo;
-   class ctEngineCore* Engine;
-};
+#include "audition/AuditionEditor.hpp"
 
 class CT_API ctAuditionSpaceBase {
 public:
    void Poll(ctAuditionSpaceContext& ctx) {
       if (!_Open) { return; }
-      if (ImGui::Begin(CT_NC(GetWindowName()), &_Open)) { OnGui(ctx); }
+      if (ImGui::Begin(
+            CT_NC(GetWindowName()), &_Open, hasMenu ? ImGuiWindowFlags_MenuBar : 0)) {
+         OnGui(ctx);
+      }
       ImGui::End();
    }
    void DoMenu() {
@@ -53,6 +48,12 @@ public:
    inline void Open() {
       _Open = true;
    }
+   inline bool isOpen() {
+      return _Open;
+   }
+
+protected:
+   bool hasMenu = false;
 
 private:
    bool _Open = false;

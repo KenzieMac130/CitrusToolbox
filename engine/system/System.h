@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <time.h>
 
 int ctSystemCreateGUID(void* guidPtr);
 int ctSystemFilePathLocalize(char* str);
@@ -33,7 +34,18 @@ int ctSystemPositionalPrintToString(char* dest, size_t capacity, const char* for
 void* ctSystemMapVirtualFile(const char* path, bool write, size_t reserve, size_t* pSize);
 int ctSystemUnmapVirtualFile(void* buff, size_t length);
 
-int ctSystemHostSocket(void* handle, int port, int timeoutMs);
+int ctSystemHostTCPSocket(void* handle, int port, int timeoutMs);
 int ctSystemSocketRecv(void* handle, void* buff, int length);
 int ctSystemSocketSend(void* handle, void* buff, int length);
 void ctSystemCloseSocket(void* handle);
+
+void* ctSystemOpenDir(const char* path);
+void ctSystemCloseDir(void* handle);
+int ctSystemNextDir(void* handle);
+
+int ctSystemGetDirName(void* handle, char* dest, int max);
+int ctSystemIsDirFile(void* handle);
+size_t ctSystemGetDirFileSize(void* handle);
+time_t ctSystemGetDirDate(void* handle);
+
+int ctSystemFileExists(const char* path);
