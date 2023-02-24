@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /*
-Buffer manages Buffers
+Manages Buffers
 */
 
 struct ctGPUExternalBufferPool;
