@@ -25,8 +25,7 @@ extern "C" {
 #endif
 
 /*
-Buffer manages Structured Buffers and Constant Buffers
-Vertex/index buffers can't be fetched for manually and arent supported.
+Buffer manages Buffers
 */
 
 struct ctGPUExternalBufferPool;
