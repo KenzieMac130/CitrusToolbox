@@ -32,7 +32,7 @@ public:
 private:
    ctStringUtf8 baseFolder = "";
    ctStringUtf8 relativeFolder = "";
-   ctStringUtf8 currentFolder = "";
+   void CurrentFromRelative(ctStringUtf8& currentFolder);
 
    struct DirectoryEntry {
       bool passedSearch;
@@ -51,7 +51,7 @@ private:
    ctDynamicArray<DirectoryEntry> directories;
    bool directoryValid;
 
-   void RefreshDirectories();
+   void RefreshDirectories(const char* folder);
 
    void SortByName();
    void SortByDate();

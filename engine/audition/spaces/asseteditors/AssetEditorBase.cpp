@@ -76,6 +76,7 @@ void ctAuditionSpaceAssetEditorBase::OnGui(ctAuditionSpaceContext& ctx) {
          ImGui::EndTabItem();
       }
       if (ImGui::BeginTabItem(CT_NC("Outputs"))) {
+         ImGui::InputText("Nickname Prefix", &nickname);
          if (ImGui::BeginTable("OutputsTable",
                                3,
                                ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
@@ -139,7 +140,7 @@ ctResults ctAuditionSpaceAssetEditorBase::Load() {
    if (!root.isObject()) { return CT_FAILURE_CORRUPTED_CONTENTS; }
 
    ctJSONReadEntry nicknameEntry;
-   if (root.GetObjectEntry("nickname", nicknameEntry)) {
+   if (root.GetObjectEntry("nickname", nicknameEntry) == CT_SUCCESS) {
       nicknameEntry.GetString(nickname);
    } else {
       nickname = "";
@@ -326,6 +327,7 @@ void ctAuditionSpaceAssetEditorBase::DoUIArgString(const char* name,
    const char* fetch = GetArg(name, NULL);
    char buffer[4096];
    memset(buffer, 0, 4096);
-   snprintf(buffer, 32, "%s", defaultValue);
+   if (!fetch) { fetch = defaultValue; }
+   snprintf(buffer, 32, "%s", fetch);
    if (ImGui::InputText(label, buffer, 4096)) { SetArg(name, buffer); }
 }

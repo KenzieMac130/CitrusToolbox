@@ -152,6 +152,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSyncSocket.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.cpp
@@ -159,6 +160,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextureImport.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextEditor.cpp
 )
 
 set(ENGINE_HEADER_FILES_AUDITION
@@ -167,6 +169,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.hpp
@@ -175,6 +178,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/SpaceBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextureImport.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextEditor.hpp
 )
 endif()
 
@@ -184,6 +188,9 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.c
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/Model.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/Skeleton.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/RenderMesh.cpp
 )
 
 set(ENGINE_HEADER_FILES_FORMAT
@@ -194,6 +201,10 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/MarkersAndBlobs.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/extensions/Skeleton.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/extensions/RenderMesh.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/ModelInternal.hpp
 )
 
 # ---------- Renderer Frontend ---------- 
@@ -275,6 +286,9 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.cpp
 
 set(ENGINE_HEADER_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentSystem.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/NetworkBus.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/Concept.hpp
 )
 endif()
 
@@ -429,6 +443,11 @@ if(CITRUS_PHYSX)
 	target_include_directories(engine PUBLIC ${PHYSX_INCLUDE_DIR})
 endif()
 
+if(CITRUS_BLAST)
+	target_link_libraries(engine ${BLAST_LIBRARIES})
+	target_include_directories(engine PUBLIC ${BLAST_INCLUDE_DIR})
+endif()
+
 if(CITRUS_LUA)
 	target_link_libraries(engine ${LUA_LIBRARIES})
 	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
@@ -469,6 +488,14 @@ if(CITRUS_SHADERC)
 endif()
 if(CITRUS_PHYSX)
 	foreach(LIB IN LISTS PHYSX_SHARED_LIBRARIES)
+		add_custom_command(TARGET engine POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		"${LIB}"
+		$<TARGET_FILE_DIR:engine>)
+	endforeach()
+endif()
+if(CITRUS_BLAST)
+	foreach(LIB IN LISTS BLAST_SHARED_LIBRARIES)
 		add_custom_command(TARGET engine POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		"${LIB}"

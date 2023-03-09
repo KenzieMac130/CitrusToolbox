@@ -26,7 +26,7 @@ public:
    const char* GetModuleName() final;
    virtual void DebugUI(bool useGizmos);
 
-   ctResults StartCompiler();
+   ctResults StartCompiler(size_t subargCount = 0, const char** subargs = NULL);
    void ClearResults();
 
    void AcquireOutputLock();

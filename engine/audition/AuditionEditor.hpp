@@ -21,10 +21,12 @@
 
 class CT_API ctAuditionSpaceContext {
 public:
-   ctStringUtf8 assetBasePath = "";
+   ctStringUtf8 assetBasePath =
+     "C:\\Users\\Kenzie\\Documents\\GitHub\\CitrusToolbox\\assets";
    ctStringUtf8 selectedAssetPath = "";
    ctStringUtf8 selectedResourcePath = "";
    ctStringUtf8 hoveredResourcePath = "";
+   ctStringUtf8 currentFolder = "";
    bool allowGizmo = true;
    class ctEngineCore* Engine;
    class ctAuditionEditor* Editor;
@@ -40,6 +42,7 @@ public:
    ctResults TryOpenEditorForAsset(const char* path);
    ctResults TryOpenHexViewerForResource(ctGUID guid);
    ctResults TryOpenHexViewerForFile(const char* path);
+   ctResults AddDynamicSpace(class ctAuditionSpaceBase* pSpace);
    static ctResults GetTypeForPath(const char* path, char dest[32]);
 
 protected:
@@ -50,7 +53,6 @@ protected:
    ctDynamicArray<class ctAuditionModuleInspector*> pModuleInspectors;
    ctDynamicArray<class ctAuditionSpaceBase*> pDynamicSpaces;
    void GarbageCollectDynamicSpaces();
-   ctResults AddDynamicSpace(class ctAuditionSpaceBase* pSpace);
    ctResults AddAssetEditor(class ctAuditionSpaceAssetEditorBase*, const char* path);
 
 private:

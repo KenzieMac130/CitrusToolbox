@@ -17,9 +17,10 @@
 #include "AssetBrowser.hpp"
 #include "system/System.h"
 
+#include "AssetActions.hpp"
+
 ctAuditionSpaceAssetBrowser::ctAuditionSpaceAssetBrowser() {
    directoryValid = false;
-   hasMenu = true;
 }
 
 ctAuditionSpaceAssetBrowser::~ctAuditionSpaceAssetBrowser() {
@@ -34,52 +35,54 @@ const char* ctAuditionSpaceAssetBrowser::GetWindowName() {
 }
 
 void ctAuditionSpaceAssetBrowser::OnGui(ctAuditionSpaceContext& ctx) {
+   bool needsRefresh = false;
    if (!(ctx.assetBasePath == baseFolder)) {
-      RefreshDirectories();
       baseFolder = ctx.assetBasePath;
-      currentFolder = baseFolder;
+      ctx.currentFolder = baseFolder;
+      relativeFolder = "";
+      needsRefresh = true;
    }
-   if (!directoryValid) { currentFolder = baseFolder; }
-
-   if (ImGui::BeginMenuBar()) {
-      if (ImGui::MenuItem(CT_NC("New"))) {}
-      ImGui::EndMenuBar();
+   if (!directoryValid) {
+      ctx.currentFolder = baseFolder;
+      relativeFolder = "";
+      CurrentFromRelative(ctx.currentFolder);
+      needsRefresh = true;
    }
-
+   // if (ImGui::BeginChild("##topbar", ImVec2(0, ImGui::GetStyle().ItemSpacing.y))) {
    if (ImGui::Button(CT_NC("Home"))) {
-      currentFolder = baseFolder;
-      RefreshDirectories();
+      relativeFolder = "";
+      CurrentFromRelative(ctx.currentFolder);
+      needsRefresh = true;
    }
-   ImGui::SameLine();
-   ImGui::BeginDisabled(ctx.selectedAssetPath == "");
-   if (ImGui::Button(CT_NC("Active"))) {
-      currentFolder = ctx.selectedAssetPath;
-      currentFolder.FilePathPop();
-      RefreshDirectories();
-   }
-   ImGui::EndDisabled();
    ImGui::SameLine();
    if (ImGui::Button(CT_NC("Up"))) {
-      currentFolder.FilePathPop();
-      RefreshDirectories();
+      relativeFolder.FilePathPop();
+      CurrentFromRelative(ctx.currentFolder);
+      needsRefresh = true;
    }
    ImGui::SameLine();
-   if (ImGui::InputText(
-         CT_NC("Path"), &currentFolder, ImGuiInputTextFlags_EnterReturnsTrue)) {
-      RefreshDirectories();
+   if (ImGui::InputText("##path",
+                        &relativeFolder,
+                        ImGuiInputTextFlags_EnterReturnsTrue |
+                          ImGuiInputTextFlags_AllowTabInput)) {
+      CurrentFromRelative(ctx.currentFolder);
+      needsRefresh = true;
    }
    ImGui::SameLine();
-   if (ImGui::Button(CT_NC("Refresh"))) { RefreshDirectories(); }
+   if (ImGui::Button(CT_NC("Refresh"))) { needsRefresh = true; }
    ImGui::SameLine();
-   if (ImGui::InputText(CT_NC("Search"), &searchKeyword)) { ApplySearch(); }
-
+   if (ImGui::InputText("##search", &searchKeyword, ImGuiInputTextFlags_AllowTabInput)) {
+      ApplySearch();
+   }
+   //   ImGui::EndChild();
+   //} /* ImGuiInputTextFlags_AllowTabInput is a hack to avoid messing up sizing, todo:
+   //fix */
    /* name, date modified, type, size */
-   bool needsRefresh = false;
    if (ImGui::BeginTable("Assets",
                          4,
                          ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
-                           ImGuiTableFlags_Sortable | ImGuiTableFlags_ContextMenuInBody |
-                           ImGuiTableFlags_Reorderable | ImGuiTableRowFlags_Headers)) {
+                           ImGuiTableFlags_Sortable | ImGuiTableFlags_Reorderable |
+                           ImGuiTableRowFlags_Headers)) {
       ImGui::TableSetupColumn(CT_NC("Name"), ImGuiTableColumnFlags_WidthStretch);
       ImGui::TableSetupColumn(CT_NC("Date"), ImGuiTableColumnFlags_WidthFixed);
       ImGui::TableSetupColumn(CT_NC("Type"), ImGuiTableColumnFlags_WidthFixed);
@@ -115,6 +118,7 @@ void ctAuditionSpaceAssetBrowser::OnGui(ctAuditionSpaceContext& ctx) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             bool selected = ctx.hoveredResourcePath == dir.path;
+
             if (ImGui::Selectable(dir.name,
                                   &selected,
                                   ImGuiSelectableFlags_SpanAllColumns |
@@ -123,8 +127,9 @@ void ctAuditionSpaceAssetBrowser::OnGui(ctAuditionSpaceContext& ctx) {
                ctx.hoveredResourcePath = dir.path;
                if (ImGui::IsMouseDoubleClicked(0)) {
                   if (ctCStrNEql(dir.type, "folder", 32)) {
-                     currentFolder.FilePathAppend(dir.name);
-                     currentFolder.FilePathLocalize();
+                     relativeFolder.FilePathAppend(dir.name);
+                     relativeFolder.FilePathLocalize();
+                     CurrentFromRelative(ctx.currentFolder);
                      needsRefresh = true;
                   } else {
                      ctx.selectedAssetPath = dir.path;
@@ -158,13 +163,50 @@ void ctAuditionSpaceAssetBrowser::OnGui(ctAuditionSpaceContext& ctx) {
          }
       }
       ImGui::EndTable();
+
+      if (ImGui::BeginPopupContextItem("##actions")) {
+         if (ImGui::MenuItem(CT_NC("New Asset"))) {
+            ctAuditionSpaceActionNewAsset* pSpace =
+              new ctAuditionSpaceActionNewAsset(relativeFolder.CStr());
+            ctResults res = ctx.Editor->AddDynamicSpace(pSpace);
+            if (res != CT_SUCCESS) { delete pSpace; }
+         }
+         if (ImGui::MenuItem(CT_NC("New Folder"))) {
+            ctAuditionSpaceActionNewFolder* pSpace =
+              new ctAuditionSpaceActionNewFolder(relativeFolder.CStr());
+            ctResults res = ctx.Editor->AddDynamicSpace(pSpace);
+            if (res != CT_SUCCESS) { delete pSpace; }
+         }
+         if (ImGui::MenuItem(CT_NC("Move Selected Asset"))) {
+            ctAuditionSpaceActionMoveAsset* pSpace =
+              new ctAuditionSpaceActionMoveAsset(ctx.selectedAssetPath.CStr());
+            ctResults res = ctx.Editor->AddDynamicSpace(pSpace);
+            if (res != CT_SUCCESS) { delete pSpace; }
+         }
+         if (ImGui::MenuItem(CT_NC("Delete Selected Asset"))) {
+            ctAuditionSpaceActionDeleteAsset* pSpace =
+              new ctAuditionSpaceActionDeleteAsset(ctx.selectedAssetPath.CStr());
+            ctResults res = ctx.Editor->AddDynamicSpace(pSpace);
+            if (res != CT_SUCCESS) { delete pSpace; }
+         }
+         ImGui::EndPopup();
+      }
    }
 
-   if (needsRefresh) { RefreshDirectories(); }
+   if (needsRefresh) {
+      ctx.hoveredResourcePath = "";
+      ctx.selectedAssetPath = "";
+      RefreshDirectories(ctx.currentFolder.CStr());
+   }
 }
 
-void ctAuditionSpaceAssetBrowser::RefreshDirectories() {
-   void* ctx = ctSystemOpenDir(currentFolder.CStr());
+void ctAuditionSpaceAssetBrowser::CurrentFromRelative(ctStringUtf8& currentFolder) {
+   currentFolder = baseFolder;
+   currentFolder.FilePathAppend(relativeFolder);
+}
+
+void ctAuditionSpaceAssetBrowser::RefreshDirectories(const char* folder) {
+   void* ctx = ctSystemOpenDir(folder);
    if (!ctx) {
       directoryValid = false;
       return;
@@ -174,7 +216,7 @@ void ctAuditionSpaceAssetBrowser::RefreshDirectories() {
       DirectoryEntry dir = DirectoryEntry();
       ctSystemGetDirName(ctx, dir.name, CT_MAX_FILE_PATH_LENGTH);
       if (dir.name[0] == '.') { continue; }
-      ctStringUtf8 path = currentFolder;
+      ctStringUtf8 path = folder;
       path.FilePathAppend(dir.name);
       path.FilePathLocalize();
       path.CopyToArray(dir.path, CT_MAX_FILE_PATH_LENGTH);
@@ -193,8 +235,11 @@ void ctAuditionSpaceAssetBrowser::RefreshDirectories() {
             ctAuditionEditor::GetTypeForPath(dir.path, dir.type);
          } else {
             strncpy(dir.type, "untracked", 32);
+            continue;
          }
       } else {
+         ctStringUtf8 path = dir.path;
+         if (ctCStrNEql(path.FilePathGetName().CStr(), "waf3", 4)) { continue; }
          strncpy(dir.type, "folder", 32);
       }
 

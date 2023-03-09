@@ -19,9 +19,9 @@ const char* ctAuditionSpaceAssetEditorTextureImport::GetAssetTypeName() {
    return "Texture";
 }
 
-const char* FormatStrings[] = {"RGB8",
-                               "RGB16",
-                               "RGB32",
+const char* FormatStrings[] = {"RGBA8",
+                               "RGBA16",
+                               "RGBA32",
                                "BC1",
                                "BC2",
                                "BC3",

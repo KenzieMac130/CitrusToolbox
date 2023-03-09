@@ -27,6 +27,7 @@
 #include "spaces/asseteditors/AssetEditorBase.hpp"
 #include "spaces/asseteditors/ModelImport.hpp"
 #include "spaces/asseteditors/TextureImport.hpp"
+#include "spaces/asseteditors/TextEditor.hpp"
 #include "spaces/HexViewer.hpp"
 
 ctResults ctAuditionEditor::Startup() {
@@ -77,6 +78,9 @@ ctResults ctAuditionEditor::Shutdown() {
    delete pCompilerWindow;
    for (size_t i = 0; i < pModuleInspectors.Count(); i++) {
       delete pModuleInspectors[i];
+   }
+   for (size_t i = 0; i < pDynamicSpaces.Count(); i++) {
+      delete pDynamicSpaces[i];
    }
    return CT_SUCCESS;
 }
@@ -197,6 +201,10 @@ ctResults ctAuditionEditor::TryOpenEditorForAsset(const char* path) {
       pNewEditor = new ctAuditionSpaceAssetEditorModelImport();
    } else if (ctCStrNEql(type, "texture", 32)) {
       pNewEditor = new ctAuditionSpaceAssetEditorTextureImport();
+   } else if (ctCStrNEql(type, "text", 32) || ctCStrNEql(type, "translation", 32) ||
+              ctCStrNEql(type, "shader", 32) || ctCStrNEql(type, "lua", 32) ||
+              ctCStrNEql(type, "angelscript", 32)) {
+      pNewEditor = new ctAuditionSpaceAssetEditorTextEditor();
    } else {
       if (ctCStrNEql(type, "folder", 32)) { return CT_FAILURE_UNKNOWN; }
       if (ctCStrNEql(type, "untracked", 32)) { return CT_FAILURE_UNKNOWN; }

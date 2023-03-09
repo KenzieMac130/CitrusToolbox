@@ -19,26 +19,63 @@ const char* ctAuditionSpaceAssetEditorModelImport::GetAssetTypeName() {
    return "Model";
 }
 
-const char* PhysicsModes[] {"none", "bodies", "articulation", "destructable"};
+const char* ModelModes[] {
+  "single",       /* basic one mesh models + LODs (common props, foliage, etc) */
+  "articulation", /* rigs with bone trees (characters, physics objects, etc) */
+  "level",        /* level geometry and spawners */
+  "destructable", /* geometry which can fracture (destructable cover) */
+  "vat",          /* vertex animation texture model (presimulated effect) */
+};
+
+const char* BlastBondModes[] {"exact", "average"};
 
 void ctAuditionSpaceAssetEditorModelImport::OnEditor() {
-   DoUIArgBool("import_render_meshes", CT_NC("Import Render Meshes"), true);
-   DoUIArgBool("import_materials", CT_NC("Import Materials"), true);
-   DoUIArgBool("search_materials", CT_NC("Search for Materials"), true);
-   ImGui::Separator();
-   DoUIArgBool("import_spawners", CT_NC("Import Spawners"), true);
+   int mode = DoUIArgCombo(
+     "model_mode", CT_NC("Model Mode"), 0, ctCStaticArrayLen(ModelModes), ModelModes);
    DoUIArgBool("import_curves", CT_NC("Import Curves"), true);
+   DoUIArgBool("import_lights", CT_NC("Import Lights"), true);
+
+   /* articulation only */
+   if ((mode == 1)) {
+      DoUIArgBool("import_bone_animations", CT_NC("Import Animation"), true);
+   }
+
    ImGui::Separator();
-   int mode = DoUIArgCombo("physics_mode",
-                           CT_NC("Physics Mode"),
-                           1,
-                           ctCStaticArrayLen(PhysicsModes),
-                           PhysicsModes);
-   if (mode == 0) { ImGui::BeginDisabled(); }
+   /* not applicable to destructables */
+   if (mode != 3) { DoUIArgBool("physics_export", CT_NC("Export Physics"), true); }
    DoUIArgFloat("physics_mass_scale", CT_NC("Mass Scale"), 1.0f, 0.00001f, 1000.0f);
    DoUIArgString("physics_material_override", CT_NC("Surface Override"), "");
-   if (mode == 0) { ImGui::EndDisabled(); }
    ImGui::Separator();
-   DoUIArgBool("import_animations", CT_NC("Import Animations"), true);
-   DoUIArgBool("import_blend_shapes", CT_NC("Import Blend Shapes"), true);
+
+   /* not applicable to destructables or vats */
+   if (mode != 3 && mode != 4) {
+      DoUIArgBool("import_mesh_lods", CT_NC("Import Mesh LODs"), true);
+      if (mode != 2) {
+         DoUIArgBool("import_blend_shapes", CT_NC("Import Blend Shapes"), false);
+      }
+      DoUIArgBool("import_keep_topology", CT_NC("Preserve Topology"), false);
+   }
+
+   /* only destructables */
+   if (mode == 3) {
+      DoUIArgString("destructable_original", CT_NC("Original Model"), "");
+      DoUIArgString("destructable_core", CT_NC("Core Model"), "");
+      DoUIArgString("destructable_preset", CT_NC("Destruction Preset"), "");
+      DoUIArgCombo("blast_bond_mode",
+                   CT_NC("Bond Generation"),
+                   0,
+                   ctCStaticArrayLen(BlastBondModes),
+                   BlastBondModes);
+      DoUIArgFloat(
+        "blast_max_separation", CT_NC("Max Separation"), 0.01f, FLT_MIN, FLT_MAX);
+   }
+
+   /* only vats */
+   if (mode == 4) {
+      DoUIArgString("vat_tex_lut", CT_NC("VAT Lookup Texture"), "");
+      DoUIArgString("vat_tex_position", CT_NC("VAT Position Texture"), "");
+      DoUIArgString("vat_tex_rotation", CT_NC("VAT Rotation Texture"), "");
+      DoUIArgString("vat_tex_color", CT_NC("VAT Color Texture"), "");
+      DoUIArgString("vat_metadata", CT_NC("VAT Metadata"), "");
+   }
 }

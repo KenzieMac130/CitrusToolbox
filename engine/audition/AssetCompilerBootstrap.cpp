@@ -23,6 +23,7 @@ struct ctAssetCompilerContext {
    ctStringUtf8 pythonPath;
    ctStringUtf8 wafBasePath;
    ctStringUtf8 wafPath;
+   ctStringUtf8 subargs[8];
 
    ctSpinLock* pLock;
    ctStringUtf8* pOutput;
@@ -97,7 +98,8 @@ void ctAssetCompilerBootstrap::ReleaseOutputLock() {
    ctSpinLockExitCritical(lock);
 }
 
-ctResults ctAssetCompilerBootstrap::StartCompiler() {
+ctResults ctAssetCompilerBootstrap::StartCompiler(size_t subargCount,
+                                                  const char** subargs) {
    ctSpinLockEnterCritical(lock);
    if (!compilerFinished) {
       ctSpinLockExitCritical(lock);
