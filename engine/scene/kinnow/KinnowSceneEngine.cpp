@@ -20,6 +20,7 @@
 #include "middleware/ImguiIntegration.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
 #include "core/WindowManager.hpp"
+#include "core/Application.hpp"
 
 ctResults ctKinnowSceneEngine::Startup() {
    return ctResults();
@@ -30,6 +31,7 @@ ctResults ctKinnowSceneEngine::Shutdown() {
 }
 
 ctResults ctKinnowSceneEngine::OnNextFrame(double deltaTime) {
+   Engine->App->OnTick(deltaTime);
    PushCameraToRenderer();
    return CT_SUCCESS;
 }

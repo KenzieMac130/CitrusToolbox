@@ -371,7 +371,7 @@ static int InputTextCallback(ImGuiInputTextCallbackData* data) {
       // (BufSize) we need to set them back to what we want.
       ctStringUtf8* str = user_data->Str;
       IM_ASSERT(data->Buf == str->CStr());
-      str->ResizeBytes(data->BufTextLen);
+      str->ResizeBytes(data->BufTextLen > 0 ? data->BufTextLen : 1);
       data->Buf = (char*)str->CStr();
    } else if (user_data->ChainCallback) {
       // Forward to user callback, if any
@@ -388,17 +388,14 @@ bool ImGui::InputText(const char* label,
                       void* user_data) {
    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
    flags |= ImGuiInputTextFlags_CallbackResize;
+   if (str->Capacity() == 0) { *str = ""; }
 
    InputTextCallback_UserData cb_user_data;
    cb_user_data.Str = str;
    cb_user_data.ChainCallback = callback;
    cb_user_data.ChainCallbackUserData = user_data;
-   return InputText(label,
-                    (char*)str->CStr(),
-                    str->Capacity() + 1,
-                    flags,
-                    InputTextCallback,
-                    &cb_user_data);
+   return InputText(
+     label, (char*)str->CStr(), str->Capacity(), flags, InputTextCallback, &cb_user_data);
 }
 
 bool ImGui::InputTextMultiline(const char* label,
@@ -409,6 +406,7 @@ bool ImGui::InputTextMultiline(const char* label,
                                void* user_data) {
    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
    flags |= ImGuiInputTextFlags_CallbackResize;
+   if (str->Capacity() == 0) { *str = ""; }
 
    InputTextCallback_UserData cb_user_data;
    cb_user_data.Str = str;
@@ -416,7 +414,7 @@ bool ImGui::InputTextMultiline(const char* label,
    cb_user_data.ChainCallbackUserData = user_data;
    return InputTextMultiline(label,
                              (char*)str->CStr(),
-                             str->Capacity() + 1,
+                             str->Capacity(),
                              size,
                              flags,
                              InputTextCallback,
@@ -431,6 +429,7 @@ bool ImGui::InputTextWithHint(const char* label,
                               void* user_data) {
    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
    flags |= ImGuiInputTextFlags_CallbackResize;
+   if (str->Capacity() == 0) { *str = ""; }
 
    InputTextCallback_UserData cb_user_data;
    cb_user_data.Str = str;
@@ -439,7 +438,7 @@ bool ImGui::InputTextWithHint(const char* label,
    return InputTextWithHint(label,
                             hint,
                             (char*)str->CStr(),
-                            str->Capacity() + 1,
+                            str->Capacity(),
                             flags,
                             InputTextCallback,
                             &cb_user_data);

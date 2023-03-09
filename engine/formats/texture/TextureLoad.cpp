@@ -32,6 +32,8 @@
 
 struct tinyUserData {
    ctFile* pFile;
+   bool* pErrorOccured;
+   const char* errorPrefix;
 };
 void* ctTinyAlloc(void* user, size_t size) {
    return ctMalloc(size);
@@ -52,7 +54,9 @@ int64_t ctTinyTell(void* user) {
    return pCtx->pFile->Tell();
 }
 void ctTinyError(void* user, char const* msg) {
-   ctDebugError(msg);
+   tinyUserData* pCtx = (tinyUserData*)user;
+   *pCtx->pErrorOccured = true;
+   ctDebugError("%s%s", pCtx->errorPrefix, msg);
 }
 
 TinyKtx_Callbacks tinyKtxCbs = {
@@ -80,37 +84,160 @@ int ctStbEof(void* user) {
 
 stbi_io_callbacks stbCallbacks = {ctStbRead, ctStbSkip, ctStbEof};
 
-ctResults ctLoadTextureFromFile(const char* path, ctTextureLoadCtx* ctx) {
-   ctFile file = ctFile(path, CT_FILE_OPEN_READ);
-   if (!file.isOpen()) { return CT_FAILURE_INACCESSIBLE; }
-
-   if (1/* check ktx magic number*/) {
-      /* Load Tiny KTX */
-      tinyUserData ud = {&file};
-      TinyKtx_ContextHandle tinyKtx = TinyKtx_CreateContext(&tinyKtxCbs, &ud);
-      if (!TinyKtx_ReadHeader(tinyKtx)) {
-         TinyKtx_DestroyContext(tinyKtx);
-         return CT_FAILURE_CORRUPTED_CONTENTS;
-      }
-   } else if (1/* check dds magic*/) {
-      /* Load Tiny DDS */
-   } else if(1/* Wants 3D texture & Check for CUBE file keywords (#**, TIT, LUT, DOM*/) {
-	   /* https://wwwimages2.adobe.com/content/dam/acom/en/products/speedgrade/cc/pdfs/cube-lut-specification-1.0.pdf */
-   } else if(1/* Wants 2D texture */) {
-      /* Attempt to Load STB */
-      int channels = 0;
-      stbUserData ud = {&file};
-      ctx->memory.data = stbi_load_from_callbacks(
-        &stbCallbacks, &ud, &ctx->memory.width, &ctx->memory.height, &channels, 4);
-      ctx->memory.format = TinyImageFormat_R8G8B8A8_UNORM;
-      if (!ctx->memory.data) { return CT_FAILURE_CORRUPTED_CONTENTS; }
-   } else {
-	   return CT_FAILURE_CORRUPTED_CONTENTS;
+ctResults LoadKTX(ctFile& file, ctTextureLoadCtx* ctx) {
+   ctx->src = CT_TEXTURELOAD_TINYKTX;
+   bool errorOccured = false;
+   tinyUserData ud = {&file, &errorOccured, "[TinyKTX] "};
+   TinyKtx_ContextHandle tinyKtx = TinyKtx_CreateContext(&tinyKtxCbs, &ud);
+   ctx->loaderdata = tinyKtx;
+   if (!TinyKtx_ReadHeader(tinyKtx)) {
+      TinyKtx_DestroyContext(tinyKtx);
+      return CT_FAILURE_CORRUPTED_CONTENTS;
    }
+
+   /* only support native endian */
+   if (TinyKtx_NeedsEndianCorrecting(tinyKtx)) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+
+   /* get format */
+   ctx->format = TinyImageFormat_FromTinyKtxFormat(TinyKtx_GetFormat(tinyKtx));
+
+   /* get dimensions */
+   ctx->width = TinyKtx_Width(tinyKtx);
+   ctx->height = TinyKtx_Height(tinyKtx);
+
+   /* mipmaps */
+   if (TinyKtx_NeedsGenerationOfMipmaps(tinyKtx)) {
+      ctx->mips = 1; /* nope: not doing it here */
+   } else {
+      ctx->mips = TinyKtx_NumberOfMipmaps(tinyKtx);
+   }
+
+   /* get type */
+   if (TinyKtx_Is1D(tinyKtx)) {
+      ctx->type = CT_TEXTURELOAD_1D;
+      ctx->depth = TinyKtx_ArraySlices(tinyKtx);
+   } else if (TinyKtx_Is2D(tinyKtx)) {
+      ctx->type = CT_TEXTURELOAD_2D;
+      ctx->depth = TinyKtx_ArraySlices(tinyKtx);
+   } else if (TinyKtx_Is3D(tinyKtx)) {
+      ctx->type = CT_TEXTURELOAD_3D;
+      ctx->depth = TinyKtx_Depth(tinyKtx);
+   } else if (TinyKtx_IsCubemap(tinyKtx)) {
+      ctx->type = CT_TEXTURELOAD_CUBEMAP;
+      ctx->depth = TinyKtx_ArraySlices(tinyKtx);
+   }
+
+   /* load data */
+   for (uint32_t mip = 0; mip < ctx->mips; mip++) {
+      uint32_t size = TinyKtx_ImageSize(tinyKtx, mip);
+      if (TinyKtx_IsMipMapLevelUnpacked(tinyKtx, mip)) {
+         /* todo read with TinyKtx_UnpackedRowStride stride */
+         ctAssert(0);
+         return CT_FAILURE_CORRUPTED_CONTENTS;
+      } else {
+         ctx->levels[mip] = TinyKtx_ImageRawData(tinyKtx, mip);
+      }
+   }
+   if (errorOccured) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    return CT_SUCCESS;
+}
+
+/* mostly mirrors KTX code */
+ctResults LoadDDS(ctFile& file, ctTextureLoadCtx* ctx) {
+   ctx->src = CT_TEXTURELOAD_TINYDDS;
+   bool errorOccured = false;
+   tinyUserData ud = {&file, &errorOccured, "[TinyDDS] "};
+   TinyDDS_ContextHandle tinyDDS = TinyDDS_CreateContext(&tinyDdsCbs, &ud);
+   ctx->loaderdata = tinyDDS;
+   if (!TinyDDS_ReadHeader(tinyDDS)) {
+      TinyDDS_DestroyContext(tinyDDS);
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
+
+   /* only support native endian */
+   if (TinyDDS_NeedsEndianCorrecting(tinyDDS)) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+
+   /* get format */
+   ctx->format = TinyImageFormat_FromTinyDDSFormat(TinyDDS_GetFormat(tinyDDS));
+
+   /* get dimensions */
+   ctx->width = TinyDDS_Width(tinyDDS);
+   ctx->height = TinyDDS_Height(tinyDDS);
+
+   /* mipmaps */
+   if (TinyDDS_NeedsGenerationOfMipmaps(tinyDDS)) {
+      ctx->mips = 1; /* nope: not doing it here */
+   } else {
+      ctx->mips = TinyDDS_NumberOfMipmaps(tinyDDS);
+   }
+
+   /* get type */
+   if (TinyDDS_Is1D(tinyDDS)) {
+      ctx->type = CT_TEXTURELOAD_1D;
+      ctx->depth = TinyDDS_ArraySlices(tinyDDS);
+   } else if (TinyDDS_Is2D(tinyDDS)) {
+      ctx->type = CT_TEXTURELOAD_2D;
+      ctx->depth = TinyDDS_ArraySlices(tinyDDS);
+   } else if (TinyDDS_Is3D(tinyDDS)) {
+      ctx->type = CT_TEXTURELOAD_3D;
+      ctx->depth = TinyDDS_Depth(tinyDDS);
+   } else if (TinyDDS_IsCubemap(tinyDDS)) {
+      ctx->type = CT_TEXTURELOAD_CUBEMAP;
+      ctx->depth = TinyDDS_ArraySlices(tinyDDS);
+   }
+
+   /* load data */
+   for (uint32_t mip = 0; mip < ctx->mips; mip++) {
+      uint32_t size = TinyDDS_ImageSize(tinyDDS, mip);
+      ctx->levels[mip] = TinyDDS_ImageRawData(tinyDDS, mip);
+   }
+
+   if (errorOccured) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   return CT_SUCCESS;
+}
+
+ctResults LoadMisc(ctFile& file, ctTextureLoadCtx* ctx) {
+   ctx->src = CT_TEXTURELOAD_STB;
+   stbUserData ud = {&file};
+   int channels = 0;
+   int iwidth, iheight;
+
+   ctx->loaderdata =
+     stbi_load_from_callbacks(&stbCallbacks, &ud, &iwidth, &iheight, &channels, 4);
+   if (!ctx->loaderdata) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   ctx->width = (uint32_t)iwidth;
+   ctx->height = (uint32_t)iheight;
+   ctx->depth = 1;
+   ctx->mips = 1;
+   ctx->format = TinyImageFormat_R8G8B8A8_UNORM;
+   ctx->type = CT_TEXTURELOAD_2D;
+   ctx->levels[0] = ctx->loaderdata;
+   return CT_SUCCESS;
+}
+
+ctResults ctTextureLoadFromFile(ctFile& file, ctTextureLoadCtx* ctx) {
+   *ctx = ctTextureLoadCtx();
+   char peek[6];
+   memset(peek, 0, 6);
+   int64_t read = (int64_t)file.ReadRaw(peek, 1, 5);
+   file.Seek(-read, CT_FILE_SEEK_CUR);
+   uint8_t ktxId[5] = {0xAB, 0x4B, 0x54, 0x58, 0x00};
+   if (ctCStrNEql(peek, (const char*)ktxId, 4)) {
+      return LoadKTX(file, ctx);
+   } else if (ctCStrNEql(peek, "DDS", 3)) {
+      return LoadDDS(file, ctx);
+   } else {
+      return LoadMisc(file, ctx);
+   }
 }
 
 void ctTextureLoadCtxRelease(ctTextureLoadCtx* pCtx) {
    if (!pCtx) { return; }
-   ctFree(pCtx->memory.data);
+   if (pCtx->src == CT_TEXTURELOAD_TINYKTX) {
+      TinyKtx_DestroyContext((TinyKtx_ContextHandle)pCtx->loaderdata);
+   } else if (pCtx->src == CT_TEXTURELOAD_TINYDDS) {
+      TinyDDS_DestroyContext((TinyDDS_ContextHandle)pCtx->loaderdata);
+   } else if (pCtx->src == CT_TEXTURELOAD_STB) {
+      stbi_image_free(pCtx->loaderdata);
+   }
 }

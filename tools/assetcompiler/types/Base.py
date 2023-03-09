@@ -93,6 +93,8 @@ class CitrusAssetCompileTask(waflib.Task.Task):
 		formatDict = {}
 		formatDict.update(self.args)
 		formatDict["EXEC"] = self.env[self.executableEnv][0]
+		print(self)
+		formatDict["GUID_SCRIPT"] = pathlib.Path(self.get_cwd().abspath()) / "GUIDLookup.py"
 		inputAbsPaths = []
 		outputAbsPaths = []
 		outputGuids = []

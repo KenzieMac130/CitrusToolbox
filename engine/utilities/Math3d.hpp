@@ -42,7 +42,9 @@
 #define CT_VEC3_FROM_2D_FRONT(v)  ctVec3(v.x, v.y, 0.0f)
 #define CT_VEC3_FROM_2D_SIDE(v)   ctVec3(0.0f, v.y, v.x)
 
-#define CT_AXIS_VERTICAL y
+#define CT_AXIS_UP y
+#define CT_AXIS_NS z
+#define CT_AXIS_EW x
 
 /* --- Vec2 --- */
 struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC2) ctVec2 {
@@ -681,6 +683,9 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_MAT4) ctMat4 {
        data[2][0] = v20; data[2][1] = v21; data[2][2] = v22; data[2][3] = v23;
        data[3][0] = v30; data[3][1] = v31; data[3][2] = v32; data[3][3] = v33;
       // clang-format on
+   }
+   inline ctMat4(const float* values) {
+      memcpy(&data[0][0], values, sizeof(float) * 4);
    }
    inline float& operator()(int r, int c) {
       return data[r][c];

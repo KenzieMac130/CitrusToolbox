@@ -21,22 +21,22 @@
 
 /* ----------------------- Concrete types ----------------------- */
 
-struct ctKinnowComponentQueryT {
-   // ctKinnowComponentQueryT(const char* format);
-   // void QueryComponents(struct ctKinnowWorld& world);
+struct ctSceneComponentQueryT {
+   // ctSceneComponentQueryT(const char* format);
+   // void QueryComponents(struct ctSceneContext& context);
 
    // todo: baked query
    /* flattened continuous array of pointers for each component */
    ctDynamicArray<void*> absoluteAddressForComponents;
 };
 
-struct ctKinnowComponentFetcherT {
-   struct ctKinnowComponentTypeT* pManager;
+struct ctSceneComponentFetcherT {
+   struct ctSceneComponentTypeT* pManager;
 };
 
-struct ctKinnowComponentTypeT {
-   ctKinnowComponentTypeT(ctKinnowComponentTypeDesc& desc);
-   ~ctKinnowComponentTypeT();
+struct ctSceneComponentTypeT {
+   ctSceneComponentTypeT(ctSceneComponentTypeDesc& desc);
+   ~ctSceneComponentTypeT();
    void ExpandEntityCount(size_t newCount);
 
    ctStringUtf8 name;
@@ -46,23 +46,23 @@ struct ctKinnowComponentTypeT {
    // todo: bloom filter
    ctDynamicArray<int32_t>
      componentOffsets; /* offsets into entity blobs indexed by handle */
-   // ctDynamicArray<ctKinnowComponentQuery*> /* dependent queries on add/remove/resize */
+   // ctDynamicArray<ctSceneComponentQuery*> /* dependent queries on add/remove/resize */
 };
 
-struct ctKinnowWorldT {
-   ctKinnowWorldT(ctKinnowWorldCreateDesc& desc);
-   ~ctKinnowWorldT();
+struct ctSceneContextT {
+   ctSceneContextT(ctSceneContextCreateDesc& desc);
+   ~ctSceneContextT();
 
    size_t maxEntities;
 
-   void RegisterComponentType(ctKinnowComponentTypeDesc& desc);
-   ctHashTable<ctKinnowComponentTypeT*, uint32_t> componentTypesByName;
-   ctDynamicArray<ctKinnowComponentTypeT*> componentTypes; /* component types */
+   void RegisterComponentType(ctSceneComponentTypeDesc& desc);
+   ctHashTable<ctSceneComponentTypeT*, uint32_t> componentTypesByName;
+   ctDynamicArray<ctSceneComponentTypeT*> componentTypes; /* component types */
 
    ctHandleManager entityManager;
    ctDynamicArray<size_t> entityBlobStarts; /* indexed by handle */
 
-   ctResults AddComponent(ctKinnowComponentCreateDesc& desc);
+   ctResults AddComponent(ctSceneComponentCreateDesc& desc);
 
    /* component memory allocator */
    ctResults AllocateComponent();
@@ -70,67 +70,67 @@ struct ctKinnowWorldT {
    ctDynamicArray<size_t> chunksFree;
    ctDynamicArray<uint8_t> componentMemoryBlob;
 
-   // ctDynamicArray<ctKinnowComponentQuery*> /* dependent queries on add/remove/resize */
+   // ctDynamicArray<ctSceneComponentQuery*> /* dependent queries on add/remove/resize */
 };
 
 /* ----------------------- API ----------------------- */
 
-ctResults ctKinnowWorldCreate(ctKinnowWorld* pWorld, ctKinnowWorldCreateDesc* pDesc) {
-   *pWorld = new ctKinnowWorldT(*pDesc);
+ctResults ctSceneContextCreate(ctSceneContext* pContext, ctSceneContextCreateDesc* pDesc) {
+   *pContext = new ctSceneContextT(*pDesc);
    return CT_SUCCESS;
 }
 
-ctResults ctKinnowWorldDestroy(ctKinnowWorld world) {
-   delete world;
+ctResults ctSceneContextDestroy(ctSceneContext context) {
+   delete context;
    return CT_SUCCESS;
 }
 
-ctResults ctKinnowComponentTypeRegister(ctKinnowWorld world,
-                                        ctKinnowComponentTypeDesc* pDesc) {
-   world->RegisterComponentType(*pDesc);
+ctResults ctSceneComponentTypeRegister(ctSceneContext context,
+                                        ctSceneComponentTypeDesc* pDesc) {
+   context->RegisterComponentType(*pDesc);
    return CT_SUCCESS;
 }
 
-ctResults ctKinnowEntityCreate(ctKinnowWorld world, ctKinnowEntity* pEntity) {
-   *pEntity = world->entityManager.GetNewHandle();
+ctResults ctSceneEntityCreate(ctSceneContext context, ctSceneEntity* pEntity) {
+   *pEntity = context->entityManager.GetNewHandle();
    return CT_SUCCESS;
 }
 
-ctResults ctKinnowEntityDestroy(ctKinnowWorld world, ctKinnowEntity entity) {
-   world->entityManager.FreeHandle(entity);
+ctResults ctSceneEntityDestroy(ctSceneContext context, ctSceneEntity entity) {
+   context->entityManager.FreeHandle(entity);
    /* todo: release all other component types */
    return CT_SUCCESS;
 }
 
-ctResults ctKinnowComponentCreate(ctKinnowWorld world,
-                                  ctKinnowComponentCreateDesc* pDesc) {
+ctResults ctSceneComponentCreate(ctSceneContext context,
+                                  ctSceneComponentCreateDesc* pDesc) {
    /* find component type by name */
    return ctResults();
 }
 
 /* ----------------------- Internals ----------------------- */
 
-ctKinnowWorldT::ctKinnowWorldT(ctKinnowWorldCreateDesc& desc) {
+ctSceneContextT::ctSceneContextT(ctSceneContextCreateDesc& desc) {
    maxEntities = desc.entityCountReserve;
 }
 
-ctKinnowWorldT::~ctKinnowWorldT() {
+ctSceneContextT::~ctSceneContextT() {
    for (size_t i = 0; i < componentTypes.Count(); i++) {
       delete componentTypes[i];
    }
 }
 
-void ctKinnowWorldT::RegisterComponentType(ctKinnowComponentTypeDesc& desc) {
-   ctKinnowComponentTypeT* componentType = new ctKinnowComponentTypeT(desc);
+void ctSceneContextT::RegisterComponentType(ctSceneComponentTypeDesc& desc) {
+   ctSceneComponentTypeT* componentType = new ctSceneComponentTypeT(desc);
    componentType->ExpandEntityCount(maxEntities);
    componentTypes.Append(componentType);
    componentTypesByName.Insert(ctXXHash32(desc.name), componentType);
 }
 
-ctResults ctKinnowWorldT::AddComponent(ctKinnowComponentCreateDesc& desc) {
-   ctKinnowComponentTypeT** ppType = componentTypesByName.FindPtr(ctXXHash32(desc.name));
+ctResults ctSceneContextT::AddComponent(ctSceneComponentCreateDesc& desc) {
+   ctSceneComponentTypeT** ppType = componentTypesByName.FindPtr(ctXXHash32(desc.name));
    if (!ppType) { return CT_FAILURE_NOT_FOUND; }
-   ctKinnowComponentTypeT& type = **ppType;
+   ctSceneComponentTypeT& type = **ppType;
 
    // todo call component allocator
    entityBlobStarts[desc.entity];      /* hmm... */
@@ -138,16 +138,16 @@ ctResults ctKinnowWorldT::AddComponent(ctKinnowComponentCreateDesc& desc) {
    return CT_SUCCESS;
 }
 
-ctKinnowComponentTypeT::ctKinnowComponentTypeT(ctKinnowComponentTypeDesc& desc) {
+ctSceneComponentTypeT::ctSceneComponentTypeT(ctSceneComponentTypeDesc& desc) {
    name = desc.name;
    componentHash = ctXXHash32(desc.name);
    componentSize = desc.componentSize;
 }
 
-ctKinnowComponentTypeT::~ctKinnowComponentTypeT() {
+ctSceneComponentTypeT::~ctSceneComponentTypeT() {
 }
 
-void ctKinnowComponentTypeT::ExpandEntityCount(size_t newCount) {
+void ctSceneComponentTypeT::ExpandEntityCount(size_t newCount) {
    size_t initialCount = componentOffsets.Count();
    componentOffsets.Resize(newCount);
    /* invalidate all unused */

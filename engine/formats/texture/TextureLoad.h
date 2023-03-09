@@ -25,28 +25,29 @@ extern "C" {
 enum ctTextureLoadSrc {
    CT_TEXTURELOAD_TINYKTX,
    CT_TEXTURELOAD_TINYDDS,
-   CT_TEXTURELOAD_CUBE,
-   CT_TEXTURELOAD_STB,
-   CT_TEXTURELOAD_CUSTOM
+   CT_TEXTURELOAD_STB
 };
 
-/* Contex that allows loading textures from various file sources */
+enum ctTextureLoadType {
+   CT_TEXTURELOAD_1D,
+   CT_TEXTURELOAD_2D,
+   CT_TEXTURELOAD_3D,
+   CT_TEXTURELOAD_CUBEMAP
+};
+
 struct ctTextureLoadCtx {
    enum ctTextureLoadSrc src;
-   struct {
-      int width;
-      int height;
-      int depth;
-      int mips;
-      int format;
-      void* data;
-      void* userData;
-   } memory;
-   bool availible;
-   size_t progress;
+   uint32_t width;
+   uint32_t height;
+   uint32_t depth;
+   uint32_t mips;
+   enum TinyImageFormat format;
+   enum ctTextureLoadType type;
+   const void* levels[CT_MAX_MIP_LEVELS];
+   void* loaderdata;
 };
 
-enum ctResults ctLoadTextureFromFile(const char* path, struct ctTextureLoadCtx* pCtx);
+enum ctResults ctTextureLoadFromFile(ctFile& file, struct ctTextureLoadCtx* pCtx);
 void ctTextureLoadCtxRelease(struct ctTextureLoadCtx* pCtx);
 
 #ifdef __cplusplus

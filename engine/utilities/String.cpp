@@ -284,6 +284,12 @@ ctStringUtf8& ctStringUtf8::FilePathPop() {
       _data[i] = '\0';
       _data.RemoveLast();
    }
+   if (ByteLength() == 1) {
+      if (_data[0] != '/' && _data[0] != '\\') {
+         _data[0] = '\0';
+         _data.RemoveLast();
+      }
+   }
    return *this;
 }
 

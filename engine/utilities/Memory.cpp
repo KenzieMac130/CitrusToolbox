@@ -40,8 +40,10 @@ void* ctAlignedMalloc(size_t size, size_t alignment) {
 void* ctAlignedRealloc(void* block, size_t size, size_t alignment) {
    ZoneScoped;
    void* pNew = ctAlignedMalloc(size, alignment);
-   memcpy(pNew, block, ((alignedAllocTracker*)block)[-1].originalSize);
-   ctAlignedFree(block);
+   if (block) {
+      memcpy(pNew, block, ((alignedAllocTracker*)block)[-1].originalSize);
+      ctAlignedFree(block);
+   }
    return pNew;
 }
 

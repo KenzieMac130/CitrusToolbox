@@ -1,2 +1,2 @@
-#add_subdirectory(compilemodel)
+add_subdirectory(compilemodel)
 add_subdirectory(compileshader)

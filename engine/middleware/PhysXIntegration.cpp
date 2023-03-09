@@ -88,7 +88,6 @@ ctResults ctPhysXIntegration::Startup() {
      PxCreateBasePhysics(PX_PHYSICS_VERSION, *pFoundation, toleranceScale, recordAllocations, pPvd);
    if (!pPhysics) { ctFatalError(-1, "PxCreatePhysics failed!"); }
 
-   PxRegisterArticulations(*pPhysics);
    PxRegisterHeightFields(*pPhysics);
 
 #if CITRUS_PHYSX_RUNTIMECOOK

@@ -25,3 +25,9 @@ add_executable(Test_Scene SceneTest.cpp)
 set_property(TARGET Test_Scene PROPERTY FOLDER "tests")
 target_link_libraries(Test_Scene PUBLIC engine)
 target_link_libraries(Test_Scene PUBLIC game)
+
+#Model Test
+add_executable(Test_Model ModelTest.cpp)
+set_property(TARGET Test_Model PROPERTY FOLDER "tests")
+target_link_libraries(Test_Model PUBLIC engine)
+target_link_libraries(Test_Model PUBLIC game)
