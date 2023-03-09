@@ -19,7 +19,11 @@
 #include "utilities/Common.h"
 #include "EngineCore.hpp"
 
-struct ctAppVersion { int32_t major; int32_t minor; int32_t patch; };
+struct ctAppVersion {
+   int32_t major;
+   int32_t minor;
+   int32_t patch;
+};
 
 class CT_API ctApplication {
 public:
@@ -27,6 +31,7 @@ public:
 
    /* Event Handling */
    virtual ctResults OnStartup();
+   virtual ctResults OnTick(const float deltatime);
    virtual ctResults OnFrameAdvance(const float deltatime);
    virtual ctResults OnUIUpdate();
    virtual ctResults OnShutdown();

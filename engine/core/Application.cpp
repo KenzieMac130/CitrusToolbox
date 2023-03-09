@@ -28,6 +28,10 @@ ctResults ctApplication::OnStartup() {
    return ctResults();
 }
 
+ctResults ctApplication::OnTick(const float deltatime) {
+   return ctResults();
+}
+
 ctResults ctApplication::OnFrameAdvance(const float deltatime) {
    return ctResults();
 }
