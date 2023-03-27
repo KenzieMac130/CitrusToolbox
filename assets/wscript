@@ -23,11 +23,13 @@ def configure(ctx):
 	try:
 		ctx.find_program("CitrusShader", path_list=outPathList, var='CitrusShader')
 	except:
-		raise ValueError("Could not find CitrusShader! Please build tools and reconfigure")
+		pass
+		#raise ValueError("Could not find CitrusShader! Please build tools and reconfigure")
 	try:
 		ctx.find_program("CitrusModel", path_list=outPathList, var='CitrusModel')
 	except:
-		raise ValueError("Could not find CitrusModel! Please build tools and reconfigure")
+		pass
+		#raise ValueError("Could not find CitrusModel! Please build tools and reconfigure")
 	ctx.env.platform = ctx.options.platform
 	ctx.env.final = ctx.options.final
 	ctx.env.codegenPath = ctx.options.build+'/generated/'

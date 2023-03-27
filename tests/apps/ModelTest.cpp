@@ -84,8 +84,22 @@ ctResults TestApp::OnTick(const float deltatime) {
 }
 
 ctResults TestApp::OnUIUpdate() {
-   Im3d::SetColor(Im3d::Color_Red);
+   Im3d::PushLayerId(CT_IM3D_LAYER_XRAY);
+   Im3d::BeginTriangles();
+   Im3d::SetColor(ctVec4ToIm3dColor(CT_COLOR_RED));
+   Im3d::Vertex(ctVec3ToIm3d(ctVec3(-0.5f, -0.5f, 0.0f)));
+   Im3d::SetColor(ctVec4ToIm3dColor(CT_COLOR_GREEN));
+   Im3d::Vertex(ctVec3ToIm3d(ctVec3(0.5f, -0.5f, 0.0f)));
+   Im3d::SetColor(ctVec4ToIm3dColor(CT_COLOR_BLUE));
+   Im3d::Vertex(ctVec3ToIm3d(ctVec3(0.0f, 0.5f, 0.0f)));
+   Im3d::End();
+   Im3d::PopLayerId();
+
+   Im3d::SetColor(ctVec4ToIm3dColor(CT_COLOR_PINK));
    Im3d::DrawAlignedBoxFilled(Im3d::Vec3(-1.0f), Im3d::Vec3(1.0f));
+
+   Im3d::SetColor(ctVec4ToIm3dColor(CT_COLOR_WHITE));
+   Im3d::Text(Im3d::Vec3(0.0f), Im3d::TextFlags_Default, "Hello World!!!");
 
    if (ImGui::Begin("Quick Camera")) {
       ImGui::DragFloat("Camera Distance", &cameraDistance);
@@ -114,5 +128,5 @@ void ModelViewer::UpdateUI() {
 }
 
 ctResults ModelViewer::LoadModel(ctFile file) {
-   return ctModelLoad(&model, &file);
+   return ctModelLoad(model, &file);
 }

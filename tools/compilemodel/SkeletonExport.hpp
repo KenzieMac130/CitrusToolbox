@@ -19,8 +19,6 @@
 #include "utilities/Common.h"
 #include "ExportPhaseBase.hpp"
 
-#include "formats/model/extensions/Skeleton.hpp"
-
 class CT_API ctModelExportSkeleton : public ctModelExportPhaseBase {
 public:
    virtual ctResults
@@ -29,7 +27,8 @@ public:
    int32_t FindBoneForName(const char* name);
 
 private:
-   ctDynamicArray<ctModelSkeletonBoneName> boneNames;
+   ctDynamicArray<uint32_t> boneHashes;
+   ctDynamicArray<const char*> boneNames;
    ctDynamicArray<ctModelSkeletonBoneTransform> boneTransforms;
    ctDynamicArray<ctModelSkeletonBoneGraph> boneGraph;
 };

@@ -22,7 +22,7 @@
 class CT_API ctAuditionSpaceContext {
 public:
    ctStringUtf8 assetBasePath =
-     "C:\\Users\\Kenzie\\Documents\\GitHub\\CitrusToolbox\\assets";
+     "C:\\Users\\AfterHours\\Documents\\GitHub\\CitrusToolbox\\assets";
    ctStringUtf8 selectedAssetPath = "";
    ctStringUtf8 selectedResourcePath = "";
    ctStringUtf8 hoveredResourcePath = "";

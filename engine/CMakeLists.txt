@@ -188,9 +188,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.c
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/Model.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/Skeleton.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/RenderMesh.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.cpp
 )
 
 set(ENGINE_HEADER_FILES_FORMAT
@@ -202,9 +200,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/extensions/Skeleton.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/extensions/RenderMesh.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/internal/ModelInternal.hpp
 )
 
 # ---------- Renderer Frontend ---------- 
@@ -393,6 +388,10 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
 ${CITRUS_CODEGEN_DIR}/Config.h)
 
 # ---------- Asset System Codegen ----------
+if(EXISTS ${CITRUS_CODEGEN_DIR}/DataNicknames.cpp)
+else()
+write_file(${CITRUS_CODEGEN_DIR}/DataNicknames.cpp "#include <stdint.h>\nconst char* ctGetDataGuidFromHash(size_t hash){return NULL;}")
+endif()
 add_library(data ${CITRUS_CODEGEN_DIR}/DataNicknames.cpp)
 
 # ---------- Create Engine Library ----------

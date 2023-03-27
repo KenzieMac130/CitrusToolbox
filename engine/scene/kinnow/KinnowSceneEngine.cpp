@@ -31,7 +31,7 @@ ctResults ctKinnowSceneEngine::Shutdown() {
 }
 
 ctResults ctKinnowSceneEngine::OnNextFrame(double deltaTime) {
-   Engine->App->OnTick(deltaTime);
+   Engine->App->OnTick((float)deltaTime);
    PushCameraToRenderer();
    return CT_SUCCESS;
 }

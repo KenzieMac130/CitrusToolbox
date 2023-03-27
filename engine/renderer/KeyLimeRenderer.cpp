@@ -25,6 +25,7 @@
 #include "gpu/Buffer.h"
 #include "gpu/Texture.h"
 #include "gpu/Commands.h"
+#include "gpu/DebugUI.h"
 
 #include "core/EngineCore.hpp"
 #include "core/Application.hpp"
@@ -363,6 +364,11 @@ ctResults ctKeyLimeRenderer::Shutdown() {
 
 const char* ctKeyLimeRenderer::GetModuleName() {
    return "Renderer";
+}
+
+void ctKeyLimeRenderer::DebugUI(bool useGizmos) {
+   ctGPUDebugUIDevice(pGPUDevice);
+   ctGPUDebugUIArchitect(pGPUDevice, pGPUArchitect, true);
 }
 
 ctResults ctKeyLimeRenderer::RenderFrame() {

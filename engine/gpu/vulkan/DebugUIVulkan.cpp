@@ -46,12 +46,12 @@ void ctGPUDebugUIDevice(ctGPUDevice* pDevice) {
                pDevice->queueFamilyIndices.computeIdx,
                pDevice->queueFamilyIndices.transferIdx);
    ImGui::Separator();
-   VmaBudget mbudget;
-   vmaGetBudget(pDevice->vmaAllocator, &mbudget);
-   ImGui::Text("VMA Memory Usage: %d", mbudget.usage);
-   ImGui::Text("VMA Alloc Bytes: %d", mbudget.allocationBytes);
-   ImGui::Text("VMA Block Bytes: %d", mbudget.blockBytes);
-   ImGui::Text("VMA Budget: %d", mbudget.budget);
+   //VmaBudget mbudget;
+   //vmaGetBudget(pDevice->vmaAllocator, &mbudget);
+   //ImGui::Text("VMA Memory Usage: %d", mbudget.usage);
+   //ImGui::Text("VMA Alloc Bytes: %d", mbudget.allocationBytes);
+   //ImGui::Text("VMA Block Bytes: %d", mbudget.blockBytes);
+   //ImGui::Text("VMA Budget: %d", mbudget.budget);
    ImGui::Text("Staging Buffer Count: %d", pDevice->stagingBuffers.Count());
    if (!pDevice->isDynamicRenderingSupported()) {
        ctSpinLockEnterCritical(pDevice->jitUsableRenderInfoLock);

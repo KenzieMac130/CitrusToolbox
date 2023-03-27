@@ -24,6 +24,7 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
    const char* GetModuleName() final;
+   virtual void DebugUI(bool useGizmos);
 
    ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
 

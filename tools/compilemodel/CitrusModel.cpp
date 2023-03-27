@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
       return -2;
    }
 
-   ctModel output = ctModelCreateEmpty();
+   ctModel output = ctModel();
 
    ctModelExportContext ctx;
    ctx.singleBone = false;

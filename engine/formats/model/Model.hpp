@@ -221,19 +221,19 @@ struct ctModelSpawnerOpSetGUID : public ctModelSpawnerOpSetFlag {
    uint8_t value[16];
 };
 
-size_t ctModelSpawnerOpCodesSize[] = {
-   sizeof(ctModelSpawnerOpGeneral),
-   sizeof(ctModelSpawnerOpGeneral),
-   sizeof(ctModelSpawnerOpSetFlag), 
-   sizeof(ctModelSpawnerOpSetInt32),
-   sizeof(ctModelSpawnerOpSetUInt32),
-   sizeof(ctModelSpawnerOpSetInt64),
-   sizeof(ctModelSpawnerOpSetUInt64),
-   sizeof(ctModelSpawnerOpSetFloat),
-   sizeof(ctModelSpawnerOpSetString),
-   sizeof(ctModelSpawnerOpSetVec4f),
-   sizeof(ctModelSpawnerOpSetGUID)
-};
+//size_t ctModelSpawnerOpCodesSize[] = {
+//   sizeof(ctModelSpawnerOpGeneral),
+//   sizeof(ctModelSpawnerOpGeneral),
+//   sizeof(ctModelSpawnerOpSetFlag), 
+//   sizeof(ctModelSpawnerOpSetInt32),
+//   sizeof(ctModelSpawnerOpSetUInt32),
+//   sizeof(ctModelSpawnerOpSetInt64),
+//   sizeof(ctModelSpawnerOpSetUInt64),
+//   sizeof(ctModelSpawnerOpSetFloat),
+//   sizeof(ctModelSpawnerOpSetString),
+//   sizeof(ctModelSpawnerOpSetVec4f),
+//   sizeof(ctModelSpawnerOpSetGUID)
+//};
 
 struct ctModelSpawnerData {
    uint32_t spawnerDataSize;
@@ -394,9 +394,9 @@ struct ctModel {
    void* mappedCpuData;
 };
 
-CT_API ctModel ctModelCreateEmpty();
+CT_API void ctModelInit(ctModel& model);
 
 CT_API ctResults ctModelLoad(ctModel& model, void* file);
 CT_API ctResults ctModelSave(ctModel& model, void* file);
 
-CT_API void ctModelRelease(ctModel);
+CT_API void ctModelRelease(ctModel& model);

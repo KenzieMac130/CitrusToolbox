@@ -19,7 +19,6 @@
 #include "utilities/Common.h"
 #include "ExportPhaseBase.hpp"
 
-#include "formats/model/extensions/RenderMesh.hpp"
 #include "tiny_imageFormat/tinyimageformat.h"
 
 class CT_API ctModelExportMesh : public ctModelExportPhaseBase {

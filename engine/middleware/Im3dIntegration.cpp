@@ -113,7 +113,6 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ctGPUPipelineBuilder* pPipelineBuilder =
      ctGPUPipelineBuilderNew(pGPUDevice, CT_GPU_PIPELINE_RASTER);
    ctGPUPipelineBuilderSetAttachments(pPipelineBuilder, depthFormat, 1, &colorFormat);
-   ctGPUPipelineBuilderSetFaceCull(pPipelineBuilder, CT_GPU_FACE_NONE);
 
    ctGPUTopology fillToTopo[] = {CT_GPU_TOPOLOGY_TRIANGLE_LIST,
                                  CT_GPU_TOPOLOGY_LINE_LIST,

@@ -24,7 +24,7 @@ bool ctModelExportSkeleton::KeepBoneOfName(const char* name) {
 int32_t ctModelExportSkeleton::FindBoneForName(const char* name) {
    uint32_t hash = ctXXHash32(name);
    for (int32_t i = 0; i < (int32_t)boneNames.Count(); i++) {
-      if (boneNames[i].hash == hash) { return i; }
+      if (boneHashes[i] == hash) { return i; }
    }
    return -1;
 };
@@ -32,11 +32,12 @@ int32_t ctModelExportSkeleton::FindBoneForName(const char* name) {
 ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
                                         ctModel& output,
                                         ctModelExportContext& ctx) {
-    ctDebugLog("Exporting Skeleton...");
+   ctDebugLog("Exporting Skeleton...");
    if (ctx.singleBone) {
       uint32_t nameHash = ctXXHash32("root");
-      int32_t nameString = ctModelCreateString(output, "root");
-      boneNames.Append({nameHash, nameString});
+      ctStringUtf8* nameString = new ctStringUtf8("root");
+      boneNames.Append(nameString->CStr());
+      boneHashes.Append(nameHash);
 
       ctModelSkeletonBoneTransform xform;
       xform.rotation[3] = 1.0f;
@@ -47,7 +48,7 @@ ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
 
       boneGraph.Append({-1, -1, -1});
 
-      ctModelSkeleton* pSkeleton = ctModelGetSkeleton(output);
+      ctModelSkeleton* pSkeleton = &output.skeletonData;
       pSkeleton->boneCount = 1;
       pSkeleton->nameArray = boneNames.Data();
       pSkeleton->transformArray = boneTransforms.Data();
@@ -60,8 +61,9 @@ ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
       const cgltf_node& node = input.nodes[i];
       if (!KeepBoneOfName(node.name)) { continue; }
       uint32_t nameHash = ctXXHash32(node.name);
-      int32_t nameString = ctModelCreateString(output, node.name);
-      boneNames.Append({nameHash, nameString});
+      ctStringUtf8* nameString = new ctStringUtf8(node.name);
+      boneNames.Append(nameString->CStr());
+      boneHashes.Append(nameHash);
    }
 
    /* pass two */
@@ -115,7 +117,7 @@ ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
       if (node.children) { firstChild = FindBoneForName(node.children[0]->name); }
       boneGraph.Append({parent, firstChild, nextSibling});
    }
-   ctModelSkeleton* pSkeleton = ctModelGetSkeleton(output);
+   ctModelSkeleton* pSkeleton = &output.skeletonData;
    pSkeleton->boneCount = boneNames.Count();
    pSkeleton->nameArray = boneNames.Data();
    pSkeleton->transformArray = boneTransforms.Data();
