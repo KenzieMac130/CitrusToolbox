@@ -32,12 +32,16 @@ struct ctModelSkeletonBoneGraph {
    int32_t nextSibling;
 };
 
+struct ctModelSkeletonBoneName {
+   char name[64];
+};
+
 struct ctModelSkeleton {
    uint32_t boneCount;
    ctModelSkeletonBoneTransform* transformArray;
    ctModelSkeletonBoneGraph* graphArray;
    uint32_t* hashArray;
-   const char** nameArray;
+   ctModelSkeletonBoneName* nameArray;
 };
 
 /* ------------------- Mesh ------------------- */
@@ -116,7 +120,7 @@ struct ctModelMesh {
 };
 
 struct ctModelMorphTarget {
-   const char* name;
+   char name[64];
    float defaultWeight;
    float bboxDisplacement[2][3];
    float bsphereDisplacement;
@@ -165,84 +169,6 @@ struct ctModelMeshData {
    uint8_t* inMemoryGeometryData;
 };
 
-/* ------------------- Spawner ------------------- */
-
-enum ctModelSpawnerOpCodes {
-   CT_MODEL_SPAWN_OP_NOOP = 0,
-   CT_MODEL_SPAWN_OP_NEXT_OBJ = 1,
-   CT_MODEL_SPAWN_OP_SET_FLAG = 2,
-   CT_MODEL_SPAWN_OP_SET_INT32 = 3,
-   CT_MODEL_SPAWN_OP_SET_UINT32 = 4,
-   CT_MODEL_SPAWN_OP_SET_INT64 = 5,
-   CT_MODEL_SPAWN_OP_SET_UINT64 = 6,
-   CT_MODEL_SPAWN_OP_SET_FLOAT = 7,
-   CT_MODEL_SPAWN_OP_SET_STRING = 8,
-   CT_MODEL_SPAWN_OP_SET_VEC4F = 11,
-   CT_MODEL_SPAWN_OP_SET_GUID = 12
-};
-
-struct ctModelSpawnerOpGeneral {
-   uint8_t type;
-};
-
-struct ctModelSpawnerOpSetFlag : public ctModelSpawnerOpGeneral {
-   uint32_t hash;
-};
-
-struct ctModelSpawnerOpSetInt32 : public ctModelSpawnerOpSetFlag {
-   int32_t value;
-};
-
-struct ctModelSpawnerOpSetUInt32 : public ctModelSpawnerOpSetFlag {
-   uint32_t value;
-};
-
-struct ctModelSpawnerOpSetInt64 : public ctModelSpawnerOpSetFlag {
-   int64_t value;
-};
-
-struct ctModelSpawnerOpSetUInt64 : public ctModelSpawnerOpSetFlag {
-   uint64_t value;
-};
-
-struct ctModelSpawnerOpSetFloat : public ctModelSpawnerOpSetFlag {
-   float value;
-};
-
-struct ctModelSpawnerOpSetString : public ctModelSpawnerOpSetFlag {
-   int32_t stringOffset;
-};
-
-struct ctModelSpawnerOpSetVec4f : public ctModelSpawnerOpSetFlag {
-   float value[4];
-};
-
-struct ctModelSpawnerOpSetGUID : public ctModelSpawnerOpSetFlag {
-   uint8_t value[16];
-};
-
-//size_t ctModelSpawnerOpCodesSize[] = {
-//   sizeof(ctModelSpawnerOpGeneral),
-//   sizeof(ctModelSpawnerOpGeneral),
-//   sizeof(ctModelSpawnerOpSetFlag), 
-//   sizeof(ctModelSpawnerOpSetInt32),
-//   sizeof(ctModelSpawnerOpSetUInt32),
-//   sizeof(ctModelSpawnerOpSetInt64),
-//   sizeof(ctModelSpawnerOpSetUInt64),
-//   sizeof(ctModelSpawnerOpSetFloat),
-//   sizeof(ctModelSpawnerOpSetString),
-//   sizeof(ctModelSpawnerOpSetVec4f),
-//   sizeof(ctModelSpawnerOpSetGUID)
-//};
-
-struct ctModelSpawnerData {
-   uint32_t spawnerDataSize;
-   uint8_t* spawnerData;
-
-   uint32_t stringPoolSize;
-   char* stringPool;
-};
-
 /* ------------------- Material ------------------- */
 
 struct ctModelTextureInfo {
@@ -254,7 +180,7 @@ struct ctModelTextureInfo {
 };
 
 struct ctModelMaterial {
-   const char* name;
+   char name[64];
    uint32_t shaderIdentifier;
 
    float baseColorTint[3];
@@ -283,10 +209,27 @@ struct ctModelMaterials {
    ctModelMaterial* materials;
 };
 
+/* ------------------- Lights ------------------- */
+
+enum ctModelLightType { CT_MODEL_LIGHT_POINT, CT_MODEL_LIGHT_SPOT };
+
+struct ctModelLight {
+   uint32_t boneIdx;
+   float color[3];
+   float intensity;
+   ctModelLightType type;
+   float parameter[4];
+};
+
+struct ctModelLights {
+   uint32_t lightCount;
+   ctModelLight* lights;
+};
+
 /* ------------------- Splines ------------------- */
 
 struct ctModelSpline {
-   const char* splineName;
+   char name[64];
    uint32_t pointCount;
    float* positions;
    float* tangents;
@@ -325,7 +268,7 @@ struct ctModelAnimationChannel {
 };
 
 struct ctModelAnimationClip {
-   const char* name;
+   char name[64];
    float clipLength;
 
    float bboxDisplacement[2][3];
@@ -336,10 +279,10 @@ struct ctModelAnimationClip {
 };
 
 struct ctModelAnimationData {
-   uint64_t channelCount;
+   uint32_t channelCount;
    ctModelAnimationChannel* channels;
 
-   uint64_t clipCount;
+   uint32_t clipCount;
    ctModelAnimationClip* clips;
 };
 
@@ -357,9 +300,9 @@ struct ctModelExternalFiles {
 /* ------------------- Embedded Data ------------------- */
 
 struct ctModelEmbedSection {
-   const char* name;
+   char name[8];
    uint64_t size;
-   void* data;
+   uint8_t* data;
 };
 
 struct ctModelEmbeds {
@@ -369,8 +312,12 @@ struct ctModelEmbeds {
 
 /* ------------------- Main ------------------- */
 
+#define CT_MODEL_MAGIC   0x636D646C
+#define CT_MODEL_VERSION 0x01
+
 struct ctModelHeader {
-   char magic[4];
+   uint32_t magic = CT_MODEL_MAGIC;
+   uint32_t version = CT_MODEL_VERSION;
    uint64_t cpuDataSize;
    uint64_t pointerFixupTableOffset;
    uint64_t pointerFixupTableSize;
@@ -381,22 +328,21 @@ struct ctModelHeader {
 struct ctModel {
    ctModelHeader header;
 
+   ctModelExternalFiles externalFiles;
+   ctModelEmbeds embeddedData;
+
    ctModelSkeleton skeletonData;
    ctModelMeshData meshData;
    ctModelMaterials materialData;
-   ctModelSpawnerData spawnerData;
+   ctModelLights lightData;
    ctModelSplineData splineData;
    ctModelAnimationData animationData;
-   ctModelExternalFiles externalFiles;
-   ctModelEmbeds embeddedData;
 
    uint64_t mappedCpuDataSize;
    void* mappedCpuData;
 };
 
-CT_API void ctModelInit(ctModel& model);
-
-CT_API ctResults ctModelLoad(ctModel& model, void* file);
-CT_API ctResults ctModelSave(ctModel& model, void* file);
+CT_API ctResults ctModelLoad(ctModel& model, ctFile& file);
+CT_API ctResults ctModelSave(ctModel& model, ctFile& file);
 
 CT_API void ctModelRelease(ctModel& model);

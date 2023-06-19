@@ -118,7 +118,7 @@ ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
       boneGraph.Append({parent, firstChild, nextSibling});
    }
    ctModelSkeleton* pSkeleton = &output.skeletonData;
-   pSkeleton->boneCount = boneNames.Count();
+   pSkeleton->boneCount = (uint32_t)boneNames.Count();
    pSkeleton->nameArray = boneNames.Data();
    pSkeleton->transformArray = boneTransforms.Data();
    pSkeleton->graphArray = boneGraph.Data();

@@ -124,7 +124,7 @@ ctResults ctModelExportMesh::Export(const cgltf_data& input,
             uint32_t indexCount = 0;
 
             if (prim.indices) {
-               indexCount = prim.indices->count;
+               indexCount = (uint32_t)prim.indices->count;
                ExtractIndexBuffer(*prim.indices, lod, out);
             } else {
                ctDebugError("ONLY INDEXED GEOMETRY IS SUPPORTED!");
@@ -183,11 +183,11 @@ ctResults ctModelExportMesh::Export(const cgltf_data& input,
 ctResults ctModelExportMesh::ExtractIndexBuffer(const cgltf_accessor& accessor,
                                                 ctModelMeshLod& lod,
                                                 ctModelExportGeomContainer& geo) {
-   lod.indexCount += accessor.count;
+   lod.indexCount += (uint32_t)accessor.count;
    /* setup index start if not appending */
    if (lod.indexDataStart == UINT64_MAX) { lod.indexDataStart = geo.indices.Count(); };
 
-   uint32_t offset = geo.indices.Count();
+   uint32_t offset = (uint32_t)geo.indices.Count();
    geo.indices.Resize(offset + lod.indexCount);
    return CopyAccessorToReserve(accessor, &geo.indices[offset], TinyImageFormat_R32_UINT);
 }
