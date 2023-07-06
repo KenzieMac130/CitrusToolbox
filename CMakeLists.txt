@@ -33,11 +33,16 @@ endif()
 #---------- Unhelpful Warnings ----------
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
+#---------- Config Escape Codes ----------
+cmake_policy(SET CMP0005 NEW)
+
 #---------- Global Pragmas ----------
 set (CITRUS_ENGINE_PRAGMAS 
 "#if defined(_MSC_VER)
     /* enum class nonsense */
     #pragma warning(disable: 26812)
+    /* heap alignment to CT_ALIGNMENT_CACHE is guaranteed */
+    #pragma warning(disable: 4316)
 #endif"
 )
 
@@ -75,6 +80,7 @@ set(CT_ALIGNMENT_VEC3 16)
 set(CT_ALIGNMENT_VEC4 16)
 set(CT_ALIGNMENT_QUAT 16)
 set(CT_ALIGNMENT_MAT4 32)
+set(CT_ALIGNMENT_MODEL_GPU 16)
 
 # ---------- Scene Engine ----------
 set(CITRUS_SCENE_ENGINES HONEYBELL KINNOW)
@@ -98,11 +104,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
 # ---------- Code Generation Output Directory ----------
 set(CITRUS_CODEGEN_DIR ${PROJECT_BINARY_DIR}/generated)
 
-# ---------- Citrus Reflect Tool ----------
-set(CITRUS_REFLECT_OUTPUT_DIR ${CITRUS_CODEGEN_DIR}/reflect)
-set(CITRUS_REFLECT_PY ${CMAKE_CURRENT_SOURCE_DIR}/tools/reflect/CitrusReflect.py)
-set(FILE_2_HEADER_PY ${CMAKE_CURRENT_SOURCE_DIR}/tools/file2header/File2Header.py)
-
 # ---------- Built Asset Directory ----------
 set(CITRUS_ASSET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(CITRUS_ASSET_BUILD_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
@@ -118,6 +119,11 @@ set(CITRUS_ASSET_BUILD_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
 set(SHARED_LIBRARY_DIRECTORY ${BASE_LIBRARY_DIRECTORY}/Installs)
 set(TOOLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 set(THIRD_PARTY_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
+
+# ---------- Paths ----------
+set(CT_AUDITION_PYTHON "python")
+set(CT_AUDITION_WAF_PATH ${CITRUS_ASSET_SOURCE_DIR} CACHE FILEPATH "Waf root path")
+set(CT_AUDITION_ASSET_PATH ${CITRUS_ASSET_SOURCE_DIR} CACHE FILEPATH "Asset path")
 
 #---------- Build Config Feedback ----------
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -217,7 +223,7 @@ set(BLAST_LIBRARIES
         ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastTk.lib)
 
 # ---------- Find Lua ----------
-set(CITRUS_LUA 0)
+set(CITRUS_LUA 1)
 if(CITRUS_LUA)
     set(LUA_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/LuaJIT)
     set(LUA_LIBRARIES 

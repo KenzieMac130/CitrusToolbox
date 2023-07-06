@@ -1013,7 +1013,8 @@ acutest_do_run_(const struct acutest_test_* test, int index)
     acutest_cond_failed_ = 0;
 
 #ifdef __cplusplus
-    try {
+    /* no exceptions in engine */
+    //try {
 #endif
         acutest_init_(test->name);
         acutest_begin_test_line_(test);
@@ -1067,26 +1068,27 @@ aborted:
         status = (acutest_test_failures_ == 0) ? 0 : -1;
 
 #ifdef __cplusplus
-    } catch(std::exception& e) {
-        const char* what = e.what();
-        acutest_check_(0, NULL, 0, "Threw std::exception");
-        if(what != NULL)
-            acutest_message_("std::exception::what(): %s", what);
+    /* no exceptions in engine */
+    //} catch(std::exception& e) {
+    //    const char* what = e.what();
+    //    acutest_check_(0, NULL, 0, "Threw std::exception");
+    //    if(what != NULL)
+    //        acutest_message_("std::exception::what(): %s", what);
 
-        if(acutest_verbose_level_ >= 3) {
-            acutest_line_indent_(1);
-            acutest_colored_printf_(ACUTEST_COLOR_RED_INTENSIVE_, "FAILED: ");
-            printf("C++ exception.\n\n");
-        }
-    } catch(...) {
-        acutest_check_(0, NULL, 0, "Threw an exception");
+    //    if(acutest_verbose_level_ >= 3) {
+    //        acutest_line_indent_(1);
+    //        acutest_colored_printf_(ACUTEST_COLOR_RED_INTENSIVE_, "FAILED: ");
+    //        printf("C++ exception.\n\n");
+    //    }
+    //} catch(...) {
+    //    acutest_check_(0, NULL, 0, "Threw an exception");
 
-        if(acutest_verbose_level_ >= 3) {
-            acutest_line_indent_(1);
-            acutest_colored_printf_(ACUTEST_COLOR_RED_INTENSIVE_, "FAILED: ");
-            printf("C++ exception.\n\n");
-        }
-    }
+    //    if(acutest_verbose_level_ >= 3) {
+    //        acutest_line_indent_(1);
+    //        acutest_colored_printf_(ACUTEST_COLOR_RED_INTENSIVE_, "FAILED: ");
+    //        printf("C++ exception.\n\n");
+    //    }
+    //}
 #endif
 
     acutest_fini_(test->name);

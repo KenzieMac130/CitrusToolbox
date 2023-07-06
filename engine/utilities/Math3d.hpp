@@ -139,7 +139,7 @@ inline float distance(const ctVec2& a, const ctVec2& b) {
 }
 
 inline float length(const ctVec2& v) {
-   return distance(v, v);
+   return distance(v, ctVec2(0.0f));
 }
 
 inline ctVec2 abs(const ctVec2& v) {
@@ -400,7 +400,7 @@ inline float distance(const ctVec4& a, const ctVec4& b) {
 }
 
 inline float length(const ctVec4& v) {
-   return distance(v, v);
+   return distance(v, ctVec4(0.0f));
 }
 
 inline ctVec4 abs(const ctVec4& v) {
@@ -477,10 +477,56 @@ struct CT_API ctBoundBox {
       return min.x <= max.x && min.y <= max.y && min.z <= max.z;
    }
 
+   inline ctVec3 NormalizeVector(ctVec3 vector) {
+      return (vector - min) / (max - min);
+   }
+
+   inline ctVec3 DeNormalizeVector(ctVec3 vector) {
+      return vector * (max - min) + min;
+   }
+
    inline struct ctBoundSphere ToSphere();
 
    ctVec3 min;
    ctVec3 max;
+};
+
+struct CT_API ctBoundBox2D {
+   inline ctBoundBox2D() {
+      min = ctVec2(FLT_MAX);
+      max = ctVec2(-FLT_MAX);
+   }
+   inline ctBoundBox2D(ctVec2 pmin, ctVec2 pmax) {
+      min = pmin;
+      max = pmax;
+   }
+
+   inline void AddPoint(ctVec2 pt) {
+      if (pt.x < min.x) { min.x = pt.x; }
+      if (pt.y < min.y) { min.y = pt.y; }
+      if (pt.x > max.x) { max.x = pt.x; }
+      if (pt.y > max.y) { max.y = pt.y; }
+   }
+
+   inline void AddBox(ctBoundBox2D bx) {
+      AddPoint(bx.min);
+      AddPoint(bx.max);
+   }
+
+   inline bool isValid() {
+      return min.x <= max.x && min.y <= max.y;
+   }
+
+   inline ctVec2 NormalizeVector(ctVec2 vector) {
+      return (vector - min) / (max - min);
+   }
+
+   inline ctVec2 DeNormalizeVector(ctVec2 vector) {
+      return vector * (max - min) + min;
+   }
+
+   ctVec2 min;
+   ctVec2 max;
 };
 
 /* --- Sphere --- */

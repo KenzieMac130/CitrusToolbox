@@ -226,8 +226,9 @@ inline ctResults ctDynamicArray<T>::Resize(const size_t amount) {
    T* pOldData = _pData;
    _pData = new T[amount];
    ctAssert(_pData);
+   const size_t copyBound = amount > _count ? _count : amount;
    if (pOldData) {
-      for (size_t i = 0; i < amount; i++) {
+      for (size_t i = 0; i < copyBound; i++) {
          _pData[i] = pOldData[i];
       }
       delete[] pOldData;

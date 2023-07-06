@@ -107,6 +107,7 @@ public:
 
    ctResults LoadFromBuffer(const char* data, size_t size, const char* name);
    ctResults LoadFromFile(const char* path);
+   ctResults Compile(ctDynamicArray<uint8_t>& output);
 
    ctResults RunScript();
 

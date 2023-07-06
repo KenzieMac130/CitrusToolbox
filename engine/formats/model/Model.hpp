@@ -17,133 +17,65 @@
 #pragma once
 
 #include "utilities/Common.h"
-
 /* ------------------- Skeleton ------------------- */
 
 struct ctModelSkeletonBoneTransform {
-   float translation[3];
-   float rotation[4];
-   float scale[3];
+   ctVec3 translation;
+   ctQuat rotation;
+   ctVec3 scale;
 };
 
 struct ctModelSkeletonBoneGraph {
-   int32_t parent;
-   int32_t firstChild;
-   int32_t nextSibling;
+   int32_t parent;      /* -1: none */
+   int32_t firstChild;  /* -1: none */
+   int32_t nextSibling; /* -1: none */
 };
 
 struct ctModelSkeletonBoneName {
-   char name[64];
+   char name[32];
 };
 
 struct ctModelSkeleton {
    uint32_t boneCount;
-   ctModelSkeletonBoneTransform* transformArray;
-   ctModelSkeletonBoneGraph* graphArray;
-   uint32_t* hashArray;
-   ctModelSkeletonBoneName* nameArray;
+   ctModelSkeletonBoneTransform* transformArray;   /* BXFORMS */
+   ctModelSkeletonBoneTransform* inverseBindArray; /* BINVBIND */
+   ctModelSkeletonBoneGraph* graphArray;           /* BGRAPH */
+   uint32_t* hashArray;                            /* BHASHES */
+   ctModelSkeletonBoneName* nameArray;             /* BNAMES */
 };
 
 /* ------------------- Mesh ------------------- */
 
-struct ctModelMeshVertexPosition {
-   float position[3];
+struct ctModelMeshVertexCoords {
+   uint32_t normal;     /* XYZ 10 bit unorm, 2 bits padding */
+   uint32_t tangent;    /* XYZ 10 bit unorm, 1 bit to W sign, 1 padding */
+   int16_t position[3]; /* 3 snorms scaled by bbox */
 };
 
-struct ctModelMeshVertexNormalTangent {
-   uint32_t normalPacked;  /* XYZ 10 bit unorm, 2 bits padding */
-   uint32_t tangentPacked; /* XYZ 10 bit unorm, 1 bit to W sign, 1 padding */
-};
-
-struct ctModelMeshVertexSkinWeight {
-   uint64_t weightsPacked; /* 4 16 bit unorms */
-};
-
-struct ctModelMeshVertexSkinIndex {
+struct ctModelMeshVertexSkinData {
    uint16_t indices[4]; /* 4 16 bit uints */
+   uint16_t weights[4]; /* 4 16 bit unorms */
 };
 
 struct ctModelMeshVertexUV {
-   float uv[2];
+   int16_t uv[2]; /* 2 snorms scaled by uvbox */
 };
 
 struct ctModelMeshVertexColor {
-   uint8_t rgba[4];
+   uint8_t rgba[4]; /* RGBA8 unorm */
 };
 
-struct ctModelMeshInstance {
-   int32_t boneRoot;
-   int32_t renderMeshIdx;
+struct ctModelMeshVertexMorph {
+   uint32_t normal;     /* XYZ 10 bit unorm, 2 bits padding */
+   int8_t rgba[4];      /* RGBA8 snorm first vertex color displacement */
+   int16_t position[3]; /* 3 snorms scaled by parent lod bbox */
 };
 
-struct ctModelMeshLod {
-   float bias;
-
-   int32_t submeshCount;
-   int32_t submeshStart;
-
-   int32_t morphTargetCount;
-   int32_t morphTargetStart;
-
-   uint32_t indexCount;
-   uint64_t indexDataStart = UINT64_MAX;
-
-   uint64_t vertexDataPositionStart = UINT64_MAX;
-   uint64_t vertexDataNormalTangentStart = UINT64_MAX;
-   uint64_t vertexDataSkinWeightStart = UINT64_MAX;
-   uint64_t vertexDataSkinIndexStart = UINT64_MAX;
-
-   uint64_t vertexDataUVStart[8] = {UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX};
-   uint64_t vertexDataColorStart[8] = {UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX};
-};
-
-struct ctModelMesh {
-   uint32_t editorLinkHash;
-   float bbox[2][3];
-   float bsphere;
-   uint32_t lodCount;
-   ctModelMeshLod lods[8];
-};
-
-struct ctModelMorphTarget {
-   char name[64];
-   float defaultWeight;
-   float bboxDisplacement[2][3];
-   float bsphereDisplacement;
-
-   /* vertex count will match lod */
-   uint64_t vertexDataPositionStart = UINT64_MAX;
-   uint64_t vertexDataNormalTangentStart = UINT64_MAX;
-   uint64_t vertexDataUVStart[8] = {UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX,
-                                    UINT64_MAX};
-   uint64_t vertexDataColorStart[8] = {UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX,
-                                       UINT64_MAX};
+struct ctModelMeshScatterData {
+   uint16_t rotation[4]; /* Quaternion in 16bit unorm*/
+   uint16_t position[3]; /* Position in scatter bounding box */
+   uint8_t scale;        /* Portion between min and max scale */
+   uint8_t variance;     /* Variation parameter */
 };
 
 struct ctModelSubmesh {
@@ -152,93 +84,101 @@ struct ctModelSubmesh {
    uint32_t indexCount;
 };
 
-struct ctModelMeshData {
-   uint32_t instanceCount;
-   ctModelMeshInstance* instances;
-
-   uint32_t meshCount;
-   ctModelMesh* meshes;
+struct ctModelMeshLod {
+   ctBoundBox bbox;       /* bounding box of vertices */
+   float radius;          /* bounding sphere of vertices */
+   ctBoundBox2D uvbox[4]; /* bounding box of uv coords per-channel */
 
    uint32_t submeshCount;
-   ctModelSubmesh* submeshes;
+   uint32_t submeshStart;
 
    uint32_t morphTargetCount;
-   ctModelMorphTarget* morphTargets;
+   uint32_t morphTargetStart;
 
-   size_t inMemoryGeometryDataSize;
-   uint8_t* inMemoryGeometryData;
+   uint32_t vertexCount;
+   uint32_t vertexDataCoordsStart = UINT32_MAX;
+   uint32_t vertexDataSkinDataStart = UINT32_MAX;
+   uint32_t vertexDataUVStarts[4] = {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+   uint32_t vertexDataColorStarts[4] = {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
 };
 
-/* ------------------- Material ------------------- */
-
-struct ctModelTextureInfo {
-   int32_t textureFileIdx;
-   int32_t uvChannel;
-   float offset[2];
-   float scale[2];
-   float scroll[2];
+struct ctModelMesh {
+   char name[32];
+   uint32_t lodCount;
+   ctModelMeshLod lods[4];
 };
 
-struct ctModelMaterial {
-   char name[64];
-   uint32_t shaderIdentifier;
+struct ctModelMeshMorphTarget {
+   char name[32];
+   ctBoundBox bboxDisplacement;
+   float radiusDisplacement;
 
-   float baseColorTint[3];
-   float alphaModifier;
-
-   float roughnessModifier;
-   float indexOfRefraction;
-   float metalModifier;
-   float normalModifier;
-   float emissionColor[3];
-   float occlusionModifier;
-
-   float auxProperties[16];
-
-   ctModelTextureInfo baseColorTexture;
-   ctModelTextureInfo pbrTexture;
-   ctModelTextureInfo normalTexture;
-   ctModelTextureInfo auxTexture1;
-   ctModelTextureInfo auxTexture2;
-   ctModelTextureInfo auxTexture3;
-   ctModelTextureInfo auxTexture4;
+   /* vertexCount will match parent lod */
+   uint32_t vertexCount;
+   uint32_t vertexDataMorphOffset = UINT32_MAX;
 };
 
-struct ctModelMaterials {
-   uint32_t materialCount;
-   ctModelMaterial* materials;
+struct ctModelMeshScatter {
+   char name[32];
+   ctBoundBox bbox;
+   uint32_t meshIdx;
+   uint32_t scatterCount;
+   uint32_t scatterDataOffset = UINT32_MAX;
 };
 
-/* ------------------- Lights ------------------- */
+struct ctModelMeshData {
+   uint32_t meshCount;
+   ctModelMesh* meshes; /* MESHES */
 
-enum ctModelLightType { CT_MODEL_LIGHT_POINT, CT_MODEL_LIGHT_SPOT };
+   uint32_t submeshCount;
+   ctModelSubmesh* submeshes; /* SUBMESH */
 
-struct ctModelLight {
-   uint32_t boneIdx;
-   float color[3];
-   float intensity;
-   ctModelLightType type;
-   float parameter[4];
+   uint32_t morphTargetCount;
+   ctModelMeshMorphTarget* morphTargets; /* MORPHS */
+
+   uint32_t scatterCount;
+   ctModelMeshScatter* scatters; /* MSCATTER */
 };
 
-struct ctModelLights {
-   uint32_t lightCount;
-   ctModelLight* lights;
+struct ctModelGPUPayloadInfo {
+   uint64_t indexDataSize;
+   uint64_t indexDataStart = UINT64_MAX;
+
+   uint64_t vertexDataCoordsSize;
+   uint64_t vertexDataCoordsStart = UINT64_MAX;
+
+   uint64_t vertexDataSkinSize;
+   uint64_t vertexDataSkinStart = UINT64_MAX;
+
+   uint64_t vertexDataUVSize;
+   uint64_t vertexDataUVStart = UINT64_MAX;
+
+   uint64_t vertexDataColorSize;
+   uint64_t vertexDataColorStart = UINT64_MAX;
+
+   uint64_t vertexDataMorphSize;
+   uint64_t vertexDataMorphStart = UINT64_MAX;
+
+   uint64_t scatterDataSize;
+   uint64_t scatterDataStart = UINT64_MAX;
 };
 
 /* ------------------- Splines ------------------- */
 
 struct ctModelSpline {
-   char name[64];
+   char name[32];
    uint32_t pointCount;
-   float* positions;
-   float* tangents;
-   float* bitangents;
+   uint32_t pointOffset;
 };
 
 struct ctModelSplineData {
-   uint32_t splineCount;
-   ctModelSpline* splines;
+   uint32_t segmentCount;
+   ctModelSpline* segments; /* SSEGS */
+
+   uint32_t pointCount;
+   ctVec3* positions;  /* SPOS */
+   ctVec3* tangents;   /* STAN */
+   ctVec3* bitangents; /* SBITAN */
 };
 
 /* ------------------- Animation ------------------- */
@@ -247,6 +187,8 @@ enum ctModelAnimationChannelType {
    CT_MODEL_ANIMCHAN_BONE_LOCATION,
    CT_MODEL_ANIMCHAN_BONE_ROTATION,
    CT_MODEL_ANIMCHAN_BONE_SCALE,
+   CT_MODEL_ANIMCHAN_BONE_VISIBILITY,
+   CT_MODEL_ANIMCHAN_MORPH_FACTOR,
    CT_MODEL_ANIMCHAN_EVENT_FIRE,
    CT_MODEL_ANIMCHAN_CUSTOM_VALUE,
    CT_MODEL_ANIMCHAN_CUSTOM_VECTOR
@@ -263,12 +205,12 @@ struct ctModelAnimationChannel {
    ctModelAnimationInterpolation interpolation;
    uint32_t targetHash;
    uint32_t keyCount;
-   float* timeKeys;
-   float* valueKeys;
+   uint32_t timeScalarOffset;
+   uint32_t valueScalarOffset;
 };
 
 struct ctModelAnimationClip {
-   char name[64];
+   char name[32];
    float clipLength;
 
    float bboxDisplacement[2][3];
@@ -279,48 +221,33 @@ struct ctModelAnimationClip {
 };
 
 struct ctModelAnimationData {
-   uint32_t channelCount;
-   ctModelAnimationChannel* channels;
-
    uint32_t clipCount;
-   ctModelAnimationClip* clips;
+   ctModelAnimationClip* clips; /* ACLIPS */
+
+   uint32_t channelCount;
+   ctModelAnimationChannel* channels; /* ACHANS */
+
+   uint32_t scalarCount;
+   float* scalars; /* ASCALARS */
 };
 
-/* ------------------- External Files ------------------- */
+/* ------------------- Blobs ------------------- */
 
-struct ctModelExternalFileEntry {
-   uint8_t guid[16];
-};
-
-struct ctModelExternalFiles {
-   uint32_t externalFileCount;
-   ctModelExternalFileEntry* externalFiles;
-};
-
-/* ------------------- Embedded Data ------------------- */
-
-struct ctModelEmbedSection {
-   char name[8];
+struct ctModelBlobData {
    uint64_t size;
    uint8_t* data;
 };
 
-struct ctModelEmbeds {
-   uint32_t sectionCount;
-   ctModelEmbedSection* sections;
-};
-
 /* ------------------- Main ------------------- */
 
-#define CT_MODEL_MAGIC   0x636D646C
+#define CT_MODEL_MAGIC   0x6C646D63
 #define CT_MODEL_VERSION 0x01
 
 struct ctModelHeader {
-   uint32_t magic = CT_MODEL_MAGIC;
-   uint32_t version = CT_MODEL_VERSION;
-   uint64_t cpuDataSize;
-   uint64_t pointerFixupTableOffset;
-   uint64_t pointerFixupTableSize;
+   uint32_t magic;
+   uint32_t version;
+   uint64_t wadDataOffset;
+   uint64_t wadDataSize;
    uint64_t gpuDataOffset;
    uint64_t gpuDataSize;
 };
@@ -328,21 +255,25 @@ struct ctModelHeader {
 struct ctModel {
    ctModelHeader header;
 
-   ctModelExternalFiles externalFiles;
-   ctModelEmbeds embeddedData;
-
-   ctModelSkeleton skeletonData;
-   ctModelMeshData meshData;
-   ctModelMaterials materialData;
-   ctModelLights lightData;
-   ctModelSplineData splineData;
-   ctModelAnimationData animationData;
+   ctModelSkeleton skeleton;
+   ctModelMeshData geometry;
+   ctModelAnimationData animation;
+   ctModelSplineData splines;
+   ctModelBlobData physxSerialGlobal;   /* PXBAKEG */
+   ctModelBlobData physxSerialInstance; /* PXBAKEI */
+   ctModelBlobData materialScript;      /* MATCODE */
+   ctModelBlobData sceneScript;         /* SCNCODE */
+   ctModelGPUPayloadInfo gpuTable;      /* GPUTABLE */
 
    uint64_t mappedCpuDataSize;
    void* mappedCpuData;
+
+   size_t inMemoryGeometryDataSize;
+   uint8_t* inMemoryGeometryData;
 };
 
-CT_API ctResults ctModelLoad(ctModel& model, ctFile& file);
+CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData = false);
 CT_API ctResults ctModelSave(ctModel& model, ctFile& file);
 
+CT_API void ctModelReleaseGeometry(ctModel& model);
 CT_API void ctModelRelease(ctModel& model);

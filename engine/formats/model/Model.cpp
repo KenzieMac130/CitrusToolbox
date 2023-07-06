@@ -15,104 +15,223 @@
 */
 
 #include "Model.hpp"
+#include "formats/wad/WADCore.h"
 
-struct ctModelPtrFixupCtx {
-   uint8_t* base;
-   size_t* table;
-};
+CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData) {
+   file.ReadRaw(&model.header, sizeof(ctModelHeader), 1);
+   if (model.header.magic != CT_MODEL_MAGIC) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (model.header.version != CT_MODEL_VERSION) { return CT_FAILURE_UNKNOWN_FORMAT; }
 
-void* FixupPointer(ctModelPtrFixupCtx ctx, void* input) {
-   if (!input) { return NULL; }
-   while (*ctx.table != SIZE_MAX) {
-      if (*ctx.table == (size_t)input) { return ctx.base + *ctx.table; }
-      ctx.table++;
+   int32_t tmpsize = 0;
+   ctWADReader wad;
+   file.Seek(model.header.wadDataOffset, CT_FILE_SEEK_SET);
+   model.mappedCpuDataSize = model.header.wadDataSize;
+   model.mappedCpuData = ctMalloc(model.mappedCpuDataSize);
+   file.ReadRaw(model.mappedCpuData, model.mappedCpuDataSize, 1);
+   ctWADReaderBind(&wad, (uint8_t*)model.mappedCpuData, model.mappedCpuDataSize);
+
+   /* Skeleton */
+   ctWADFindLump(&wad, "BXFORMS", (void**)&model.skeleton.transformArray, &tmpsize);
+   ctWADFindLump(&wad, "BINVBIND", (void**)&model.skeleton.inverseBindArray, NULL);
+   ctWADFindLump(&wad, "BGRAPH", (void**)&model.skeleton.graphArray, NULL);
+   ctWADFindLump(&wad, "BHASHES", (void**)&model.skeleton.hashArray, NULL);
+   ctWADFindLump(&wad, "BNAMES", (void**)&model.skeleton.nameArray, NULL);
+   model.skeleton.boneCount = (uint32_t)tmpsize / sizeof(ctModelSkeletonBoneTransform);
+
+   /* Mesh */
+   ctWADFindLump(&wad, "MESHES", (void**)&model.geometry.meshes, &tmpsize);
+   model.geometry.meshCount = (uint32_t)tmpsize / sizeof(ctModelMesh);
+   ctWADFindLump(&wad, "SUBMESH", (void**)&model.geometry.submeshes, &tmpsize);
+   model.geometry.submeshCount = (uint32_t)tmpsize / sizeof(ctModelSubmesh);
+   ctWADFindLump(&wad, "MORPHS", (void**)&model.geometry.morphTargets, &tmpsize);
+   model.geometry.morphTargetCount = (uint32_t)tmpsize / sizeof(ctModelMeshMorphTarget);
+   ctWADFindLump(&wad, "MSCATTER", (void**)&model.geometry.scatters, &tmpsize);
+   model.geometry.scatterCount = (uint32_t)tmpsize / sizeof(ctModelMeshScatter);
+
+   /* Splines */
+   ctWADFindLump(&wad, "SSEGS", (void**)&model.splines.segments, &tmpsize);
+   model.splines.segmentCount = (uint32_t)tmpsize / sizeof(ctModelSpline);
+   ctWADFindLump(&wad, "SPOS", (void**)&model.splines.positions, &tmpsize);
+   ctWADFindLump(&wad, "STAN", (void**)&model.splines.tangents, NULL);
+   ctWADFindLump(&wad, "SBITAN", (void**)&model.splines.bitangents, NULL);
+   model.splines.pointCount = (uint32_t)tmpsize / sizeof(ctVec3);
+
+   /* Animation */
+   ctWADFindLump(&wad, "ACHANS", (void**)&model.animation.channels, &tmpsize);
+   model.animation.channelCount = (uint32_t)tmpsize / sizeof(ctModelAnimationChannel);
+   ctWADFindLump(&wad, "ACLIPS", (void**)&model.animation.clips, &tmpsize);
+   model.animation.clipCount = (uint32_t)tmpsize / sizeof(ctModelAnimationClip);
+   ctWADFindLump(&wad, "ASCALARS", (void**)&model.animation.scalars, &tmpsize);
+   model.animation.scalarCount = (uint32_t)tmpsize / sizeof(float);
+
+   /* Material Script */
+   CT_RETURN_FAIL(
+     ctWADFindLump(&wad, "MATCODE", (void**)&model.materialScript.data, &tmpsize));
+   model.materialScript.size = tmpsize;
+
+   /* PhysX Cook */
+   ctWADFindLump(&wad, "PXBAKEG", (void**)&model.physxSerialGlobal.data, &tmpsize);
+   model.physxSerialGlobal.size = tmpsize;
+   ctWADFindLump(&wad, "PXBAKEI", (void**)&model.physxSerialInstance.data, &tmpsize);
+   model.physxSerialInstance.size = tmpsize;
+
+   /* Scene Script */
+   ctWADFindLump(&wad, "MATCODE", (void**)&model.sceneScript.data, &tmpsize);
+   model.sceneScript.size = tmpsize;
+
+   /* GPU info table */
+   ctWADFindLump(&wad, "GPUTABLE", (void**)&model.gpuTable, &tmpsize);
+
+   /* Geometry Data */
+   if (CPUGeometryData) {
+      model.inMemoryGeometryData = (uint8_t*)ctMalloc(model.header.gpuDataSize);
+      file.Seek(model.header.gpuDataOffset, CT_FILE_SEEK_SET);
+      file.ReadRaw(model.inMemoryGeometryData, model.header.gpuDataSize, 1);
    }
-}
 
-CT_API ctResults ctModelLoad(ctModel& model, ctFile& file) {
    return CT_SUCCESS;
 }
-
-size_t WriteBlock(ctFile& file, void* data, size_t size) {
-   size_t offset = (size_t)file.Tell();
-   file.WriteRaw(data, size, 1);
-   return offset;
-}
-
-#define WRITE_ARRAY(STRUCT, DATA_PATH, SIZE_PATH)                                        \
-   relmodel.DATA_PATH = (STRUCT*)(WriteBlock(                                            \
-     file, (void*)relmodel.DATA_PATH, sizeof(STRUCT) * relmodel.SIZE_PATH));
-
-#define DUPLICATE_ARRAY(STRUCT, DATA_PATH, SIZE_PATH)                                    \
-   relmodel.DATA_PATH = (STRUCT*)ctMalloc(sizeof(STRUCT) * relmodel.SIZE_PATH);          \
-   memcpy(relmodel.DATA_PATH, model.DATA_PATH, sizeof(STRUCT) * relmodel.SIZE_PATH);
 
 CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
-   ctModel relmodel = model;
-   file.Seek(sizeof(ctModel), CT_FILE_SEEK_CUR);
+   ctWADReader wad = ctWADReader();
+   ctWADSetupWrite(&wad);
 
-   /* external files */
-   WRITE_ARRAY(ctModelExternalFileEntry,
-               externalFiles.externalFiles,
-               externalFiles.externalFileCount);
+   /* Skeleton */
+   ctWADWriteSection(&wad,
+                     "BXFORMS",
+                     (uint8_t*)model.skeleton.transformArray,
+                     model.skeleton.boneCount * sizeof(model.skeleton.transformArray[0]));
+   ctWADWriteSection(&wad,
+                     "BINVBIND",
+                     (uint8_t*)model.skeleton.inverseBindArray,
+                     model.skeleton.boneCount *
+                       sizeof(model.skeleton.inverseBindArray[0]));
+   ctWADWriteSection(&wad,
+                     "BGRAPH",
+                     (uint8_t*)model.skeleton.graphArray,
+                     model.skeleton.boneCount * sizeof(model.skeleton.graphArray[0]));
+   ctWADWriteSection(&wad,
+                     "BHASHES",
+                     (uint8_t*)model.skeleton.hashArray,
+                     model.skeleton.boneCount * sizeof(model.skeleton.hashArray[0]));
+   ctWADWriteSection(&wad,
+                     "BNAMES",
+                     (uint8_t*)model.skeleton.nameArray,
+                     model.skeleton.boneCount * sizeof(model.skeleton.nameArray[0]));
 
-   ctModelEmbedSection* tmpembedbuff = NULL;
-   ctModelSpline* tmpsplinebuff = NULL;
+   /* Mesh */
+   ctWADWriteSection(&wad,
+                     "MESHES",
+                     (uint8_t*)model.geometry.meshes,
+                     model.geometry.meshCount * sizeof(model.geometry.meshes[0]));
+   ctWADWriteSection(&wad,
+                     "SUBMESH",
+                     (uint8_t*)model.geometry.submeshes,
+                     model.geometry.submeshCount * sizeof(model.geometry.submeshes[0]));
+   ctWADWriteSection(&wad,
+                     "MORPHS",
+                     (uint8_t*)model.geometry.morphTargets,
+                     model.geometry.morphTargetCount *
+                       sizeof(model.geometry.morphTargets[0]));
 
-   /* embeds */
-   if (relmodel.embeddedData.sections) {
-       tmpembedbuff = DUPLICATE_ARRAY(
-        ctModelEmbedSection, embeddedData.sections, embeddedData.sectionCount);
-      for (uint32_t i = 0; i < model.embeddedData.sectionCount; i++) {
-         WRITE_ARRAY(
-           uint8_t, embeddedData.sections[i].data, embeddedData.sections[i].size);
-      }
-      WRITE_ARRAY(ctModelEmbedSection, embeddedData.sections, embeddedData.sectionCount);
+   /* Spline */
+   ctWADWriteSection(&wad,
+                     "SSEGS",
+                     (uint8_t*)model.splines.segments,
+                     model.splines.segmentCount * sizeof(model.splines.segments[0]));
+   ctWADWriteSection(&wad,
+                     "SPOS",
+                     (uint8_t*)model.splines.positions,
+                     model.splines.pointCount * sizeof(model.splines.positions[0]));
+   ctWADWriteSection(&wad,
+                     "STAN",
+                     (uint8_t*)model.splines.tangents,
+                     model.splines.pointCount * sizeof(model.splines.tangents[0]));
+   ctWADWriteSection(&wad,
+                     "SBITAN",
+                     (uint8_t*)model.splines.bitangents,
+                     model.splines.pointCount * sizeof(model.splines.bitangents[0]));
+
+   /* Animations */
+   ctWADWriteSection(&wad,
+                     "ACLIPS",
+                     (uint8_t*)model.animation.clips,
+                     model.animation.clipCount * sizeof(model.animation.clips[0]));
+   ctWADWriteSection(&wad,
+                     "ACHANS",
+                     (uint8_t*)model.animation.channels,
+                     model.animation.channelCount * sizeof(model.animation.channels[0]));
+   ctWADWriteSection(&wad,
+                     "ASCALARS",
+                     (uint8_t*)model.animation.scalars,
+                     model.animation.scalarCount * sizeof(model.animation.scalars[0]));
+
+   /* PhysX Global */
+   ctWADWriteSection(&wad,
+                     "PXBAKEG",
+                     (uint8_t*)model.physxSerialGlobal.data,
+                     model.physxSerialGlobal.size);
+   ctWADWriteSection(&wad,
+                     "PXBAKEI",
+                     (uint8_t*)model.physxSerialInstance.data,
+                     model.physxSerialInstance.size);
+
+   /* Material Set */
+   ctWADWriteSection(
+     &wad, "MATCODE", (uint8_t*)model.materialScript.data, model.materialScript.size);
+
+   /* Object VM */
+   ctWADWriteSection(
+     &wad, "SCNCODE", (uint8_t*)model.sceneScript.data, model.sceneScript.size);
+
+   /* Dump WAD */
+   size_t wadSize;
+   void* wadData;
+   ctWADToBuffer(&wad, NULL, &wadSize);
+   wadData = ctMalloc(wadSize);
+   ctWADToBuffer(&wad, (uint8_t*)wadData, &wadSize);
+
+   /* Align GPU Buffer */
+   size_t gpuOffset = sizeof(ctModelHeader) + wadSize;
+   size_t gpuAlignOffset = gpuOffset % CT_ALIGNMENT_MODEL_GPU;
+   gpuOffset += gpuAlignOffset;
+
+   /* Setup Header */
+   model.header.magic = CT_MODEL_MAGIC;
+   model.header.version = CT_MODEL_VERSION;
+   model.header.wadDataOffset = sizeof(ctModelHeader);
+   model.header.wadDataSize = wadSize;
+   if (model.inMemoryGeometryData) {
+      model.header.gpuDataOffset = gpuOffset;
+      model.header.gpuDataSize = model.inMemoryGeometryDataSize;
+   } else {
+      model.header.gpuDataOffset = 0;
+      model.header.gpuDataSize = 0;
    }
 
-   /* skeleton */
-   WRITE_ARRAY(
-     ctModelSkeletonBoneTransform, skeletonData.transformArray, skeletonData.boneCount);
-   WRITE_ARRAY(ctModelSkeletonBoneGraph, skeletonData.graphArray, skeletonData.boneCount);
-   WRITE_ARRAY(uint32_t, skeletonData.hashArray, skeletonData.boneCount);
-   WRITE_ARRAY(ctModelSkeletonBoneName, skeletonData.nameArray, skeletonData.boneCount);
-
-   /* mesh (nongeometry) */
-   WRITE_ARRAY(ctModelMeshInstance, meshData.instances, meshData.instanceCount);
-   WRITE_ARRAY(ctModelMesh, meshData.meshes, meshData.meshCount);
-   WRITE_ARRAY(ctModelSubmesh, meshData.submeshes, meshData.submeshCount);
-   WRITE_ARRAY(ctModelMorphTarget, meshData.morphTargets, meshData.morphTargetCount);
-
-   /* material */
-   WRITE_ARRAY(ctModelMaterial, materialData.materials, materialData.materialCount);
-
-   /* light */
-   WRITE_ARRAY(ctModelLight, lightData.lights, lightData.lightCount);
-
-   /* spline */
-   tmpsplinebuff = DUPLICATE_ARRAY(ctModelSpline, splineData.splines, splineData.splineCount);
-   for (uint32_t i = 0; i < model.splineData.splineCount; i++) {
-      WRITE_ARRAY(
-        float, splineData.splines[i].positions, splineData.splines[i].pointCount * 3);
-      WRITE_ARRAY(
-        float, splineData.splines[i].tangents, splineData.splines[i].pointCount * 3);
-      WRITE_ARRAY(
-        float, splineData.splines[i].bitangents, splineData.splines[i].pointCount * 3);
+   /* Write Data */
+   file.WriteRaw(&model.header, sizeof(model.header), 1);
+   file.WriteRaw(wadData, wadSize, 1);
+   if (model.inMemoryGeometryData) {
+      uint8_t padding[CT_ALIGNMENT_MODEL_GPU];
+      memset(padding, 0, CT_ALIGNMENT_MODEL_GPU);
+      file.WriteRaw(padding, gpuAlignOffset, 1);
+      file.WriteRaw(model.inMemoryGeometryData, model.inMemoryGeometryDataSize, 1);
    }
-   WRITE_ARRAY(ctModelSpline, splineData.splines, splineData.splineCount);
 
-   /* animation */
-
-   /* geometry */
-
-   ctFree(tmpsplinebuff);
+   file.Close();
+   ctFree(wadData);
+   ctWADWriteFree(&wad);
    return CT_SUCCESS;
+}
+
+CT_API void ctModelReleaseGeometry(ctModel& model) {
+   if (model.inMemoryGeometryData) { ctFree(model.inMemoryGeometryData); }
+   model.inMemoryGeometryData = NULL;
 }
 
 CT_API void ctModelRelease(ctModel& model) {
    if (model.mappedCpuData) { ctFree(model.mappedCpuData); }
-   if (model.meshData.inMemoryGeometryData) {
-      ctFree(model.meshData.inMemoryGeometryData);
-   }
+   if (model.inMemoryGeometryData) { ctFree(model.inMemoryGeometryData); }
    model = ctModel();
 }

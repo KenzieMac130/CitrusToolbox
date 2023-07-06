@@ -155,7 +155,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.cpp
@@ -172,7 +171,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Preferences.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/SpaceBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.hpp
@@ -330,16 +328,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.cpp
 
 set(ENGINE_HEADER_FILES_SCRIPTING
 ${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.hpp
-)
-elseif(CITRUS_ANGELSCRIPT)
-set(ENGINE_SOURCE_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/AngelScript.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/integration/CitrusUtilities.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/integration/CitrusEngine.cpp
-)
-
-set(ENGINE_HEADER_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/angelscript/AngelScript.hpp
 )
 endif()
 

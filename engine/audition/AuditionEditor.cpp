@@ -44,6 +44,13 @@ ctResults ctAuditionEditor::Startup() {
                          "AllowEditor",
                          "Allow the user to open the editor.",
                          CT_SETTINGS_BOUNDS_BOOL);
+   settings->BindString(&assetPath,
+                        true,
+                        true,
+                        "AssetPath",
+                        "Path to the assets folder.",
+                        NULL,
+                        NULL);
 
    RegisterModule((ctModuleBase*)Engine->AssetCompiler);
    RegisterModule((ctModuleBase*)Engine->AsyncTasks);
@@ -67,6 +74,7 @@ ctResults ctAuditionEditor::Startup() {
    pAssetBrowser = new ctAuditionSpaceAssetBrowser();
 
    ctx = ctAuditionSpaceContext();
+   ctx.assetBasePath = assetPath;
    ctx.Editor = this;
    ctx.Engine = Engine;
    ctx.allowGizmo = true;
@@ -98,14 +106,23 @@ void ctAuditionEditor::UpdateEditor() {
 
    bool isHotReloadActive = Engine->HotReload->isStarted();
    if (ImGui::BeginMainMenuBar()) {
-      if (ImGui::BeginMenu(CT_NC("File"))) {
+      if (ImGui::BeginMenu(CT_NC("Game"))) {
          if (ImGui::MenuItem(CT_NC("Load Scene"))) {}
-         if (ImGui::MenuItem(CT_NC("Reload Scene"))) {}
-         if (ImGui::MenuItem(CT_NC("Save All"))) {}
+         if (ImGui::MenuItem(CT_NC("Play Scene"))) {}
+         if (ImGui::MenuItem(CT_NC("Play Scene Here"))) {}
+         if (ImGui::MenuItem(CT_NC("Simulate Scene"))) {}
          ImGui::Separator();
-         if (ImGui::MenuItem(CT_NC("Preferences"))) {}
+         if (ImGui::MenuItem(CT_NC("Debug Options"))) {}
+         ImGui::Separator();
+         if (ImGui::MenuItem(CT_NC("Go to Main Menu"))) {}
          ImGui::Separator();
          if (ImGui::MenuItem(CT_NC("Exit"))) { Engine->Exit(); }
+         ImGui::EndMenu();
+      }
+      if (ImGui::BeginMenu(CT_NC("Engine"))) {
+         for (size_t i = 0; i < pModuleInspectors.Count(); i++) {
+            pModuleInspectors[i]->DoMenu();
+         }
          ImGui::EndMenu();
       }
       if (ImGui::BeginMenu(CT_NC("Assets"))) {
@@ -123,22 +140,7 @@ void ctAuditionEditor::UpdateEditor() {
          }
          ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu(CT_NC("Engine"))) {
-         for (size_t i = 0; i < pModuleInspectors.Count(); i++) {
-            pModuleInspectors[i]->DoMenu();
-         }
-         ImGui::EndMenu();
-      }
-      if (ImGui::BeginMenu(CT_NC("Game"))) {
-         if (ImGui::MenuItem(CT_NC("Play Scene"))) {}
-         if (ImGui::MenuItem(CT_NC("Play Scene Here"))) {}
-         if (ImGui::MenuItem(CT_NC("Simulate Scene"))) {}
-         ImGui::Separator();
-         if (ImGui::MenuItem(CT_NC("Debug Options"))) {}
-         ImGui::Separator();
-         if (ImGui::MenuItem(CT_NC("Go to Main Menu"))) {}
-         ImGui::EndMenu();
-      }
+
       if (ImGui::BeginMenu(CT_NC("View"))) {
          if (ImGui::MenuItem(CT_NC("Hide Editor"), "Ctrl+Grave")) { isHidden = true; }
          ImGui::EndMenu();

@@ -272,7 +272,7 @@ void PopulateFxSettings(const char* path, const char* data, int includeDepth) {
             }
 
             /* Backends */
-            stagedFx.backends.vulkan = true; /* todo once more backends are a thing */
+            stagedFx.backends.vulkan = true;
             gFxLevels.Append(stagedFx);
          }
       }

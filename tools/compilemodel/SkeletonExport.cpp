@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 MacKenzie Strand
+   Copyright 2022 MacKenzie Strand
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,62 +14,26 @@
    limitations under the License.
 */
 
-#include "SkeletonExport.hpp"
+#include "../engine/utilities/Common.h"
+#include "CitrusModel.hpp"
 
-bool ctModelExportSkeleton::KeepBoneOfName(const char* name) {
-   if (isNodeCollision(name) || isNodeLod(name)) { return false; }
-   return true;
-}
-
-int32_t ctModelExportSkeleton::FindBoneForName(const char* name) {
-   uint32_t hash = ctXXHash32(name);
-   for (int32_t i = 0; i < (int32_t)boneNames.Count(); i++) {
-      if (boneHashes[i] == hash) { return i; }
-   }
-   return -1;
-};
-
-ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
-                                        ctModel& output,
-                                        ctModelExportContext& ctx) {
-   ctDebugLog("Exporting Skeleton...");
-   if (ctx.singleBone) {
-      uint32_t nameHash = ctXXHash32("root");
-      ctStringUtf8* nameString = new ctStringUtf8("root");
-      boneNames.Append(nameString->CStr());
-      boneHashes.Append(nameHash);
-
-      ctModelSkeletonBoneTransform xform;
-      xform.rotation[3] = 1.0f;
-      xform.scale[0] = 1.0f;
-      xform.scale[1] = 1.0f;
-      xform.scale[2] = 1.0f;
-      boneTransforms.Append(xform);
-
-      boneGraph.Append({-1, -1, -1});
-
-      ctModelSkeleton* pSkeleton = &output.skeletonData;
-      pSkeleton->boneCount = 1;
-      pSkeleton->nameArray = boneNames.Data();
-      pSkeleton->transformArray = boneTransforms.Data();
-      pSkeleton->graphArray = boneGraph.Data();
-      return CT_SUCCESS;
-   }
-
+ctResults ctGltf2Model::ExtractSkeleton() {
+   ctDebugLog("Extracting Skeleton...");
    /* pass one (get all bones needed by name) */
-   for (size_t i = 0; i < input.nodes_count; i++) {
-      const cgltf_node& node = input.nodes[i];
-      if (!KeepBoneOfName(node.name)) { continue; }
+   for (size_t i = 0; i < gltf.nodes_count; i++) {
+      const cgltf_node& node = gltf.nodes[i];
+      if (!isNodePreserved(node.name)) { continue; }
       uint32_t nameHash = ctXXHash32(node.name);
-      ctStringUtf8* nameString = new ctStringUtf8(node.name);
-      boneNames.Append(nameString->CStr());
+      ctModelSkeletonBoneName name = ctModelSkeletonBoneName();
+      strncpy(name.name, node.name, 32);
+      boneNames.Append(name);
       boneHashes.Append(nameHash);
    }
 
-   /* pass two */
-   for (size_t i = 0; i < input.nodes_count; i++) {
-      const cgltf_node& node = input.nodes[i];
-      if (!KeepBoneOfName(node.name)) { continue; }
+   /* pass two (extract transforms) */
+   for (size_t i = 0; i < gltf.nodes_count; i++) {
+      const cgltf_node& node = gltf.nodes[i];
+      if (!isNodePreserved(node.name)) { continue; }
       ctVec3 translation = ctVec3();
       ctQuat rotation = ctQuat();
       ctVec3 scale = ctVec3(1.0f);
@@ -89,38 +53,102 @@ ctResults ctModelExportSkeleton::Export(const cgltf_data& input,
       if (node.has_rotation) { rotation = node.rotation; }
       if (node.has_scale) { scale = node.scale; }
       ctModelSkeletonBoneTransform xform = {};
-      memcpy(xform.translation, translation.data, sizeof(float) * 3);
-      memcpy(xform.rotation, rotation.data, sizeof(float) * 4);
-      memcpy(xform.scale, scale.data, sizeof(float) * 3);
+      memcpy(xform.translation.data, translation.data, sizeof(float) * 3);
+      memcpy(xform.rotation.data, rotation.data, sizeof(float) * 4);
+      memcpy(xform.scale.data, scale.data, sizeof(float) * 3);
       boneTransforms.Append(xform);
+
+      /* also extract inverse world transform for skinning */
+      ctModelSkeletonBoneTransform toroot = {};
+      ctMat4 worldXform;
+      cgltf_node_transform_world(&node, worldXform.data[0]);
+      worldXform = ctMat4InverseLossy(worldXform);
+      ctMat4AwkwardDecompose(
+        worldXform, toroot.translation, toroot.rotation, toroot.scale);
+      boneInverseBinds.Append(toroot);
    }
 
-   /* build a sibling heirarchy */
-   for (size_t i = 0; i < input.nodes_count; i++) {
-      const cgltf_node& node = input.nodes[i];
-      if (!KeepBoneOfName(node.name)) { continue; }
+   /* pass three (build a sibling heirarchy) */
+   for (size_t i = 0; i < gltf.nodes_count; i++) {
+      const cgltf_node& node = gltf.nodes[i];
+      if (!isNodePreserved(node.name)) { continue; }
       int32_t parent = -1;
       int32_t firstChild = -1;
       int32_t nextSibling = -1;
       if (node.parent) {
-         parent = FindBoneForName(node.parent->name);
+         parent = BoneIndexFromGltfNode(node.parent->name);
          /* find next sibling */
          bool nextIsSibling = false;
          for (size_t j = 0; j < node.parent->children_count; j++) {
             if (nextIsSibling) {
-               nextSibling = FindBoneForName(node.parent->children[j]->name);
+               nextSibling = BoneIndexFromGltfNode(node.parent->children[j]->name);
                break;
             }
-            if (node.parent->children[j] == &input.nodes[i]) { nextIsSibling = true; }
+            if (node.parent->children[j] == &gltf.nodes[i]) { nextIsSibling = true; }
          }
       }
-      if (node.children) { firstChild = FindBoneForName(node.children[0]->name); }
+      if (node.children) { firstChild = BoneIndexFromGltfNode(node.children[0]->name); }
       boneGraph.Append({parent, firstChild, nextSibling});
    }
-   ctModelSkeleton* pSkeleton = &output.skeletonData;
-   pSkeleton->boneCount = (uint32_t)boneNames.Count();
-   pSkeleton->nameArray = boneNames.Data();
-   pSkeleton->transformArray = boneTransforms.Data();
-   pSkeleton->graphArray = boneGraph.Data();
+
+   /* todo: look into sorting? */
+
+   model.skeleton.boneCount = (uint32_t)boneHashes.Count();
+   model.skeleton.graphArray = boneGraph.Data();
+   model.skeleton.nameArray = boneNames.Data();
+   model.skeleton.transformArray = boneTransforms.Data();
+   model.skeleton.inverseBindArray = boneInverseBinds.Data();
+   model.skeleton.hashArray = boneHashes.Data();
+
    return CT_SUCCESS;
+}
+
+bool ctGltf2Model::isNodeCollision(const char* name) {
+   size_t len = strlen(name);
+   if (len < 4) { return false; }
+   const char* postfix = &name[len - 4];
+   if (ctCStrNEql(postfix, "_CBX", 4) || /* box collision */
+       ctCStrNEql(postfix, "_CSP", 4) || /* sphere collision */
+       ctCStrNEql(postfix, "_CPL", 4) || /* pill collision */
+       ctCStrNEql(postfix, "_CTR", 4) || /* triangle collision */
+       ctCStrNEql(postfix, "_CVX", 4))   /* convex collision */
+   {
+      return true;
+   }
+   return false;
+}
+
+bool ctGltf2Model::isNodeLODLevel(const char* name) {
+   size_t len = strlen(name);
+   if (len < 5) { return false; }
+   const char* postfix = &name[len - 4];
+   if (ctCStrNEql(postfix, "LOD", 3)) { /* lod levels LOD1-LOD9 */
+      return true;
+   }
+   return false;
+}
+
+bool ctGltf2Model::isNodePath(const char* name) {
+   size_t len = strlen(name);
+   if (len < 5) { return false; }
+   const char* postfix = &name[len - 4];
+   if (ctCStrNEql(postfix, "PATH", 4)) { /* lod levels LOD1-LOD9 */
+      return true;
+   }
+   return false;
+}
+
+bool ctGltf2Model::isNodePreserved(const char* name) {
+   if (isNodeCollision(name) || isNodeLODLevel(name) || isNodePath(name)) {
+      return false;
+   }
+   return true;
+}
+
+int32_t ctGltf2Model::BoneIndexFromGltfNode(const char* nodeName) {
+   uint32_t hash = ctXXHash32(nodeName);
+   for (int32_t i = 0; i < (int32_t)boneHashes.Count(); i++) {
+      if (boneHashes[i] == hash) { return i; }
+   }
+   return -1;
 }

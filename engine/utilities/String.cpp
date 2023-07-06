@@ -147,9 +147,14 @@ void ctStringUtf8::Printf(const size_t max, const char* format, ...) {
 
 void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
    if (!format) { return; }
+   size_t buffsize = max;
    const size_t beginning_length = ByteLength();
-   Append('\0', max);
-   vsnprintf((char*)_dataVoid() + beginning_length, max, format, args);
+   if (max == 0) {
+      char tmp;
+      buffsize = vsnprintf(&tmp, 1, format, args);
+   }
+   Append('\0', buffsize);
+   vsnprintf((char*)_dataVoid() + beginning_length, buffsize, format, args);
 }
 
 int ctStringUtf8::Cmp(const ctStringUtf8& str) const {

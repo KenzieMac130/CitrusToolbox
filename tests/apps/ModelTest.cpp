@@ -128,5 +128,5 @@ void ModelViewer::UpdateUI() {
 }
 
 ctResults ModelViewer::LoadModel(ctFile file) {
-   return ctModelLoad(model, &file);
+    return CT_SUCCESS; /* todo */
 }

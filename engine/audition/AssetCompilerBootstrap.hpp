@@ -34,9 +34,8 @@ public:
    const char* GetOutputText();
    void ReleaseOutputLock();
 
-   ctStringUtf8 pythonPath = "python";
-   ctStringUtf8 wafPath =
-     "C:\\Users\\Kenzie\\Documents\\GitHub\\CitrusToolbox\\assets"; /* todo: duh! */
+   ctStringUtf8 pythonPath = CT_AUDITION_PYTHON;
+   ctStringUtf8 wafPath = CT_AUDITION_WAF_PATH;
 
 private:
    ctSpinLock lock;

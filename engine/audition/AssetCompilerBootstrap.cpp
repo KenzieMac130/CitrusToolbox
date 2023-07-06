@@ -66,7 +66,7 @@ ctResults ctAssetCompilerBootstrap::Startup() {
                         true,
                         true,
                         "WafPath",
-                        "Path to the waf file in the asset system.",
+                        "Path to the waf file.",
                         NULL,
                         NULL);
    ctSpinLockInit(lock);

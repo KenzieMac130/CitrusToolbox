@@ -57,6 +57,14 @@ enum ctResults ctWADFindLumpInMarker(struct ctWADReader* pReader,
 #define CT_WADBLOB_NAME_STRINGS "STRINGS"
 const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset);
 
+enum ctResults ctWADSetupWrite(struct ctWADReader* pReader);
+enum ctResults ctWADWriteSection(struct ctWADReader* pReader,
+                                 const char name[8],
+                                 uint8_t* data,
+                                 size_t size);
+enum ctResults ctWADToBuffer(struct ctWADReader* pReader, uint8_t* data, size_t* pSize);
+void ctWADWriteFree(struct ctWADReader* pReader);
+
 #ifdef __cplusplus
 }
 #endif

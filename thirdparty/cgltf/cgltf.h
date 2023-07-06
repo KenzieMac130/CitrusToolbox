@@ -5460,7 +5460,7 @@ cgltf_result cgltf_parse_json(cgltf_options* options, const uint8_t* json_chunk,
 
 	jsmn_init(&parser);
 
-	int token_count = jsmn_parse(&parser, (const char*)json_chunk, size, tokens, options->json_token_count);
+	int token_count = jsmn_parse(&parser, (const char*)json_chunk, size, tokens, (unsigned int)options->json_token_count);
 
 	if (token_count <= 0)
 	{

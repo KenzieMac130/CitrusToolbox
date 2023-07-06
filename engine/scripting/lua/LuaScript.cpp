@@ -110,6 +110,19 @@ ctResults ctLuaContext::LoadFromFile(const char* path) {
    return CT_FAILURE_UNKNOWN;
 }
 
+int WriteLuaToDynamicArray(lua_State* L,
+                           const void* ptr,
+                           size_t size,
+                           ctDynamicArray<uint8_t>* output) {
+   output->Append((const uint8_t*)ptr, size);
+   return 0;
+}
+
+ctResults ctLuaContext::Compile(ctDynamicArray<uint8_t>& output) {
+   lua_dump(L, (lua_Writer)WriteLuaToDynamicArray, &output);
+   return CT_SUCCESS;
+}
+
 ctResults ctLuaContext::RunScript() {
    ZoneScoped;
    if (lua_pcall(L, 0, 0, 0) != 0) {

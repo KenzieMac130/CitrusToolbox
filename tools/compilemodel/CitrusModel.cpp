@@ -16,32 +16,15 @@
 
 #include "../engine/utilities/Common.h"
 
-#include "ExportPhaseBase.hpp"
-
-#include "SkeletonExport.hpp"
-#include "MeshExport.hpp"
-
 #define CGLTF_IMPLEMENTATION
-#include "cgltf/cgltf.h"
+#include "CitrusModel.hpp"
 
 // clang-format off
-const char* gHelpString = "Example:\n\t<OPTIONS> inputFilePath outputFilePath assetCompilerPath\n"
+const char* gHelpString = "Example:\n\t<OPTIONS> inputFilePath outputFilePath\n"
                           "Options:"
                           "\n\t--help: Show help"
-                          "\n\t--mode: Model mode: (single, articulation, level, destructable, vat)"
-                          "\n\t--curves: Import curves"
-                          "\n\t--physics: Export physics shapes and bakes (always for destructibles)"
-                          "\n\t--mass_scale: Scale applied to object mass"
-                          "\n\t--physmat: Physics material override"
-                          "\n\t--bone_anim_list: Comma separated animation list (NAME:OUTPUT_FILE)"
-                          "\n\t--blend_shape: Import blend shapes"
-                          "\n\t--lods: Import lods"
-                          "\n\t--keep_topology: Preserve topology"
-                          "\n\t--destructable_original: Original destructable model"
-                          "\n\t--destructable_core: Core model left exposed on destruction"
-                          "\n\t--destructable_preset: Destruction preset name"
-                          "\n\t--blast_bond_mode: Blast bond mode (always/exact)"
-                          "\n\t--blast_max_separation: Blast max separation distance";
+                          "\n\t--justload: Dont process input, just load the output"
+                          "\n\t--viewer: Show viewer";
 // clang-format on
 
 #define FindFlag(_name) _FindFlag(_name, argc, argv)
@@ -69,39 +52,102 @@ char* _FindParamOccurance(const char* name, int occurance, int argc, char* argv[
 #define FindParam(_name) FindParamOccurance(_name, 0)
 
 int main(int argc, char* argv[]) {
+   ZoneScoped;
    if (argc < 4) {
       ctDebugError("Not enough args!\n%s", gHelpString);
       return -1;
    }
 
-   if (FindFlag("--help")) { ctDebugLog(gHelpString); }
+   if (FindFlag("--help")) {
+      ctDebugLog(gHelpString);
+      return 0;
+   }
 
    const char* inputFilePath = argv[1];
    const char* outputFilePath = argv[2];
    const char* assetCompilerPath = argv[3];
 
-   cgltf_options options = {};
-   cgltf_data* pInput;
-   if (cgltf_parse_file(&options, inputFilePath, &pInput) != cgltf_result_success) {
-      ctDebugError("Could not parse gltf");
-      return -2;
+   ctGltf2Model exporter = ctGltf2Model();
+
+   /* Preview Only */
+   if (FindFlag("--just_load")) {
+      CT_RETURN_ON_FAIL(exporter.LoadModel(outputFilePath), -1001);
+      if (FindFlag("--viewer")) { exporter.ModelViewer(argc, argv); }
+      return 0;
    }
 
-   ctModel output = ctModel();
+   /* Load GLTF */
+   CT_RETURN_ON_FAIL(exporter.LoadGltf(inputFilePath), -1000);
 
-   ctModelExportContext ctx;
-   ctx.singleBone = false;
-   ctx.singleMesh = true;
+   /* Skeleton */
+   CT_RETURN_ON_FAIL(exporter.ExtractSkeleton(), -2000);
 
-   ctx.pSkeletonExport = new ctModelExportSkeleton();
-   ctx.pMeshExport = new ctModelExportMesh();
-
-   ctx.pSkeletonExport->Export(*pInput, output, ctx);
-   ctx.pMeshExport->Export(*pInput, output, ctx);
-
-   ctFile file;
-   if (file.Open(outputFilePath, CT_FILE_OPEN_WRITE) == CT_SUCCESS) {
-      ctModelSave(output, &file);
+   /* Geometry */
+   CT_RETURN_ON_FAIL(exporter.ExtractGeometry(FindFlag("--skin")), -3000);
+   if (FindFlag("--lod_generate")) {
+      const char* paramStr = FindParam("--lod_drop");
+      float param = 0.5f;
+      if (paramStr) { param = (float)atof(paramStr); }
+      CT_RETURN_ON_FAIL(exporter.GenerateLODs(param), -3010);
    }
+   if (FindFlag("--merge_mesh")) {
+      CT_RETURN_ON_FAIL(exporter.MergeMeshes(FindFlag("--skin")), -3020);
+   }
+   if (!FindFlag("--skip_tangents")) {
+      CT_RETURN_ON_FAIL(exporter.GenerateTangents(), -3030);
+   }
+   if (!FindFlag("--skip_vertex_cache")) {
+      CT_RETURN_ON_FAIL(exporter.OptimizeVertexCache(), -3040);
+   }
+   if (!FindFlag("--skip_overdraw")) {
+      const char* paramStr = FindParam("--overdraw_threshold");
+      float param = 1.05f;
+      if (paramStr) { param = (float)atof(paramStr); }
+      CT_RETURN_ON_FAIL(exporter.OptimizeOverdraw(param), -3050);
+   }
+   CT_RETURN_ON_FAIL(exporter.ComputeBounds(), -3060);
+   CT_RETURN_ON_FAIL(exporter.EncodeVertices(), -3100);
+   CT_RETURN_ON_FAIL(exporter.CreateGeometryBlob(), -3200);
+
+   /* View Model */
+   if (FindFlag("--viewer")) { exporter.ModelViewer(argc, argv); }
+
+   exporter.SaveModel(outputFilePath);
+
    return 0;
+}
+
+ctResults ctGltf2Model::LoadGltf(const char* filepath) {
+   ZoneScoped;
+   cgltf_options options = {};
+   cgltf_data* pGltf;
+   if (cgltf_parse_file(&options, filepath, &pGltf) != cgltf_result_success) {
+      ctDebugError("COULD NOT PARSE GLTF!");
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
+   if (cgltf_load_buffers(&options, pGltf, filepath) != cgltf_result_success) {
+      ctDebugError("COULD NOT LOAD GLTF BUFFERS!");
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
+   gltf = *pGltf;
+   model = ctModel();
+   return CT_SUCCESS;
+}
+
+ctResults ctGltf2Model::SaveModel(const char* filepath) {
+   ZoneScoped;
+   ctFile file;
+   if (file.Open(filepath, CT_FILE_OPEN_WRITE) == CT_SUCCESS) {
+      return ctModelSave(model, file);
+   }
+   return CT_FAILURE_INACCESSIBLE;
+}
+
+ctResults ctGltf2Model::LoadModel(const char* filepath) {
+   ZoneScoped;
+   ctFile file;
+   if (file.Open(filepath, CT_FILE_OPEN_READ) == CT_SUCCESS) {
+      return ctModelLoad(model, file, true);
+   }
+   return CT_FAILURE_INACCESSIBLE;
 }

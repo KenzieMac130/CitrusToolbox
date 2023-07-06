@@ -33,3 +33,5 @@ public:
    }
    uint8_t data[16];
 };
+
+CT_API ctResults ctGUIDFromAssetPath(ctGUID& result, const char* assetPath, const char* output = "OUTPUT");

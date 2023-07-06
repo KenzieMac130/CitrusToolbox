@@ -91,6 +91,60 @@ const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset) {
    return pReader->blob + lump.filepos + offset;
 }
 
+enum ctResults ctWADSetupWrite(struct ctWADReader* pReader) {
+   if (pReader->pInfo) {
+      return CT_FAILURE_DUPLICATE_ENTRY;
+   } else {
+      pReader->blobSize = sizeof(struct ctWADInfo);
+      pReader->blob = (uint8_t*)ctMalloc(pReader->blobSize);
+      pReader->pLumps = (struct ctWADLump*)ctMalloc(sizeof(struct ctWADLump) * 1);
+      pReader->pInfo = (struct ctWADInfo*)pReader->blob;
+
+      pReader->pInfo->infotableofs = 0;
+      pReader->pInfo->numlumps = 0;
+      memcpy(pReader->pInfo->identification, "PWAD", 4);
+   }
+   return CT_SUCCESS;
+}
+
+enum ctResults ctWADWriteSection(struct ctWADReader* pReader,
+                                 const char name[8],
+                                 uint8_t* data,
+                                 size_t size) {
+   if (!data) { return CT_FAILURE_INVALID_PARAMETER; }
+   size_t initialBlobSize = pReader->blobSize;
+   pReader->blob = ctRealloc(pReader->blob, pReader->blobSize + size);
+   pReader->pInfo = (struct ctWADInfo*)pReader->blob;
+   pReader->blobSize += size;
+   pReader->pInfo->numlumps++;
+   pReader->pLumps =
+     ctRealloc(pReader->pLumps, sizeof(struct ctWADLump) * pReader->pInfo->numlumps);
+   struct ctWADLump* pLump = &pReader->pLumps[pReader->pInfo->numlumps - 1];
+   pLump->filepos = (int32_t)initialBlobSize;
+   pLump->size = (int32_t)size;
+   memcpy(pLump->name, name, 8);
+   memcpy(&pReader->blob[initialBlobSize], data, size);
+   return CT_SUCCESS;
+}
+
+enum ctResults ctWADToBuffer(struct ctWADReader* pReader, uint8_t* data, size_t* pSize) {
+   ctAssert(pSize);
+   *pSize = pReader->blobSize + (sizeof(struct ctWADLump) * pReader->pInfo->numlumps);
+   pReader->pInfo->infotableofs = (int32_t)pReader->blobSize;
+   if (data) {
+      memcpy(data, pReader->blob, pReader->blobSize);
+      memcpy(&data[pReader->blobSize],
+             pReader->pLumps,
+             (sizeof(struct ctWADLump) * pReader->pInfo->numlumps));
+   }
+   return CT_SUCCESS;
+}
+
+void ctWADWriteFree(struct ctWADReader* pReader) {
+   ctFree(pReader->blob);
+   ctFree(pReader->pLumps);
+}
+
 #ifdef __cplusplus
 }
 #endif
