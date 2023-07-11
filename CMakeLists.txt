@@ -222,6 +222,25 @@ set(BLAST_LIBRARIES
         ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastGlobals.lib
         ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastTk.lib)
 
+# ---------- Find Recast ----------
+set(CITRUS_RECAST 1)
+if(CITRUS_RECAST)
+    set(RECAST_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/Recast/include)
+    set(RECAST_LIBRARIES 
+        ${BASE_LIBRARY_DIRECTORY}/Recast/lib/Recast.lib)
+endif()
+
+# ---------- Find Detour ----------
+set(CITRUS_DETOUR 1)
+if(CITRUS_DETOUR)
+    set(DETOUR_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/Detour/include)
+    set(DETOUR_LIBRARIES 
+        ${BASE_LIBRARY_DIRECTORY}/Detour/lib/Detour.lib
+        ${BASE_LIBRARY_DIRECTORY}/Detour/lib/DetourCrowd.lib
+        ${BASE_LIBRARY_DIRECTORY}/Detour/lib/DetourDebugUtils.lib
+        ${BASE_LIBRARY_DIRECTORY}/Detour/lib/DetourTileCache.lib)
+endif()
+
 # ---------- Find Lua ----------
 set(CITRUS_LUA 1)
 if(CITRUS_LUA)

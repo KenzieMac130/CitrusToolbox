@@ -440,6 +440,16 @@ if(CITRUS_LUA)
 	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
 endif()
 
+if(CITRUS_RECAST)
+	target_link_libraries(engine ${RECAST_LIBRARIES})
+	target_include_directories(engine PUBLIC ${RECAST_INCLUDE_DIR})
+endif()
+
+if(CITRUS_DETOUR)
+	target_link_libraries(engine ${DETOUR_LIBRARIES})
+	target_include_directories(engine PUBLIC ${DETOUR_INCLUDE_DIR})
+endif()
+
 if(CITRUS_ANGELSCRIPT)
 	target_link_libraries(engine ${ANGELSCRIPT_LIBRARIES})
 	target_include_directories(engine PUBLIC ${ANGELSCRIPT_INCLUDE_DIR})
