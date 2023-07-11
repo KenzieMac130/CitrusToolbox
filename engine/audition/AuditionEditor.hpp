@@ -29,6 +29,7 @@ public:
    bool allowGizmo = true;
    class ctEngineCore* Engine;
    class ctAuditionEditor* Editor;
+   class ctAssetCompilerBootstrap* Compiler;
 };
 
 class CT_API ctAuditionEditor : public ctModuleBase {

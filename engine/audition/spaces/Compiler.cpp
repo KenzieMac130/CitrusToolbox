@@ -17,8 +17,7 @@
 #include "Compiler.hpp"
 #include "audition/AssetCompilerBootstrap.hpp"
 
-ctAuditionSpaceCompiler::ctAuditionSpaceCompiler(ctAssetCompilerBootstrap* pCompiler) {
-   this->pCompiler = pCompiler;
+ctAuditionSpaceCompiler::ctAuditionSpaceCompiler() {
 }
 
 ctAuditionSpaceCompiler::~ctAuditionSpaceCompiler() {
@@ -39,19 +38,19 @@ void ctAuditionSpaceCompiler::OnGui(ctAuditionSpaceContext& ctx) {
                          ImVec2(0, -footer_height_to_reserve),
                          false,
                          ImGuiWindowFlags_HorizontalScrollbar)) {
-      pCompiler->AcquireOutputLock();
-      ImGui::TextUnformatted(pCompiler->GetOutputText());
-      pCompiler->ReleaseOutputLock();
+      ctx.Compiler->AcquireOutputLock();
+      ImGui::TextUnformatted(ctx.Compiler->GetOutputText());
+      ctx.Compiler->ReleaseOutputLock();
    }
    ImGui::EndChild();
 
    if (ImGui::Button("Clear")) {
-      pCompiler->ClearResults();
+      ctx.Compiler->ClearResults();
       ctDebugLog("Cleared Results...");
    }
    ImGui::SameLine();
    if (ImGui::Button("Compile")) {
-      pCompiler->StartCompiler();
+      ctx.Compiler->StartCompiler();
       ctDebugLog("Compiling...");
    }
 }

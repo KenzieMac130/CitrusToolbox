@@ -18,6 +18,7 @@
 
 ctAuditionSpaceActionNewAsset::ctAuditionSpaceActionNewAsset(const char* relativePath) {
    this->relativePath = relativePath;
+   this->relativePath.FilePathUnify();
 }
 
 ctAuditionSpaceActionNewAsset::~ctAuditionSpaceActionNewAsset() {
@@ -48,10 +49,14 @@ void ctAuditionSpaceActionNewAsset::OnGui(ctAuditionSpaceContext& ctx) {
       ImGui::EndCombo();
    }
    ImGui::InputText("Name", &name);
+   if (ImGui::Button("Create Asset")) {
+      // todo
+   }
 }
 
 ctAuditionSpaceActionNewFolder::ctAuditionSpaceActionNewFolder(const char* relativePath) {
    this->relativePath = relativePath;
+   this->relativePath.FilePathUnify();
 }
 
 ctAuditionSpaceActionNewFolder::~ctAuditionSpaceActionNewFolder() {
@@ -66,9 +71,17 @@ const char* ctAuditionSpaceActionNewFolder::GetWindowName() {
 }
 
 void ctAuditionSpaceActionNewFolder::OnGui(ctAuditionSpaceContext& ctx) {
+   ImGui::Text("%s/", relativePath.CStr());
+   ImGui::SameLine();
+   ImGui::InputText("Folder Name", &name);
+   if (ImGui::Button("Create Folder")) {
+      // todo
+   }
 }
 
 ctAuditionSpaceActionDeleteAsset::ctAuditionSpaceActionDeleteAsset(const char* path) {
+   this->path = path;
+   this->path.FilePathUnify();
 }
 
 ctAuditionSpaceActionDeleteAsset::~ctAuditionSpaceActionDeleteAsset() {
@@ -83,9 +96,15 @@ const char* ctAuditionSpaceActionDeleteAsset::GetWindowName() {
 }
 
 void ctAuditionSpaceActionDeleteAsset::OnGui(ctAuditionSpaceContext& ctx) {
+   ImGui::Text("Delete %s?", path);
+   if (ImGui::Button("Confirm Delete")) {
+      // todo
+   }
 }
 
 ctAuditionSpaceActionMoveAsset::ctAuditionSpaceActionMoveAsset(const char* srcPath) {
+   this->srcPath = srcPath;
+   this->srcPath.FilePathUnify();
 }
 
 ctAuditionSpaceActionMoveAsset::~ctAuditionSpaceActionMoveAsset() {
@@ -100,4 +119,8 @@ const char* ctAuditionSpaceActionMoveAsset::GetWindowName() {
 }
 
 void ctAuditionSpaceActionMoveAsset::OnGui(ctAuditionSpaceContext& ctx) {
+   ImGui::Text("Moving %s to %s", srcPath.CStr(), ctx.currentFolder.CStr());
+   if (ImGui::Button("Confirm Move")) {
+      // todo
+   }
 }

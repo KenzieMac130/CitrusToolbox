@@ -46,6 +46,7 @@ public:
 
 private:
    ctStringUtf8 relativePath;
+   ctStringUtf8 name;
 };
 
 class CT_API ctAuditionSpaceActionMoveAsset : public ctAuditionSpaceBase {
@@ -76,26 +77,26 @@ private:
 
 class CT_API ctAuditionSpaceActionDuplicateAsset : public ctAuditionSpaceBase {
 public:
-    ctAuditionSpaceActionDuplicateAsset(const char* path);
-    ~ctAuditionSpaceActionDuplicateAsset();
+   ctAuditionSpaceActionDuplicateAsset(const char* path);
+   ~ctAuditionSpaceActionDuplicateAsset();
 
-    virtual const char* GetTabName();
-    virtual const char* GetWindowName();
-    virtual void OnGui(ctAuditionSpaceContext& ctx);
+   virtual const char* GetTabName();
+   virtual const char* GetWindowName();
+   virtual void OnGui(ctAuditionSpaceContext& ctx);
 
 private:
-    ctStringUtf8 path;
+   ctStringUtf8 path;
 };
 
 class CT_API ctAuditionSpaceActionRenameAsset : public ctAuditionSpaceBase {
 public:
-    ctAuditionSpaceActionRenameAsset(const char* path);
-    ~ctAuditionSpaceActionRenameAsset();
+   ctAuditionSpaceActionRenameAsset(const char* path);
+   ~ctAuditionSpaceActionRenameAsset();
 
-    virtual const char* GetTabName();
-    virtual const char* GetWindowName();
-    virtual void OnGui(ctAuditionSpaceContext& ctx);
+   virtual const char* GetTabName();
+   virtual const char* GetWindowName();
+   virtual void OnGui(ctAuditionSpaceContext& ctx);
 
 private:
-    ctStringUtf8 path;
+   ctStringUtf8 path;
 };

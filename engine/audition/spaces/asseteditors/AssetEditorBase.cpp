@@ -107,8 +107,8 @@ void ctAuditionSpaceAssetEditorBase::OnGui(ctAuditionSpaceContext& ctx) {
                ImGui::PopID();
             }
             ImGui::EndTable();
-            ImGui::EndTabItem();
          }
+         ImGui::EndTabItem();
       }
       ImGui::EndTabBar();
    }

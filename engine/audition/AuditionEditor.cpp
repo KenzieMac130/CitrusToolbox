@@ -44,13 +44,8 @@ ctResults ctAuditionEditor::Startup() {
                          "AllowEditor",
                          "Allow the user to open the editor.",
                          CT_SETTINGS_BOUNDS_BOOL);
-   settings->BindString(&assetPath,
-                        true,
-                        true,
-                        "AssetPath",
-                        "Path to the assets folder.",
-                        NULL,
-                        NULL);
+   settings->BindString(
+     &assetPath, true, true, "AssetPath", "Path to the assets folder.", NULL, NULL);
 
    RegisterModule((ctModuleBase*)Engine->AssetCompiler);
    RegisterModule((ctModuleBase*)Engine->AsyncTasks);
@@ -70,13 +65,14 @@ ctResults ctAuditionEditor::Startup() {
    RegisterModule((ctModuleBase*)Engine->Translation);
    RegisterModule((ctModuleBase*)Engine->WindowManager);
 
-   pCompilerWindow = new ctAuditionSpaceCompiler(Engine->AssetCompiler);
+   pCompilerWindow = new ctAuditionSpaceCompiler();
    pAssetBrowser = new ctAuditionSpaceAssetBrowser();
 
    ctx = ctAuditionSpaceContext();
    ctx.assetBasePath = assetPath;
    ctx.Editor = this;
    ctx.Engine = Engine;
+   ctx.Compiler = Engine->AssetCompiler;
    ctx.allowGizmo = true;
    return CT_SUCCESS;
 }

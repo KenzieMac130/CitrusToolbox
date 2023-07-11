@@ -21,13 +21,10 @@
 
 class CT_API ctAuditionSpaceCompiler : public ctAuditionSpaceBase {
 public:
-   ctAuditionSpaceCompiler(class ctAssetCompilerBootstrap* pCompiler);
+   ctAuditionSpaceCompiler();
    ~ctAuditionSpaceCompiler();
 
    virtual const char* GetTabName();
    virtual const char* GetWindowName();
    virtual void OnGui(ctAuditionSpaceContext& ctx);
-
-private:
-   class ctAssetCompilerBootstrap* pCompiler;
 };
