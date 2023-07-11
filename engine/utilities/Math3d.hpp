@@ -787,6 +787,13 @@ inline void ctMat4Scale(ctMat4& m, float s) {
    glm_scale_uni(m.data, s);
 }
 
+inline void ctMat4RemoveTranslation(ctMat4& m) {
+   m.data[3][0] = 0.0f;
+   m.data[3][1] = 0.0f;
+   m.data[3][2] = 0.0f;
+   m.data[3][3] = 1.0f;
+}
+
 /* By using this function you acknowledge loss of precision */
 /* NEVER USE ON WORLD SPACE!!! */
 inline ctMat4 ctMat4InverseLossy(ctMat4 m) {

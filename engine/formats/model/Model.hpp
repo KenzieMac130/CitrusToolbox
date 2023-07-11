@@ -81,6 +81,7 @@ struct ctModelMeshScatterData {
 struct ctModelSubmesh {
    uint32_t materialIndex;
    uint32_t indexOffset;
+   uint32_t vertexOffset;
    uint32_t indexCount;
 };
 
@@ -141,25 +142,25 @@ struct ctModelMeshData {
 };
 
 struct ctModelGPUPayloadInfo {
-   uint64_t indexDataSize;
+   uint64_t indexDataSize = 0;
    uint64_t indexDataStart = UINT64_MAX;
 
-   uint64_t vertexDataCoordsSize;
+   uint64_t vertexDataCoordsSize = 0;
    uint64_t vertexDataCoordsStart = UINT64_MAX;
 
-   uint64_t vertexDataSkinSize;
+   uint64_t vertexDataSkinSize = 0;
    uint64_t vertexDataSkinStart = UINT64_MAX;
 
-   uint64_t vertexDataUVSize;
+   uint64_t vertexDataUVSize = 0;
    uint64_t vertexDataUVStart = UINT64_MAX;
 
-   uint64_t vertexDataColorSize;
+   uint64_t vertexDataColorSize = 0;
    uint64_t vertexDataColorStart = UINT64_MAX;
 
-   uint64_t vertexDataMorphSize;
+   uint64_t vertexDataMorphSize = 0;
    uint64_t vertexDataMorphStart = UINT64_MAX;
 
-   uint64_t scatterDataSize;
+   uint64_t scatterDataSize = 0;
    uint64_t scatterDataStart = UINT64_MAX;
 };
 
@@ -238,6 +239,14 @@ struct ctModelBlobData {
    uint8_t* data;
 };
 
+/*
+MATCODE: material json
+PXBAKEG: physx serialization for global (materials/shapes)
+PXBAKEI: physx serialization for instance (bodies, joints)
+NAVMESH: detour navmesh
+SCNCODE: lua script for the scene
+*/
+
 /* ------------------- Main ------------------- */
 
 #define CT_MODEL_MAGIC   0x6C646D63
@@ -259,9 +268,10 @@ struct ctModel {
    ctModelMeshData geometry;
    ctModelAnimationData animation;
    ctModelSplineData splines;
+   ctModelBlobData materialSet;         /* MATSET */
    ctModelBlobData physxSerialGlobal;   /* PXBAKEG */
    ctModelBlobData physxSerialInstance; /* PXBAKEI */
-   ctModelBlobData materialScript;      /* MATCODE */
+   ctModelBlobData navmeshData;         /* NAVMESH */
    ctModelBlobData sceneScript;         /* SCNCODE */
    ctModelGPUPayloadInfo gpuTable;      /* GPUTABLE */
 

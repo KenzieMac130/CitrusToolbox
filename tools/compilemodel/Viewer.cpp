@@ -76,9 +76,9 @@ public:
    void AnimationInfo();
    void SplinesInfo();
    void PhysXInfo();
+   void NavmeshInfo();
    void MaterialInfo();
    void SceneInfo();
-   void GPUBufferInfo();
 
    /* Debug Rendering */
    void RenderModel();
@@ -126,10 +126,10 @@ ctResults ctModelViewer::OnUIUpdate() {
    if (ImGui::CollapsingHeader(CT_NC("Geometry"))) { GeometryInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Animation"))) { AnimationInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Splines"))) { SplinesInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("PhysX"))) { PhysXInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Material"))) { MaterialInfo(); }
+   if (ImGui::CollapsingHeader(CT_NC("PhysX"))) { PhysXInfo(); }
+   if (ImGui::CollapsingHeader(CT_NC("Navmesh"))) { NavmeshInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Scene"))) { SceneInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("GPU Buffers"))) { GPUBufferInfo(); }
    ImGui::End();
    RenderModel();
    return CT_SUCCESS;
@@ -140,12 +140,14 @@ ctResults ctModelViewer::OnShutdown() {
 }
 
 void ctModelViewer::SkeletonInfo() {
+   ImGui::PushID("BONE_TREE");
    ImGui::Checkbox(CT_NC("Render Skeleton"), &renderSkeleton);
    ImGui::Checkbox(CT_NC("Render Bone Names"), &renderBoneNames);
    ImGui::Text("Bone Count: %u", model.skeleton.boneCount);
    for (uint32_t i = 0; i < model.skeleton.boneCount; i++) {
       if (model.skeleton.graphArray[i].parent == -1) { BoneInfo(i); }
    }
+   ImGui::PopID();
 }
 
 void ctModelViewer::BoneInfo(int32_t boneIdx) {
@@ -197,6 +199,7 @@ void ctModelViewer::BoneInfo(int32_t boneIdx) {
 }
 
 void ctModelViewer::GeometryInfo() {
+   ImGui::PushID("GEO_TREE");
    ImGui::Checkbox(CT_NC("Render Geometry"), &renderGeometry);
    ImGui::Checkbox(CT_NC("Render Bounding Boxes"), &renderBBOX);
    ImGui::Combo(CT_NC("Geometry View"),
@@ -274,6 +277,7 @@ void ctModelViewer::GeometryInfo() {
          ImGui::TreePop();
       }
    }
+   ImGui::PopID();
 }
 
 void ctModelViewer::AnimationInfo() {
@@ -285,13 +289,23 @@ void ctModelViewer::SplinesInfo() {
 void ctModelViewer::PhysXInfo() {
 }
 
+void ctModelViewer::NavmeshInfo() {
+}
+
 void ctModelViewer::MaterialInfo() {
+   if (!model.materialSet.data) {
+      ImGui::Text("No material data");
+   } else {
+      ImGui::TextUnformatted((const char*)model.materialSet.data);
+   }
 }
 
 void ctModelViewer::SceneInfo() {
-}
-
-void ctModelViewer::GPUBufferInfo() {
+   if (!model.sceneScript.data) {
+      ImGui::Text("No scene data");
+   } else {
+      ImGui::TextUnformatted((const char*)model.sceneScript.data);
+   }
 }
 
 void ctModelViewer::RenderModel() {
@@ -362,8 +376,8 @@ void ctModelViewer::RenderGeometry() {
       ctModelMeshLod& lod = mesh.lods[lodSlot];
 
       /* map arrays */
-      uint32_t* indices =
-        (uint32_t*)&model.inMemoryGeometryData[model.gpuTable.indexDataStart];
+      uint16_t* indices =
+        (uint16_t*)&model.inMemoryGeometryData[model.gpuTable.indexDataStart];
       ctModelMeshVertexCoords* coords =
         (ctModelMeshVertexCoords*)&model
           .inMemoryGeometryData[model.gpuTable.vertexDataCoordsStart];
@@ -403,7 +417,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor(ctVec4ToIm3dColor(rng.GetColor()));
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
 
                   TinyImageFormat_DecodeInput posDecode = TinyImageFormat_DecodeInput();
@@ -422,8 +437,11 @@ void ctModelViewer::RenderGeometry() {
                Im3d::BeginLines();
                for (uint32_t i = 0; i < submesh.indexCount / 3; i++) {
                   for (uint32_t j = 0; j < 3; j++) {
-                     uint32_t idx0 = indices[submesh.indexOffset + i * 3 + j];
-                     uint32_t idx1 = indices[submesh.indexOffset + i * 3 + ((j + 1) % 3)];
+                     uint32_t idx0 = (uint32_t)indices[submesh.indexOffset + i * 3 + j] +
+                                     submesh.vertexOffset;
+                     uint32_t idx1 =
+                       (uint32_t)indices[submesh.indexOffset + i * 3 + ((j + 1) % 3)] +
+                       submesh.vertexOffset;
                      ctModelMeshVertexCoords coord0 = coords[idx0];
                      ctModelMeshVertexCoords coord1 = coords[idx1];
 
@@ -450,7 +468,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor();
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
 
                   ctVec3 position;
@@ -476,7 +495,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor();
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
 
                   ctVec3 position;
@@ -506,7 +526,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor();
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
                   ctModelMeshVertexUV uvc = uvs ? uvs[idx] : ctModelMeshVertexUV();
 
@@ -535,7 +556,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor();
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
                   ctModelMeshVertexColor colorc =
                     colors ? colors[idx] : ctModelMeshVertexColor();
@@ -561,7 +583,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor();
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
                   ctModelMeshVertexSkinData skin =
                     skins ? skins[idx] : ctModelMeshVertexSkinData();
@@ -593,7 +616,8 @@ void ctModelViewer::RenderGeometry() {
                Im3d::PushColor(ctVec4ToIm3dColor(color));
                Im3d::BeginTriangles();
                for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx = indices[i + submesh.indexOffset];
+                  uint32_t idx =
+                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
                   ctModelMeshVertexCoords coord = coords[idx];
 
                   TinyImageFormat_DecodeInput posDecode = TinyImageFormat_DecodeInput();

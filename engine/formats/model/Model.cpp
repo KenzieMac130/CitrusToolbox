@@ -65,9 +65,8 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    model.animation.scalarCount = (uint32_t)tmpsize / sizeof(float);
 
    /* Material Script */
-   CT_RETURN_FAIL(
-     ctWADFindLump(&wad, "MATCODE", (void**)&model.materialScript.data, &tmpsize));
-   model.materialScript.size = tmpsize;
+   ctWADFindLump(&wad, "MATSET", (void**)&model.materialSet.data, &tmpsize);
+   model.materialSet.size = tmpsize;
 
    /* PhysX Cook */
    ctWADFindLump(&wad, "PXBAKEG", (void**)&model.physxSerialGlobal.data, &tmpsize);
@@ -75,8 +74,12 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    ctWADFindLump(&wad, "PXBAKEI", (void**)&model.physxSerialInstance.data, &tmpsize);
    model.physxSerialInstance.size = tmpsize;
 
+   /* Navmesh */
+   ctWADFindLump(&wad, "NAVMESH", (void**)&model.navmeshData.data, &tmpsize);
+   model.navmeshData.size = tmpsize;
+
    /* Scene Script */
-   ctWADFindLump(&wad, "MATCODE", (void**)&model.sceneScript.data, &tmpsize);
+   ctWADFindLump(&wad, "SCNCODE", (void**)&model.sceneScript.data, &tmpsize);
    model.sceneScript.size = tmpsize;
 
    /* GPU info table */
@@ -166,7 +169,7 @@ CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
                      (uint8_t*)model.animation.scalars,
                      model.animation.scalarCount * sizeof(model.animation.scalars[0]));
 
-   /* PhysX Global */
+   /* PhysX */
    ctWADWriteSection(&wad,
                      "PXBAKEG",
                      (uint8_t*)model.physxSerialGlobal.data,
@@ -176,9 +179,13 @@ CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
                      (uint8_t*)model.physxSerialInstance.data,
                      model.physxSerialInstance.size);
 
+   /* Navmesh */
+   ctWADWriteSection(
+     &wad, "NAVMESH", (uint8_t*)model.navmeshData.data, model.navmeshData.size);
+
    /* Material Set */
    ctWADWriteSection(
-     &wad, "MATCODE", (uint8_t*)model.materialScript.data, model.materialScript.size);
+     &wad, "MATSET", (uint8_t*)model.materialSet.data, model.materialSet.size);
 
    /* Object VM */
    ctWADWriteSection(

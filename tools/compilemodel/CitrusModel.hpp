@@ -33,7 +33,7 @@ struct ctGltf2ModelVertex {
 
 struct ctGltf2ModelInstance {
    uint32_t meshIndex;
-   uint32_t boneIndex;
+   uint32_t nodeIndex;
 };
 
 /* useful for merge/split operations where indices are annoying */
@@ -84,6 +84,7 @@ public:
    ctResults OptimizeVertexCache();
    ctResults OptimizeOverdraw(float threshold);
    ctResults OptimizeVertexFetch();
+   ctResults BucketIndices(bool* pSubmeshesDirty = NULL);
    ctResults ComputeBounds();
    ctResults EncodeVertices();
    ctResults CreateGeometryBlob();
@@ -104,8 +105,18 @@ protected:
    static bool isNodeCollision(const char* name);
    static bool isNodeLODLevel(const char* name);
    static bool isNodePath(const char* name);
+   static bool isNodeBlockout(const char* name);
+   static bool isNodeNavmesh(const char* name);
+   static bool isNodeNavmeshConvexVolume(const char* name);
+   static bool isNodeNavmeshOfflinkStart(const char* name);
+   static bool isNodeNavmeshOfflinkEnd(const char* name);
+   static bool isNodeNavmeshRelated(const char* name) {
+      return isNodeNavmesh(name) || isNodeNavmeshConvexVolume(name) ||
+             isNodeNavmeshOfflinkStart(name) || isNodeNavmeshOfflinkEnd(name);
+   }
    static bool isNodePreserved(const char* name);
    int32_t BoneIndexFromGltfNode(const char* nodeName);
+   ctMat4 WorldMatrixFromGltfNodeIdx(uint32_t gltfNodeIdx);
 
    /* Mesh Helpers */
    ctResults ExtractAttribute(cgltf_attribute& attribute,
@@ -151,10 +162,11 @@ private:
    ctDynamicArray<ctModelSubmesh> finalSubmeshes;
    ctDynamicArray<ctModelMeshMorphTarget> finalMorphs;
 
-   ctDynamicArray<uint32_t> finalIndices;
+   ctDynamicArray<uint32_t> bucketIndices;
    ctDynamicArray<ctGltf2ModelVertex> bucketVertices;
 
    /* Compressed Vertex Data */
+   ctDynamicArray<uint16_t> finalIndices;
    ctDynamicArray<ctModelMeshVertexCoords> finalVertexCoords;
    ctDynamicArray<ctModelMeshVertexSkinData> finalVertexSkinData;
    ctDynamicArray<ctModelMeshVertexColor> finalVertexColors;

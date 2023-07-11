@@ -132,14 +132,55 @@ bool ctGltf2Model::isNodePath(const char* name) {
    size_t len = strlen(name);
    if (len < 5) { return false; }
    const char* postfix = &name[len - 4];
-   if (ctCStrNEql(postfix, "PATH", 4)) { /* lod levels LOD1-LOD9 */
+   if (ctCStrNEql(postfix, "PATH", 4)) { return true; }
+   return false;
+}
+
+bool ctGltf2Model::isNodeBlockout(const char* name) {
+   size_t len = strlen(name);
+   if (len < 9) { return false; }
+   const char* postfix = &name[len - 8];
+   if (ctCStrNEql(postfix, "BLOCKOUT", 8)) { return true; }
+   return false;
+}
+
+bool ctGltf2Model::isNodeNavmesh(const char* name) {
+   size_t len = strlen(name);
+   if (len < 5) { return false; }
+   const char* postfix = &name[len - 4];
+   if (ctCStrNEql(postfix, "NAVM", 4)) { return true; }
+   return false;
+}
+
+bool ctGltf2Model::isNodeNavmeshConvexVolume(const char* name) {
+   size_t len = strlen(name);
+   if (len < 6) { return false; }
+   const char* postfix = &name[len - 5];
+   if (ctCStrNEql(postfix, "NAVZ", 4)) { /* navmesh zone NAVZ0-NAVZ9 */
       return true;
    }
    return false;
 }
 
+bool ctGltf2Model::isNodeNavmeshOfflinkStart(const char* name) {
+   size_t len = strlen(name);
+   if (len < 6) { return false; }
+   const char* postfix = &name[len - 5];
+   if (ctCStrNEql(postfix, "NAVLS", 5)) { return true; }
+   return false;
+}
+
+bool ctGltf2Model::isNodeNavmeshOfflinkEnd(const char* name) {
+   size_t len = strlen(name);
+   if (len < 6) { return false; }
+   const char* postfix = &name[len - 5];
+   if (ctCStrNEql(postfix, "NAVLE", 5)) { return true; }
+   return false;
+}
+
 bool ctGltf2Model::isNodePreserved(const char* name) {
-   if (isNodeCollision(name) || isNodeLODLevel(name) || isNodePath(name)) {
+   if (isNodeCollision(name) || isNodeLODLevel(name) || isNodePath(name) ||
+       isNodeNavmeshRelated(name)) {
       return false;
    }
    return true;
@@ -151,4 +192,11 @@ int32_t ctGltf2Model::BoneIndexFromGltfNode(const char* nodeName) {
       if (boneHashes[i] == hash) { return i; }
    }
    return -1;
+}
+
+ctMat4 ctGltf2Model::WorldMatrixFromGltfNodeIdx(uint32_t gltfNodeIdx) {
+   cgltf_node* pNode = &gltf.nodes[gltfNodeIdx];
+   ctMat4 matrix;
+   cgltf_node_transform_world(pNode, matrix.data[0]);
+   return matrix;
 }

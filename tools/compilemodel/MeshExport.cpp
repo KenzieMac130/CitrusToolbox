@@ -34,6 +34,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
       const cgltf_mesh& mesh = *node.mesh;
 
       /* write instance if already exits (doesn't apply for skinned meshes) */
+      /* todo: if node has lods that thee parent doesnt, send it through */
       if (!(node.skin && allowSkinning)) {
          uint32_t* pFoundIndex = meshRedundancyTable.FindPtr((size_t)node.mesh);
          if (pFoundIndex) {
@@ -94,7 +95,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
 
             /* extract all attributes */
             ctAssert(prim.attributes);
-            lod.original.vertexCount = prim.attributes[0].data->count;
+            lod.original.vertexCount = (uint32_t)prim.attributes[0].data->count;
             submesh->vertices.Resize(lod.original.vertexCount);
             for (size_t attribidx = 0; attribidx < prim.attributes_count; attribidx++) {
                CT_RETURN_FAIL(ExtractAttribute(
@@ -105,6 +106,9 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
                  "PRIMITIVE %d FOR %s DOES NOT HAVE POSITIONS!", primidx, pLodNode->name);
                return CT_FAILURE_CORRUPTED_CONTENTS;
             }
+
+            /* todo: coordinate conversion */
+            /* todo: bone index conversion */
 
             /* extract all morph targets */
             // todo refactor for submesh sections
@@ -157,7 +161,9 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
 
          /* find next lod */
          pLodNode = NULL;
+         ctAssert(pLodRoot);
          for (size_t i = 0; i < pLodRoot->children_count; i++) {
+            ctAssert(pLodRoot->children[i]);
             if (isNodeLODLevel(pLodRoot->children[i]->name)) {
                const cgltf_node* pLodNodeTmp = pLodRoot->children[i];
                const uint32_t thisLodLevel =
@@ -500,7 +506,10 @@ TinyImageFormat ctGltf2Model::GltfToTinyImageFormat(cgltf_type vartype,
 ctResults ctGltf2Model::GenerateLODs(float percentageDrop) {
    ZoneScoped;
    ctDebugLog("Generating LODs...");
-   return ctResults();
+   /* todo: have fun!
+   don't worry about shared vertices!
+   they can be done as part of "CombineFromMeshTree" */
+   return CT_SUCCESS;
 }
 
 /* ------------------------------ MERGE --------------------------------------- */
@@ -509,31 +518,95 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
    ZoneScoped;
    ctDebugLog("Merging Meshes...");
 
-   ///* split mesh */
-   // ctGltf2ModelTreeSplit split;
-   // ctGltf2ModelTreeSplit merge;
-   // SplitToMeshTree(split);
+   ctGltf2ModelTreeSplit newTree = ctGltf2ModelTreeSplit();
+   ctGltf2ModelMesh* outmesh = new ctGltf2ModelMesh();
+   strncpy(outmesh->original.name, "MERGED", 32);
 
-   // merge.meshCount = 1;
-   // merge.meshes = new ctGltf2ModelTreeSplit::Mesh[1];
-   // auto& meshout = merge.meshes[0];
+   /* get the max number of lods that we need to fill */
+   for (size_t midx = 0; midx < tree.meshes.Count(); midx++) {
+      ctGltf2ModelMesh* mesh = tree.meshes[midx];
+      for (uint32_t lodidx = 0; lodidx < mesh->lodCount; lodidx++) {
+         if (outmesh->lodCount <= lodidx) { outmesh->lodCount = lodidx + 1; }
+      }
+   }
 
-   ///* find lodmax */
-   // uint32_t lodCount = 1;
-   // for (uint32_t meshIdx = 0; meshIdx < split.meshCount; meshIdx++) {
-   //   if (split.meshes[meshIdx].lodCount > lodCount) {
-   //      lodCount = split.meshes[meshIdx].lodCount;
-   //   }
-   //}
-   // meshout.lodCount = lodCount;
+   /* initialize outlods */
+   for (uint32_t lodidx = 0; lodidx < outmesh->lodCount; lodidx++) {
+      outmesh->lods[lodidx] = ctGltf2ModelLod();
+   }
 
-   // for (size_t instIdx = 0; instIdx < instances.Count(); instIdx++) {}
+   /* iterate through each instance */
+   for (size_t instidx = 0; instidx < tree.instances.Count(); instidx++) {
+      /* get mesh used for instance */
+      const ctGltf2ModelMesh* inmesh = tree.meshes[tree.instances[instidx].meshIndex];
+      uint32_t instNode = tree.instances[instidx].nodeIndex;
+      for (uint32_t lodidx = 0; lodidx < outmesh->lodCount; lodidx++) {
+         ctGltf2ModelLod& outlod = outmesh->lods[lodidx];
+         /* get closest lod */
+         uint32_t inlodidx = lodidx >= inmesh->lodCount ? inmesh->lodCount - 1 : lodidx;
+         const ctGltf2ModelLod& inlod = inmesh->lods[inlodidx];
 
-   //// todo: you can do it!!! :)
-   //// create a model tree from instances
-   //// remember to keep submeshes down!
-   //// for missing lod gaps round to nearest one and do a max of all
-   // CombineFromMeshTree(split);
+         /* wire up outputs */
+         if (inlod.original.vertexDataCoordsStart != UINT32_MAX) {
+            outlod.original.vertexDataCoordsStart = inlod.original.vertexDataCoordsStart;
+         }
+         if (inlod.original.vertexDataSkinDataStart != UINT32_MAX) {
+            outlod.original.vertexDataSkinDataStart =
+              inlod.original.vertexDataSkinDataStart;
+         }
+         for (uint32_t i = 0; i < 4; i++) {
+            if (inlod.original.vertexDataUVStarts[i] != UINT32_MAX) {
+               outlod.original.vertexDataUVStarts[i] =
+                 inlod.original.vertexDataUVStarts[i];
+            }
+            if (inlod.original.vertexDataColorStarts[i] != UINT32_MAX) {
+               outlod.original.vertexDataColorStarts[i] =
+                 inlod.original.vertexDataColorStarts[i];
+            }
+         }
+
+         /* for each submesh */
+         for (size_t submeshidx = 0; submeshidx < inlod.submeshes.Count(); submeshidx++) {
+            const ctGltf2ModelSubmesh* insubmesh = inlod.submeshes[submeshidx];
+            ctGltf2ModelSubmesh* outsubmesh = NULL;
+            /* find the right submesh */
+            for (size_t i = 0; i < outlod.submeshes.Count(); i++) {
+               if (outlod.submeshes[i]->original.materialIndex ==
+                   insubmesh->original.materialIndex) {
+                  outsubmesh = outlod.submeshes[i];
+               }
+            }
+
+            /* if not create a submesh */
+            if (!outsubmesh) {
+               outlod.submeshes.Append(new ctGltf2ModelSubmesh());
+               outsubmesh = outlod.submeshes.Last();
+               ctAssert(outsubmesh);
+               outsubmesh->original.materialIndex = insubmesh->original.materialIndex;
+            }
+
+            /* offset and append indices */
+            uint32_t indexOffset = (uint32_t)outsubmesh->vertices.Count();
+            for (size_t i = 0; i < insubmesh->indices.Count(); i++) {
+               outsubmesh->indices.Append(indexOffset + insubmesh->indices[i]);
+            }
+
+            /* transform append vertices */
+            for (size_t i = 0; i < insubmesh->vertices.Count(); i++) {
+               ctGltf2ModelVertex& vtx = insubmesh->vertices[i];
+               ctMat4 transform = WorldMatrixFromGltfNodeIdx(instNode);
+               vtx.position = vtx.position * transform;
+               ctMat4RemoveTranslation(transform);
+               vtx.normal = normalize(vtx.normal * transform);
+               /* todo: skinning indices (if instance is unskinned) */
+               outsubmesh->vertices.Append(vtx);
+            }
+         }
+      }
+   }
+
+   newTree.meshes.Append(outmesh);
+   tree = newTree;
    return CT_SUCCESS;
 }
 
@@ -543,7 +616,7 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
    finalMorphs.Clear();
    finalSubmeshes.Clear();
    bucketVertices.Clear();
-   finalIndices.Clear();
+   bucketIndices.Clear();
 
    /* for each mesh */
    for (size_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
@@ -587,12 +660,12 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
             ctGltf2ModelSubmesh& submesh = *lod.submeshes[submeshIdx];
 
             /* setup offsets */
-            submesh.original.indexOffset = (uint32_t)finalIndices.Count();
+            submesh.original.indexOffset = (uint32_t)bucketIndices.Count();
             submesh.original.indexCount = (uint32_t)submesh.indices.Count();
 
             /* write indices */
             for (uint32_t i = 0; i < submesh.indices.Count(); i++) {
-               finalIndices.Append(submesh.indices[i] + indexCheckpoint);
+               bucketIndices.Append(submesh.indices[i] + indexCheckpoint);
             }
 
             /* write vertices */
@@ -717,7 +790,7 @@ ctResults ctGltf2Model::GenerateTangents() {
 
             /* generate tangents */
             ctMikktUserData userData = ctMikktUserData();
-            userData.inputIndexCount = submesh.indices.Count();
+            userData.inputIndexCount = (uint32_t)submesh.indices.Count();
             userData.pIndexIn = submesh.indices.Data();
             userData.pVertexIn = submesh.vertices.Data();
             userData.pVertexOut = scratchVertices.Data();
@@ -775,8 +848,7 @@ ctResults ctGltf2Model::OptimizeOverdraw(float threshold) {
    return CT_SUCCESS;
 }
 
-/* --------------------------------- VERTEX FETCH ---------------------------------
- */
+/* -------------------------------- VERTEX FETCH ------------------------------ */
 
 ctResults ctGltf2Model::OptimizeVertexFetch() {
    ZoneScoped;
@@ -784,73 +856,88 @@ ctResults ctGltf2Model::OptimizeVertexFetch() {
    return CT_SUCCESS;
 }
 
-/* --------------------------------- BOUNDING BOX ---------------------------------
- */
+/* -------------------------------- INDEX BUCKETS ------------------------------ */
+
+#define INDEX_BUCKET_SIZE 100
+ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
+   ZoneScoped;
+   ctDebugLog("Bucketing Indices...");
+   /* pass 1. for each submesh find the amount of INDEX_BUCKET_SIZE needed to represent
+    * the mesh, pass 2. for each triangle check which bucket it falls into (maximum) and
+    * add the triangle vertices as well as the indices - INDEX_BUCKET_SIZE * bucketIdx
+    * into the bucket submesh. */
+   return CT_SUCCESS;
+}
+
+/* ------------------------------- BOUNDING BOX ------------------------------ */
 
 ctResults ctGltf2Model::ComputeBounds() {
    ZoneScoped;
    ctDebugLog("Computing Bounding Boxes...");
-   CombineFromMeshTree(tree);
    /* for each mesh */
-   for (uint32_t meshIdx = 0; meshIdx < model.geometry.meshCount; meshIdx++) {
-      ctModelMesh& mesh = model.geometry.meshes[meshIdx];
+   for (uint32_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
+      auto& mesh = *tree.meshes[meshIdx];
       /* for each lod */
       for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
-         ctAssert(lodIdx < ctCStaticArrayLen(mesh.lods));
-         ctModelMeshLod& lod = mesh.lods[lodIdx];
-         lod.bbox = ctBoundBox();
-         lod.radius = 0.0f;
+         auto& lod = mesh.lods[lodIdx];
+         ctModelMeshLod& lodorigin = mesh.lods[lodIdx].original;
+         lodorigin.bbox = ctBoundBox();
+         lodorigin.radius = 0.0f;
 
-         /* calculate position bounding box */
-         for (uint32_t v = 0; v < lod.vertexCount; v++) {
-            lod.bbox.AddPoint(
-              bucketVertices[(size_t)lod.vertexDataCoordsStart + v].position);
-         }
+         /* for each submesh */
+         for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
+            auto& submesh = *lod.submeshes[submeshIdx];
 
-         /* calculate position bounding sphere */
-         for (uint32_t v = 0; v < lod.vertexCount; v++) {
-            float dist =
-              length((bucketVertices[(size_t)lod.vertexDataCoordsStart + v].position));
-            if (lod.radius < dist) { lod.radius = dist; }
-         }
+            /* calculate position bounding box */
+            for (uint32_t v = 0; v < submesh.vertices.Count(); v++) {
+               lodorigin.bbox.AddPoint(submesh.vertices[v].position);
+            }
 
-         /* calculate uv bounding boxes */
-         for (uint32_t uv = 0; uv < ctCStaticArrayLen(lod.vertexDataUVStarts); uv++) {
-            if (lod.vertexDataUVStarts[uv] == UINT32_MAX) { continue; }
-            for (uint32_t v = 0; v < lod.vertexCount; v++) {
-               lod.uvbox[uv].AddPoint(
-                 bucketVertices[(size_t)lod.vertexDataCoordsStart + v].uv[uv]);
+            /* calculate position bounding sphere */
+            for (uint32_t v = 0; v < submesh.vertices.Count(); v++) {
+               float dist = length((submesh.vertices[v].position));
+               if (lodorigin.radius < dist) { lodorigin.radius = dist; }
+            }
+
+            /* calculate uv bounding boxes */
+            for (uint32_t uv = 0; uv < ctCStaticArrayLen(lod.original.vertexDataUVStarts);
+                 uv++) {
+               if (lod.original.vertexDataUVStarts[uv] == UINT32_MAX) { continue; }
+               for (uint32_t v = 0; v < submesh.vertices.Count(); v++) {
+                  lodorigin.uvbox[uv].AddPoint(submesh.vertices[v].uv[uv]);
+               }
             }
          }
       }
    }
 
    /* for each morph target */
-   for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetCount; morphIdx++) {
-      ctModelMeshMorphTarget& morph = model.geometry.morphTargets[morphIdx];
-      morph.bboxDisplacement = ctBoundBox();
-      morph.radiusDisplacement = 0.0f;
-      // morph.uvDisplacement = ctBoundBox2D();
+   // for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetCount; morphIdx++)
+   // {
+   //   ctModelMeshMorphTarget& morph = model.geometry.morphTargets[morphIdx];
+   //   morph.bboxDisplacement = ctBoundBox();
+   //   morph.radiusDisplacement = 0.0f;
+   //   // morph.uvDisplacement = ctBoundBox2D();
 
-      /* calculate position bounding box */
-      for (uint32_t v = 0; v < morph.vertexCount; v++) {
-         morph.bboxDisplacement.AddPoint(
-           bucketVertices[(size_t)morph.vertexDataMorphOffset + v].position);
-      }
+   //   /* calculate position bounding box */
+   //   for (uint32_t v = 0; v < morph.vertexCount; v++) {
+   //      morph.bboxDisplacement.AddPoint(
+   //        bucketVertices[(size_t)morph.vertexDataMorphOffset + v].position);
+   //   }
 
-      /* calculate position bounding sphere */
-      for (uint32_t v = 0; v < morph.vertexCount; v++) {
-         float dist =
-           length((bucketVertices[(size_t)morph.vertexDataMorphOffset + v].position));
-         if (morph.radiusDisplacement < dist) { morph.radiusDisplacement = dist; }
-      }
+   //   /* calculate position bounding sphere */
+   //   for (uint32_t v = 0; v < morph.vertexCount; v++) {
+   //      float dist =
+   //        length((bucketVertices[(size_t)morph.vertexDataMorphOffset + v].position));
+   //      if (morph.radiusDisplacement < dist) { morph.radiusDisplacement = dist; }
+   //   }
 
-      /* calculate uv bounding boxes */
-      // for (uint32_t v = 0; v < morph.vertexCount; v++) {
-      //   morph.uvDisplacement.AddPoint(
-      //     vertices[(size_t)morph.vertexDataMorphOffset + v].uv[0]);
-      //}
-   }
+   /* calculate uv bounding boxes */
+   // for (uint32_t v = 0; v < morph.vertexCount; v++) {
+   //   morph.uvDisplacement.AddPoint(
+   //     vertices[(size_t)morph.vertexDataMorphOffset + v].uv[0]);
+   //}
+   //}
    return CT_SUCCESS;
 }
 
@@ -859,6 +946,16 @@ ctResults ctGltf2Model::ComputeBounds() {
 ctResults ctGltf2Model::EncodeVertices() {
    ZoneScoped;
    ctDebugLog("Encoding Compressed Vertices...");
+
+   /* create combined mesh */
+   CombineFromMeshTree(tree);
+
+   /* downsize indices (now that we ensured 16 bit bounds) */
+   finalIndices.Reserve(bucketIndices.Count());
+   for (uint32_t i = 0; i < bucketIndices.Count(); i++) {
+      finalIndices.Append((uint16_t)bucketIndices[i]);
+   }
+
    /* for each mesh */
    for (uint32_t meshIdx = 0; meshIdx < model.geometry.meshCount; meshIdx++) {
       ctModelMesh& mesh = model.geometry.meshes[meshIdx];

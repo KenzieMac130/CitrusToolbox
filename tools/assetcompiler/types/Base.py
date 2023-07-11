@@ -4,14 +4,13 @@ import pathlib
 import os
 import json
 import uuid
-import shutil
 
 class CitrusAssetCompileTask(waflib.Task.Task):
 	name = ""
 	globInfo = [] # Required extensions to be responsible for this asset
 	paths = [] # Required paths to be responsible for this asset
-	isSimpleCopy = False # Only responsible for a simple copy operation
 	executableEnv = 'GLTF2Citrus' # Self.env path for the task
+	defaultArgs = {}
 	
 	# Declares a list of outputs that the task will generate for a given input
 	def get_outputs(self, relativePath):
@@ -85,10 +84,6 @@ class CitrusAssetCompileTask(waflib.Task.Task):
 	
 # ---------------------------------- INTERNAL ---------------------------------- #
 	def run(self):
-		if self.isSimpleCopy:
-			print("Copying " + self.inputs[0].abspath() + " to " + self.outputs[0].abspath())
-			shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
-			return 0
 		commandFormat = self.get_command()
 		formatDict = {}
 		formatDict.update(self.args)

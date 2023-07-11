@@ -96,16 +96,33 @@ int main(int argc, char* argv[]) {
    if (!FindFlag("--skip_tangents")) {
       CT_RETURN_ON_FAIL(exporter.GenerateTangents(), -3030);
    }
+   const char* paramStr = FindParam("--overdraw_threshold");
+   float param = 1.05f;
+   if (paramStr) { param = (float)atof(paramStr); }
    if (!FindFlag("--skip_vertex_cache")) {
       CT_RETURN_ON_FAIL(exporter.OptimizeVertexCache(), -3040);
    }
    if (!FindFlag("--skip_overdraw")) {
-      const char* paramStr = FindParam("--overdraw_threshold");
-      float param = 1.05f;
-      if (paramStr) { param = (float)atof(paramStr); }
       CT_RETURN_ON_FAIL(exporter.OptimizeOverdraw(param), -3050);
    }
-   CT_RETURN_ON_FAIL(exporter.ComputeBounds(), -3060);
+   if (!FindFlag("--skip_vertex_fetch")) {
+      CT_RETURN_ON_FAIL(exporter.OptimizeVertexFetch(), -3060);
+   }
+   bool needsReopt = true;
+   CT_RETURN_ON_FAIL(exporter.BucketIndices(&needsReopt), -3070);
+   if (needsReopt) { ctDebugLog("Optimization Second Pass Requested..."); }
+   if (needsReopt) {
+      if (!FindFlag("--skip_vertex_cache")) {
+         CT_RETURN_ON_FAIL(exporter.OptimizeVertexCache(), -3040);
+      }
+      if (!FindFlag("--skip_overdraw")) {
+         CT_RETURN_ON_FAIL(exporter.OptimizeOverdraw(param), -3050);
+      }
+      if (!FindFlag("--skip_vertex_fetch")) {
+         CT_RETURN_ON_FAIL(exporter.OptimizeVertexFetch(), -3060);
+      }
+   }
+   CT_RETURN_ON_FAIL(exporter.ComputeBounds(), -3080);
    CT_RETURN_ON_FAIL(exporter.EncodeVertices(), -3100);
    CT_RETURN_ON_FAIL(exporter.CreateGeometryBlob(), -3200);
 
