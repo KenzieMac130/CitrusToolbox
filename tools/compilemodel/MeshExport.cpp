@@ -34,7 +34,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
       const cgltf_mesh& mesh = *node.mesh;
 
       /* write instance if already exits (doesn't apply for skinned meshes) */
-      /* todo: if node has lods that thee parent doesnt, send it through */
+      /* todo: replace and export if more lod children exist */
       if (!(node.skin && allowSkinning)) {
          uint32_t* pFoundIndex = meshRedundancyTable.FindPtr((size_t)node.mesh);
          if (pFoundIndex) {
@@ -683,7 +683,7 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
                  submeshIdx++) {
                ctGltf2ModelMorph& submeshMorph =
                  *lod.submeshes[submeshIdx]->morphs[morphIdx];
-               bucketVertices.Append(submeshMorph.vertices, submeshMorph.vertexCount);
+               bucketVertices.Append(submeshMorph.vertices);
             }
             finalMorphs.Append(morph);
          }
@@ -837,6 +837,19 @@ ctResults ctGltf2Model::GenerateTangents() {
 ctResults ctGltf2Model::OptimizeVertexCache() {
    ZoneScoped;
    ctDebugLog("Optimizing Vertex Cache...");
+   for (uint32_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
+      auto& mesh = *tree.meshes[meshIdx];
+      for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
+         auto& lod = mesh.lods[lodIdx];
+         for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
+            auto& submesh = *lod.submeshes[submeshIdx];
+            meshopt_optimizeVertexCache(submesh.indices.Data(),
+                                        submesh.indices.Data(),
+                                        submesh.indices.Count(),
+                                        submesh.vertices.Count());
+         }
+      }
+   }
    return CT_SUCCESS;
 }
 
@@ -845,6 +858,22 @@ ctResults ctGltf2Model::OptimizeVertexCache() {
 ctResults ctGltf2Model::OptimizeOverdraw(float threshold) {
    ZoneScoped;
    ctDebugLog("Optimizing Overdraw...");
+   for (uint32_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
+      auto& mesh = *tree.meshes[meshIdx];
+      for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
+         auto& lod = mesh.lods[lodIdx];
+         for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
+            auto& submesh = *lod.submeshes[submeshIdx];
+            meshopt_optimizeOverdraw(submesh.indices.Data(),
+                                     submesh.indices.Data(),
+                                     submesh.indices.Count(),
+                                     submesh.vertices[0].position.data,
+                                     submesh.vertices.Count(),
+                                     sizeof(submesh.vertices[0]),
+                                     threshold);
+         }
+      }
+   }
    return CT_SUCCESS;
 }
 
@@ -853,12 +882,28 @@ ctResults ctGltf2Model::OptimizeOverdraw(float threshold) {
 ctResults ctGltf2Model::OptimizeVertexFetch() {
    ZoneScoped;
    ctDebugLog("Optimizing Vertex Fetch...");
+   for (uint32_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
+      auto& mesh = *tree.meshes[meshIdx];
+      for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
+         auto& lod = mesh.lods[lodIdx];
+         for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
+            auto& submesh = *lod.submeshes[submeshIdx];
+            meshopt_optimizeVertexFetch(submesh.vertices.Data(),
+                                        submesh.indices.Data(),
+                                        submesh.indices.Count(),
+                                        submesh.vertices.Data(),
+                                        submesh.vertices.Count(),
+                                        sizeof(submesh.vertices[0]));
+            /* todo remap and apply to morphs */
+         }
+      }
+   }
    return CT_SUCCESS;
 }
 
 /* -------------------------------- INDEX BUCKETS ------------------------------ */
 
-#define INDEX_BUCKET_SIZE 100
+#define INDEX_BUCKET_SIZE 1000
 ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
    ZoneScoped;
    ctDebugLog("Bucketing Indices...");

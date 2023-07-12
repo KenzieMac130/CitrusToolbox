@@ -40,7 +40,7 @@ struct ctGltf2ModelInstance {
 
 struct ctGltf2ModelMorph {
    uint32_t vertexCount;
-   ctGltf2ModelVertex* vertices;
+   ctDynamicArray<ctGltf2ModelVertex> vertices;
 };
 
 struct ctGltf2ModelSubmesh {

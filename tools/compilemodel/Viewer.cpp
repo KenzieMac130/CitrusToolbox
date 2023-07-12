@@ -247,6 +247,7 @@ void ctModelViewer::GeometryInfo() {
                      ImGui::Text("Material Index: %u", submesh.materialIndex);
                      ImGui::Text("Index Count: %u", submesh.indexCount);
                      ImGui::Text("Index Offset: %u", submesh.indexOffset);
+                     ImGui::Text("Vertex Offset: %u", submesh.vertexOffset);
                      ImGui::TreePop();
                   }
                }
