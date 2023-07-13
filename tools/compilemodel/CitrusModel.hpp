@@ -39,7 +39,6 @@ struct ctGltf2ModelInstance {
 /* useful for merge/split operations where indices are annoying */
 
 struct ctGltf2ModelMorph {
-   uint32_t vertexCount;
    ctDynamicArray<ctGltf2ModelVertex> vertices;
 };
 
@@ -52,7 +51,7 @@ struct ctGltf2ModelSubmesh {
 
 struct ctGltf2ModelLod {
    ctModelMeshLod original;
-   ctDynamicArray<ctModelMeshMorphTarget*> originalMorphs;
+   ctDynamicArray<ctModelMeshMorphTarget> originalMorphs;
    ctDynamicArray<ctGltf2ModelSubmesh*> submeshes;
 };
 
@@ -60,11 +59,18 @@ struct ctGltf2ModelMesh {
    ctModelMesh original;
    uint32_t lodCount;
    ctGltf2ModelLod lods[4];
+   void ExtendLods(uint32_t count);
 };
 
 struct ctGltf2ModelTreeSplit {
    ctDynamicArray<ctGltf2ModelMesh*> meshes;
    ctDynamicArray<ctGltf2ModelInstance> instances;
+};
+
+enum ctGltf2ModelLodQuality {
+   CT_GLTF2MODEL_LODQ_HIGH,
+   CT_GLTF2MODEL_LODQ_MED,
+   CT_GLTF2MODEL_LODQ_LOW
 };
 
 class ctGltf2Model {
@@ -78,13 +84,14 @@ public:
 
    /* Mesh Phase */
    ctResults ExtractGeometry(bool allowSkinning);
-   ctResults GenerateLODs(float percentageDrop = 0.5f);
+   ctResults GenerateLODs(ctGltf2ModelLodQuality quality = CT_GLTF2MODEL_LODQ_HIGH,
+                          uint32_t lodCount = 4,
+                          float percentageDrop = 0.25f);
    ctResults MergeMeshes(bool allowSkinning); /* optional */
    ctResults GenerateTangents();
    ctResults OptimizeVertexCache();
    ctResults OptimizeOverdraw(float threshold);
    ctResults OptimizeVertexFetch();
-   ctResults BucketIndices(bool* pSubmeshesDirty = NULL);
    ctResults ComputeBounds();
    ctResults EncodeVertices();
    ctResults CreateGeometryBlob();

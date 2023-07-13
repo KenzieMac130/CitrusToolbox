@@ -503,13 +503,110 @@ TinyImageFormat ctGltf2Model::GltfToTinyImageFormat(cgltf_type vartype,
 
 /* -------------------------- LEVEL OF DETAIL --------------------------------- */
 
-ctResults ctGltf2Model::GenerateLODs(float percentageDrop) {
+ctResults ctGltf2Model::GenerateLODs(ctGltf2ModelLodQuality quality,
+                                     uint32_t lodCount,
+                                     float percentageDrop) {
    ZoneScoped;
    ctDebugLog("Generating LODs...");
-   /* todo: have fun!
-   don't worry about shared vertices!
-   they can be done as part of "CombineFromMeshTree" */
+   ctDynamicArray<uint32_t> scratchIdx;
+   /* for each mesh */
+   for (uint32_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
+      auto& mesh = *tree.meshes[meshIdx];
+      /* skip if already has lods */
+      if (mesh.lodCount > 1) { continue; }
+      mesh.ExtendLods(lodCount);
+      /* loop through lods after the first */
+      for (uint32_t lodIdx = 1; lodIdx < mesh.lodCount; lodIdx++) {
+         auto& lod = mesh.lods[lodIdx];
+         for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
+            ctStopwatch timer = ctStopwatch();
+            auto& submesh = *lod.submeshes[submeshIdx];
+
+            /* calculate target index count */
+            float percentile = 1.0f - (percentageDrop * lodIdx);
+            if (percentile <= 0.05f) { percentile = 0.05f; }
+            size_t targetIndexCount =
+              (size_t)((double)submesh.indices.Count() * (double)percentile);
+            targetIndexCount += 3 - targetIndexCount % 3;
+            if (targetIndexCount < 3) { targetIndexCount = 3; }
+            ctAssert(targetIndexCount >= 3);
+            ctAssert(targetIndexCount % 3 == 0);
+
+            /* setup outputs */
+            float targetError = 1e-2f;
+            float resultError = -1.0f;
+            scratchIdx.Resize(submesh.indices.Count());
+
+            if (quality != CT_GLTF2MODEL_LODQ_LOW) {
+               /* medium and high quality simplification */
+               scratchIdx.Resize(meshopt_simplify(
+                 scratchIdx.Data(),
+                 submesh.indices.Data(),
+                 submesh.indices.Count(),
+                 submesh.vertices[0].position.data,
+                 submesh.vertices.Count(),
+                 sizeof(submesh.vertices[0]),
+                 targetIndexCount,
+                 targetError,
+                 quality == CT_GLTF2MODEL_LODQ_HIGH ? (int)meshopt_SimplifyLockBorder : 0,
+                 &resultError));
+            } else {
+               /* low quality simplification */
+               scratchIdx.Resize(meshopt_simplifySloppy(scratchIdx.Data(),
+                                                        submesh.indices.Data(),
+                                                        submesh.indices.Count(),
+                                                        submesh.vertices[0].position.data,
+                                                        submesh.vertices.Count(),
+                                                        sizeof(submesh.vertices[0]),
+                                                        targetIndexCount,
+                                                        targetError,
+                                                        &resultError));
+            }
+
+            /* set output */
+            submesh.indices = scratchIdx;
+
+            /* log timer */
+            timer.NextLap();
+            ctDebugLog(
+              "Generated LOD %u for %s:%u of %u indices at %f error in %f seconds...",
+              lodIdx,
+              mesh.original.name,
+              submeshIdx,
+              (uint32_t)scratchIdx.Count(),
+              resultError,
+              timer.GetDeltaTimeFloat());
+         }
+      }
+   }
    return CT_SUCCESS;
+}
+
+void ctGltf2ModelMesh::ExtendLods(uint32_t count) {
+   ctGltf2ModelLod& originLod = lods[0];
+   for (uint32_t lodIdx = 1; lodIdx < count; lodIdx++) {
+      lods[lodIdx] = ctGltf2ModelLod();
+      ctGltf2ModelLod& curlod = lods[lodIdx];
+      curlod.original = originLod.original;
+      curlod.originalMorphs = originLod.originalMorphs;
+      curlod.submeshes.Resize(originLod.submeshes.Count());
+      for (uint32_t smidx = 0; smidx < curlod.submeshes.Count(); smidx++) {
+         ctGltf2ModelSubmesh& oldSubmesh = *originLod.submeshes[smidx];
+         ctGltf2ModelSubmesh* newSubmesh = new ctGltf2ModelSubmesh();
+         newSubmesh->indices = oldSubmesh.indices;
+         newSubmesh->vertices = oldSubmesh.vertices;
+         newSubmesh->original = oldSubmesh.original;
+         newSubmesh->morphs.Resize(oldSubmesh.morphs.Count());
+         for (uint32_t midx = 0; midx < newSubmesh->morphs.Count(); midx++) {
+            ctGltf2ModelMorph& oldMorph = *oldSubmesh.morphs[midx];
+            ctGltf2ModelMorph* newMorph = new ctGltf2ModelMorph();
+            newMorph->vertices = oldMorph.vertices;
+            newSubmesh->morphs[midx] = newMorph;
+         }
+         curlod.submeshes[smidx] = newSubmesh;
+      }
+   }
+   lodCount = count;
 }
 
 /* ------------------------------ MERGE --------------------------------------- */
@@ -573,6 +670,12 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
             for (size_t i = 0; i < outlod.submeshes.Count(); i++) {
                if (outlod.submeshes[i]->original.materialIndex ==
                    insubmesh->original.materialIndex) {
+                  /* check we aren't about to overflow it */
+                  if (outlod.submeshes[i]->vertices.Count() +
+                        insubmesh->vertices.Count() >
+                      UINT16_MAX) {
+                     continue;
+                  }
                   outsubmesh = outlod.submeshes[i];
                }
             }
@@ -677,7 +780,7 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
          }
 
          for (size_t morphIdx = 0; morphIdx < lod.originalMorphs.Count(); morphIdx++) {
-            ctModelMeshMorphTarget& morph = *lod.originalMorphs[morphIdx];
+            ctModelMeshMorphTarget& morph = lod.originalMorphs[morphIdx];
             morph.vertexCount = lod.original.vertexCount; /* assumed for sanity */
             for (size_t submeshIdx = 0; submeshIdx < lod.submeshes.Count();
                  submeshIdx++) {
@@ -903,16 +1006,18 @@ ctResults ctGltf2Model::OptimizeVertexFetch() {
 
 /* -------------------------------- INDEX BUCKETS ------------------------------ */
 
-#define INDEX_BUCKET_SIZE 1000
-ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
-   ZoneScoped;
-   ctDebugLog("Bucketing Indices...");
-   /* pass 1. for each submesh find the amount of INDEX_BUCKET_SIZE needed to represent
-    * the mesh, pass 2. for each triangle check which bucket it falls into (maximum) and
-    * add the triangle vertices as well as the indices - INDEX_BUCKET_SIZE * bucketIdx
-    * into the bucket submesh. */
-   return CT_SUCCESS;
-}
+//#define INDEX_BUCKET_SIZE 1000
+// ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
+//   ZoneScoped;
+//   ctDebugLog("Bucketing Indices...");
+//   /* pass 1. for each submesh find the amount of INDEX_BUCKET_SIZE needed to represent
+//    * the mesh, pass 2. for each triangle check which bucket it falls into (maximum) and
+//    * add the triangle vertices as well as the indices - INDEX_BUCKET_SIZE * bucketIdx
+//    * into the bucket submesh. */
+//   /* or: also throw out indices and just reindex INDEX_BUCKET_SIZE regions of the
+//    * vertices using meshopt */
+//   return CT_SUCCESS;
+//}
 
 /* ------------------------------- BOUNDING BOX ------------------------------ */
 

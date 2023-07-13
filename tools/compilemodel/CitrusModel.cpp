@@ -86,9 +86,26 @@ int main(int argc, char* argv[]) {
    CT_RETURN_ON_FAIL(exporter.ExtractGeometry(FindFlag("--skin")), -3000);
    if (FindFlag("--lod_generate")) {
       const char* paramStr = FindParam("--lod_drop");
-      float param = 0.5f;
-      if (paramStr) { param = (float)atof(paramStr); }
-      CT_RETURN_ON_FAIL(exporter.GenerateLODs(param), -3010);
+      float lodDrop = 0.25f;
+      if (paramStr) { lodDrop = (float)atof(paramStr); }
+
+      paramStr = FindParam("--lod_count");
+      uint32_t lodCount = 4;
+      if (paramStr) { lodCount = (uint32_t)atoi(paramStr); }
+
+      paramStr = FindParam("--lod_quality");
+      ctGltf2ModelLodQuality quality = CT_GLTF2MODEL_LODQ_MED;
+      if (paramStr) {
+         if (ctCStrEql(paramStr, "high")) {
+            quality = CT_GLTF2MODEL_LODQ_HIGH;
+         } else if (ctCStrEql(paramStr, "medium")) {
+            quality = CT_GLTF2MODEL_LODQ_MED;
+         } else if (ctCStrEql(paramStr, "low")) {
+            quality = CT_GLTF2MODEL_LODQ_LOW;
+         }
+      }
+
+      CT_RETURN_ON_FAIL(exporter.GenerateLODs(quality, lodCount, lodDrop), -3010);
    }
    if (FindFlag("--merge_mesh")) {
       CT_RETURN_ON_FAIL(exporter.MergeMeshes(FindFlag("--skin")), -3020);
@@ -107,20 +124,6 @@ int main(int argc, char* argv[]) {
    }
    if (!FindFlag("--skip_vertex_fetch")) {
       CT_RETURN_ON_FAIL(exporter.OptimizeVertexFetch(), -3060);
-   }
-   bool needsReopt = true;
-   CT_RETURN_ON_FAIL(exporter.BucketIndices(&needsReopt), -3070);
-   if (needsReopt) { ctDebugLog("Optimization Second Pass Requested..."); }
-   if (needsReopt) {
-      if (!FindFlag("--skip_vertex_cache")) {
-         CT_RETURN_ON_FAIL(exporter.OptimizeVertexCache(), -3040);
-      }
-      if (!FindFlag("--skip_overdraw")) {
-         CT_RETURN_ON_FAIL(exporter.OptimizeOverdraw(param), -3050);
-      }
-      if (!FindFlag("--skip_vertex_fetch")) {
-         CT_RETURN_ON_FAIL(exporter.OptimizeVertexFetch(), -3060);
-      }
    }
    CT_RETURN_ON_FAIL(exporter.ComputeBounds(), -3080);
    CT_RETURN_ON_FAIL(exporter.EncodeVertices(), -3100);
