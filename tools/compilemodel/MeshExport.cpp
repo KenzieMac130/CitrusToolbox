@@ -765,10 +765,11 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
             /* setup offsets */
             submesh.original.indexOffset = (uint32_t)bucketIndices.Count();
             submesh.original.indexCount = (uint32_t)submesh.indices.Count();
+            submesh.original.vertexOffset = indexCheckpoint;
 
             /* write indices */
             for (uint32_t i = 0; i < submesh.indices.Count(); i++) {
-               bucketIndices.Append(submesh.indices[i] + indexCheckpoint);
+               bucketIndices.Append(submesh.indices[i]);
             }
 
             /* write vertices */
