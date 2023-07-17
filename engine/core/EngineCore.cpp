@@ -19,7 +19,7 @@
 
 #include "middleware/PhysXIntegration.hpp"
 
-#include "gamelayer/GameLayer.hpp"
+#include "GameLayer.hpp"
 
 #include "AsyncTasks.hpp"
 #include "JobSystem.hpp"

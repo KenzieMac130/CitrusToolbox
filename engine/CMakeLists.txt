@@ -120,8 +120,8 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gamelayer/GameLayer.cpp
 )
 
 set(ENGINE_HEADER_FILES_CORE
@@ -136,8 +136,8 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gamelayer/GameLayer.hpp
 )
 
 # ---------- System Abstraction ---------- 

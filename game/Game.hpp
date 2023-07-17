@@ -17,7 +17,7 @@
 #pragma once
 
 #include "GameCommon.hpp"
-#include "gamelayer/GameLayer.hpp"
+#include "core/GameLayer.hpp"
 
 namespace Game {
 
