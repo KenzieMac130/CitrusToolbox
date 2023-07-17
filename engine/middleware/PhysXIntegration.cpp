@@ -36,45 +36,54 @@ ctResults ctPhysXIntegration::Startup() {
    toleranceLength = 1.0f;
    toleranceSpeed = 10.0f;
 
-   ctSettingsSection* pSettings = Engine->Settings->CreateSection("PhysX", 32);
-   pSettings->BindInteger(&connectPvd,
-                          false,
-                          true,
-                          "ConnectPvd",
-                          "Connect to PhysX visual debugger",
-                          CT_SETTINGS_BOUNDS_BOOL);
-   pSettings->BindString(
-     &pvdHostAddress, false, true, "PvdHostAddress", "Address to host PhysX debug info on");
-   pSettings->BindInteger(
-     &pvdHostPort, false, true, "PvdHostPort", "Port to host PhysX debug info on", 0);
-   pSettings->BindInteger(
-     &pvdTimeout, false, true, "PvdTimeout", "Timeout to pvd connection", CT_SETTINGS_BOUNDS_UINT);
-   pSettings->BindInteger(&recordAllocations,
-                          false,
-                          true,
-                          "RecordAllocations",
-                          "Record memory allocations",
-                          CT_SETTINGS_BOUNDS_BOOL);
+   if (Engine) { /* won't exist when part of a model compiler */
+      ctSettingsSection* pSettings = Engine->Settings->CreateSection("PhysX", 32);
+      pSettings->BindInteger(&connectPvd,
+                             false,
+                             true,
+                             "ConnectPvd",
+                             "Connect to PhysX visual debugger",
+                             CT_SETTINGS_BOUNDS_BOOL);
+      pSettings->BindString(&pvdHostAddress,
+                            false,
+                            true,
+                            "PvdHostAddress",
+                            "Address to host PhysX debug info on");
+      pSettings->BindInteger(
+        &pvdHostPort, false, true, "PvdHostPort", "Port to host PhysX debug info on", 0);
+      pSettings->BindInteger(&pvdTimeout,
+                             false,
+                             true,
+                             "PvdTimeout",
+                             "Timeout to pvd connection",
+                             CT_SETTINGS_BOUNDS_UINT);
+      pSettings->BindInteger(&recordAllocations,
+                             false,
+                             true,
+                             "RecordAllocations",
+                             "Record memory allocations",
+                             CT_SETTINGS_BOUNDS_BOOL);
 
-   pSettings->BindFloat(&toleranceLength,
-                        false,
-                        true,
-                        "ToleranceLength",
-                        "Tolerance length as documented by PhysX",
-                        0.0f);
-   pSettings->BindFloat(&toleranceSpeed,
-                        false,
-                        true,
-                        "ToleranceSpeed",
-                        "Tolerance speed as documented by PhysX",
-                        0.0f);
+      pSettings->BindFloat(&toleranceLength,
+                           false,
+                           true,
+                           "ToleranceLength",
+                           "Tolerance length as documented by PhysX",
+                           0.0f);
+      pSettings->BindFloat(&toleranceSpeed,
+                           false,
+                           true,
+                           "ToleranceSpeed",
+                           "Tolerance speed as documented by PhysX",
+                           0.0f);
+   }
 
    toleranceScale = PxTolerancesScale();
    toleranceScale.length = toleranceLength;
    toleranceScale.speed = toleranceSpeed;
 
-   pFoundation =
-     PxCreateFoundation(PX_PHYSICS_VERSION, defaultAllocatorCallback, defaultErrorCallback);
+   pFoundation = PxCreateFoundation(
+     PX_PHYSICS_VERSION, defaultAllocatorCallback, defaultErrorCallback);
    if (!pFoundation) { ctFatalError(-1, "PxCreateFoundation failed!"); }
 
    if (connectPvd) {
@@ -84,22 +93,29 @@ ctResults ctPhysXIntegration::Startup() {
       pPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
    }
 
-   pPhysics =
-     PxCreateBasePhysics(PX_PHYSICS_VERSION, *pFoundation, toleranceScale, recordAllocations, pPvd);
+   pPhysics = PxCreateBasePhysics(
+     PX_PHYSICS_VERSION, *pFoundation, toleranceScale, recordAllocations, pPvd);
    if (!pPhysics) { ctFatalError(-1, "PxCreatePhysics failed!"); }
 
    PxRegisterHeightFields(*pPhysics);
 
-#if CITRUS_PHYSX_RUNTIMECOOK
-   pCooking = PxCreateCooking(PX_PHYSICS_VERSION, *pFoundation, PxCookingParams(toleranceScale));
-   if (!pCooking) { ctFatalError(-1, "PxCreateCooking failed!"); }
-#endif
-
-   if (!PxInitExtensions(*pPhysics, pPvd)) { ctFatalError(-1, "PxInitExtensions failed!"); }
+   if (!PxInitExtensions(*pPhysics, pPvd)) {
+      ctFatalError(-1, "PxInitExtensions failed!");
+   }
 
    /* Todo: write CPU dispatcher tied into job system */
    pCpuDispatcher = PxDefaultCpuDispatcherCreate(2);
 
+   return CT_SUCCESS;
+}
+
+ctResults ctPhysXIntegration::SetupCooking() {
+   pCooking =
+     PxCreateCooking(PX_PHYSICS_VERSION, *pFoundation, PxCookingParams(toleranceScale));
+   if (!pCooking) {
+      ctFatalError(-1, "PxCreateCooking failed!");
+      return CT_FAILURE_MODULE_NOT_INITIALIZED;
+   }
    return CT_SUCCESS;
 }
 

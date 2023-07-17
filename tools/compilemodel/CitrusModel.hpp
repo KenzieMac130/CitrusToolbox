@@ -20,6 +20,7 @@
 #include "cgltf/cgltf.h"
 #include "formats/model/Model.hpp"
 #include "tiny_imageFormat/tinyimageformat.h"
+#include "middleware/PhysXIntegration.hpp"
 
 struct ctGltf2ModelVertex {
    ctVec3 position;
@@ -73,6 +74,31 @@ enum ctGltf2ModelLodQuality {
    CT_GLTF2MODEL_LODQ_LOW
 };
 
+enum ctGltf2ModelPhysicsMode {
+   CT_GLTF2MODEL_PHYS_SCENE,    /* mutiple shapes */
+   CT_GLTF2MODEL_PHYS_COMPOUND, /* single compound shape */
+   CT_GLTF2MODEL_PHYS_RAGDOLL   /* articulation */
+};
+
+enum ctGltf2ModelCollisionType {
+   CT_GLTF2MODEL_COLLISION_NONE,
+   CT_GLTF2MODEL_COLLISION_BOX,
+   CT_GLTF2MODEL_COLLISION_SPHERE,
+   CT_GLTF2MODEL_COLLISION_PILL,
+   CT_GLTF2MODEL_COLLISION_TRI,
+   CT_GLTF2MODEL_COLLISION_CONVEX
+};
+
+class ctGltf2ModelPxOutStream : public PxOutputStream {
+public:
+   virtual uint32_t write(const void* src, uint32_t count) {
+      output.Append((uint8_t*)src, count);
+      return count;
+   }
+
+   ctDynamicArray<uint8_t> output;
+};
+
 class ctGltf2Model {
 public:
    ctResults LoadGltf(const char* filepath);
@@ -93,14 +119,18 @@ public:
    ctResults OptimizeOverdraw(float threshold);
    ctResults OptimizeVertexFetch();
    ctResults ComputeBounds();
+   ctResults BucketIndices(bool* pSubmeshesDirty);
    ctResults EncodeVertices();
    ctResults CreateGeometryBlob();
 
    /* Animation */
+   ctResults ExtractAnimations();
 
    /* Materials */
+   ctResults ExtractMaterials();
 
    /* Physics */
+   ctResults ExtractPhysics(ctGltf2ModelPhysicsMode mode);
 
    /* Scene */
 
@@ -109,6 +139,7 @@ public:
 
 protected:
    /* Skeleton Helpers */
+   static ctGltf2ModelCollisionType getNodeCollisionType(const char* name);
    static bool isNodeCollision(const char* name);
    static bool isNodeLODLevel(const char* name);
    static bool isNodePath(const char* name);
@@ -151,9 +182,53 @@ protected:
    }
    void CombineFromMeshTree(ctGltf2ModelTreeSplit& tree);
 
+   /* Material Helpers */
+   inline void WriteScalarProp(ctJSONWriter& writer, const char* name, float prop) {
+      writer.DeclareVariable(name);
+      writer.WriteNumber(prop);
+   }
+   inline void WriteVectorProp(ctJSONWriter& writer, const char* name, ctVec4 prop) {
+      writer.DeclareVariable(name);
+      writer.PushArray();
+      writer.WriteNumber(prop.x);
+      writer.WriteNumber(prop.y);
+      writer.WriteNumber(prop.z);
+      writer.WriteNumber(prop.w);
+      writer.PopArray();
+   }
+   inline void WriteStringProp(ctJSONWriter& writer, const char* name, const char* prop) {
+      writer.DeclareVariable(name);
+      writer.WriteString(prop);
+   }
+   inline ctResults
+   WriteTextureProp(ctJSONWriter& writer, const char* name, const char* uri) {
+      ctStringUtf8 path = gltfPath;
+      path.FilePathAppend(uri);
+      ctGUID guid;
+      CT_RETURN_FAIL(ctGUIDFromAssetPath(guid, path.CStr()));
+      char buff[33];
+      memset(buff, 0, 33);
+      guid.ToHex(buff);
+      WriteStringProp(writer, name, buff);
+      return CT_SUCCESS;
+   }
+
+   /* Physics Helpers */
+   ctResults ExtractPxAsBodies(bool isCompound);
+   ctResults ExtractPxAsArticulation();
+   inline PxSerialObjectId GetSerialIdForPtr(const void* ptr) {
+      return (PxSerialObjectId)ptr;
+   }
+   PxShape* GetPxBox(const cgltf_node& node, PxMaterial& material);
+   PxShape* GetPxSphere(const cgltf_node& node, PxMaterial& material);
+   PxShape* GetPxCapsule(const cgltf_node& node, PxMaterial& material);
+   PxShape* GetPxConvex(const cgltf_node& node, PxMaterial& material);
+   PxShape* GetPxTris(const cgltf_node& node, PxMaterial& material);
+
 private:
    cgltf_data gltf;
    ctModel model;
+   ctStringUtf8 gltfPath;
 
    ctGltf2ModelTreeSplit tree;
 
@@ -179,4 +254,15 @@ private:
    ctDynamicArray<ctModelMeshVertexColor> finalVertexColors;
    ctDynamicArray<ctModelMeshVertexUV> finalVertexUVs;
    ctDynamicArray<ctModelMeshVertexMorph> finalVertexMorph;
+
+   /* Material */
+   ctStringUtf8 materialText;
+
+   /* PhysX */
+   ctPhysXIntegration* pPhysXIntegration;
+   PxSerializationRegistry* pxSerialRegistry;
+   PxCollection* pxGlobalCollection;
+   PxCollection* pxInstanceCollection;
+   ctGltf2ModelPxOutStream instanceStream;
+   ctGltf2ModelPxOutStream globalStream;
 };

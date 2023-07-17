@@ -103,19 +103,30 @@ ctResults ctGltf2Model::ExtractSkeleton() {
    return CT_SUCCESS;
 }
 
-bool ctGltf2Model::isNodeCollision(const char* name) {
+ctGltf2ModelCollisionType ctGltf2Model::getNodeCollisionType(const char* name) {
    size_t len = strlen(name);
-   if (len < 4) { return false; }
+   if (len < 4) { return CT_GLTF2MODEL_COLLISION_NONE; }
    const char* postfix = &name[len - 4];
-   if (ctCStrNEql(postfix, "_CBX", 4) || /* box collision */
-       ctCStrNEql(postfix, "_CSP", 4) || /* sphere collision */
-       ctCStrNEql(postfix, "_CPL", 4) || /* pill collision */
-       ctCStrNEql(postfix, "_CTR", 4) || /* triangle collision */
-       ctCStrNEql(postfix, "_CVX", 4))   /* convex collision */
-   {
-      return true;
+   if (ctCStrNEql(postfix, "_CBX", 4)) /* box collision */ {
+      return CT_GLTF2MODEL_COLLISION_BOX;
    }
-   return false;
+   if (ctCStrNEql(postfix, "_CSP", 4)) /* sphere collision */ {
+      return CT_GLTF2MODEL_COLLISION_SPHERE;
+   }
+   if (ctCStrNEql(postfix, "_CPL", 4)) /* pill collision */ {
+      return CT_GLTF2MODEL_COLLISION_PILL;
+   }
+   if (ctCStrNEql(postfix, "_CTR", 4)) /* triangle collision */ {
+      return CT_GLTF2MODEL_COLLISION_TRI;
+   }
+   if (ctCStrNEql(postfix, "_CVX", 4)) /* convex collision */ {
+      return CT_GLTF2MODEL_COLLISION_CONVEX;
+   }
+   return CT_GLTF2MODEL_COLLISION_NONE;
+}
+
+bool ctGltf2Model::isNodeCollision(const char* name) {
+   return getNodeCollisionType(name) != CT_GLTF2MODEL_COLLISION_NONE;
 }
 
 bool ctGltf2Model::isNodeLODLevel(const char* name) {

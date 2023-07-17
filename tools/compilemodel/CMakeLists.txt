@@ -22,6 +22,9 @@ set(CITRUS_MODEL_SOURCE_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/CitrusModel.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/SkeletonExport.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/MeshExport.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/AnimationExport.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/MaterialExport.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/PhysicsExport.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/Viewer.cpp
 ${THIRD_PARTY_DIRECTORY}/meshoptimizer/allocator.cpp
 ${THIRD_PARTY_DIRECTORY}/meshoptimizer/clusterizer.cpp

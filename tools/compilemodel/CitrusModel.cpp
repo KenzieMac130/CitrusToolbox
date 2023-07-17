@@ -129,6 +129,26 @@ int main(int argc, char* argv[]) {
    CT_RETURN_ON_FAIL(exporter.EncodeVertices(), -3100);
    CT_RETURN_ON_FAIL(exporter.CreateGeometryBlob(), -3200);
 
+   /* Material */
+   exporter.ExtractMaterials();
+
+   /* Animations */
+   if (FindFlag("--animations")) { exporter.ExtractAnimations(); }
+
+   /* Physics */
+   paramStr = "compound"; //FindParam("--physics");
+   ctGltf2ModelPhysicsMode phys = CT_GLTF2MODEL_PHYS_COMPOUND;
+   if (paramStr) {
+      if (ctCStrEql(paramStr, "compound")) {
+         phys = CT_GLTF2MODEL_PHYS_COMPOUND;
+      } else if (ctCStrEql(paramStr, "scene")) {
+         phys = CT_GLTF2MODEL_PHYS_SCENE;
+      } else if (ctCStrEql(paramStr, "ragdoll")) {
+         phys = CT_GLTF2MODEL_PHYS_RAGDOLL;
+      }
+      if (!ctCStrEql(paramStr, "none")) { exporter.ExtractPhysics(phys); }
+   }
+
    /* View Model */
    if (FindFlag("--viewer")) { exporter.ModelViewer(argc, argv); }
 

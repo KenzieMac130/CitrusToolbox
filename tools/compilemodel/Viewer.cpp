@@ -23,7 +23,7 @@
 #include "middleware/Im3dIntegration.hpp"
 #include "middleware/ImguiIntegration.hpp"
 
-#include "scene/kinnow/KinnowSceneEngine.hpp"
+#include "scene/SceneEngine.hpp"
 
 enum ctModelViewerMeshMode {
    CT_MODELVIEW_SUBMESH,
@@ -88,10 +88,10 @@ public:
    void RenderGeometry();
 
    /* Settings */
-   bool renderSkeleton = true;
-   bool renderBoneNames = true;
+   bool renderSkeleton = false;
+   bool renderBoneNames = false;
    bool renderGeometry = true;
-   bool renderBBOX = true;
+   bool renderBBOX = false;
    ctModelViewerMeshMode viewMode = CT_MODELVIEW_COLOR;
    int32_t uvChannel = 0;
    int32_t colorChannel = 0;
@@ -111,8 +111,8 @@ ctResults ctGltf2Model::ModelViewer(int argc, char* argv[]) {
 }
 
 ctResults ctModelViewer::OnStartup() {
-   ctKinnowSceneEngine* scene;
-   scene = (ctKinnowSceneEngine*)Engine->SceneEngine;
+   ctSceneEngine* scene;
+   scene = (ctSceneEngine*)Engine->SceneEngine;
    scene->EnableCameraOverride();
    camera.position = ctVec3(0.0f, 1.0f, -10.0f);
    scene->SetCameraOverride(camera);
@@ -329,7 +329,7 @@ void ctModelViewer::RenderSkeleton() {
 void ctModelViewer::RenderBone(int32_t boneIdx) {
    ZoneScoped;
    ctModelSkeletonBoneGraph& graph = model.skeleton.graphArray[boneIdx];
-   ctModelSkeletonBoneTransform& transform = model.skeleton.transformArray[boneIdx];
+   ctModelSkeletonBoneTransform& transform = model.skeleton.inverseBindArray[boneIdx];
    ctMat4 matrix = ctMat4Identity();
    /* todo: calculate world transform */
    ctMat4Scale(matrix, transform.scale);
@@ -346,8 +346,8 @@ void ctModelViewer::RenderBone(int32_t boneIdx) {
       Im3d::Text(ctVec3ToIm3d(ctVec3()), Im3d::TextFlags_Default, namebuff);
       Im3d::PopColor();
    }
-   if (graph.firstChild != -1) { RenderBone(graph.firstChild); }
    Im3d::PopMatrix();
+   if (graph.firstChild != -1) { RenderBone(graph.firstChild); }
    if (graph.nextSibling != -1) { RenderBone(graph.nextSibling); }
 }
 

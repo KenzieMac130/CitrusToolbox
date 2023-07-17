@@ -29,6 +29,8 @@ public:
    ctResults Shutdown() final;
    const char* GetModuleName() final;
 
+   ctResults SetupCooking();
+
    ctStringUtf8 pvdHostAddress;
    int32_t pvdHostPort;
    int32_t pvdTimeout;

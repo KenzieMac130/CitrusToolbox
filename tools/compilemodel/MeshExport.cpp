@@ -25,6 +25,12 @@
 ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
    ZoneScoped;
    ctDebugLog("Extracting Geometry...");
+
+   if (allowSkinning && boneGraph.Count() > UINT16_MAX) {
+      ctDebugError("CANNOT SKIN MESHES WITH MORE THAN %u BONES!", UINT16_MAX);
+      return CT_FAILURE_OUT_OF_BOUNDS;
+   }
+
    ctHashTable<uint32_t, size_t> meshRedundancyTable;
    for (size_t nodeidx = 0; nodeidx < gltf.nodes_count; nodeidx++) {
       const cgltf_node& node = gltf.nodes[nodeidx];
@@ -106,9 +112,23 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
                  "PRIMITIVE %d FOR %s DOES NOT HAVE POSITIONS!", primidx, pLodNode->name);
                return CT_FAILURE_CORRUPTED_CONTENTS;
             }
+            if (submesh->vertices.Count() > UINT16_MAX) {
+               ctDebugError(
+                 "SUBMESH EXCEEDS %u VERTICES! %s:%d", pLodNode->name, primidx);
+               return CT_FAILURE_OUT_OF_BOUNDS;
+            }
 
-            /* todo: coordinate conversion */
-            /* todo: bone index conversion */
+            /* bone index conversion */
+            if (node.skin) {
+               for (uint32_t i = 0; i < submesh->vertices.Count(); i++) {
+                  ctGltf2ModelVertex& vertex = submesh->vertices[i];
+                  for (uint32_t j = 0; j < 4; j++) {
+                     vertex.boneIndex[j] =
+                       (uint16_t)((size_t)node.skin->joints[vertex.boneIndex[j]] -
+                                  (size_t)gltf.nodes);
+                  }
+               }
+            }
 
             /* extract all morph targets */
             // todo refactor for submesh sections
@@ -1007,18 +1027,18 @@ ctResults ctGltf2Model::OptimizeVertexFetch() {
 
 /* -------------------------------- INDEX BUCKETS ------------------------------ */
 
-//#define INDEX_BUCKET_SIZE 1000
-// ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
-//   ZoneScoped;
-//   ctDebugLog("Bucketing Indices...");
-//   /* pass 1. for each submesh find the amount of INDEX_BUCKET_SIZE needed to represent
-//    * the mesh, pass 2. for each triangle check which bucket it falls into (maximum) and
-//    * add the triangle vertices as well as the indices - INDEX_BUCKET_SIZE * bucketIdx
-//    * into the bucket submesh. */
-//   /* or: also throw out indices and just reindex INDEX_BUCKET_SIZE regions of the
-//    * vertices using meshopt */
-//   return CT_SUCCESS;
-//}
+#define INDEX_BUCKET_SIZE 1000
+ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
+   ZoneScoped;
+   ctDebugLog("Bucketing Indices...");
+   /* pass 1. for each submesh find the amount of INDEX_BUCKET_SIZE needed to represent
+    * the mesh, pass 2. for each triangle check which bucket it falls into (maximum) and
+    * add the triangle vertices as well as the indices - INDEX_BUCKET_SIZE * bucketIdx
+    * into the bucket submesh. */
+   /* or: also throw out indices and just reindex INDEX_BUCKET_SIZE regions of the
+    * vertices using meshopt */
+   return CT_SUCCESS;
+}
 
 /* ------------------------------- BOUNDING BOX ------------------------------ */
 
