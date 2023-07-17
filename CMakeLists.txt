@@ -298,11 +298,18 @@ else()
 endif()
 
 # ---------- Static vs Dynamic ----------
-option(IS_STATIC "Static only" ON)
-if(IS_STATIC)
-   set(CITRUS_STATIC_ONLY 1)
+option(IS_STATIC_ENGINE "Static engine" ON)
+if(IS_STATIC_ENGINE)
+   set(CITRUS_STATIC_ENGINE 1)
 else()
-   set(CITRUS_STATIC_ONLY 0)
+   set(CITRUS_STATIC_ENGINE 0)
+endif()
+
+option(IS_STATIC_GAME "Static game" OFF)
+if(IS_STATIC_GAME)
+   set(CITRUS_STATIC_GAME 1)
+else()
+   set(CITRUS_STATIC_GAME 0)
 endif()
 
 # ---------- Add Subdirectories ----------

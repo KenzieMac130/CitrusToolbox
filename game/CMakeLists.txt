@@ -16,8 +16,14 @@
 
 # For user convenience just add any files in this or subdirectories to project
 file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*) 
+
+if(IS_STATIC_GAME)
+set(GAME_LINK_MODE STATIC)
+else()
+set(GAME_LINK_MODE SHARED)
+endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../engine)
-add_library(game ${SRC_FILES})
+add_library(game ${GAME_LINK_MODE} ${SRC_FILES})
 target_link_libraries(game PUBLIC engine)
 set_property(TARGET game PROPERTY FOLDER "game")
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC_FILES} EditorData.json)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC_FILES})

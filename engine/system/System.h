@@ -49,3 +49,4 @@ size_t ctSystemGetDirFileSize(void* handle);
 time_t ctSystemGetDirDate(void* handle);
 
 int ctSystemFileExists(const char* path);
+const char* ctSystemGetGameLayerLibName();

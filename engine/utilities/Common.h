@@ -55,7 +55,7 @@ extern "C" {
 
 /*Exportable*/
 // clang-format off
-#if CITRUS_STATIC_ONLY
+#if CITRUS_STATIC_ENGINE
     #define CT_API
 #endif
 #if !defined(CT_API)

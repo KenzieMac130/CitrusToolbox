@@ -14,35 +14,28 @@
    limitations under the License.
 */
 
-#pragma once
-
-/* Base engine config */
 #include "Config.h"
 
-/* Game layer exportable */
-// clang-format off
-#if CITRUS_STATIC_ONLY
-#define GAME_API
-#endif
-#if !defined(GAME_API)
-#if defined(_MSC_VER)
-    #if GAME_IMPORT
-        #define GAME_API __declspec(dllimport)
-    #else
-        #define GAME_API __declspec(dllexport)
-    #endif
-#elif defined(__GNUC__)
-    #if GAME_IMPORT
-        #define GAME_API __attribute__((visibility("default")))
-    #else
-        #define GAME_API
-    #endif
-#else
-    #define GAME_API
-#endif
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-/* Import engine content */
-#undef CITRUS_IMPORT
-#define CITRUS_IMPORT 1
-// clang-format on
+#if CITRUS_STATIC_GAME
+#define GAME_LAYER_API
+#endif
+#if !defined(GAME_LAYER_API)
+#if defined(_MSC_VER)
+#define GAME_LAYER_API __declspec(dllexport)
+#endif
+#elif defined(__GNUC__)
+#define GAME_LAYER_API __attribute__((visibility("default")))
+#else
+#define GAME_LAYER_API
+#endif
+
+GAME_LAYER_API int ctGameAPIStartup(void* pEngine);
+GAME_LAYER_API int ctGameAPIShutdown(void);
+
+#ifdef __cplusplus
+}
+#endif

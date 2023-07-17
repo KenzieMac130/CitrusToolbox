@@ -14,11 +14,26 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include "GameCommon.hpp"
+#include "utilities/Common.h"
+#include "GameEntryPoint.h"
+#include "core/EngineCore.hpp"
 #include "core/GameLayer.hpp"
 
-class GAME_API ctGameCore : public ctGameLayer {
-public:
-};
+ctEngineCore* Engine;
+
+GAME_LAYER_API int ctGameAPIStartup(void* pEngine) {
+   Engine = (ctEngineCore*)pEngine;
+#if !CITRUS_STATIC_GAME
+   Engine->GameLayer->_StartupGameLayerAsSharedObject();
+#endif
+
+   ctDebugLog("TEST");
+   return (int)CT_SUCCESS;
+}
+
+GAME_LAYER_API int ctGameAPIShutdown() {
+#if !CITRUS_STATIC_GAME
+   Engine->GameLayer->_ShutdownGameLayerAsSharedObject();
+#endif
+   return (int)CT_SUCCESS;
+}

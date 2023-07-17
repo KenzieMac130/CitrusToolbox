@@ -297,3 +297,7 @@ int ctSystemFileExists(const char* path) {
    MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), wpath, 4096);
    return GetFileAttributes(wpath) == INVALID_FILE_ATTRIBUTES ? 0 : 1;
 }
+
+const char* ctSystemGetGameLayerLibName() {
+   return "game.dll";
+}
