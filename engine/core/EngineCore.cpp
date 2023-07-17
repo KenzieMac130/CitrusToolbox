@@ -42,9 +42,7 @@
 
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
-#include "scene/SceneEngineBase.hpp"
-
-#include CITRUS_SCENE_ENGINE_HEADER
+#include "scene/SceneEngine.hpp"
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ZoneScoped;
@@ -79,7 +77,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Im3dIntegration = new ctIm3dIntegration();
    Renderer = new ctKeyLimeRenderer();
    FrameTime = ctStopwatch();
-   SceneEngine = new CITRUS_SCENE_ENGINE_CLASS();
+   SceneEngine = new ctSceneEngine();
    PhysXIntegration = new ctPhysXIntegration();
 #if CITRUS_INCLUDE_AUDITION
    Editor = new ctAuditionEditor();

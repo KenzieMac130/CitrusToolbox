@@ -121,7 +121,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.cpp
 )
 
 set(ENGINE_HEADER_FILES_CORE
@@ -137,7 +136,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngineBase.hpp
 )
 
 # ---------- System Abstraction ---------- 
@@ -263,27 +261,13 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
 
 # ---------- Scene Engine ---------- 
-set(CITRUS_SCENE_ENGINE_IS_HONEYBELL 0)
-set(CITRUS_SCENE_ENGINE_IS_KINNOW 0)
-
-# Kinnow: entity component system
-if(${CITRUS_SCENE_ENGINE} STREQUAL "KINNOW")
-set(CITRUS_SCENE_ENGINE_IS_KINNOW 1)
-set(CITRUS_SCENE_ENGINE_HEADER
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
-)
-
 set(ENGINE_SOURCE_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/KinnowSceneEngine.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/EntityComponentSystem.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/NetworkBus.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/kinnow/Concept.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.hpp
 )
-endif()
 
 # ---------- Third Party Implementation ---------- 
 set(THIRD_PARTY_IMPL_FILES

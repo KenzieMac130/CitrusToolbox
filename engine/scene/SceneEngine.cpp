@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "KinnowSceneEngine.hpp"
+#include "SceneEngine.hpp"
 #include "core/EngineCore.hpp"
 
 #include "middleware/ImguiIntegration.hpp"
@@ -22,23 +22,27 @@
 #include "core/WindowManager.hpp"
 #include "core/Application.hpp"
 
-ctResults ctKinnowSceneEngine::Startup() {
+ctResults ctSceneEngine::Startup() {
    return ctResults();
 }
 
-ctResults ctKinnowSceneEngine::Shutdown() {
+ctResults ctSceneEngine::Shutdown() {
    return ctResults();
 }
 
-ctResults ctKinnowSceneEngine::OnNextFrame(double deltaTime) {
+ctResults ctSceneEngine::NextFrame(double deltaTime) {
    Engine->App->OnTick((float)deltaTime);
    PushCameraToRenderer();
    return CT_SUCCESS;
 }
 
-void ctKinnowSceneEngine::PushCameraToRenderer() {
+void ctSceneEngine::PushCameraToRenderer() {
    int32_t width, height;
    Engine->WindowManager->GetMainWindowDrawableSize(&width, &height);
    mainCamera.aspectRatio = (float)width / (float)height;
    Engine->Renderer->UpdateCamera(mainCamera);
+}
+
+const char* ctSceneEngine::GetModuleName() {
+   return "Scene Engine";
 }

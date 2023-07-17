@@ -16,7 +16,6 @@
 
 #include "Im3dIntegration.hpp"
 #include "core/EngineCore.hpp"
-#include "scene/SceneEngineBase.hpp"
 #include "core/WindowManager.hpp"
 #include "core/Translation.hpp"
 #include "core/FileSystem.hpp"

@@ -52,7 +52,7 @@ public:
    class ctImguiIntegration* ImguiIntegration;
    class ctIm3dIntegration* Im3dIntegration;
    class ctKeyLimeRenderer* Renderer;
-   class ctSceneEngineBase* SceneEngine;
+   class ctSceneEngine* SceneEngine;
 
 #if CITRUS_PHYSX
    class ctPhysXIntegration* PhysXIntegration;

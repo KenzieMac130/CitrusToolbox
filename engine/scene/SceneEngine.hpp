@@ -17,7 +17,27 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "core/ModuleBase.hpp"
 
-class ctSceneConceptBase {
-   virtual void SpawnConcept(bool isClient);
+class CT_API ctSceneEngine : public ctModuleBase {
+public:
+   virtual ctResults Startup();
+   virtual ctResults Shutdown();
+   virtual ctResults NextFrame(double deltaTime);
+   virtual const char* GetModuleName();
+
+   inline void EnableCameraOverride() {
+      cameraOverride = true;
+   }
+   inline void SetCameraOverride(ctCameraInfo camera) {
+      mainCamera = camera;
+   }
+   inline void DisableCameraOverride() {
+      cameraOverride = false;
+   }
+
+protected:
+   bool cameraOverride;
+   ctCameraInfo mainCamera;
+   void PushCameraToRenderer();
 };
