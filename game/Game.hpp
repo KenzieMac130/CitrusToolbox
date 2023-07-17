@@ -19,10 +19,6 @@
 #include "GameCommon.hpp"
 #include "core/GameLayer.hpp"
 
-namespace Game {
-
-class GAME_API GameCore : public ctGameLayer {
+class GAME_API ctGameCore : public ctGameLayer {
 public:
 };
-
-}

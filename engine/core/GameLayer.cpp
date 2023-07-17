@@ -16,22 +16,14 @@
 
 #include "GameLayer.hpp"
 
-/* Include game */
-#include "../game/Game.hpp"
-Game::GameCore game;
-
-ctGameLayer& ctGetGameLayer() {
-   return game;
-}
-
-ctResults ctGameLayer::Startup() {
+ctResults ctGameLayerManager::Startup() {
    return CT_SUCCESS;
 }
 
-ctResults ctGameLayer::Shutdown() {
+ctResults ctGameLayerManager::Shutdown() {
    return CT_SUCCESS;
 }
 
-const char* ctGameLayer::GetModuleName() {
+const char* ctGameLayerManager::GetModuleName() {
    return "Game Layer";
 }

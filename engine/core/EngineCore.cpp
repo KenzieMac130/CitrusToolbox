@@ -86,6 +86,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    AssetCompiler = new ctAssetCompilerBootstrap();
    LiveSync = new ctAuditionLiveSync();
 #endif
+   GameLayer = new ctGameLayerManager();
 
    /* Startup Modules */
    Settings->ModuleStartup(this);
@@ -116,7 +117,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ctDebugLog("Citrus Toolbox has Started!");
 
    /* Run User Code */
-   ctGetGameLayer().ModuleStartup(this);
+   GameLayer->ModuleStartup(this);
    App->OnStartup();
    ctDebugLog("Application has Started!");
    return CT_SUCCESS;
@@ -167,7 +168,7 @@ ctResults ctEngineCore::Shutdown() {
    /*Shutdown application*/
    ctDebugLog("Application is Shutting Down...");
    App->OnShutdown();
-   ctGetGameLayer().ModuleShutdown();
+   GameLayer->ModuleShutdown();
 
    /*Shutdown modules*/
    ctDebugLog("Citrus Toolbox is Shutting Down...");
@@ -194,6 +195,7 @@ ctResults ctEngineCore::Shutdown() {
    Debug->ModuleShutdown();
    Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();
+   delete GameLayer;
 #if CITRUS_INCLUDE_AUDITION
    delete AssetCompiler;
    delete Editor;

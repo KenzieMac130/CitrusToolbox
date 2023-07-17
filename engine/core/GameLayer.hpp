@@ -19,11 +19,9 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
-class CT_API ctGameLayer : public ctModuleBase {
+class CT_API ctGameLayerManager : public ctModuleBase {
 public:
    virtual ctResults Startup();
    virtual ctResults Shutdown();
    const char* GetModuleName() final;
 };
-
-ctGameLayer& ctGetGameLayer();

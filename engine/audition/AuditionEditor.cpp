@@ -51,6 +51,7 @@ ctResults ctAuditionEditor::Startup() {
    RegisterModule((ctModuleBase*)Engine->AsyncTasks);
    RegisterModule((ctModuleBase*)Engine->Debug);
    RegisterModule((ctModuleBase*)Engine->FileSystem);
+   RegisterModule((ctModuleBase*)Engine->GameLayer);
    RegisterModule((ctModuleBase*)Engine->HotReload);
    RegisterModule((ctModuleBase*)Engine->LiveSync);
    RegisterModule((ctModuleBase*)Engine->Im3dIntegration);

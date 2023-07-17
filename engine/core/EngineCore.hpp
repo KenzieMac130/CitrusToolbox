@@ -33,6 +33,7 @@ public:
    ctResults Shutdown();
 
    class ctApplication* App;
+   class ctGameLayerManager* GameLayer;
    class ctAsyncManager* AsyncTasks;
    class ctJobSystem* JobSystem;
    class ctOSEventManager* OSEventManager;
