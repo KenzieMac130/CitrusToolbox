@@ -78,27 +78,27 @@ Pads/pointing is handled by cursor
 
 Half a Switch controller drops triggers, select and right stick
 
-* /dev/gamepad/[#]/input/a
-* /dev/gamepad/[#]/input/b
-* /dev/gamepad/[#]/input/x
-* /dev/gamepad/[#]/input/y
-* /dev/gamepad/[#]/input/dpad/up
-* /dev/gamepad/[#]/input/dpad/down
-* /dev/gamepad/[#]/input/dpad/left
-* /dev/gamepad/[#]/input/dpad/right
-* /dev/gamepad/[#]/input/shoulder_left
-* /dev/gamepad/[#]/input/shoulder_right
-* /dev/gamepad/[#]/input/trigger_left
-* /dev/gamepad/[#]/input/trigger_right
-* /dev/gamepad/[#]/input/thumbstick_left/click
-* /dev/gamepad/[#]/input/thumbstick_right/click
-* /dev/gamepad/[#]/input/thumbstick_left/x
-* /dev/gamepad/[#]/input/thumbstick_left/y
-* /dev/gamepad/[#]/input/thumbstick_right/x
-* /dev/gamepad/[#]/input/thumbstick_right/y
-* /dev/gamepad/[#]/input/start
-* /dev/gamepad/[#]/input/select
-* /dev/gamepad/[#]/input/guide **( Not reccomended )**
+* /dev/gamepad/input/a
+* /dev/gamepad/input/b
+* /dev/gamepad/input/x
+* /dev/gamepad/input/y
+* /dev/gamepad/input/dpad/up
+* /dev/gamepad/input/dpad/down
+* /dev/gamepad/input/dpad/left
+* /dev/gamepad/input/dpad/right
+* /dev/gamepad/input/shoulder_left
+* /dev/gamepad/input/shoulder_right
+* /dev/gamepad/input/trigger_left
+* /dev/gamepad/input/trigger_right
+* /dev/gamepad/input/thumbstick_left/click
+* /dev/gamepad/input/thumbstick_right/click
+* /dev/gamepad/input/thumbstick_left/x
+* /dev/gamepad/input/thumbstick_left/y
+* /dev/gamepad/input/thumbstick_right/x
+* /dev/gamepad/input/thumbstick_right/y
+* /dev/gamepad/input/start
+* /dev/gamepad/input/select
+* /dev/gamepad/input/guide **( Not reccomended )**
 
 ### Virtual Reality
 
@@ -130,3 +130,61 @@ Joysticks are an all-encompassing term for unknown inputs and are a bit more of 
 * /dev/sdl-joystick/input/[GUID]/hat/[#]/southeast
 * /dev/sdl-joystick/input/[GUID]/hat/[#]/southwest
 * /dev/sdl-joystick/input/[GUID]/hat/[#]/northwest
+
+## Interact 2.0
+
+Interact 1.0 had a solid foundation of unifying all input types, unfortunately it has some key problems.
+
+1. Lack of multi-player handling (you could technically subpath them)
+1. Controllers were tied to the binding (switching slots meant switching bindings)
+1. Keymaps were bound to filtering functionality
+1. Fixed slot and fixed function filters were limiting and awkward
+1. Retrieval of info about inputs was not provided
+1. Code structure was sloppy
+1. Scalars were heavily assumed and other path types were a second thought
+
+These points will be addressed one by one.
+
+### Multiple Players are Introduced at the API level
+
+On startup the application reserves a certain number of player slots.
+
+Each slot has their own directory that is isolated from other players
+
+Now when you get a signal you have to specify the player index.
+
+### Devices are explicitly assigned to players
+
+All devices must be registered with a player. When a device is registered it will write to that players directory.
+
+Gamepad number has been removed.
+
+### Keymaps are now a seperate config file
+
+There is now a user file and a action file
+
+The user file contains a list of parameters such as action to key bindings for each device and accesibility settings
+
+The action file is now something entirely different and implement control/action logic while referencing the user file as a input
+
+### Actions are now handled by lua script
+
+The action file is now a lua script that implements all the control logic itself. On startup it registers a list of action paths.
+The lua script is fed the user file as a dictionary and given an API to interact with paths. This fits great as just another backend, simplifying the core of interact greatly. One Lua context exists per player.
+
+1. Startup: used to register actions
+1. Poll: used to update action values
+
+### Metadata paths
+
+* /active-dev: returns the last active device associated with the user
+* /action/XXX/inputs: returns a list of paths linked to the action, this can be filtered out by device name (such as active dev)
+* /dev/###/INPUT/description: returns metadata about the input (such as the icon and description)
+
+### Refactor in OOP
+
+Controversial decision but following cleaner OOP guidelines, using inheritance, etc will greatly improve this non-performance critical, highly conceptually driven part of the codebase.
+
+### Paths are now properly types
+
+Paths are now typed by base class (casting wont have metadata so we will have to use a type enum/strings), this allows paths to have better type distinction.
