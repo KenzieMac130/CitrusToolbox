@@ -277,6 +277,8 @@ ${THIRD_PARTY_DIRECTORY}/imgui/imgui_tables.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui_widgets.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui.cpp
 ${THIRD_PARTY_DIRECTORY}/im3d/im3d.cpp
+${THIRD_PARTY_DIRECTORY}/lz4/lz4.c
+${THIRD_PARTY_DIRECTORY}/lz4/lz4frame.c
 )
 
 if(CITRUS_GFX_VULKAN)

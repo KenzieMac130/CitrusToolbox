@@ -46,7 +46,7 @@ uint16_t GetBaseAlignment(ctGPUStructVariableType type) {
       case CT_GPU_SVAR_FLOAT_VEC2: return 8;
       case CT_GPU_SVAR_FLOAT_VEC3: return 16;
       case CT_GPU_SVAR_FLOAT_VEC4: return 16;
-      case CT_GPU_SVAR_FLOAT_MATRIX4x4: return 4;
+      case CT_GPU_SVAR_FLOAT_MATRIX4X4: return 4;
       default: ctAssert(0); return 0;
    }
 }
@@ -65,7 +65,7 @@ uint32_t GetSize(ctGPUStructVariableType type) {
       case CT_GPU_SVAR_FLOAT_VEC2: return 8;
       case CT_GPU_SVAR_FLOAT_VEC3: return 12;
       case CT_GPU_SVAR_FLOAT_VEC4: return 16;
-      case CT_GPU_SVAR_FLOAT_MATRIX4x4: return 4 * 4 * 4;
+      case CT_GPU_SVAR_FLOAT_MATRIX4X4: return 4 * 4 * 4;
       default: ctAssert(0); return 0;
    }
 }

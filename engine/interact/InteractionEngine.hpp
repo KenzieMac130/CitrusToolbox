@@ -25,17 +25,21 @@
 #endif
 
 /* Simple Input API */
-float ctGetSignal(const char* path);
+float ctGetSignal(const char* path); /* todo: add local player index */
 bool ctGetButton(const char* path);
+
+/* todo: paths should only be manipulated by backends (changing values) or lua (which will be another backend)*/
 
 /* --------------------------- Virtual Directory --------------------------- */
 
 enum ctInteractionNodeType {
    CT_INTERACT_NODETYPE_NULL = 0,
-   CT_INTERACT_NODETYPE_SCALAR = 1,      /* Data points to a float */
-   CT_INTERACT_NODETYPE_BOOL = 2,        /* Data points to a boolean */
-   CT_INTERACT_NODETYPE_BINDING = 127,   /* Data points to a binding structure */
-   CT_INTERACT_NODETYPE_ACTIONSET = 128, /* Data points to an action set */
+   CT_INTERACT_NODETYPE_SCALAR = 1,      /* Data points to a float */ /* todo: float pointer */
+   CT_INTERACT_NODETYPE_BOOL = 2,        /* Data points to a boolean */ /* todo: bool pointer */
+   CT_INTERACT_NODETYPE_BINDING = 127,   /* Data points to a binding structure */ /* todo: remove */
+   CT_INTERACT_NODETYPE_ACTIONSET = 128, /* Data points to an action set */ /* todo: remove */
+   /* todo: CT_INTERACT_NODETYPE_SCRIPT_SCALAR (Data is a double) */
+   /* todo: CT_INTERACT_NODETYPE_SCRIPT_STRING (Data points to a string) */
    CT_INTERACT_NODETYPE_MAX = UINT8_MAX
 };
 
@@ -50,6 +54,7 @@ struct CT_API ctInteractPath {
    char str[CT_MAX_INTERACT_PATH_SIZE];
 };
 
+/* todo: make object oriented class with one node per type */
 struct CT_API ctInteractNode {
    inline ctInteractNode() {
       path = ctInteractPath();
@@ -59,28 +64,32 @@ struct CT_API ctInteractNode {
    }
    float GetScalar();
    bool SetScalar(float value);
-   class ctInteractBinding* GetAsBinding();
-   class ctInteractActionSet* GetAsActionSet();
+   class ctInteractBinding* GetAsBinding(); /* todo: remove */
+   class ctInteractActionSet* GetAsActionSet(); /* todo: remove */
    ctInteractPath path;
    ctInteractionNodeType type;
-   bool accessible;
-   void* pData;
+   bool accessible; /* todo: remove*/
+   void* pData; /* todo: replace with proper get/set behind virtuals */
 };
 
+/* todo: one per player */
 class CT_API ctInteractDirectorySystem {
 public:
    ~ctInteractDirectorySystem();
-   ctResults CreateActionSetsFromFile(ctFile& file);
-   ctResults CreateBindingsFromFile(ctFile& file);
+   ctResults CreateActionSetsFromFile(ctFile& file); /* todo: run action set lua script */
+   ctResults CreateBindingsFromFile(ctFile& file); /* todo: feeds user settings json to script */
    ctResults Update();
    ctResults AddNode(ctInteractNode& node);
    ctResults RemoveNode(ctInteractPath& path);
-   void EnableActionSet(ctInteractPath& path);
-   void DisableActionSet(ctInteractPath& path);
-   ctResults SetNodeAccessible(ctInteractPath& path, bool accessible);
+   void EnableActionSet(ctInteractPath& path); /* todo: remove, now handled by params */
+   void DisableActionSet(ctInteractPath& path); /* todo: remove, now handled by params */
+   ctResults SetNodeAccessible(ctInteractPath& path, bool accessible); /* todo: remove */
    ctResults
-   GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false);
+   GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false); /* todo: remove force access*/
    float GetSignal(ctInteractPath& path);
+/* todo: request device (requests a device be mapped to the directory)*/
+/* */
+
    void LogContents();
    void DebugImGui();
    void _ReloadClear();
@@ -90,12 +99,13 @@ public:
 #endif
 
 private:
-   ctDynamicArray<ctInteractPath> activeActionSets;
-   ctHashTable<ctInteractNode, uint64_t> nodes;
+   ctDynamicArray<ctInteractPath> activeActionSets; /* todo: remove */
+   ctHashTable<ctInteractNode, uint64_t> nodes; /* todo: make pointer objects */
 };
 
 /* --------------------------- Bindings --------------------------- */
 
+/* todo: remove and make the responsibility of Lua */
 struct ctInteractBindingEntry {
    ctInteractPath path;
    float scale = 1.0f;
@@ -116,6 +126,7 @@ public:
 
 /* --------------------------- Actions --------------------------- */
 
+/* todo: remove and make the responsibility of Lua */
 struct ctInteractActionEntry {
    ctInteractPath path;
    ctInteractPath velocityPath;
@@ -123,6 +134,7 @@ struct ctInteractActionEntry {
 
 /* --------------------------- Action Sets --------------------------- */
 
+/* todo: remove and make the responsibility of Lua */
 class CT_API ctInteractActionSet {
 public:
    ctDynamicArray<ctInteractPath> bindings;
@@ -146,8 +158,8 @@ public:
    ctResults PumpInput();
    virtual void DebugUI(bool useGizmos);
 
-   ctInteractDirectorySystem Directory;
-   bool isFrameActive;
+   ctInteractDirectorySystem Directory; /* todo: one per player */
+   bool isFrameActive; /* todo: move to directory */
 
 protected:
    ctDynamicArray<class ctInteractAbstractBackend*> pBackends;

@@ -18,6 +18,7 @@
 #include "CitrusModel.hpp"
 
 ctResults ctGltf2Model::ExtractPhysics(ctGltf2ModelPhysicsMode mode) {
+   ctDebugLog("Extracting Physics...");
    /* setup physx */
    pPhysXIntegration = new ctPhysXIntegration();
    pPhysXIntegration->ModuleStartup(NULL);

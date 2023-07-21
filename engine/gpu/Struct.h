@@ -42,7 +42,7 @@ enum ctGPUStructVariableType {
    CT_GPU_SVAR_FLOAT_VEC2,     /* float[2] or ctVec2 */
    CT_GPU_SVAR_FLOAT_VEC3,     /* float[3] or ctVec3 */
    CT_GPU_SVAR_FLOAT_VEC4,     /* float[4] or ctVec4 or ctQuat */
-   CT_GPU_SVAR_FLOAT_MATRIX4x4 /* float[4][4] or ctMat4 */
+   CT_GPU_SVAR_FLOAT_MATRIX4X4 /* float[4][4] or ctMat4 */
 };
 
 struct ctGPUStructAssembler* ctGPUStructAssemblerNew(struct ctGPUDevice* pDevice,

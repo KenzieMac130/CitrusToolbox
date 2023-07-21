@@ -17,17 +17,33 @@
 #include "Model.hpp"
 #include "formats/wad/WADCore.h"
 
+#include "lz4/lz4.h"
+
 CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData) {
    file.ReadRaw(&model.header, sizeof(ctModelHeader), 1);
    if (model.header.magic != CT_MODEL_MAGIC) { return CT_FAILURE_CORRUPTED_CONTENTS; }
    if (model.header.version != CT_MODEL_VERSION) { return CT_FAILURE_UNKNOWN_FORMAT; }
 
-   int32_t tmpsize = 0;
-   ctWADReader wad;
    file.Seek(model.header.wadDataOffset, CT_FILE_SEEK_SET);
+
    model.mappedCpuDataSize = model.header.wadDataSize;
-   model.mappedCpuData = ctMalloc(model.mappedCpuDataSize);
-   file.ReadRaw(model.mappedCpuData, model.mappedCpuDataSize, 1);
+   model.mappedCpuData = ctMalloc(model.header.wadDataSize);
+
+   /* read cpu data */
+   if (model.header.cpuCompressionType == CT_MODEL_CPU_COMPRESS_NONE) {
+      file.ReadRaw(model.mappedCpuData, model.mappedCpuDataSize, 1);
+   } else if (model.header.cpuCompressionType == CT_MODEL_CPU_COMPRESS_LZ4) {
+      void* compBlob = ctMalloc(model.header.cpuCompressionSize);
+      file.ReadRaw(compBlob, model.header.cpuCompressionSize, 1);
+      LZ4_decompress_safe((const char*)compBlob,
+                          (char*)model.mappedCpuData,
+                          (int)model.header.cpuCompressionSize,
+                          (int)model.mappedCpuDataSize);
+      ctFree(compBlob);
+   }
+
+   ctWADReader wad;
+   int32_t tmpsize = 0;
    ctWADReaderBind(&wad, (uint8_t*)model.mappedCpuData, model.mappedCpuDataSize);
 
    /* Skeleton */
@@ -95,7 +111,9 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
+CT_API ctResults ctModelSave(ctModel& model,
+                             ctFile& file,
+                             ctModelCPUCompression compression) {
    ctWADReader wad = ctWADReader();
    ctWADSetupWrite(&wad);
 
@@ -203,11 +221,30 @@ CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
    size_t gpuAlignOffset = gpuOffset % CT_ALIGNMENT_MODEL_GPU;
    gpuOffset += gpuAlignOffset;
 
+   /* Perform compression */
+   void* cpuData = wadData;
+   size_t cpuDataSize = wadSize;
+   if (compression == CT_MODEL_CPU_COMPRESS_LZ4) {
+      cpuDataSize = (size_t)LZ4_compressBound((int)wadSize);
+      cpuData = ctMalloc(cpuDataSize); /* worst case */
+      cpuDataSize = (size_t)LZ4_compress_default(
+        (const char*)wadData, (char*)cpuData, (int)wadSize, (int)cpuDataSize);
+
+      /* if compression grows file size, disable it */
+      if (cpuDataSize > wadSize) {
+         ctFree(cpuData);
+         cpuData = wadData;
+         cpuDataSize = wadSize;
+         compression = CT_MODEL_CPU_COMPRESS_NONE;
+      }
+   }
+
    /* Setup Header */
    model.header.magic = CT_MODEL_MAGIC;
    model.header.version = CT_MODEL_VERSION;
    model.header.wadDataOffset = sizeof(ctModelHeader);
    model.header.wadDataSize = wadSize;
+   model.header.cpuCompressionSize = cpuDataSize;
    if (model.inMemoryGeometryData) {
       model.header.gpuDataOffset = gpuOffset;
       model.header.gpuDataSize = model.inMemoryGeometryDataSize;
@@ -218,7 +255,8 @@ CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
 
    /* Write Data */
    file.WriteRaw(&model.header, sizeof(model.header), 1);
-   file.WriteRaw(wadData, wadSize, 1);
+   file.WriteRaw(cpuData, cpuDataSize, 1);
+
    if (model.inMemoryGeometryData) {
       uint8_t padding[CT_ALIGNMENT_MODEL_GPU];
       memset(padding, 0, CT_ALIGNMENT_MODEL_GPU);
@@ -227,6 +265,7 @@ CT_API ctResults ctModelSave(ctModel& model, ctFile& file) {
    }
 
    file.Close();
+   if (compression != CT_MODEL_CPU_COMPRESS_NONE) { ctFree(cpuData); }
    ctFree(wadData);
    ctWADWriteFree(&wad);
    return CT_SUCCESS;

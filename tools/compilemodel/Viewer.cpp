@@ -47,6 +47,11 @@ const char* meshModeNames[] {"Submesh",
                              "Bone",
                              "Material"};
 
+struct ctModelViewerMorphLayer {
+   char name[32];
+   float weight;
+};
+
 class ctModelViewer : public ctApplication {
 public:
    virtual const char* GetAppName() {
@@ -65,6 +70,8 @@ public:
    virtual ctResults OnUIUpdate();
    virtual ctResults OnTick(float deltaTime) {
       timer += deltaTime;
+      rotationPhase += rotationSpeed * deltaTime;
+      Engine->SceneEngine->SetCameraOverride(camera);
       return CT_SUCCESS;
    }
    virtual ctResults OnShutdown();
@@ -91,15 +98,31 @@ public:
    bool renderSkeleton = false;
    bool renderBoneNames = false;
    bool renderGeometry = true;
-   bool renderBBOX = false;
-   ctModelViewerMeshMode viewMode = CT_MODELVIEW_COLOR;
+   bool renderBBOX = true;
+   ctModelViewerMeshMode viewMode = CT_MODELVIEW_WIREFRAME;
    int32_t uvChannel = 0;
    int32_t colorChannel = 0;
    int32_t activeBone = 0;
    int32_t lodView = 0;
+   ctHashTable<ctModelViewerMorphLayer, uint32_t> morphLayers;
+
+   void FillAnimMeshData(ctModelMeshVertexCoords* coords,
+                         ctModelMeshVertexUV* uvs,
+                         ctModelMeshVertexColor* colors,
+                         uint32_t vertexCount,
+                         ctBoundBox bbox,
+                         ctBoundBox2D uvbox);
+   void ApplyMorph(ctModelMeshLod& lod, const char* name, float weight);
+   ctDynamicArray<ctVec3> animPositions;
+   ctDynamicArray<ctVec3> animNormals;
+   ctDynamicArray<ctVec4> animTangents;
+   ctDynamicArray<ctVec2> animUVs;
+   ctDynamicArray<ctVec4> animColors;
 
    ctCameraInfo camera;
    float timer;
+   float rotationPhase = 0.0f;
+   float rotationSpeed = 1.0f;
 };
 
 ctResults ctGltf2Model::ModelViewer(int argc, char* argv[]) {
@@ -111,17 +134,28 @@ ctResults ctGltf2Model::ModelViewer(int argc, char* argv[]) {
 }
 
 ctResults ctModelViewer::OnStartup() {
-   ctSceneEngine* scene;
-   scene = (ctSceneEngine*)Engine->SceneEngine;
-   scene->EnableCameraOverride();
+   Engine->SceneEngine->EnableCameraOverride();
    camera.position = ctVec3(0.0f, 1.0f, -10.0f);
-   scene->SetCameraOverride(camera);
+
+   /* get all morph target names */
+   for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetCount; morphIdx++) {
+      auto& morph = model.geometry.morphTargets[morphIdx];
+      ctModelViewerMorphLayer morphout = ctModelViewerMorphLayer();
+      strncpy(morphout.name, morph.name, 32);
+      morphout.weight = 0.0f;
+      morphLayers.InsertOrReplace(ctXXHash32(morph.name), morphout);
+   }
    return CT_SUCCESS;
 }
 
 ctResults ctModelViewer::OnUIUpdate() {
    ZoneScoped;
    ImGui::Begin(CT_NC("Model"));
+   if (ImGui::CollapsingHeader(CT_NC("Preview"))) {
+      ImGui::InputFloat3("Camera Position", camera.position.data);
+      ImGui::InputFloat("Rotation Phase", &rotationPhase);
+      ImGui::InputFloat("Rotation Speed", &rotationSpeed);
+   }
    if (ImGui::CollapsingHeader(CT_NC("Skeleton"))) { SkeletonInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Geometry"))) { GeometryInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Animation"))) { AnimationInfo(); }
@@ -218,62 +252,66 @@ void ctModelViewer::GeometryInfo() {
         CT_NC("Active Bone"), &activeBone, 0, model.skeleton.boneCount - 1);
    }
 
-   for (uint32_t meshIdx = 0; meshIdx < model.geometry.meshCount; meshIdx++) {
-      ctModelMesh& mesh = model.geometry.meshes[meshIdx];
-      char namebuff[33];
-      memset(namebuff, 0, 33);
-      strncpy(namebuff, mesh.name, 32);
-      if (ImGui::TreeNode(namebuff)) {
-         for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
-            ctModelMeshLod& lod = mesh.lods[lodIdx];
-            snprintf(namebuff, 32, "LOD %d", lodIdx);
-            if (ImGui::TreeNode(namebuff)) {
-               ImGui::Text("Bounding Box: %f %f %f - %f %f %f",
-                           lod.bbox.min.x,
-                           lod.bbox.min.y,
-                           lod.bbox.min.z,
-                           lod.bbox.max.x,
-                           lod.bbox.max.y,
-                           lod.bbox.max.z);
-               ImGui::Text("Radius: %f", lod.radius);
-
-               ImGui::Text("Submesh Count: %u", lod.submeshCount);
-               for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshCount;
-                    submeshIdx++) {
-                  snprintf(namebuff, 32, "Submesh %u", submeshIdx);
-                  if (ImGui::TreeNode(namebuff)) {
-                     ctModelSubmesh& submesh =
-                       model.geometry.submeshes[lod.submeshStart + submeshIdx];
-                     ImGui::Text("Material Index: %u", submesh.materialIndex);
-                     ImGui::Text("Index Count: %u", submesh.indexCount);
-                     ImGui::Text("Index Offset: %u", submesh.indexOffset);
-                     ImGui::Text("Vertex Offset: %u", submesh.vertexOffset);
-                     ImGui::TreePop();
-                  }
-               }
-               ImGui::TreePop();
-            }
-
-            ImGui::Text("Morph Count: %d", lod.morphTargetCount);
-            for (uint32_t morphIdx = 0; morphIdx < lod.morphTargetCount; morphIdx++) {
-               ctModelMeshMorphTarget& morph =
-                 model.geometry.morphTargets[lod.morphTargetStart + morphIdx];
-               memset(namebuff, 0, 33);
-               strncpy(namebuff, morph.name, 32);
+   if (ImGui::TreeNode("Meshes")) {
+      for (uint32_t meshIdx = 0; meshIdx < model.geometry.meshCount; meshIdx++) {
+         ctModelMesh& mesh = model.geometry.meshes[meshIdx];
+         char namebuff[33];
+         memset(namebuff, 0, 33);
+         strncpy(namebuff, mesh.name, 32);
+         if (ImGui::TreeNode(namebuff)) {
+            for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
+               ctModelMeshLod& lod = mesh.lods[lodIdx];
+               snprintf(namebuff, 32, "LOD %d", lodIdx);
                if (ImGui::TreeNode(namebuff)) {
                   ImGui::Text("Bounding Box: %f %f %f - %f %f %f",
-                              morph.bboxDisplacement.min.x,
-                              morph.bboxDisplacement.min.y,
-                              morph.bboxDisplacement.min.z,
-                              morph.bboxDisplacement.max.x,
-                              morph.bboxDisplacement.max.y,
-                              morph.bboxDisplacement.max.z);
-                  ImGui::Text("Radius: %f", morph.radiusDisplacement);
-                  ImGui::Text("Vertex Count: %u", morph.vertexCount);
-                  ImGui::Text("Vertex Offset: %u", morph.vertexCount);
+                              lod.bbox.min.x,
+                              lod.bbox.min.y,
+                              lod.bbox.min.z,
+                              lod.bbox.max.x,
+                              lod.bbox.max.y,
+                              lod.bbox.max.z);
+                  ImGui::Text("Radius: %f", lod.radius);
+
+                  ImGui::Text("Submesh Count: %u", lod.submeshCount);
+                  for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshCount;
+                       submeshIdx++) {
+                     snprintf(namebuff, 32, "Submesh %u", submeshIdx);
+                     if (ImGui::TreeNode(namebuff)) {
+                        ctModelSubmesh& submesh =
+                          model.geometry.submeshes[lod.submeshStart + submeshIdx];
+                        ImGui::Text("Material Index: %u", submesh.materialIndex);
+                        ImGui::Text("Index Count: %u", submesh.indexCount);
+                        ImGui::Text("Index Offset: %u", submesh.indexOffset);
+                        ImGui::Text("Vertex Offset: %u", submesh.vertexOffset);
+                        ImGui::TreePop();
+                     }
+                  }
+
+                  ImGui::Text("Morph Count: %d", lod.morphTargetCount);
+                  for (uint32_t morphIdx = 0; morphIdx < lod.morphTargetCount;
+                       morphIdx++) {
+                     ctModelMeshMorphTarget& morph =
+                       model.geometry.morphTargets[lod.morphTargetStart + morphIdx];
+                     memset(namebuff, 0, 33);
+                     strncpy(namebuff, morph.name, 32);
+                     if (ImGui::TreeNode(namebuff)) {
+                        ImGui::Text("Bounding Box: %f %f %f - %f %f %f",
+                                    morph.bboxDisplacement.min.x,
+                                    morph.bboxDisplacement.min.y,
+                                    morph.bboxDisplacement.min.z,
+                                    morph.bboxDisplacement.max.x,
+                                    morph.bboxDisplacement.max.y,
+                                    morph.bboxDisplacement.max.z);
+                        ImGui::Text("Radius: %f", morph.radiusDisplacement);
+                        ImGui::Text("Vertex Count: %u", morph.vertexCount);
+                        ImGui::Text("Vertex Offset: %u", morph.vertexDataMorphOffset);
+                        ImGui::TreePop();
+                     }
+                  }
                   ImGui::TreePop();
                }
             }
+            ImGui::TreePop();
          }
          ImGui::TreePop();
       }
@@ -282,6 +320,12 @@ void ctModelViewer::GeometryInfo() {
 }
 
 void ctModelViewer::AnimationInfo() {
+   if (ImGui::TreeNode("Morph Target Layers")) {
+      for (auto it = morphLayers.GetIterator(); it; it++) {
+         ImGui::SliderFloat(it.Value().name, &it.Value().weight, 0.0f, 1.0f);
+      }
+      ImGui::TreePop();
+   }
 }
 
 void ctModelViewer::SplinesInfo() {
@@ -311,7 +355,7 @@ void ctModelViewer::SceneInfo() {
 
 void ctModelViewer::RenderModel() {
    ZoneScoped;
-   ctQuat quat = ctQuatYawPitchRoll(timer, 0.0f, 0.0f);
+   ctQuat quat = ctQuatYawPitchRoll(rotationPhase, 0.0f, 0.0f);
    Im3d::PushMatrix(ctMat4ToIm3d(ctMat4FromQuat(quat)));
    if (renderSkeleton) { RenderSkeleton(); }
    if (renderBBOX) { RenderBoundingBoxes(); }
@@ -366,6 +410,209 @@ void ctModelViewer::RenderBoundingBoxes() {
    }
 }
 
+struct ctModelViewFixedRendererModeDesc {
+   uint16_t* indices;
+   ctVec3* positions;
+   ctVec3* normals;
+   ctVec4* tangents;
+   ctVec2* uvs;
+   ctVec4* colors;
+   ctModelMeshVertexSkinData* skins;
+   ctBoundBox bbox;
+   ctBoundBox2D uvbox;
+   ctModelSubmesh submesh;
+   float timer;
+};
+
+class ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeBase(ctModelViewFixedRendererModeDesc& desc) {
+      indices = desc.indices;
+      positions = desc.positions;
+      normals = desc.normals;
+      tangents = desc.tangents;
+      uvs = desc.uvs;
+      colors = desc.colors;
+      skins = desc.skins;
+      bbox = desc.bbox;
+      uvbox = desc.uvbox;
+      submesh = desc.submesh;
+      timer = desc.timer;
+   }
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      return CT_COLOR_WHITE;
+   };
+
+   virtual ctVec3 GetVertexPosition(uint16_t idx) {
+      return positions[idx];
+   };
+
+   virtual void Setup() {
+   }
+
+   virtual void Render() {
+      Setup();
+      Im3d::PushColor();
+      Im3d::BeginTriangles();
+      for (uint32_t i = 0; i < submesh.indexCount; i++) {
+         uint32_t idx = (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
+         ctVec3 position = GetVertexPosition(idx);
+         ctVec4 color = GetOutputColor(idx);
+         Im3d::SetColor(ctVec4ToIm3dColor(color));
+         Im3d::Vertex(ctVec3ToIm3d(position));
+      }
+      Im3d::End();
+      Im3d::PopColor();
+   }
+
+   uint16_t* indices;
+   ctVec3* positions;
+   ctVec3* normals;
+   ctVec4* tangents;
+   ctVec2* uvs;
+   ctVec4* colors;
+   ctModelMeshVertexSkinData* skins;
+   ctBoundBox bbox;
+   ctBoundBox2D uvbox;
+   ctModelSubmesh submesh;
+   float timer;
+};
+
+class ctModelViewFixedRendererModeWireframe : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeWireframe(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual void Render() {
+      Setup();
+      Im3d::PushColor();
+      Im3d::BeginLines();
+      for (uint32_t i = 0; i < submesh.indexCount / 3; i++) {
+         for (uint32_t j = 0; j < 3; j++) {
+            uint32_t idx0 =
+              (uint32_t)indices[submesh.indexOffset + i * 3 + j] + submesh.vertexOffset;
+            uint32_t idx1 =
+              (uint32_t)indices[submesh.indexOffset + i * 3 + ((j + 1) % 3)] +
+              submesh.vertexOffset;
+            ctVec3 position0 = GetVertexPosition(idx0);
+            ctVec3 position1 = GetVertexPosition(idx1);
+            ctVec4 color0 = GetOutputColor(idx0);
+            ctVec4 color1 = GetOutputColor(idx1);
+            Im3d::SetColor(ctVec4ToIm3dColor(color0));
+            Im3d::Vertex(ctVec3ToIm3d(position0));
+            Im3d::SetColor(ctVec4ToIm3dColor(color1));
+            Im3d::Vertex(ctVec3ToIm3d(position1));
+         }
+      }
+      Im3d::End();
+      Im3d::PopColor();
+   }
+};
+
+class ctModelViewFixedRendererModeSubmesh : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeSubmesh(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      return color;
+   }
+   virtual void Setup() {
+      ctRandomGenerator rng =
+        ctRandomGenerator((submesh.indexOffset + submesh.indexCount) * 384298);
+      color = rng.GetColor();
+   }
+   ctVec4 color;
+};
+
+class ctModelViewFixedRendererModeMaterial : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeMaterial(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      return color;
+   }
+   virtual void Setup() {
+      ctRandomGenerator rng = ctRandomGenerator(submesh.materialIndex * 87657);
+      color = submesh.materialIndex != UINT32_MAX
+                ? rng.GetColor()
+                : CT_COLOR_RED * (ctSin(timer * 4.0f) * 0.5f + 0.5f);
+   }
+   ctVec4 color;
+};
+
+class ctModelViewFixedRendererModeNormal : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeNormal(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      ctVec3 normal = normals[idx];
+      return saturate(ctVec4(normal, 1.0f));
+   }
+};
+
+class ctModelViewFixedRendererModeTangent : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeTangent(ctModelViewFixedRendererModeDesc& desc,
+                                       bool sign) :
+       ctModelViewFixedRendererModeBase(desc) {
+      signOnly = sign;
+   };
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      ctVec4 tangent = tangents[idx];
+      if (signOnly) { tangent = ctVec4(ctVec3(tangent.w), 1.0f); }
+      return saturate(tangent);
+   }
+
+   bool signOnly;
+};
+
+class ctModelViewFixedRendererModeUV : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeUV(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      return ctVec4(uvs[idx], 0.0f, 1.0f);
+   }
+};
+
+class ctModelViewFixedRendererModeColor : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeColor(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      return colors[idx];
+   }
+};
+
+class ctModelViewFixedRendererModeBone : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeBone(ctModelViewFixedRendererModeDesc& desc,
+                                    uint32_t activeBoneIndex) :
+       ctModelViewFixedRendererModeBase(desc) {
+      activeBone = activeBoneIndex;
+   };
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      ctModelMeshVertexSkinData skin = skins ? skins[idx] : ctModelMeshVertexSkinData();
+
+      ctVec3 position;
+      float weight = 0.0f;
+      for (int b = 0; b < 4; b++) {
+         if (skin.indices[b] == activeBone) { weight += skin.weights[b]; }
+      }
+      return ctVec4(ctVec3(weight), 1.0f);
+   }
+
+   uint32_t activeBone;
+};
+
 void ctModelViewer::RenderGeometry() {
    ZoneScoped;
    for (uint32_t meshIdx = 0; meshIdx < model.geometry.meshCount; meshIdx++) {
@@ -405,235 +652,151 @@ void ctModelViewer::RenderGeometry() {
       ctBoundBox bbox = lod.bbox;
       ctBoundBox2D uvbox = lod.uvbox[uvChannel];
 
+      /* fill anim data */
+      FillAnimMeshData(coords, uvs, colors, lod.vertexCount, bbox, uvbox);
+      /* apply morph targets*/
+      for (auto it = morphLayers.GetIterator(); it; it++) {
+         ApplyMorph(lod, it.Value().name, it.Value().weight);
+      }
+
       /* for each submesh */
       for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshCount; submeshIdx++) {
          ctModelSubmesh submesh = model.geometry.submeshes[lod.submeshStart + submeshIdx];
 
+         ctModelViewFixedRendererModeDesc desc = {};
+         desc.bbox = bbox;
+         desc.positions = animPositions.Data();
+         desc.normals = animNormals.Data();
+         desc.tangents = animTangents.Data();
+         desc.uvs = animUVs.Data();
+         desc.colors = animColors.Data();
+         desc.skins = skins;
+         desc.indices = indices;
+         desc.submesh = submesh;
+         desc.uvbox = uvbox;
+         desc.timer = timer;
+
          /* for each index */
          switch (viewMode) {
             case CT_MODELVIEW_SUBMESH: {
-               /* for now just do random colors */
-               ctRandomGenerator rng =
-                 ctRandomGenerator(ctXXHash32(mesh.name, 32) + submeshIdx);
-               Im3d::PushColor(ctVec4ToIm3dColor(rng.GetColor()));
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-
-                  TinyImageFormat_DecodeInput posDecode = TinyImageFormat_DecodeInput();
-                  posDecode.pixel = coord.position;
-                  ctVec3 position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &posDecode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeSubmesh(desc).Render();
             } break;
             case CT_MODELVIEW_WIREFRAME: {
-               Im3d::PushColor(ctVec4ToIm3dColor(CT_COLOR_WHITE));
-               Im3d::BeginLines();
-               for (uint32_t i = 0; i < submesh.indexCount / 3; i++) {
-                  for (uint32_t j = 0; j < 3; j++) {
-                     uint32_t idx0 = (uint32_t)indices[submesh.indexOffset + i * 3 + j] +
-                                     submesh.vertexOffset;
-                     uint32_t idx1 =
-                       (uint32_t)indices[submesh.indexOffset + i * 3 + ((j + 1) % 3)] +
-                       submesh.vertexOffset;
-                     ctModelMeshVertexCoords coord0 = coords[idx0];
-                     ctModelMeshVertexCoords coord1 = coords[idx1];
-
-                     TinyImageFormat_DecodeInput posDecode =
-                       TinyImageFormat_DecodeInput();
-                     posDecode.pixel = coord0.position;
-                     ctVec3 pos1;
-                     TinyImageFormat_DecodeLogicalPixelsF(
-                       TinyImageFormat_R16G16B16_UNORM, &posDecode, 1, pos1.data);
-                     posDecode.pixel = coord1.position;
-                     ctVec3 pos2;
-                     TinyImageFormat_DecodeLogicalPixelsF(
-                       TinyImageFormat_R16G16B16_UNORM, &posDecode, 1, pos2.data);
-                     pos1 = bbox.DeNormalizeVector(pos1);
-                     pos2 = bbox.DeNormalizeVector(pos2);
-                     Im3d::Vertex(ctVec3ToIm3d(pos1));
-                     Im3d::Vertex(ctVec3ToIm3d(pos2));
-                  }
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeWireframe(desc).Render();
             } break;
             case CT_MODELVIEW_NORMAL: {
-               Im3d::PushColor();
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-
-                  ctVec3 position;
-                  ctVec4 normal;
-
-                  TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
-                  decode.pixel = coord.position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &decode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-                  decode.pixel = &coord.normal;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, normal.data);
-                  normal.w = 1.0f;
-                  Im3d::SetColor(ctVec4ToIm3dColor(normal));
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeNormal(desc).Render();
             } break;
             case CT_MODELVIEW_TANGENT:
             case CT_MODELVIEW_TANGENT_SIGN: {
-               Im3d::PushColor();
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-
-                  ctVec3 position;
-                  ctVec4 tangent = ctVec4();
-
-                  TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
-                  decode.pixel = coord.position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &decode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-                  decode.pixel = &coord.tangent;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, tangent.data);
-
-                  if (viewMode == CT_MODELVIEW_TANGENT_SIGN) {
-                     tangent = ctVec4(ctVec3(tangent.w), 1.0f);
-                  }
-                  tangent.w = 1.0f;
-
-                  Im3d::SetColor(ctVec4ToIm3dColor(tangent));
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeTangent(desc,
+                                                   viewMode == CT_MODELVIEW_TANGENT_SIGN)
+                 .Render();
             } break;
             case CT_MODELVIEW_UV: {
-               Im3d::PushColor();
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-                  ctModelMeshVertexUV uvc = uvs ? uvs[idx] : ctModelMeshVertexUV();
-
-                  ctVec3 position;
-                  ctVec2 uv;
-
-                  float buff[4];
-                  TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
-                  decode.pixel = coord.position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &decode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-                  decode.pixel = uvc.uv;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16_UNORM, &decode, 1, buff);
-                  uv.x = buff[0];
-                  uv.y = buff[1];
-                  uv = uvbox.DeNormalizeVector(uv);
-                  Im3d::SetColor(ctVec4ToIm3dColor(ctVec4(uv, 0.0f, 1.0f)));
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeUV(desc).Render();
             } break;
             case CT_MODELVIEW_COLOR: {
-               Im3d::PushColor();
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-                  ctModelMeshVertexColor colorc =
-                    colors ? colors[idx] : ctModelMeshVertexColor();
-
-                  ctVec3 position;
-                  ctVec4 color;
-
-                  TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
-                  decode.pixel = coord.position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &decode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-                  decode.pixel = colorc.rgba;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R8G8B8A8_UNORM, &decode, 1, color.data);
-                  Im3d::SetColor(ctVec4ToIm3dColor(color));
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeColor(desc).Render();
             } break;
             case CT_MODELVIEW_BONE: {
-               Im3d::PushColor();
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-                  ctModelMeshVertexSkinData skin =
-                    skins ? skins[idx] : ctModelMeshVertexSkinData();
-
-                  ctVec3 position;
-                  float weight = 0.0f;
-                  for (int b = 0; b < 4; b++) {
-                     if (skin.indices[b] == activeBone) { weight += skin.weights[b]; }
-                  }
-
-                  TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
-                  decode.pixel = coord.position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &decode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-
-                  Im3d::SetColor(ctVec4ToIm3dColor(ctVec4(ctVec3(weight), 1.0f)));
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeBone(desc, activeBone).Render();
             } break;
             case CT_MODELVIEW_MATERIAL: {
-               ctRandomGenerator rng = ctRandomGenerator(submesh.materialIndex);
-               ctVec4 color = submesh.materialIndex != UINT32_MAX
-                                ? rng.GetColor()
-                                : CT_COLOR_RED * (ctSin(timer * 4.0f) * 0.5f + 0.5f);
-               color.a = 1.0f;
-               Im3d::PushColor(ctVec4ToIm3dColor(color));
-               Im3d::BeginTriangles();
-               for (uint32_t i = 0; i < submesh.indexCount; i++) {
-                  uint32_t idx =
-                    (uint32_t)indices[i + submesh.indexOffset] + submesh.vertexOffset;
-                  ctModelMeshVertexCoords coord = coords[idx];
-
-                  TinyImageFormat_DecodeInput posDecode = TinyImageFormat_DecodeInput();
-                  posDecode.pixel = coord.position;
-                  ctVec3 position;
-                  TinyImageFormat_DecodeLogicalPixelsF(
-                    TinyImageFormat_R16G16B16_UNORM, &posDecode, 1, position.data);
-                  position = bbox.DeNormalizeVector(position);
-                  Im3d::Vertex(ctVec3ToIm3d(position));
-               }
-               Im3d::End();
-               Im3d::PopColor();
+               ctModelViewFixedRendererModeMaterial(desc).Render();
             } break;
             default: break;
          }
+      }
+   }
+}
+
+void ctModelViewer::FillAnimMeshData(ctModelMeshVertexCoords* coords,
+                                     ctModelMeshVertexUV* uvs,
+                                     ctModelMeshVertexColor* colors,
+                                     uint32_t vertexCount,
+                                     ctBoundBox bbox,
+                                     ctBoundBox2D uvbox) {
+   animPositions.Clear();
+   animNormals.Clear();
+   animTangents.Clear();
+   animColors.Clear();
+   animUVs.Clear();
+   for (uint32_t i = 0; i < vertexCount; i++) {
+      float buffer[4];
+      TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
+      ctModelMeshVertexCoords coord = coords[i];
+
+      decode.pixel = coord.position;
+      TinyImageFormat_DecodeLogicalPixelsF(
+        TinyImageFormat_R16G16B16_UNORM, &decode, 1, buffer);
+      ctVec3 position = ctVec3(buffer[0], buffer[1], buffer[2]);
+      position = bbox.DeNormalizeVector(position);
+
+      decode.pixel = &coord.normal;
+      TinyImageFormat_DecodeLogicalPixelsF(
+        TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, buffer);
+      ctVec3 normal = ctVec3(buffer[0], buffer[1], buffer[2]);
+      normal *= 2.0f;
+      normal -= ctVec3(1.0f);
+
+      decode.pixel = &coord.tangent;
+      TinyImageFormat_DecodeLogicalPixelsF(
+        TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, buffer);
+      ctVec4 tangent = ctVec4(buffer[0], buffer[1], buffer[2], buffer[3]);
+      tangent *= ctVec4(2.0f, 2.0f, 2.0f, 1.0f);
+      tangent -= ctVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+      ctModelMeshVertexUV uvc = uvs ? uvs[i] : ctModelMeshVertexUV();
+      decode.pixel = uvc.uv;
+      TinyImageFormat_DecodeLogicalPixelsF(
+        TinyImageFormat_R16G16_UNORM, &decode, 1, buffer);
+      ctVec2 uv = ctVec2(buffer[0], buffer[1]);
+      uv = uvbox.DeNormalizeVector(uv);
+
+      ctModelMeshVertexColor colorc = colors ? colors[i] : ctModelMeshVertexColor();
+      ctVec4 color;
+      decode.pixel = colorc.rgba;
+      TinyImageFormat_DecodeLogicalPixelsF(
+        TinyImageFormat_R8G8B8A8_UNORM, &decode, 1, color.data);
+
+      animPositions.Append(position);
+      animNormals.Append(normal);
+      animTangents.Append(tangent);
+      animUVs.Append(uv);
+      animColors.Append(color);
+   }
+}
+
+void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, const char* name, float weight) {
+   if (weight == 0.0f) { return; }
+   ctModelMeshVertexMorph* mverts =
+     (ctModelMeshVertexMorph*)&model
+       .inMemoryGeometryData[model.gpuTable.vertexDataMorphStart];
+   for (uint32_t midx = 0; midx < lod.morphTargetCount; midx++) {
+      const auto& morph = model.geometry.morphTargets[lod.morphTargetStart + midx];
+      if (ctCStrNEql(morph.name, name, 32)) {
+         for (uint32_t i = 0; i < morph.vertexCount; i++) {
+            ctModelMeshVertexMorph mvert = mverts[morph.vertexDataMorphOffset + i];
+
+            TinyImageFormat_DecodeInput decode = TinyImageFormat_DecodeInput();
+            float buffer[4];
+            decode.pixel = mvert.position;
+            TinyImageFormat_DecodeLogicalPixelsF(
+              TinyImageFormat_R16G16B16_UNORM, &decode, 1, buffer);
+            ctVec3 position = ctVec3(buffer[0], buffer[1], buffer[2]);
+            position = morph.bboxDisplacement.DeNormalizeVector(position);
+            animPositions[i] += (position * weight);
+
+            decode.pixel = &mvert.normal;
+            TinyImageFormat_DecodeLogicalPixelsF(
+              TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, buffer);
+            ctVec3 normal = ctVec3(buffer[0], buffer[1], buffer[2]);
+            normal -= ctVec3(0.5f);
+            normal *= 2.0f;
+            animNormals[i] = normalize(animNormals[i] + (normal * weight));
+         }
+         break;
       }
    }
 }

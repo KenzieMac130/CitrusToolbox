@@ -44,8 +44,7 @@ ctResults ctGltf2Model::ExtractMaterials() {
       WriteScalarProp(writer, "foo", material.alpha_cutoff); /* example */
       /* todo: once the renderer is written more */
 
-      writer.PushObject();
-
+      writer.PopObject();
       writer.PopObject();
    }
 

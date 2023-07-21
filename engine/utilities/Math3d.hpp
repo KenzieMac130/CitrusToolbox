@@ -28,8 +28,8 @@
 #define CT_DOWN         0.0f, -1.0f,  0.0f   
 #define CT_FORWARD      0.0f,  0.0f,  1.0f   
 #define CT_BACK         0.0f,  0.0f, -1.0f    
-#define CT_RIGHT        1.0f,  0.0f,  0.0f   
-#define CT_LEFT        -1.0f,  0.0f,  0.0f
+#define CT_RIGHT       -1.0f,  0.0f,  0.0f   
+#define CT_LEFT         1.0f,  0.0f,  0.0f
 // clang-format on
 #define CT_VEC3_UP      ctVec3(CT_UP)
 #define CT_VEC3_DOWN    ctVec3(CT_DOWN)
@@ -477,11 +477,11 @@ struct CT_API ctBoundBox {
       return min.x <= max.x && min.y <= max.y && min.z <= max.z;
    }
 
-   inline ctVec3 NormalizeVector(ctVec3 vector) {
+   inline ctVec3 NormalizeVector(ctVec3 vector) const {
       return (vector - min) / (max - min);
    }
 
-   inline ctVec3 DeNormalizeVector(ctVec3 vector) {
+   inline ctVec3 DeNormalizeVector(ctVec3 vector) const {
       return vector * (max - min) + min;
    }
 
@@ -517,11 +517,11 @@ struct CT_API ctBoundBox2D {
       return min.x <= max.x && min.y <= max.y;
    }
 
-   inline ctVec2 NormalizeVector(ctVec2 vector) {
+   inline ctVec2 NormalizeVector(ctVec2 vector) const {
       return (vector - min) / (max - min);
    }
 
-   inline ctVec2 DeNormalizeVector(ctVec2 vector) {
+   inline ctVec2 DeNormalizeVector(ctVec2 vector) const {
       return vector * (max - min) + min;
    }
 
@@ -820,6 +820,7 @@ ctMat4PerspectiveInfinite(ctMat4& m, float fov, float aspect, float nearClip) {
    glm_perspective_infinite(fov, aspect, nearClip, (vec4*)m.data);
 #ifdef CITRUS_GFX_VULKAN
    m.data[2][3] = 1.0f;
+   m.data[0][0] *= -1.0f;
    m.data[1][1] *= -1.0f;
 #endif
 }
@@ -827,6 +828,7 @@ ctMat4PerspectiveInfinite(ctMat4& m, float fov, float aspect, float nearClip) {
 inline void ctMat4Ortho(ctMat4& m, float size, float aspect) {
    glm_ortho_default_s(aspect, size, m.data);
 #ifdef CITRUS_GFX_VULKAN
+   m.data[0][0] *= -1.0f;
    m.data[1][1] *= -1.0f;
 #endif
 }

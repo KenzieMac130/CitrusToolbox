@@ -98,7 +98,7 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
 
    pViewStructAssembler = ctGPUStructAssemblerNew(pGPUDevice, CT_GPU_STRUCT_TYPE_STORAGE);
    viewProj =
-     ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_MATRIX4x4);
+     ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_MATRIX4X4);
    viewportSize = ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_VEC2);
 
    ctFile wadFile;

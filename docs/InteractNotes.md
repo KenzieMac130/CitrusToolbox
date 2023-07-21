@@ -178,7 +178,7 @@ The lua script is fed the user file as a dictionary and given an API to interact
 ### Metadata paths
 
 * /active-dev: returns the last active device associated with the user
-* /action/XXX/inputs: returns a list of paths linked to the action, this can be filtered out by device name (such as active dev)
+* /action/XXX/inputs: returns a delimiter separated list of paths linked to the action, this can be filtered out by device name (such as active dev)
 * /dev/###/INPUT/description: returns metadata about the input (such as the icon and description)
 
 ### Refactor in OOP

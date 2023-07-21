@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
    if (FindFlag("--animations")) { exporter.ExtractAnimations(); }
 
    /* Physics */
-   paramStr = "compound"; //FindParam("--physics");
+   paramStr = "compound";  // FindParam("--physics");
    ctGltf2ModelPhysicsMode phys = CT_GLTF2MODEL_PHYS_COMPOUND;
    if (paramStr) {
       if (ctCStrEql(paramStr, "compound")) {

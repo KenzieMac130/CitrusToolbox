@@ -67,6 +67,7 @@ struct ctModelMeshVertexColor {
 
 struct ctModelMeshVertexMorph {
    uint32_t normal;     /* XYZ 10 bit unorm, 2 bits padding */
+   uint32_t tangent;    /* XYZ 10 bit unorm, 1 bit to W sign, 1 padding */
    int8_t rgba[4];      /* RGBA8 snorm first vertex color displacement */
    int16_t position[3]; /* 3 snorms scaled by parent lod bbox */
 };
@@ -141,6 +142,12 @@ struct ctModelMeshData {
    ctModelMeshScatter* scatters; /* MSCATTER */
 };
 
+enum ctModelGPUCompression {
+   CT_MODEL_GPU_COMPRESS_NONE = 0,
+   CT_MODEL_GPU_COMPRESS_DEFLATE = 1,
+   CT_MODEL_GPU_COMPRESS_COUNT
+};
+
 struct ctModelGPUPayloadInfo {
    uint64_t indexDataSize = 0;
    uint64_t indexDataStart = UINT64_MAX;
@@ -162,6 +169,8 @@ struct ctModelGPUPayloadInfo {
 
    uint64_t scatterDataSize = 0;
    uint64_t scatterDataStart = UINT64_MAX;
+
+   uint32_t compressionMode = CT_MODEL_GPU_COMPRESS_NONE;
 };
 
 /* ------------------- Splines ------------------- */
@@ -252,9 +261,17 @@ SCNCODE: lua script for the scene
 #define CT_MODEL_MAGIC   0x6C646D63
 #define CT_MODEL_VERSION 0x01
 
+enum ctModelCPUCompression {
+   CT_MODEL_CPU_COMPRESS_NONE = 0,
+   CT_MODEL_CPU_COMPRESS_LZ4 = 1,
+   CT_MODEL_CPU_COMPRESS_COUNT
+};
+
 struct ctModelHeader {
    uint32_t magic;
    uint32_t version;
+   uint32_t cpuCompressionType;
+   uint64_t cpuCompressionSize;
    uint64_t wadDataOffset;
    uint64_t wadDataSize;
    uint64_t gpuDataOffset;
@@ -283,7 +300,10 @@ struct ctModel {
 };
 
 CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData = false);
-CT_API ctResults ctModelSave(ctModel& model, ctFile& file);
+CT_API ctResults
+ctModelSave(ctModel& model,
+            ctFile& file,
+            ctModelCPUCompression compression = CT_MODEL_CPU_COMPRESS_LZ4);
 
 CT_API void ctModelReleaseGeometry(ctModel& model);
 CT_API void ctModelRelease(ctModel& model);

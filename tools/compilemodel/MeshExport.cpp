@@ -131,32 +131,25 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
             }
 
             /* extract all morph targets */
-            // todo refactor for submesh sections
-            // if (prim.targets_count != mesh.target_names_count) {
-            //   ctDebugError("PRIMITIVE %d FOR %s DOES NOT HAVE MATCHING TARGET COUNTS!",
-            //                primidx,
-            //                pLodNode->name);
-            //   return CT_FAILURE_CORRUPTED_CONTENTS;
-            //}
-            // for (size_t targetidx = 0; targetidx < prim.targets_count; targetidx++) {
-            //   cgltf_morph_target& morph = prim.targets[targetidx];
-            //   ctGltf2ModelMorph* outmorph = new ctModelMeshMorphTarget();
-            //   strncpy(outmorph.name, mesh.target_names[targetidx], 32);
-            //   outmorph.vertexDataMorphOffset = 0;
-            //   outmorph.vertexCount = lod.original.vertexCount;
-            //   ctModelMeshLod dummy = ctModelMeshLod();
-
-            //   /* extract morph target attributes */
-            //   ctAssert(morph.attributes);
-            //   vertices.Resize(vertices.Count() + morph.attributes[0].data->count);
-            //   for (size_t attribidx = 0; attribidx < morph.attributes_count;
-            //        attribidx++) {
-            //      CT_RETURN_FAIL(
-            //        ExtractAttribute(morph.attributes[attribidx], baseVertex, dummy));
-            //   }
-
-            //   submesh->morphs.Append(outmorph);
-            //}
+            if (prim.targets_count != mesh.target_names_count) {
+               ctDebugError("PRIMITIVE %d FOR %s DOES NOT HAVE MATCHING TARGET COUNTS!",
+                            primidx,
+                            pLodNode->name);
+               return CT_FAILURE_CORRUPTED_CONTENTS;
+            }
+            for (size_t targetidx = 0; targetidx < prim.targets_count; targetidx++) {
+               cgltf_morph_target& morph = prim.targets[targetidx];
+               ctModelMeshLod dummy = ctModelMeshLod();
+               /* extract morph target attributes */
+               ctGltf2ModelMorph* mmorph = new ctGltf2ModelMorph();
+               mmorph->vertices.Resize(morph.attributes[0].data->count);
+               for (size_t attribidx = 0; attribidx < morph.attributes_count;
+                    attribidx++) {
+                  CT_RETURN_FAIL(ExtractAttribute(
+                    morph.attributes[attribidx], dummy, mmorph->vertices.Data()));
+               }
+               submesh->morphs.Append(mmorph);
+            }
 
             /* apply lod transform offset */
             if (lodLevel > 0) {
@@ -177,6 +170,16 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
 
             /* output submesh */
             lod.submeshes.Append(submesh);
+         }
+
+         /* extract morph target info */
+         for (uint32_t i = 0; i < mesh.target_names_count; i++) {
+            ctModelMeshMorphTarget morph = ctModelMeshMorphTarget();
+            /* zero out until we combine it later */
+            morph.vertexCount = 0;
+            morph.vertexDataMorphOffset = 0;
+            strncpy(morph.name, mesh.target_names[i], 32);
+            lod.originalMorphs.Append(morph);
          }
 
          /* find next lod */
@@ -607,6 +610,7 @@ void ctGltf2ModelMesh::ExtendLods(uint32_t count) {
    for (uint32_t lodIdx = 1; lodIdx < count; lodIdx++) {
       lods[lodIdx] = ctGltf2ModelLod();
       ctGltf2ModelLod& curlod = lods[lodIdx];
+      curlod.inheritsVertsFromOffset = -(int32_t)lodIdx;
       curlod.original = originLod.original;
       curlod.originalMorphs = originLod.originalMorphs;
       curlod.submeshes.Resize(originLod.submeshes.Count());
@@ -614,8 +618,10 @@ void ctGltf2ModelMesh::ExtendLods(uint32_t count) {
          ctGltf2ModelSubmesh& oldSubmesh = *originLod.submeshes[smidx];
          ctGltf2ModelSubmesh* newSubmesh = new ctGltf2ModelSubmesh();
          newSubmesh->indices = oldSubmesh.indices;
-         newSubmesh->vertices = oldSubmesh.vertices;
          newSubmesh->original = oldSubmesh.original;
+
+         /* to unify the pipeline we can give some temporary verts */
+         newSubmesh->vertices = oldSubmesh.vertices;
          newSubmesh->morphs.Resize(oldSubmesh.morphs.Count());
          for (uint32_t midx = 0; midx < newSubmesh->morphs.Count(); midx++) {
             ctGltf2ModelMorph& oldMorph = *oldSubmesh.morphs[midx];
@@ -650,6 +656,31 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
    /* initialize outlods */
    for (uint32_t lodidx = 0; lodidx < outmesh->lodCount; lodidx++) {
       outmesh->lods[lodidx] = ctGltf2ModelLod();
+   }
+
+   /* fill all morphs */
+   for (size_t instidx = 0; instidx < tree.instances.Count(); instidx++) {
+      const ctGltf2ModelMesh* inmesh = tree.meshes[tree.instances[instidx].meshIndex];
+      uint32_t instNode = tree.instances[instidx].nodeIndex;
+      for (uint32_t lodidx = 0; lodidx < outmesh->lodCount; lodidx++) {
+         ctGltf2ModelLod& outlod = outmesh->lods[lodidx];
+         /* get closest lod */
+         uint32_t inlodidx = lodidx >= inmesh->lodCount ? inmesh->lodCount - 1 : lodidx;
+         const ctGltf2ModelLod& inlod = inmesh->lods[inlodidx];
+         /* for each input lod morph */
+         for (uint32_t i = 0; i < inlod.originalMorphs.Count(); i++) {
+            /* check if morph exists in output */
+            bool found = false;
+            for (uint32_t j = 0; j < outlod.originalMorphs.Count(); j++) {
+               if (ctCStrNEql(
+                     outlod.originalMorphs[j].name, inlod.originalMorphs[i].name, 32)) {
+                  found = true;
+                  break;
+               }
+            }
+            if (!found) { outlod.originalMorphs.Append(inlod.originalMorphs[i]); }
+         }
+      }
    }
 
    /* iterate through each instance */
@@ -706,6 +737,9 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
                outsubmesh = outlod.submeshes.Last();
                ctAssert(outsubmesh);
                outsubmesh->original.materialIndex = insubmesh->original.materialIndex;
+               for (size_t i = 0; i < outlod.originalMorphs.Count(); i++) {
+                  outsubmesh->morphs.Append(new ctGltf2ModelMorph());
+               }
             }
 
             /* offset and append indices */
@@ -723,6 +757,36 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
                vtx.normal = normalize(vtx.normal * transform);
                /* todo: skinning indices (if instance is unskinned) */
                outsubmesh->vertices.Append(vtx);
+            }
+
+            /* for each morph target */
+            for (size_t morphIdx = 0; morphIdx < outlod.originalMorphs.Count();
+                 morphIdx++) {
+               int inMorphIdx = -1;
+               for (size_t i = 0; i < inlod.originalMorphs.Count(); i++) {
+                  if (ctCStrNEql(outlod.originalMorphs[morphIdx].name,
+                                 inlod.originalMorphs[i].name,
+                                 32)) {
+                     inMorphIdx = (int)i;
+                     break;
+                  }
+               }
+
+               /* if exists in inlod transform and append vertices */
+               if (inMorphIdx >= 0) {
+                  for (size_t i = 0; i < insubmesh->morphs[inMorphIdx]->vertices.Count();
+                       i++) {
+                     ctGltf2ModelVertex vtx = insubmesh->morphs[inMorphIdx]->vertices[i];
+                     ctMat4 transform = WorldMatrixFromGltfNodeIdx(instNode);
+                     ctMat4RemoveTranslation(transform);
+                     vtx.position = vtx.position * transform;
+                     vtx.normal = normalize(vtx.normal * transform);
+                     outsubmesh->morphs[morphIdx]->vertices.Append(vtx);
+                  }
+               } else /* write empty vertices */ {
+                  outsubmesh->morphs[morphIdx]->vertices.Append(
+                    ctGltf2ModelVertex(), insubmesh->vertices.Count());
+               }
             }
          }
       }
@@ -751,11 +815,11 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
          ctGltf2ModelLod& lod = mesh.lods[lodIdx];
 
          /* reconnect offsets */
-         lod.original.morphTargetCount = (uint32_t)lod.originalMorphs.Count();
-         lod.original.morphTargetStart = (uint32_t)finalMorphs.Count();
-
          lod.original.submeshCount = (uint32_t)lod.submeshes.Count();
          lod.original.submeshStart = (uint32_t)finalSubmeshes.Count();
+
+         lod.original.morphTargetCount = (uint32_t)lod.originalMorphs.Count();
+         lod.original.morphTargetStart = (uint32_t)finalMorphs.Count();
 
          lod.original.vertexCount = 0;
          lod.original.vertexDataCoordsStart =
@@ -803,6 +867,7 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
          for (size_t morphIdx = 0; morphIdx < lod.originalMorphs.Count(); morphIdx++) {
             ctModelMeshMorphTarget& morph = lod.originalMorphs[morphIdx];
             morph.vertexCount = lod.original.vertexCount; /* assumed for sanity */
+            morph.vertexDataMorphOffset = bucketVertices.Count();
             for (size_t submeshIdx = 0; submeshIdx < lod.submeshes.Count();
                  submeshIdx++) {
                ctGltf2ModelMorph& submeshMorph =
@@ -949,7 +1014,16 @@ ctResults ctGltf2Model::GenerateTangents() {
                                       sizeof(ctGltf2ModelVertex),
                                       remapTable.Data());
 
-            /* todo morph targets */
+            /* remap all morph target vertices */
+            for (size_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
+               scratchVertices = submesh.morphs[morphIdx]->vertices;
+               submesh.morphs[morphIdx]->vertices.Resize(vertexCount);
+               // meshopt_remapVertexBuffer(submesh.morphs[morphIdx]->vertices.Data(),
+               //                          scratchVertices.Data(),
+               //                          submesh.indices.Count(),
+               //                          sizeof(submesh.vertices[0]),
+               //                          remapTable.Data());
+            }
          }
       }
    }
@@ -1006,19 +1080,34 @@ ctResults ctGltf2Model::OptimizeOverdraw(float threshold) {
 ctResults ctGltf2Model::OptimizeVertexFetch() {
    ZoneScoped;
    ctDebugLog("Optimizing Vertex Fetch...");
+   ctDynamicArray<uint32_t> remap;
    for (uint32_t meshIdx = 0; meshIdx < tree.meshes.Count(); meshIdx++) {
       auto& mesh = *tree.meshes[meshIdx];
       for (uint32_t lodIdx = 0; lodIdx < mesh.lodCount; lodIdx++) {
          auto& lod = mesh.lods[lodIdx];
          for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
             auto& submesh = *lod.submeshes[submeshIdx];
-            meshopt_optimizeVertexFetch(submesh.vertices.Data(),
-                                        submesh.indices.Data(),
-                                        submesh.indices.Count(),
-                                        submesh.vertices.Data(),
-                                        submesh.vertices.Count(),
-                                        sizeof(submesh.vertices[0]));
-            /* todo remap and apply to morphs */
+            remap.Resize(submesh.vertices.Count());
+            meshopt_optimizeVertexFetchRemap(remap.Data(),
+                                             submesh.indices.Data(),
+                                             submesh.indices.Count(),
+                                             remap.Count());
+            meshopt_remapVertexBuffer(submesh.vertices.Data(),
+                                      submesh.vertices.Data(),
+                                      submesh.vertices.Count(),
+                                      sizeof(submesh.vertices[0]),
+                                      remap.Data());
+            meshopt_remapIndexBuffer(submesh.indices.Data(),
+                                     submesh.indices.Data(),
+                                     submesh.indices.Count(),
+                                     remap.Data());
+            for (size_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
+               meshopt_remapVertexBuffer(submesh.morphs[morphIdx]->vertices.Data(),
+                                         submesh.morphs[morphIdx]->vertices.Data(),
+                                         submesh.morphs[morphIdx]->vertices.Count(),
+                                         sizeof(submesh.vertices[0]),
+                                         remap.Data());
+            }
          }
       }
    }
@@ -1059,13 +1148,9 @@ ctResults ctGltf2Model::ComputeBounds() {
          for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count(); submeshIdx++) {
             auto& submesh = *lod.submeshes[submeshIdx];
 
-            /* calculate position bounding box */
+            /* calculate position bounding box and sphere */
             for (uint32_t v = 0; v < submesh.vertices.Count(); v++) {
                lodorigin.bbox.AddPoint(submesh.vertices[v].position);
-            }
-
-            /* calculate position bounding sphere */
-            for (uint32_t v = 0; v < submesh.vertices.Count(); v++) {
                float dist = length((submesh.vertices[v].position));
                if (lodorigin.radius < dist) { lodorigin.radius = dist; }
             }
@@ -1079,36 +1164,28 @@ ctResults ctGltf2Model::ComputeBounds() {
                }
             }
          }
+
+         /* for each morph target */
+         for (uint32_t morphIdx = 0; morphIdx < lod.originalMorphs.Count(); morphIdx++) {
+            auto& morph = lod.originalMorphs[morphIdx];
+            /* sum up morph verts for all submeshes */
+            for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshes.Count();
+                 submeshIdx++) {
+               auto& submesh = *lod.submeshes[submeshIdx];
+               auto& inmorph = *submesh.morphs[morphIdx];
+
+               /* calculate position bounding box and sphere */
+               for (uint32_t v = 0; v < inmorph.vertices.Count(); v++) {
+                  morph.bboxDisplacement.AddPoint(inmorph.vertices[v].position);
+                  float dist = length((inmorph.vertices[v].position));
+                  if (morph.radiusDisplacement < dist) {
+                     morph.radiusDisplacement = dist;
+                  }
+               }
+            }
+         }
       }
    }
-
-   /* for each morph target */
-   // for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetCount; morphIdx++)
-   // {
-   //   ctModelMeshMorphTarget& morph = model.geometry.morphTargets[morphIdx];
-   //   morph.bboxDisplacement = ctBoundBox();
-   //   morph.radiusDisplacement = 0.0f;
-   //   // morph.uvDisplacement = ctBoundBox2D();
-
-   //   /* calculate position bounding box */
-   //   for (uint32_t v = 0; v < morph.vertexCount; v++) {
-   //      morph.bboxDisplacement.AddPoint(
-   //        bucketVertices[(size_t)morph.vertexDataMorphOffset + v].position);
-   //   }
-
-   //   /* calculate position bounding sphere */
-   //   for (uint32_t v = 0; v < morph.vertexCount; v++) {
-   //      float dist =
-   //        length((bucketVertices[(size_t)morph.vertexDataMorphOffset + v].position));
-   //      if (morph.radiusDisplacement < dist) { morph.radiusDisplacement = dist; }
-   //   }
-
-   /* calculate uv bounding boxes */
-   // for (uint32_t v = 0; v < morph.vertexCount; v++) {
-   //   morph.uvDisplacement.AddPoint(
-   //     vertices[(size_t)morph.vertexDataMorphOffset + v].uv[0]);
-   //}
-   //}
    return CT_SUCCESS;
 }
 
@@ -1150,11 +1227,15 @@ ctResults ctGltf2Model::EncodeVertices() {
                coord.position[2] = meshopt_quantizeUnorm(npos.z, 16);
 
                /* normal */
+               in.normal *= 0.5f;
+               in.normal += ctVec3(0.5f);
                coord.normal = (meshopt_quantizeUnorm(in.normal.x, 10) << 20) |
                               (meshopt_quantizeUnorm(in.normal.y, 10) << 10) |
                               meshopt_quantizeUnorm(in.normal.z, 10);
 
                /* tangent */
+               in.tangent *= ctVec4(0.5f, 0.5f, 0.5f, 1.0f);
+               in.tangent += ctVec4(0.5f, 0.5f, 0.5f, 0.0f);
                coord.tangent =
                  (meshopt_quantizeUnorm(in.tangent.w >= 0.0f ? 1.0f : 0.0f, 2) << 30) |
                  (meshopt_quantizeUnorm(in.tangent.x, 10) << 20) |
@@ -1229,6 +1310,8 @@ ctResults ctGltf2Model::EncodeVertices() {
          out.position[2] = meshopt_quantizeUnorm(npos.z, 16);
 
          /* normal */
+         in.normal *= 0.5f;
+         in.normal += ctVec3(0.5f);
          out.normal = (meshopt_quantizeUnorm(in.normal.x, 10) << 20) |
                       (meshopt_quantizeUnorm(in.normal.y, 10) << 10) |
                       meshopt_quantizeUnorm(in.normal.z, 10);
@@ -1238,6 +1321,8 @@ ctResults ctGltf2Model::EncodeVertices() {
          out.rgba[1] = meshopt_quantizeUnorm(in.color[0].y, 8);
          out.rgba[2] = meshopt_quantizeUnorm(in.color[0].z, 8);
          out.rgba[3] = meshopt_quantizeUnorm(in.color[0].w, 8);
+
+         finalVertexMorph.Append(out);
       }
    }
    return CT_SUCCESS;
