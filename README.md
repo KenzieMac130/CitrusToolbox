@@ -20,4 +20,5 @@
 ## Areas of interest:
   * [Code Style](/docs/CodeStyleGuide.md)
   * [GPU Abstraction Layer](/engine/gpu)
+  * [Shading Language](/docs/ShadingLanguage.md)
   * ["Interact" Design](/docs/InteractNotes.md)
