@@ -867,7 +867,7 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
          for (size_t morphIdx = 0; morphIdx < lod.originalMorphs.Count(); morphIdx++) {
             ctModelMeshMorphTarget& morph = lod.originalMorphs[morphIdx];
             morph.vertexCount = lod.original.vertexCount; /* assumed for sanity */
-            morph.vertexDataMorphOffset = bucketVertices.Count();
+            morph.vertexDataMorphOffset = (uint32_t)bucketVertices.Count();
             for (size_t submeshIdx = 0; submeshIdx < lod.submeshes.Count();
                  submeshIdx++) {
                ctGltf2ModelMorph& submeshMorph =
