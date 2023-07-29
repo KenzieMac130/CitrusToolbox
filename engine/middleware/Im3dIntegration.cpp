@@ -267,7 +267,7 @@ void ctIm3dIntegration::DrawImguiText() {
    float t = scale;
    float b = -t;
    // clang-format off
-    Im3d::Mat4 m_camProj = Im3d::Mat4(2.0f * n / (r - l), 0.0f, -viewZ * (r + l) / (r - l), 0.0f,
+    Im3d::Mat4 m_camProj = Im3d::Mat4((2.0f * n / (r - l)), 0.0f, -viewZ * (r + l) / (r - l), 0.0f,
                                       0.0f, 2.0f * n / (t - b), -viewZ * (t + b) / (t - b), 0.0f,
                                       0.0f, 0.0f, viewZ, -2.0f * n,
                                       0.0f, 0.0f, viewZ, 0.0f);
@@ -311,6 +311,7 @@ appData.m_viewOrigin, (appData.m_viewOrigin + appData.m_viewDirection)));*/
          screen = screen * Im3d::Vec2(0.5f) + Im3d::Vec2(0.5f);
          screen.y =
            1.0f - screen.y;  // screen space origin is reversed by the projection.
+         screen.x = 1.0f - screen.x;
          screen = screen * Im3d::Vec2(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
 
          // All text data is stored in a single buffer; each textData instance has an
