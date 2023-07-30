@@ -121,7 +121,8 @@ inline ctDynamicArray<T>::ctDynamicArray() {
 }
 
 template<class T>
-inline ctDynamicArray<T>::ctDynamicArray(const ctDynamicArray<T>& arr) {
+inline ctDynamicArray<T>::ctDynamicArray(const ctDynamicArray<T>& arr) :
+    ctDynamicArray() {
    const size_t inputcount = arr.Count();
    Resize(inputcount);
    for (size_t i = 0; i < inputcount; i++) {
@@ -130,12 +131,8 @@ inline ctDynamicArray<T>::ctDynamicArray(const ctDynamicArray<T>& arr) {
 }
 
 template<class T>
-inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) {
-   const size_t inputcount = arr.Count();
-   Resize(inputcount);
-   for (size_t i = 0; i < inputcount; i++) {
-      _pData[i] = arr[i];
-   }
+inline ctDynamicArray<T>::ctDynamicArray(ctDynamicArray<T>& arr) :
+    ctDynamicArray((const ctDynamicArray<T>&)arr) {
 }
 
 template<class T>
