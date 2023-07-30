@@ -222,7 +222,7 @@ protected:
    }
    inline ctResults
    WriteTextureProp(ctJSONWriter& writer, const char* name, const char* uri) {
-      ctStringUtf8 path = gltfPath;
+      ctStringUtf8 path = gltfRootPath;
       path.FilePathAppend(uri);
       ctGUID guid;
       CT_RETURN_FAIL(ctGUIDFromAssetPath(guid, path.CStr()));
@@ -248,7 +248,7 @@ protected:
 private:
    cgltf_data gltf;
    ctModel model;
-   ctStringUtf8 gltfPath;
+   ctStringUtf8 gltfRootPath;
 
    ctGltf2ModelTreeSplit tree;
 
