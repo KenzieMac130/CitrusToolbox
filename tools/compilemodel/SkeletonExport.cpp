@@ -205,6 +205,10 @@ int32_t ctGltf2Model::BoneIndexFromGltfNode(const char* nodeName) {
    return -1;
 }
 
+int32_t ctGltf2Model::BoneIndexFromGltfNode(uint32_t gltfNodeIdx) {
+   return BoneIndexFromGltfNode(gltf.nodes[gltfNodeIdx].name);
+}
+
 ctMat4 ctGltf2Model::WorldMatrixFromGltfNodeIdx(uint32_t gltfNodeIdx) {
    cgltf_node* pNode = &gltf.nodes[gltfNodeIdx];
    ctMat4 matrix;

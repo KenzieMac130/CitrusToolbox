@@ -45,7 +45,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
          uint32_t* pFoundIndex = meshRedundancyTable.FindPtr((size_t)node.mesh);
          if (pFoundIndex) {
             tree.instances.Append(
-              {(uint32_t)*pFoundIndex, (uint32_t)(&node - gltf.nodes)});
+              {(uint32_t)*pFoundIndex, (uint32_t)(&node - gltf.nodes), (bool)node.skin});
             continue;
          }
       }
@@ -123,9 +123,9 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
                for (uint32_t i = 0; i < submesh->vertices.Count(); i++) {
                   ctGltf2ModelVertex& vertex = submesh->vertices[i];
                   for (uint32_t j = 0; j < 4; j++) {
-                     vertex.boneIndex[j] =
-                       (uint16_t)((size_t)node.skin->joints[vertex.boneIndex[j]] -
-                                  (size_t)gltf.nodes);
+                     vertex.boneIndex[j] = (uint16_t)BoneIndexFromGltfNode(
+                       (uint32_t)((size_t)node.skin->joints[vertex.boneIndex[j]] -
+                                  (size_t)gltf.nodes));
                   }
                }
             }
@@ -216,8 +216,9 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
       if (!(node.skin && allowSkinning)) {
          meshRedundancyTable.Insert((size_t)node.mesh, (uint32_t)tree.meshes.Count());
       }
-      tree.instances.Append(
-        {(uint32_t)tree.meshes.Count(), (uint32_t)(pLodRoot - gltf.nodes)});
+      tree.instances.Append({(uint32_t)tree.meshes.Count(),
+                             (uint32_t)(pLodRoot - gltf.nodes),
+                             (bool)node.skin});
       tree.meshes.Append(outmesh);
    }
    return CT_SUCCESS;
@@ -772,7 +773,18 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
                vtx.position = vtx.position * transform;
                ctMat4RemoveTranslation(transform);
                vtx.normal = normalize(vtx.normal * transform);
-               /* todo: skinning indices (if instance is unskinned) */
+               /* connect to bone if unskinned */
+               if (allowSkinning && !tree.instances[instidx].isSkinned) {
+                  vtx.boneWeight[0] = 1.0f;
+                  vtx.boneWeight[1] = 0.0f;
+                  vtx.boneWeight[2] = 0.0f;
+                  vtx.boneWeight[3] = 0.0f;
+
+                  vtx.boneIndex[0] = BoneIndexFromGltfNode(instNode);
+                  vtx.boneIndex[1] = 0;
+                  vtx.boneIndex[2] = 0;
+                  vtx.boneIndex[3] = 0;
+               }
                outsubmesh->vertices.Append(vtx);
             }
 
@@ -1053,27 +1065,38 @@ ctResults ctGltf2Model::GenerateTangents() {
             genTangSpaceDefault(&ctx);
 
             /* generate tangents for each morph target */
-            // todo: investigate proper morph targets handling
-            //for (uint32_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
-            //   ctMikktUserData userData = ctMikktUserData();
-            //   userData.inputIndexCount = (uint32_t)submesh.indices.Count();
-            //   userData.pIndexIn = submesh.indices.Data();
-            //   userData.pVertexIn = submesh.morphs[morphIdx]->vertices.Data();
-            //   userData.pVertexOut = morphScratchVertices[morphIdx]->Data();
-            //   SMikkTSpaceContext ctx = {&mikktInterface, &userData};
-            //   genTangSpaceDefault(&ctx);
+            for (uint32_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
+               auto& morphVertsOut = *morphScratchVertices[morphIdx];
 
-            //   /* make difference */
-            //   ctAssert(scratchVertices.Count() ==
-            //            morphScratchVertices[morphIdx]->Count());
-            //   auto& morphVerts = *morphScratchVertices[morphIdx];
-            //   for (uint32_t i = 0; i < scratchVertices.Count(); i++) {
-            //      morphVerts[i].tangent =
-            //        ctVec4(normalize(ctVec3(scratchVertices[i].tangent) -
-            //                         ctVec3(morphVerts[i].tangent)),
-            //               0.0f);
-            //   }
-            //}
+               /* pre-transform vertices */
+               ctDynamicArray<ctGltf2ModelVertex> transformMorphVertex =
+                 submesh.morphs[morphIdx]->vertices;
+               for (uint32_t i = 0; i < transformMorphVertex.Count(); i++) {
+                  transformMorphVertex[i].position =
+                    submesh.vertices[i].position + transformMorphVertex[i].position;
+                  transformMorphVertex[i].normal = normalize(
+                    submesh.vertices[i].normal + transformMorphVertex[i].normal);
+                  transformMorphVertex[i].uv[0] = submesh.vertices[i].uv[0];
+               }
+
+               /* generate tangents on pretransformed morph */
+               ctMikktUserData userData = ctMikktUserData();
+               userData.inputIndexCount = (uint32_t)submesh.indices.Count();
+               userData.pIndexIn = submesh.indices.Data();
+               userData.pVertexIn = transformMorphVertex.Data();
+               userData.pVertexOut = morphVertsOut.Data();
+               SMikkTSpaceContext ctx = {&mikktInterface, &userData};
+               genTangSpaceDefault(&ctx);
+
+               /* make tangent difference between resting and morph */
+               ctAssert(scratchVertices.Count() ==
+                        morphScratchVertices[morphIdx]->Count());
+               for (uint32_t i = 0; i < scratchVertices.Count(); i++) {
+                  morphVertsOut[i].tangent = ctVec4(ctVec3(scratchVertices[i].tangent) -
+                                                      ctVec3(morphVertsOut[i].tangent),
+                                                    0.0f);
+               }
+            }
 
             /* setup base vertex stream */
             streams.Clear();
@@ -1223,6 +1246,7 @@ ctResults ctGltf2Model::BucketIndices(bool* pSubmeshesDirty) {
     * into the bucket submesh. */
    /* or: also throw out indices and just reindex INDEX_BUCKET_SIZE regions of the
     * vertices using meshopt */
+   // todo: automatically split large meshes into multiple index streams
    return CT_SUCCESS;
 }
 

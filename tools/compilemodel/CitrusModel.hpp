@@ -35,6 +35,7 @@ struct ctGltf2ModelVertex {
 struct ctGltf2ModelInstance {
    uint32_t meshIndex;
    uint32_t nodeIndex;
+   bool isSkinned;
 };
 
 /* useful for merge/split operations where indices are annoying */
@@ -172,6 +173,7 @@ protected:
    }
    static bool isNodePreserved(const char* name);
    int32_t BoneIndexFromGltfNode(const char* nodeName);
+   int32_t BoneIndexFromGltfNode(uint32_t gltfNodeIdx);
    ctMat4 WorldMatrixFromGltfNodeIdx(uint32_t gltfNodeIdx);
 
    /* Mesh Helpers */
