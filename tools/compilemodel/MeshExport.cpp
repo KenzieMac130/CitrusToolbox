@@ -1052,6 +1052,29 @@ ctResults ctGltf2Model::GenerateTangents() {
             SMikkTSpaceContext ctx = {&mikktInterface, &userData};
             genTangSpaceDefault(&ctx);
 
+            /* generate tangents for each morph target */
+            // todo: investigate proper morph targets handling
+            //for (uint32_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
+            //   ctMikktUserData userData = ctMikktUserData();
+            //   userData.inputIndexCount = (uint32_t)submesh.indices.Count();
+            //   userData.pIndexIn = submesh.indices.Data();
+            //   userData.pVertexIn = submesh.morphs[morphIdx]->vertices.Data();
+            //   userData.pVertexOut = morphScratchVertices[morphIdx]->Data();
+            //   SMikkTSpaceContext ctx = {&mikktInterface, &userData};
+            //   genTangSpaceDefault(&ctx);
+
+            //   /* make difference */
+            //   ctAssert(scratchVertices.Count() ==
+            //            morphScratchVertices[morphIdx]->Count());
+            //   auto& morphVerts = *morphScratchVertices[morphIdx];
+            //   for (uint32_t i = 0; i < scratchVertices.Count(); i++) {
+            //      morphVerts[i].tangent =
+            //        ctVec4(normalize(ctVec3(scratchVertices[i].tangent) -
+            //                         ctVec3(morphVerts[i].tangent)),
+            //               0.0f);
+            //   }
+            //}
+
             /* setup base vertex stream */
             streams.Clear();
             streams.Append({scratchVertices.Data(),
@@ -1394,6 +1417,15 @@ ctResults ctGltf2Model::EncodeVertices() {
          out.normal = (meshopt_quantizeUnorm(in.normal.x, 10) << 20) |
                       (meshopt_quantizeUnorm(in.normal.y, 10) << 10) |
                       meshopt_quantizeUnorm(in.normal.z, 10);
+
+         /* tangent */
+         in.tangent *= ctVec4(0.5f, 0.5f, 0.5f, 1.0f);
+         in.tangent += ctVec4(0.5f, 0.5f, 0.5f, 0.0f);
+         out.tangent =
+           (meshopt_quantizeUnorm(in.tangent.w >= 0.0f ? 1.0f : 0.0f, 2) << 30) |
+           (meshopt_quantizeUnorm(in.tangent.x, 10) << 20) |
+           (meshopt_quantizeUnorm(in.tangent.y, 10) << 10) |
+           meshopt_quantizeUnorm(in.tangent.z, 10);
 
          /* color */
          out.rgba[0] = meshopt_quantizeUnorm(in.color[0].x, 8);

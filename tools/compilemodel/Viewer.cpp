@@ -31,6 +31,7 @@ enum ctModelViewerMeshMode {
    CT_MODELVIEW_NORMAL,
    CT_MODELVIEW_TANGENT,
    CT_MODELVIEW_TANGENT_SIGN,
+   CT_MODELVIEW_BITANGENT,
    CT_MODELVIEW_UV,
    CT_MODELVIEW_COLOR,
    CT_MODELVIEW_BONE,
@@ -42,6 +43,7 @@ const char* meshModeNames[] {"Submesh",
                              "Normal",
                              "Tangent",
                              "Tangent Sign",
+                             "Bitangent",
                              "UV",
                              "Color",
                              "Bone",
@@ -569,12 +571,25 @@ public:
 
    virtual ctVec4 GetOutputColor(uint16_t idx) {
       ctVec4 tangent = tangents[idx];
-      if (signOnly) { tangent = ctVec4(ctVec3(tangent.w), 1.0f); }
+      if (signOnly) { tangent = ctVec4(ctVec3(tangent.w > 0.0f), 1.0f); }
       tangent.w = 1.0f;
       return saturate(tangent);
    }
 
    bool signOnly;
+};
+
+class ctModelViewFixedRendererModeBitangent : public ctModelViewFixedRendererModeBase {
+public:
+   ctModelViewFixedRendererModeBitangent(ctModelViewFixedRendererModeDesc& desc) :
+       ctModelViewFixedRendererModeBase(desc) {};
+
+   virtual ctVec4 GetOutputColor(uint16_t idx) {
+      const ctVec4 tangent = tangents[idx];
+      const ctVec3 normal = normals[idx];
+      const ctVec3 bitangent = cross(normal, ctVec3(tangent)) * tangent.w;
+      return ctVec4(saturate(bitangent), 1.0f);
+   }
 };
 
 class ctModelViewFixedRendererModeUV : public ctModelViewFixedRendererModeBase {
@@ -699,6 +714,9 @@ void ctModelViewer::RenderGeometry() {
                                                    viewMode == CT_MODELVIEW_TANGENT_SIGN)
                  .Render();
             } break;
+            case CT_MODELVIEW_BITANGENT:
+               ctModelViewFixedRendererModeBitangent(desc).Render();
+               break;
             case CT_MODELVIEW_UV: {
                ctModelViewFixedRendererModeUV(desc).Render();
             } break;
@@ -750,8 +768,8 @@ void ctModelViewer::FillAnimMeshData(ctModelMeshVertexCoords* coords,
       TinyImageFormat_DecodeLogicalPixelsF(
         TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, buffer);
       ctVec4 tangent = ctVec4(buffer[0], buffer[1], buffer[2], buffer[3]);
-      tangent *= ctVec4(2.0f, 2.0f, 2.0f, 1.0f);
-      tangent -= ctVec4(1.0f, 1.0f, 1.0f, 0.0f);
+      tangent *= ctVec4(2.0f, 2.0f, 2.0f, 2.0f);
+      tangent -= ctVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
       ctModelMeshVertexUV uvc = uvs ? uvs[i] : ctModelMeshVertexUV();
       decode.pixel = uvc.uv;
@@ -801,6 +819,15 @@ void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, const char* name, float weig
             normal -= ctVec3(0.5f);
             normal *= 2.0f;
             animNormals[i] = normalize(animNormals[i] + (normal * weight));
+
+            decode.pixel = &mvert.tangent;
+            TinyImageFormat_DecodeLogicalPixelsF(
+              TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, buffer);
+            ctVec3 tangent = ctVec3(buffer[0], buffer[1], buffer[2]);
+            tangent *= ctVec3(2.0f, 2.0f, 2.0f);
+            tangent -= ctVec3(1.0f, 1.0f, 1.0f);
+            animTangents[i] = ctVec4(
+              normalize(ctVec3(animTangents[i]) + (tangent * weight)), animTangents[i].w);
          }
          break;
       }
