@@ -553,7 +553,10 @@ ctResults ctGltf2Model::GenerateLODs(ctGltf2ModelLodQuality quality,
             auto& submesh = *lod.submeshes[submeshIdx];
 
             /* calculate target index count */
-            float percentile = 1.0f - (percentageDrop * lodIdx);
+            const float dropTable[4] {
+              1.0f, 0.4f, 0.25f, 0.125f}; /* todo: properly expose */
+            // float percentile = 1.0f - (percentageDrop * lodIdx);
+            float percentile = dropTable[lodIdx];
             if (percentile <= 0.05f) { percentile = 0.05f; }
             size_t targetIndexCount =
               (size_t)((double)submesh.indices.Count() * (double)percentile);
@@ -656,6 +659,8 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
    for (size_t midx = 0; midx < tree.meshes.Count(); midx++) {
       ctGltf2ModelMesh* mesh = tree.meshes[midx];
       for (uint32_t lodidx = 0; lodidx < mesh->lodCount; lodidx++) {
+         /* disable vertex sharing on merged as well */
+         outmesh->lods[lodidx].inheritsVertsFromOffset = 0;
          if (outmesh->lodCount <= lodidx) { outmesh->lodCount = lodidx + 1; }
       }
    }
@@ -830,27 +835,40 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
          lod.original.submeshCount = (uint32_t)lod.submeshes.Count();
          lod.original.submeshStart = (uint32_t)finalSubmeshes.Count();
 
-         lod.original.morphTargetCount = (uint32_t)lod.originalMorphs.Count();
-         lod.original.morphTargetStart = (uint32_t)finalMorphs.Count();
-
          lod.original.vertexCount = 0;
-         lod.original.vertexDataCoordsStart =
-           lod.original.vertexDataCoordsStart != UINT32_MAX
-             ? (uint32_t)bucketVertices.Count()
-             : UINT32_MAX;
-         lod.original.vertexDataSkinDataStart =
-           lod.original.vertexDataSkinDataStart != UINT32_MAX
-             ? (uint32_t)bucketVertices.Count()
-             : UINT32_MAX;
-         for (int i = 0; i < 4; i++) {
-            lod.original.vertexDataUVStarts[i] =
-              lod.original.vertexDataUVStarts[i] != UINT32_MAX
+
+         if (lod.hasUniqueVerts()) {
+            lod.original.vertexDataCoordsStart =
+              lod.original.vertexDataCoordsStart != UINT32_MAX
                 ? (uint32_t)bucketVertices.Count()
                 : UINT32_MAX;
-            lod.original.vertexDataColorStarts[i] =
-              lod.original.vertexDataColorStarts[i] != UINT32_MAX
+            lod.original.vertexDataSkinDataStart =
+              lod.original.vertexDataSkinDataStart != UINT32_MAX
                 ? (uint32_t)bucketVertices.Count()
                 : UINT32_MAX;
+            for (int i = 0; i < 4; i++) {
+               lod.original.vertexDataUVStarts[i] =
+                 lod.original.vertexDataUVStarts[i] != UINT32_MAX
+                   ? (uint32_t)bucketVertices.Count()
+                   : UINT32_MAX;
+               lod.original.vertexDataColorStarts[i] =
+                 lod.original.vertexDataColorStarts[i] != UINT32_MAX
+                   ? (uint32_t)bucketVertices.Count()
+                   : UINT32_MAX;
+            }
+         } else { /* auto generated lod vertex sharing */
+            const auto& inheritlod = mesh.lods[lodIdx + lod.inheritsVertsFromOffset];
+            lod.original.vertexCount = inheritlod.original.vertexCount;
+            lod.original.vertexDataCoordsStart =
+              inheritlod.original.vertexDataCoordsStart;
+            lod.original.vertexDataSkinDataStart =
+              inheritlod.original.vertexDataSkinDataStart;
+            for (int i = 0; i < 4; i++) {
+               lod.original.vertexDataUVStarts[i] =
+                 inheritlod.original.vertexDataUVStarts[i];
+               lod.original.vertexDataColorStarts[i] =
+                 inheritlod.original.vertexDataColorStarts[i];
+            }
          }
 
          /* for each submesh */
@@ -869,25 +887,42 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
             }
 
             /* write vertices */
-            bucketVertices.Append(submesh.vertices);
-            lod.original.vertexCount += (uint32_t)submesh.vertices.Count();
-            indexCheckpoint += (uint32_t)submesh.vertices.Count();
+            if (lod.hasUniqueVerts()) {
+               bucketVertices.Append(submesh.vertices);
+               lod.original.vertexCount += (uint32_t)submesh.vertices.Count();
+               indexCheckpoint += (uint32_t)submesh.vertices.Count();
+            } else {
+               const auto& inheritlod = mesh.lods[lodIdx + lod.inheritsVertsFromOffset];
+               ctAssert(inheritlod.submeshes.Count() == lod.submeshes.Count());
+               submesh.original.vertexOffset =
+                 inheritlod.submeshes[submeshIdx]->original.vertexOffset;
+            }
 
             finalSubmeshes.Append(submesh.original);
          }
 
-         for (size_t morphIdx = 0; morphIdx < lod.originalMorphs.Count(); morphIdx++) {
-            ctModelMeshMorphTarget& morph = lod.originalMorphs[morphIdx];
-            morph.vertexCount = lod.original.vertexCount; /* assumed for sanity */
-            morph.vertexDataMorphOffset = (uint32_t)bucketVertices.Count();
-            for (size_t submeshIdx = 0; submeshIdx < lod.submeshes.Count();
-                 submeshIdx++) {
-               ctGltf2ModelMorph& submeshMorph =
-                 *lod.submeshes[submeshIdx]->morphs[morphIdx];
-               bucketVertices.Append(submeshMorph.vertices);
+         /* setup morphs */
+         lod.original.morphTargetCount = (uint32_t)lod.originalMorphs.Count();
+         lod.original.morphTargetStart = (uint32_t)finalMorphs.Count();
+         if (lod.hasUniqueVerts()) {
+            for (size_t morphIdx = 0; morphIdx < lod.originalMorphs.Count(); morphIdx++) {
+               ctModelMeshMorphTarget& morph = lod.originalMorphs[morphIdx];
+               morph.vertexCount = lod.original.vertexCount; /* assumed for sanity */
+               morph.vertexDataMorphOffset = (uint32_t)bucketVertices.Count();
+               for (size_t submeshIdx = 0; submeshIdx < lod.submeshes.Count();
+                    submeshIdx++) {
+                  ctGltf2ModelMorph& submeshMorph =
+                    *lod.submeshes[submeshIdx]->morphs[morphIdx];
+                  bucketVertices.Append(submeshMorph.vertices);
+               }
+               finalMorphs.Append(morph);
             }
-            finalMorphs.Append(morph);
+         } else { /* share morph targets */
+            const auto& inheritlod = mesh.lods[lodIdx + lod.inheritsVertsFromOffset];
+            lod.original.morphTargetCount = inheritlod.original.morphTargetCount;
+            lod.original.morphTargetStart = inheritlod.original.morphTargetStart;
          }
+
          mesh.original.lods[lodIdx] = lod.original;
       }
 
@@ -1234,6 +1269,7 @@ ctResults ctGltf2Model::EncodeVertices() {
          /* ctModelMeshVertexCoords */
          if (lod.vertexDataCoordsStart != UINT32_MAX) {
             lod.vertexDataCoordsStart = (uint32_t)finalVertexCoords.Count();
+            finalVertexCoords.Reserve(finalVertexCoords.Count() + lod.vertexCount);
             for (uint32_t v = 0; v < lod.vertexCount; v++) {
                ctGltf2ModelVertex in = bucketVertices[inputVertexStart + v];
 
@@ -1266,6 +1302,7 @@ ctResults ctGltf2Model::EncodeVertices() {
 
          /* skinning */
          if (lod.vertexDataSkinDataStart != UINT32_MAX) {
+            finalVertexSkinData.Reserve(finalVertexSkinData.Count() + lod.vertexCount);
             lod.vertexDataSkinDataStart = (uint32_t)finalVertexSkinData.Count();
             for (uint32_t v = 0; v < lod.vertexCount; v++) {
                ctGltf2ModelVertex in = bucketVertices[inputVertexStart + v];
@@ -1282,6 +1319,7 @@ ctResults ctGltf2Model::EncodeVertices() {
          for (uint32_t ch = 0; ch < ctCStaticArrayLen(lod.vertexDataUVStarts); ch++) {
             if (lod.vertexDataUVStarts[ch] != UINT32_MAX) {
                lod.vertexDataUVStarts[ch] = (uint32_t)finalVertexUVs.Count();
+               finalVertexUVs.Reserve(finalVertexUVs.Count() + lod.vertexCount);
                for (uint32_t v = 0; v < lod.vertexCount; v++) {
                   ctGltf2ModelVertex in = bucketVertices[inputVertexStart + v];
                   ctVec2 npos = lod.uvbox[ch].NormalizeVector(in.uv[ch]);
@@ -1297,6 +1335,7 @@ ctResults ctGltf2Model::EncodeVertices() {
          for (uint32_t ch = 0; ch < ctCStaticArrayLen(lod.vertexDataColorStarts); ch++) {
             if (lod.vertexDataColorStarts[ch] != UINT32_MAX) {
                lod.vertexDataColorStarts[ch] = (uint32_t)finalVertexColors.Count();
+               finalVertexColors.Reserve(finalVertexColors.Count() + lod.vertexCount);
                for (uint32_t v = 0; v < lod.vertexCount; v++) {
                   ctGltf2ModelVertex in = bucketVertices[inputVertexStart + v];
                   ctModelMeshVertexColor out;
@@ -1317,6 +1356,7 @@ ctResults ctGltf2Model::EncodeVertices() {
       size_t inputVertexStart = morph.vertexDataMorphOffset;
       morph.vertexDataMorphOffset = (uint32_t)finalVertexMorph.Count();
       /* morph target data */
+      finalVertexMorph.Reserve(finalVertexMorph.Count() + morph.vertexCount);
       for (uint32_t v = 0; v < morph.vertexCount; v++) {
          ctGltf2ModelVertex in = bucketVertices[inputVertexStart + v];
          ctModelMeshVertexMorph out;
