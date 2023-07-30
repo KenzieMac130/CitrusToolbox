@@ -65,6 +65,18 @@ struct ctGltf2ModelMesh {
    ctModelMesh original;
    uint32_t lodCount;
    ctGltf2ModelLod lods[4];
+   ctDynamicArray<ctModelMeshMorphTargetMapping> morphMap;
+
+   inline uint32_t CreateOrGetMorphMap(const char* name) {
+      for (uint32_t i = 0; i < (uint32_t)morphMap.Count(); i++) {
+         if (ctCStrNEql(morphMap[i].name, name, 32)) { return i; }
+      }
+      ctModelMeshMorphTargetMapping newMap = {};
+      newMap.defaultValue = 0.0f;
+      strncpy(newMap.name, name, 32);
+      morphMap.Append(newMap);
+      return (uint32_t)(morphMap.Count() - 1);
+   }
    void ExtendLods(uint32_t count);
 };
 
@@ -184,6 +196,8 @@ protected:
       model.geometry.submeshes = finalSubmeshes.Data();
       model.geometry.morphTargetCount = (uint32_t)finalMorphs.Count();
       model.geometry.morphTargets = finalMorphs.Data();
+      model.geometry.morphTargetMappingCount = (uint32_t)finalMorphMap.Count();
+      model.geometry.morphTargetMapping = finalMorphMap.Data();
    }
    void CombineFromMeshTree(ctGltf2ModelTreeSplit& tree);
 
@@ -247,6 +261,7 @@ private:
    /* Mesh Data */
    ctDynamicArray<ctModelMesh> finalMeshes;
    ctDynamicArray<ctModelSubmesh> finalSubmeshes;
+   ctDynamicArray<ctModelMeshMorphTargetMapping> finalMorphMap;
    ctDynamicArray<ctModelMeshMorphTarget> finalMorphs;
 
    ctDynamicArray<uint32_t> bucketIndices;

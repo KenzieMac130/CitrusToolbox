@@ -138,11 +138,12 @@ ctResults ctModelViewer::OnStartup() {
    camera.position = ctVec3(0.0f, 1.0f, -10.0f);
 
    /* get all morph target names */
-   for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetCount; morphIdx++) {
-      auto& morph = model.geometry.morphTargets[morphIdx];
+   for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetMappingCount;
+        morphIdx++) {
+      auto& morph = model.geometry.morphTargetMapping[morphIdx];
       ctModelViewerMorphLayer morphout = ctModelViewerMorphLayer();
       strncpy(morphout.name, morph.name, 32);
-      morphout.weight = 0.0f;
+      morphout.weight = morph.defaultValue;
       morphLayers.InsertOrReplace(ctXXHash32(morph.name), morphout);
    }
    return CT_SUCCESS;
@@ -293,7 +294,11 @@ void ctModelViewer::GeometryInfo() {
                      ctModelMeshMorphTarget& morph =
                        model.geometry.morphTargets[lod.morphTargetStart + morphIdx];
                      memset(namebuff, 0, 33);
-                     strncpy(namebuff, morph.name, 32);
+                     strncpy(namebuff,
+                             model.geometry
+                               .morphTargetMapping[mesh.morphMapStart + morph.mapping]
+                               .name,
+                             32);
                      if (ImGui::TreeNode(namebuff)) {
                         ImGui::Text("Bounding Box: %f %f %f - %f %f %f",
                                     morph.bboxDisplacement.min.x,
@@ -775,7 +780,7 @@ void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, const char* name, float weig
        .inMemoryGeometryData[model.gpuTable.vertexDataMorphStart];
    for (uint32_t midx = 0; midx < lod.morphTargetCount; midx++) {
       const auto& morph = model.geometry.morphTargets[lod.morphTargetStart + midx];
-      if (ctCStrNEql(morph.name, name, 32)) {
+      if (ctCStrNEql(model.geometry.morphTargetMapping[morph.mapping].name, name, 32)) {
          for (uint32_t i = 0; i < morph.vertexCount; i++) {
             ctModelMeshVertexMorph mvert = mverts[morph.vertexDataMorphOffset + i];
 

@@ -106,12 +106,19 @@ struct ctModelMeshLod {
 
 struct ctModelMesh {
    char name[32];
+   uint32_t morphMapStart;
+   uint32_t morphMapCount;
    uint32_t lodCount;
    ctModelMeshLod lods[4];
 };
 
-struct ctModelMeshMorphTarget {
+struct ctModelMeshMorphTargetMapping {
    char name[32];
+   float defaultValue;
+};
+
+struct ctModelMeshMorphTarget {
+   uint32_t mapping;
    ctBoundBox bboxDisplacement;
    float radiusDisplacement;
 
@@ -121,7 +128,6 @@ struct ctModelMeshMorphTarget {
 };
 
 struct ctModelMeshScatter {
-   char name[32];
    ctBoundBox bbox;
    uint32_t meshIdx;
    uint32_t scatterCount;
@@ -134,6 +140,9 @@ struct ctModelMeshData {
 
    uint32_t submeshCount;
    ctModelSubmesh* submeshes; /* SUBMESH */
+
+   uint32_t morphTargetMappingCount;
+   ctModelMeshMorphTargetMapping* morphTargetMapping; /* MORPHMAP */
 
    uint32_t morphTargetCount;
    ctModelMeshMorphTarget* morphTargets; /* MORPHS */

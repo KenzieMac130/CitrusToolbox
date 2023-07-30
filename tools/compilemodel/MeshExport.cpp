@@ -178,7 +178,14 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
             /* zero out until we combine it later */
             morph.vertexCount = 0;
             morph.vertexDataMorphOffset = 0;
-            strncpy(morph.name, mesh.target_names[i], 32);
+            morph.mapping = outmesh->CreateOrGetMorphMap(mesh.target_names[i]);
+            /* apply default value */
+            if (mesh.weights_count == mesh.target_names_count) {
+               /* assume 0 is uninitialized (could technically be intentional) */
+               if (outmesh->morphMap[morph.mapping].defaultValue == 0.0f) {
+                  outmesh->morphMap[morph.mapping].defaultValue = mesh.weights[i];
+               }
+            }
             lod.originalMorphs.Append(morph);
          }
 
@@ -672,13 +679,18 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
             /* check if morph exists in output */
             bool found = false;
             for (uint32_t j = 0; j < outlod.originalMorphs.Count(); j++) {
-               if (ctCStrNEql(
-                     outlod.originalMorphs[j].name, inlod.originalMorphs[i].name, 32)) {
+               if (outlod.originalMorphs[j].mapping == inlod.originalMorphs[i].mapping) {
                   found = true;
                   break;
                }
             }
-            if (!found) { outlod.originalMorphs.Append(inlod.originalMorphs[i]); }
+            if (!found) {
+               /* create new morph map in output */
+               ctModelMeshMorphTarget morph = inlod.originalMorphs[i];
+               morph.mapping =
+                 outmesh->CreateOrGetMorphMap(inmesh->morphMap[morph.mapping].name);
+               outlod.originalMorphs.Append(inlod.originalMorphs[i]);
+            }
          }
       }
    }
@@ -764,9 +776,8 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
                  morphIdx++) {
                int inMorphIdx = -1;
                for (size_t i = 0; i < inlod.originalMorphs.Count(); i++) {
-                  if (ctCStrNEql(outlod.originalMorphs[morphIdx].name,
-                                 inlod.originalMorphs[i].name,
-                                 32)) {
+                  if (outlod.originalMorphs[morphIdx].mapping ==
+                      inlod.originalMorphs[i].mapping) {
                      inMorphIdx = (int)i;
                      break;
                   }
@@ -800,6 +811,7 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
 void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
    ZoneScoped;
    finalMeshes.Clear();
+   finalMorphMap.Clear();
    finalMorphs.Clear();
    finalSubmeshes.Clear();
    bucketVertices.Clear();
@@ -878,6 +890,12 @@ void ctGltf2Model::CombineFromMeshTree(ctGltf2ModelTreeSplit& tree) {
          }
          mesh.original.lods[lodIdx] = lod.original;
       }
+
+      /* append morph map */
+      mesh.original.morphMapCount = (uint32_t)mesh.morphMap.Count();
+      mesh.original.morphMapStart = (uint32_t)finalMorphMap.Count();
+      finalMorphMap.Append(mesh.morphMap);
+
       finalMeshes.Append(mesh.original);
    }
    CommitGeoArrays();

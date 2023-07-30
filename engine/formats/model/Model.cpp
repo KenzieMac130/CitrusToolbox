@@ -61,6 +61,9 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    model.geometry.submeshCount = (uint32_t)tmpsize / sizeof(ctModelSubmesh);
    ctWADFindLump(&wad, "MORPHS", (void**)&model.geometry.morphTargets, &tmpsize);
    model.geometry.morphTargetCount = (uint32_t)tmpsize / sizeof(ctModelMeshMorphTarget);
+   ctWADFindLump(&wad, "MORPHMAP", (void**)&model.geometry.morphTargetMapping, &tmpsize);
+   model.geometry.morphTargetMappingCount =
+     (uint32_t)tmpsize / sizeof(ctModelMeshMorphTargetMapping);
    ctWADFindLump(&wad, "MSCATTER", (void**)&model.geometry.scatters, &tmpsize);
    model.geometry.scatterCount = (uint32_t)tmpsize / sizeof(ctModelMeshScatter);
 
@@ -154,6 +157,11 @@ CT_API ctResults ctModelSave(ctModel& model,
                      (uint8_t*)model.geometry.morphTargets,
                      model.geometry.morphTargetCount *
                        sizeof(model.geometry.morphTargets[0]));
+   ctWADWriteSection(&wad,
+                     "MORPHMAP",
+                     (uint8_t*)model.geometry.morphTargetMapping,
+                     model.geometry.morphTargetMappingCount *
+                     sizeof(model.geometry.morphTargetMapping[0]));
 
    /* Spline */
    ctWADWriteSection(&wad,
