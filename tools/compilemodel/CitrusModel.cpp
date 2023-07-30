@@ -171,6 +171,8 @@ ctResults ctGltf2Model::LoadGltf(const char* filepath) {
    }
    gltf = *pGltf;
    model = ctModel();
+   gltfPath = filepath;
+   gltfPath.FilePathPop();
    return CT_SUCCESS;
 }
 
