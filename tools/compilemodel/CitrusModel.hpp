@@ -53,7 +53,8 @@ struct ctGltf2ModelSubmesh {
 struct ctGltf2ModelLod {
    int32_t inheritsVertsFromOffset;
    inline bool hasUniqueVerts() {
-      return inheritsVertsFromOffset == 0;
+      return true;  // todo: fix for lod gen
+      // return inheritsVertsFromOffset == 0;
    }
 
    ctModelMeshLod original;

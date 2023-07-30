@@ -570,6 +570,7 @@ public:
    virtual ctVec4 GetOutputColor(uint16_t idx) {
       ctVec4 tangent = tangents[idx];
       if (signOnly) { tangent = ctVec4(ctVec3(tangent.w), 1.0f); }
+      tangent.w = 1.0f;
       return saturate(tangent);
    }
 
@@ -750,7 +751,7 @@ void ctModelViewer::FillAnimMeshData(ctModelMeshVertexCoords* coords,
         TinyImageFormat_R10G10B10A2_UNORM, &decode, 1, buffer);
       ctVec4 tangent = ctVec4(buffer[0], buffer[1], buffer[2], buffer[3]);
       tangent *= ctVec4(2.0f, 2.0f, 2.0f, 1.0f);
-      tangent -= ctVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      tangent -= ctVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
       ctModelMeshVertexUV uvc = uvs ? uvs[i] : ctModelMeshVertexUV();
       decode.pixel = uvc.uv;

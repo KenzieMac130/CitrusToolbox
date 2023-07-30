@@ -1006,6 +1006,7 @@ ctResults ctGltf2Model::GenerateTangents() {
    ctDynamicArray<ctGltf2ModelVertex> scratchVertices;
    ctDynamicArray<uint32_t> remapTable;
    ctDynamicArray<meshopt_Stream> streams;
+   ctDynamicArray<ctDynamicArray<ctGltf2ModelVertex>*> morphScratchVertices;
 
    /* setup mikkt */
    SMikkTSpaceInterface mikktInterface = SMikkTSpaceInterface();
@@ -1026,8 +1027,20 @@ ctResults ctGltf2Model::GenerateTangents() {
 
             /* setup scratch vertices */
             scratchVertices.Clear();
+            scratchVertices.Reserve(submesh.indices.Count());
             for (uint32_t i = 0; i < submesh.indices.Count(); i++) {
                scratchVertices.Append(submesh.vertices[submesh.indices[i]]);
+            }
+            /* additional scratch vertices for all morphs */
+            morphScratchVertices.Clear();
+            morphScratchVertices.Resize(submesh.morphs.Count());
+            for (uint32_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
+               morphScratchVertices[morphIdx] = new ctDynamicArray<ctGltf2ModelVertex>();
+               morphScratchVertices[morphIdx]->Reserve(submesh.indices.Count());
+               for (uint32_t i = 0; i < submesh.indices.Count(); i++) {
+                  morphScratchVertices[morphIdx]->Append(
+                    submesh.morphs[morphIdx]->vertices[submesh.indices[i]]);
+               }
             }
 
             /* generate tangents */
@@ -1044,6 +1057,11 @@ ctResults ctGltf2Model::GenerateTangents() {
             streams.Append({scratchVertices.Data(),
                             sizeof(ctGltf2ModelVertex),
                             sizeof(ctGltf2ModelVertex)});
+            for (size_t i = 0; i < morphScratchVertices.Count(); i++) {
+               streams.Append({morphScratchVertices[i]->Data(),
+                               sizeof(ctGltf2ModelVertex),
+                               sizeof(ctGltf2ModelVertex)});
+            }
 
             /* generate remap table */
             remapTable.Clear();
@@ -1069,13 +1087,16 @@ ctResults ctGltf2Model::GenerateTangents() {
 
             /* remap all morph target vertices */
             for (size_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
-               scratchVertices = submesh.morphs[morphIdx]->vertices;
                submesh.morphs[morphIdx]->vertices.Resize(vertexCount);
-               // meshopt_remapVertexBuffer(submesh.morphs[morphIdx]->vertices.Data(),
-               //                          scratchVertices.Data(),
-               //                          submesh.indices.Count(),
-               //                          sizeof(submesh.vertices[0]),
-               //                          remapTable.Data());
+               meshopt_remapVertexBuffer(submesh.morphs[morphIdx]->vertices.Data(),
+                                         morphScratchVertices[morphIdx]->Data(),
+                                         submesh.indices.Count(),
+                                         sizeof(ctGltf2ModelVertex),
+                                         remapTable.Data());
+            }
+
+            for (size_t i = 0; i < morphScratchVertices.Count(); i++) {
+               delete morphScratchVertices[i];
             }
          }
       }
