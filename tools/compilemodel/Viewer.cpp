@@ -540,6 +540,7 @@ public:
       color = submesh.materialIndex != UINT32_MAX
                 ? rng.GetColor()
                 : CT_COLOR_RED * (ctSin(timer * 4.0f) * 0.5f + 0.5f);
+      color.a = 1.0f;
    }
    ctVec4 color;
 };
