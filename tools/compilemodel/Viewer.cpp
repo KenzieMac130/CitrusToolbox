@@ -208,17 +208,29 @@ void ctModelViewer::BoneInfo(ctAnimBone bone) {
                   pSkeleton->GetBoneFirstChild(bone).index,
                   pSkeleton->GetBoneNextSibling(bone).index);
       ctTransform transform = pSkeleton->GetLocalTransform(bone);
-      ImGui::Text("Translation: %f %f %f",
+      ImGui::Text("Local Translation: %f %f %f",
                   transform.translation.x,
                   transform.translation.y,
                   transform.translation.z);
-      ImGui::Text("Rotation: %f %f %f %f",
+      ImGui::Text("Local Rotation: %f %f %f %f",
                   transform.rotation.x,
                   transform.rotation.y,
                   transform.rotation.z,
                   transform.rotation.w);
       ImGui::Text(
-        "Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
+        "Local Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
+      transform = pSkeleton->GetModelTransform(bone);
+      ImGui::Text("Model Translation: %f %f %f",
+                  transform.translation.x,
+                  transform.translation.y,
+                  transform.translation.z);
+      ImGui::Text("Model Rotation: %f %f %f %f",
+                  transform.rotation.x,
+                  transform.rotation.y,
+                  transform.rotation.z,
+                  transform.rotation.w);
+      ImGui::Text(
+        "Model Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
 
       if (pSkeleton->GetBoneFirstChild(bone).isValid()) {
          BoneInfo(pSkeleton->GetBoneFirstChild(bone));
@@ -367,6 +379,21 @@ void ctModelViewer::RenderModel() {
 
 void ctModelViewer::RenderSkeleton() {
    ZoneScoped;
+   ctQuat quat = ctQuatYawPitchRoll(rotationPhase, 0.0f, 0.0f);
+   ctMat4 worldRot = ctMat4FromQuat(quat);
+   for (int32_t i = 0; i < pSkeleton->GetBoneCount(); i++) {
+      Im3d::PushMatrix(ctMat4ToIm3d((worldRot * pSkeleton->GetModelMatrix(i))));
+      Im3d::DrawXyzAxes();
+      if (renderBoneNames) {
+         char buff[33];
+         memset(buff, 0, 33);
+         pSkeleton->GetBoneName(i, buff);
+         Im3d::PushColor(Im3d::Color_White);
+         Im3d::Text(Im3d::Vec3(0.0f), Im3d::TextFlags_Default, buff);
+         Im3d::PopColor();
+      }
+      Im3d::PopMatrix();
+   }
 }
 
 void ctModelViewer::RenderBoundingBoxes() {
