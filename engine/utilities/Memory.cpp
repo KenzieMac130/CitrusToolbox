@@ -85,10 +85,10 @@ CT_API void* ctGroupAlloc(size_t count, ctGroupAllocDesc* groups, size_t* pSizeO
    uint8_t* output = (uint8_t*)ctMalloc(size);
    uint8_t* offset = output;
    for (size_t i = 0; i < count; i++) {
-      // offset = (uint8_t*)ctAlign((size_t)offset, (ptrdiff_t)groups[i].alignment);
+      offset = (uint8_t*)ctAlign((size_t)offset, (ptrdiff_t)groups[i].alignment);
       *groups[i].output = offset;
       offset += groups[i].size;
-      // ctAssert(offset - output <= size);
+      ctAssert((size_t)(offset - output) <= size);
    }
    if (pSizeOut) { *pSizeOut = size; }
    return output;
