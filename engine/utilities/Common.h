@@ -160,6 +160,13 @@ CT_API void* ctAlignedMalloc(size_t size, size_t alignment);
 CT_API void* ctAlignedRealloc(void* block, size_t size, size_t alignment);
 CT_API void ctAlignedFree(void* block);
 
+struct ctGroupAllocDesc {
+   size_t alignment;
+   size_t size;
+   void** output;
+};
+CT_API void* ctGroupAlloc(size_t count, struct ctGroupAllocDesc* groups, size_t* pSizeOut);
+
 #pragma warning(disable : 6255)
 #define ctStackAlloc(_SIZE) alloca(_SIZE)
 

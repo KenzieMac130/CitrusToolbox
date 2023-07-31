@@ -75,6 +75,25 @@ void ctFree(void* block) {
    return ctAlignedFree(block);
 }
 
+CT_API void* ctGroupAlloc(size_t count, ctGroupAllocDesc* groups, size_t* pSizeOut) {
+   ZoneScoped;
+   size_t size = 0;
+   for (size_t i = 0; i < count; i++) {
+      ctAssert(groups[i].alignment != 0);
+      size += groups[i].size + groups[i].alignment;
+   }
+   uint8_t* output = (uint8_t*)ctMalloc(size);
+   uint8_t* offset = output;
+   for (size_t i = 0; i < count; i++) {
+      // offset = (uint8_t*)ctAlign((size_t)offset, (ptrdiff_t)groups[i].alignment);
+      *groups[i].output = offset;
+      offset += groups[i].size;
+      // ctAssert(offset - output <= size);
+   }
+   if (pSizeOut) { *pSizeOut = size; }
+   return output;
+}
+
 void* operator new(size_t size) {
    ZoneScoped;
    void* ptr = ctMalloc(size);
