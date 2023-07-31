@@ -51,6 +51,7 @@ public:
    class ctInteractionEngine* Interact;
    class ctImguiIntegration* ImguiIntegration;
    class ctIm3dIntegration* Im3dIntegration;
+   class ctAnimationSystem* Animation;
    class ctKeyLimeRenderer* Renderer;
    class ctSceneEngine* SceneEngine;
 

@@ -19,10 +19,9 @@
 #include "utilities/Common.h"
 /* ------------------- Skeleton ------------------- */
 
-struct ctModelSkeletonBoneTransform {
-   ctVec3 translation;
-   ctQuat rotation;
-   ctVec3 scale;
+/* ctMat4 without alignment enforcement */
+struct ctModelMatrix {
+   float data[4][4];
 };
 
 struct ctModelSkeletonBoneGraph {
@@ -37,11 +36,11 @@ struct ctModelSkeletonBoneName {
 
 struct ctModelSkeleton {
    uint32_t boneCount;
-   ctModelSkeletonBoneTransform* transformArray;   /* BXFORMS */
-   ctModelSkeletonBoneTransform* inverseBindArray; /* BINVBIND */
-   ctModelSkeletonBoneGraph* graphArray;           /* BGRAPH */
-   uint32_t* hashArray;                            /* BHASHES */
-   ctModelSkeletonBoneName* nameArray;             /* BNAMES */
+   ctTransform* transformArray;          /* BXFORMS */
+   ctModelMatrix* inverseBindArray;      /* BINVBIND */
+   ctModelSkeletonBoneGraph* graphArray; /* BGRAPH */
+   uint32_t* hashArray;                  /* BHASHES */
+   ctModelSkeletonBoneName* nameArray;   /* BNAMES */
 };
 
 /* ------------------- Mesh ------------------- */

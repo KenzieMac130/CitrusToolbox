@@ -52,7 +52,7 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    ctWADFindLump(&wad, "BGRAPH", (void**)&model.skeleton.graphArray, NULL);
    ctWADFindLump(&wad, "BHASHES", (void**)&model.skeleton.hashArray, NULL);
    ctWADFindLump(&wad, "BNAMES", (void**)&model.skeleton.nameArray, NULL);
-   model.skeleton.boneCount = (uint32_t)tmpsize / sizeof(ctModelSkeletonBoneTransform);
+   model.skeleton.boneCount = (uint32_t)tmpsize / sizeof(ctTransform);
 
    /* Mesh */
    ctWADFindLump(&wad, "MESHES", (void**)&model.geometry.meshes, &tmpsize);

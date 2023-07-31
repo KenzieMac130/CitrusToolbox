@@ -40,6 +40,7 @@
 #include "audition/LiveSync.hpp"
 #endif
 
+#include "animation/AnimationSystem.hpp"
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
 #include "scene/SceneEngine.hpp"
@@ -75,6 +76,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Interact = new ctInteractionEngine(true);
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
+   Animation = new ctAnimationSystem();
    Renderer = new ctKeyLimeRenderer();
    FrameTime = ctStopwatch();
    SceneEngine = new ctSceneEngine();
@@ -106,6 +108,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
    PhysXIntegration->ModuleStartup(this);
+   Animation->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
    Renderer->ModuleStartup(this);
 #if CITRUS_INCLUDE_AUDITION
@@ -177,6 +180,7 @@ ctResults ctEngineCore::Shutdown() {
 #endif
    SceneEngine->ModuleShutdown();
    PhysXIntegration->ModuleShutdown();
+   Animation->ModuleShutdown();
    Renderer->ModuleShutdown();
    Im3dIntegration->ModuleShutdown();
    ImguiIntegration->ModuleShutdown();
@@ -199,6 +203,7 @@ ctResults ctEngineCore::Shutdown() {
    delete Editor;
 #endif
    delete PhysXIntegration;
+   delete Animation;
    delete Renderer;
    delete Im3dIntegration;
    delete ImguiIntegration;

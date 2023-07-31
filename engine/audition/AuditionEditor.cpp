@@ -60,6 +60,7 @@ ctResults ctAuditionEditor::Startup() {
    RegisterModule((ctModuleBase*)Engine->JobSystem);
    RegisterModule((ctModuleBase*)Engine->OSEventManager);
    RegisterModule((ctModuleBase*)Engine->PhysXIntegration);
+   RegisterModule((ctModuleBase*)Engine->Animation);
    RegisterModule((ctModuleBase*)Engine->Renderer);
    RegisterModule((ctModuleBase*)Engine->SceneEngine);
    RegisterModule((ctModuleBase*)Engine->Settings);
