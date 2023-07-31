@@ -818,9 +818,9 @@ inline void ctMat4Scale(ctMat4& m, float s) {
 
 inline void ctMat4FromTransform(ctMat4& m, const ctTransform& transform) {
    m = ctMat4Identity();
-   ctMat4Scale(m, transform.scale);
-   ctMat4Rotate(m, transform.rotation);
    ctMat4Translate(m, transform.translation);
+   ctMat4Rotate(m, transform.rotation);
+   ctMat4Scale(m, transform.scale);
 }
 
 inline void ctMat4RemoveTranslation(ctMat4& m) {
