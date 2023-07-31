@@ -697,6 +697,35 @@ inline ctQuat ctQuatYawPitchRoll(float yaw, float pitch, float roll) {
    return result;
 }
 
+/* --- Transforms ---- */
+
+struct CT_API ctTransform {
+   inline ctTransform() {
+      translation = ctVec3();
+      rotation = ctQuat();
+      scale = ctVec3(1.0f);
+   }
+   inline ctTransform(ctVec3 p) {
+      translation = p;
+      rotation = ctQuat();
+      scale = ctVec3(1.0f);
+   };
+   inline ctTransform(ctVec3 p, ctQuat q) {
+      translation = p;
+      rotation = q;
+      scale = ctVec3(1.0f);
+   };
+   inline ctTransform(ctVec3 p, ctQuat q, ctVec3 s) {
+      translation = p;
+      rotation = q;
+      scale = s;
+   };
+
+   ctVec3 translation;
+   ctQuat rotation;
+   ctVec3 scale;
+};
+
 /* --- Mat4 --- */
 struct CT_API CT_ALIGN(CT_ALIGNMENT_MAT4) ctMat4 {
    inline ctMat4() {
@@ -787,6 +816,13 @@ inline void ctMat4Scale(ctMat4& m, float s) {
    glm_scale_uni(m.data, s);
 }
 
+inline void ctMat4FromTransform(ctMat4& m, const ctTransform& transform) {
+   m = ctMat4Identity();
+   ctMat4Scale(m, transform.scale);
+   ctMat4Rotate(m, transform.rotation);
+   ctMat4Translate(m, transform.translation);
+}
+
 inline void ctMat4RemoveTranslation(ctMat4& m) {
    m.data[3][0] = 0.0f;
    m.data[3][1] = 0.0f;
@@ -804,8 +840,6 @@ inline ctMat4 ctMat4InverseLossy(ctMat4 m) {
 
 /* By using this function you acknowledge you will never truely recover the original
  * transform */
-/* This must ONLY be used as a last resort where a middleware passes a matrix and nothing
- * else */
 inline void
 ctMat4AwkwardDecompose(ctMat4 m, ctVec3& translation, ctQuat& rotation, ctVec3& scale) {
    ctMat4 rotmat;
@@ -813,6 +847,12 @@ ctMat4AwkwardDecompose(ctMat4 m, ctVec3& translation, ctQuat& rotation, ctVec3& 
    glm_decompose(m.data, translate4d.data, rotmat.data, scale.data);
    glm_mat4_quat(rotmat.data, rotation.data);
    translation = ctVec3(translate4d);
+}
+
+/* By using this function you acknowledge you will never truely recover the original
+ * transform */
+inline void ctMat4AwkwardDecompose(ctMat4 m, ctTransform& transform) {
+   ctMat4AwkwardDecompose(m, transform.translation, transform.rotation, transform.scale);
 }
 
 inline void
@@ -932,35 +972,6 @@ inline ctQuat::ctQuat(struct ctVec4 _v) {
    z = _v.z;
    w = _v.w;
 }
-
-/* --- Transforms ---- */
-
-struct CT_API ctTransform {
-   inline ctTransform() {
-      position = ctVec3();
-      rotation = ctQuat();
-      scale = ctVec3(1.0f);
-   }
-   inline ctTransform(ctVec3 p) {
-      position = p;
-      rotation = ctQuat();
-      scale = ctVec3(1.0f);
-   };
-   inline ctTransform(ctVec3 p, ctQuat q) {
-      position = p;
-      rotation = q;
-      scale = ctVec3(1.0f);
-   };
-   inline ctTransform(ctVec3 p, ctQuat q, ctVec3 s) {
-      position = p;
-      rotation = q;
-      scale = s;
-   };
-
-   ctVec3 position;
-   ctQuat rotation;
-   ctVec3 scale;
-};
 
 /* --- Middleware Conversion --- */
 #define ctVec2ToImGui(v) ImVec2(v.x, v.y)
