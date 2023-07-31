@@ -188,7 +188,7 @@ void ctModelViewer::SkeletonInfo() {
    ImGui::Checkbox(CT_NC("Render Skeleton"), &renderSkeleton);
    ImGui::Checkbox(CT_NC("Render Bone Names"), &renderBoneNames);
    ImGui::Text("Bone Count: %u", pSkeleton->GetBoneCount());
-   for (uint32_t i = 0; i < pSkeleton->GetBoneCount(); i++) {
+   for (int32_t i = 0; i < pSkeleton->GetBoneCount(); i++) {
       if (!pSkeleton->GetBoneParent(i).isValid()) { BoneInfo(i); }
    }
    ImGui::PopID();
