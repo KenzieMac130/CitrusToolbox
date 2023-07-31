@@ -15,7 +15,6 @@
 */
 
 #include "core/Application.hpp"
-#include "scene/SceneEngineBase.hpp"
 #include "imgui/imgui.h"
 #include "interact/InteractionEngine.hpp"
 
