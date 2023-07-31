@@ -257,8 +257,9 @@ private:
    /* Skeleton */
    ctDynamicArray<uint32_t> boneHashes;
    ctDynamicArray<ctModelSkeletonBoneName> boneNames;
-   ctDynamicArray<ctModelSkeletonBoneTransform> boneTransforms;
-   ctDynamicArray<ctModelSkeletonBoneTransform> boneInverseBinds;
+   ctDynamicArray<ctTransform> boneTransforms;
+   ctDynamicArray<ctTransform> boneInverseBinds;
+   ctDynamicArray<ctModelMatrix> boneInvBindsMatrices;
    ctDynamicArray<ctModelSkeletonBoneGraph> boneGraph;
 
    /* Mesh Data */

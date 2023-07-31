@@ -23,6 +23,10 @@ ctResults ctGltf2Model::ExtractSkeleton() {
    for (size_t i = 0; i < gltf.nodes_count; i++) {
       const cgltf_node& node = gltf.nodes[i];
       if (!isNodePreserved(node.name)) { continue; }
+      if (!node.name) {
+         ctDebugError("GLTF NODE WITHOUT NAME UNSUPPORTED!");
+         return CT_FAILURE_CORRUPTED_CONTENTS;
+      }
       uint32_t nameHash = ctXXHash32(node.name);
       ctModelSkeletonBoneName name = ctModelSkeletonBoneName();
       strncpy(name.name, node.name, 32);
@@ -52,14 +56,14 @@ ctResults ctGltf2Model::ExtractSkeleton() {
       if (node.has_translation) { translation = node.translation; }
       if (node.has_rotation) { rotation = node.rotation; }
       if (node.has_scale) { scale = node.scale; }
-      ctModelSkeletonBoneTransform xform = {};
+      ctTransform xform = {};
       memcpy(xform.translation.data, translation.data, sizeof(float) * 3);
       memcpy(xform.rotation.data, rotation.data, sizeof(float) * 4);
       memcpy(xform.scale.data, scale.data, sizeof(float) * 3);
       boneTransforms.Append(xform);
 
       /* also extract inverse world transform for skinning */
-      ctModelSkeletonBoneTransform toroot = {};
+      ctTransform toroot = {};
       ctMat4 worldXform;
       cgltf_node_transform_world(&node, worldXform.data[0]);
       worldXform = ctMat4InverseLossy(worldXform);
@@ -93,11 +97,20 @@ ctResults ctGltf2Model::ExtractSkeleton() {
 
    /* todo: look into sorting? */
 
+   /* setup model matrices */
+   for (size_t i = 0; i < boneInverseBinds.Count(); i++) {
+      ctMat4 m;
+      ctMat4FromTransform(m, boneInverseBinds[i]);
+      ctModelMatrix mmat = {};
+      memcpy(mmat.data, m.data, sizeof(mmat.data));
+      boneInvBindsMatrices.Append(mmat);
+   }
+
    model.skeleton.boneCount = (uint32_t)boneHashes.Count();
    model.skeleton.graphArray = boneGraph.Data();
    model.skeleton.nameArray = boneNames.Data();
    model.skeleton.transformArray = boneTransforms.Data();
-   model.skeleton.inverseBindArray = boneInverseBinds.Data();
+   model.skeleton.inverseBindArray = boneInvBindsMatrices.Data();
    model.skeleton.hashArray = boneHashes.Data();
 
    return CT_SUCCESS;

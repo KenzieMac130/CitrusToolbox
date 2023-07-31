@@ -23,6 +23,8 @@
 #include "middleware/Im3dIntegration.hpp"
 #include "middleware/ImguiIntegration.hpp"
 
+#include "animation/Skeleton.hpp"
+
 #include "scene/SceneEngine.hpp"
 
 enum ctModelViewerMeshMode {
@@ -80,7 +82,7 @@ public:
 
    /* GUI */
    void SkeletonInfo();
-   void BoneInfo(int32_t boneIdx);
+   void BoneInfo(ctAnimBone bone);
    void GeometryInfo();
    void AnimationInfo();
    void SplinesInfo();
@@ -92,7 +94,6 @@ public:
    /* Debug Rendering */
    void RenderModel();
    void RenderSkeleton();
-   void RenderBone(int32_t boneIdx);
    void RenderBoundingBoxes();
    void RenderGeometry();
 
@@ -121,6 +122,8 @@ public:
    ctDynamicArray<ctVec2> animUVs;
    ctDynamicArray<ctVec4> animColors;
 
+   ctAnimSkeleton* pSkeleton;
+
    ctCameraInfo camera;
    float timer;
    float rotationPhase = 0.0f;
@@ -148,6 +151,9 @@ ctResults ctModelViewer::OnStartup() {
       morphout.weight = morph.defaultValue;
       morphLayers.InsertOrReplace(ctXXHash32(morph.name), morphout);
    }
+
+   /* setup skeleton */
+   pSkeleton = new ctAnimSkeleton(model);
    return CT_SUCCESS;
 }
 
@@ -173,6 +179,7 @@ ctResults ctModelViewer::OnUIUpdate() {
 }
 
 ctResults ctModelViewer::OnShutdown() {
+   delete pSkeleton;
    return CT_SUCCESS;
 }
 
@@ -180,30 +187,27 @@ void ctModelViewer::SkeletonInfo() {
    ImGui::PushID("BONE_TREE");
    ImGui::Checkbox(CT_NC("Render Skeleton"), &renderSkeleton);
    ImGui::Checkbox(CT_NC("Render Bone Names"), &renderBoneNames);
-   ImGui::Text("Bone Count: %u", model.skeleton.boneCount);
-   for (uint32_t i = 0; i < model.skeleton.boneCount; i++) {
-      if (model.skeleton.graphArray[i].parent == -1) { BoneInfo(i); }
+   ImGui::Text("Bone Count: %u", pSkeleton->GetBoneCount());
+   for (uint32_t i = 0; i < pSkeleton->GetBoneCount(); i++) {
+      if (!pSkeleton->GetBoneParent(i).isValid()) { BoneInfo(i); }
    }
    ImGui::PopID();
 }
 
-void ctModelViewer::BoneInfo(int32_t boneIdx) {
-   ctModelSkeletonBoneGraph& graph = model.skeleton.graphArray[boneIdx];
-   ctModelSkeletonBoneTransform& transform = model.skeleton.transformArray[boneIdx];
-   ctModelSkeletonBoneTransform& invbind = model.skeleton.inverseBindArray[boneIdx];
-   ctModelSkeletonBoneName& name = model.skeleton.nameArray[boneIdx];
-   uint32_t hash = model.skeleton.hashArray[boneIdx];
-
+void ctModelViewer::BoneInfo(ctAnimBone bone) {
    char namebuff[33];
    memset(namebuff, 0, 33);
-   strncpy(namebuff, name.name, 32);
+   pSkeleton->GetBoneName(bone, namebuff);
    if (ImGui::TreeNode(namebuff)) {
       if (ImGui::Button("Show Weights")) {
-         activeBone = boneIdx;
+         activeBone = bone.index;
          viewMode = CT_MODELVIEW_BONE;
       }
-      ImGui::Text("Hash: %u", hash);
-      ImGui::Text("Graph: %d %d %d", graph.parent, graph.firstChild, graph.nextSibling);
+      ImGui::Text("Graph: %d %d %d",
+                  pSkeleton->GetBoneParent(bone).index,
+                  pSkeleton->GetBoneFirstChild(bone).index,
+                  pSkeleton->GetBoneNextSibling(bone).index);
+      ctTransform transform = pSkeleton->GetLocalTransform(bone);
       ImGui::Text("Translation: %f %f %f",
                   transform.translation.x,
                   transform.translation.y,
@@ -215,24 +219,15 @@ void ctModelViewer::BoneInfo(int32_t boneIdx) {
                   transform.rotation.w);
       ImGui::Text(
         "Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
-      ImGui::Text("Inverse Bind Translation: %f %f %f",
-                  invbind.translation.x,
-                  invbind.translation.y,
-                  invbind.translation.z);
-      ImGui::Text("Inverse Bind Rotation: %f %f %f %f",
-                  invbind.rotation.x,
-                  invbind.rotation.y,
-                  invbind.rotation.z,
-                  invbind.rotation.w);
-      ImGui::Text("Inverse Bind Scale: %f %f %f",
-                  invbind.scale.x,
-                  invbind.scale.y,
-                  invbind.scale.z);
 
-      if (graph.firstChild != -1) { BoneInfo(graph.firstChild); }
+      if (pSkeleton->GetBoneFirstChild(bone).isValid()) {
+         BoneInfo(pSkeleton->GetBoneFirstChild(bone));
+      }
       ImGui::TreePop();
    }
-   if (graph.nextSibling != -1) { BoneInfo(graph.nextSibling); }
+   if (pSkeleton->GetBoneNextSibling(bone).isValid()) {
+      BoneInfo(pSkeleton->GetBoneNextSibling(bone));
+   }
 }
 
 void ctModelViewer::GeometryInfo() {
@@ -320,8 +315,8 @@ void ctModelViewer::GeometryInfo() {
             }
             ImGui::TreePop();
          }
-         ImGui::TreePop();
       }
+      ImGui::TreePop();
    }
    ImGui::PopID();
 }
@@ -372,34 +367,6 @@ void ctModelViewer::RenderModel() {
 
 void ctModelViewer::RenderSkeleton() {
    ZoneScoped;
-   for (uint32_t i = 0; i < model.skeleton.boneCount; i++) {
-      if (model.skeleton.graphArray[i].parent == -1) { RenderBone(i); }
-   }
-}
-
-void ctModelViewer::RenderBone(int32_t boneIdx) {
-   ZoneScoped;
-   ctModelSkeletonBoneGraph& graph = model.skeleton.graphArray[boneIdx];
-   ctModelSkeletonBoneTransform& transform = model.skeleton.inverseBindArray[boneIdx];
-   ctMat4 matrix = ctMat4Identity();
-   /* todo: calculate world transform */
-   ctMat4Scale(matrix, transform.scale);
-   ctMat4Rotate(matrix, transform.rotation);
-   ctMat4Translate(matrix, transform.translation);
-   ctQuat quat = ctQuatYawPitchRoll(timer, 0.0f, 0.0f);
-   Im3d::PushMatrix(ctMat4ToIm3d((ctMat4FromQuat(quat) * matrix)));
-   Im3d::DrawXyzAxes();
-   if (renderBoneNames) {
-      char namebuff[33];
-      memset(namebuff, 0, 33);
-      strncpy(namebuff, model.skeleton.nameArray[boneIdx].name, 32);
-      Im3d::PushColor(ctVec4ToIm3dColor(CT_COLOR_WHITE));
-      Im3d::Text(ctVec3ToIm3d(ctVec3()), Im3d::TextFlags_Default, namebuff);
-      Im3d::PopColor();
-   }
-   Im3d::PopMatrix();
-   if (graph.firstChild != -1) { RenderBone(graph.firstChild); }
-   if (graph.nextSibling != -1) { RenderBone(graph.nextSibling); }
 }
 
 void ctModelViewer::RenderBoundingBoxes() {
