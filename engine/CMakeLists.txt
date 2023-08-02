@@ -183,6 +183,8 @@ set(ENGINE_SOURCE_FILES_ANIMATION
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/AnimationSystem.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Bank.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Canvas.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/animation/CustomPropSet.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerClip.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/MorphSet.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Skeleton.cpp
@@ -192,6 +194,7 @@ set(ENGINE_HEADER_FILES_ANIMATION
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/AnimationSystem.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Bank.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Canvas.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/animation/CustomPropSet.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerClip.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/MorphSet.hpp

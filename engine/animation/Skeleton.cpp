@@ -24,12 +24,12 @@ ctAnimSkeleton::ctAnimSkeleton(uint32_t count) {
 
    // clang-format off
    ctGroupAllocDesc groups[] = {
-     {1, count * sizeof(pGraph[0]), (void**)&pGraph},
+     {4, count * sizeof(pGraph[0]), (void**)&pGraph},
      {CT_ALIGNMENT_QUAT, count * sizeof(pLocalTransforms[0]), (void**)&pLocalTransforms},
      {CT_ALIGNMENT_MAT4, count * sizeof(pModelMatrices[0]), (void**)&pModelMatrices},
      {CT_ALIGNMENT_MAT4, count * sizeof(pInveseBindMatrices[0]), (void**)&pInveseBindMatrices},
-     {1, count * sizeof(pHashes[0]), (void**)&pHashes},
-     {1, count * sizeof(pNames[0]), (void**)&pNames}
+     {4, count * sizeof(pHashes[0]), (void**)&pHashes},
+     {4, count * sizeof(pNames[0]), (void**)&pNames}
    };
    // clang-format on
    pAllocation = ctGroupAlloc(ctCStaticArrayLen(groups), groups, &allocSize);
@@ -76,7 +76,7 @@ void ctAnimSkeleton::GetBoneName(ctAnimBone bone, char output[32]) {
    memcpy(output, pNames[bone.index].name, 32);
 }
 
-ctAnimBone ctAnimSkeleton::GetBoneParent(ctAnimBone bone) {
+ctAnimBone ctAnimSkeleton::GetBoneParent(const ctAnimBone bone) {
    ctAssert(bone.isValid());
    ctAssert(bone.index < boneCount);
    return pGraph[bone.index].parent;

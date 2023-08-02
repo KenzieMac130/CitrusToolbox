@@ -71,7 +71,8 @@ public:
    void ToModelMatrixArray(ctMat4* matrices, uint32_t count);
    void ToInverseBindMatrixArray(ctMat4* matrices, uint32_t count);
 
-private:
+protected:
+   friend class ctAnimCanvas;
    bool dirty;
    int32_t boneCount;
    size_t allocSize;

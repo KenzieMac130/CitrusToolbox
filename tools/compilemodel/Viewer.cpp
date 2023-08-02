@@ -24,6 +24,8 @@
 #include "middleware/ImguiIntegration.hpp"
 
 #include "animation/Skeleton.hpp"
+#include "animation/MorphSet.hpp"
+#include "animation/Canvas.hpp"
 
 #include "scene/SceneEngine.hpp"
 
@@ -51,11 +53,6 @@ const char* meshModeNames[] {"Submesh",
                              "Bone",
                              "Material"};
 
-struct ctModelViewerMorphLayer {
-   char name[32];
-   float weight;
-};
-
 class ctModelViewer : public ctApplication {
 public:
    virtual const char* GetAppName() {
@@ -76,6 +73,12 @@ public:
       timer += deltaTime;
       rotationPhase += rotationSpeed * deltaTime;
       Engine->SceneEngine->SetCameraOverride(camera);
+
+      /* animation */
+      pAnimCanvas->ResetToDefault();
+      // todo: animation
+      pAnimCanvas->CopyToSkeleton(pSkeleton);
+      pAnimCanvas->CopyToMorphSet(pMorphSet);
       return CT_SUCCESS;
    }
    virtual ctResults OnShutdown();
@@ -86,7 +89,7 @@ public:
    void GeometryInfo();
    void AnimationInfo();
    void SplinesInfo();
-   void PhysXInfo();
+   void PhysicsInfo();
    void NavmeshInfo();
    void MaterialInfo();
    void SceneInfo();
@@ -102,12 +105,12 @@ public:
    bool renderBoneNames = false;
    bool renderGeometry = true;
    bool renderBBOX = true;
+   bool applySkin = true;
    ctModelViewerMeshMode viewMode = CT_MODELVIEW_WIREFRAME;
    int32_t uvChannel = 0;
    int32_t colorChannel = 0;
-   int32_t activeBone = 0;
+   int32_t previewBone = 0;
    int32_t lodView = 0;
-   ctHashTable<ctModelViewerMorphLayer, uint32_t> morphLayers;
 
    void FillAnimMeshData(ctModelMeshVertexCoords* coords,
                          ctModelMeshVertexUV* uvs,
@@ -115,7 +118,8 @@ public:
                          uint32_t vertexCount,
                          ctBoundBox bbox,
                          ctBoundBox2D uvbox);
-   void ApplyMorph(ctModelMeshLod& lod, const char* name, float weight);
+   void ApplyMorph(ctModelMeshLod& lod, int32_t idx, float weight);
+   void ApplySkeleton(ctModelMeshVertexSkinData* pSkins, size_t vertexCount);
    ctDynamicArray<ctVec3> animPositions;
    ctDynamicArray<ctVec3> animNormals;
    ctDynamicArray<ctVec4> animTangents;
@@ -123,6 +127,8 @@ public:
    ctDynamicArray<ctVec4> animColors;
 
    ctAnimSkeleton* pSkeleton;
+   ctAnimMorphSet* pMorphSet;
+   ctAnimCanvas* pAnimCanvas;
 
    ctCameraInfo camera;
    float timer;
@@ -142,18 +148,10 @@ ctResults ctModelViewer::OnStartup() {
    Engine->SceneEngine->EnableCameraOverride();
    camera.position = ctVec3(0.0f, 1.0f, -10.0f);
 
-   /* get all morph target names */
-   for (uint32_t morphIdx = 0; morphIdx < model.geometry.morphTargetMappingCount;
-        morphIdx++) {
-      auto& morph = model.geometry.morphTargetMapping[morphIdx];
-      ctModelViewerMorphLayer morphout = ctModelViewerMorphLayer();
-      strncpy(morphout.name, morph.name, 32);
-      morphout.weight = morph.defaultValue;
-      morphLayers.InsertOrReplace(ctXXHash32(morph.name), morphout);
-   }
-
-   /* setup skeleton */
-   pSkeleton = new ctAnimSkeleton(model);
+   /* setup animation */
+   if (model.geometry.morphTargetMapping) { pMorphSet = new ctAnimMorphSet(model); }
+   if (model.skeleton.boneCount) { pSkeleton = new ctAnimSkeleton(model); }
+   pAnimCanvas = new ctAnimCanvas(pSkeleton, pMorphSet);
    return CT_SUCCESS;
 }
 
@@ -170,7 +168,7 @@ ctResults ctModelViewer::OnUIUpdate() {
    if (ImGui::CollapsingHeader(CT_NC("Animation"))) { AnimationInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Splines"))) { SplinesInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Material"))) { MaterialInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("PhysX"))) { PhysXInfo(); }
+   if (ImGui::CollapsingHeader(CT_NC("Physics"))) { PhysicsInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Navmesh"))) { NavmeshInfo(); }
    if (ImGui::CollapsingHeader(CT_NC("Scene"))) { SceneInfo(); }
    ImGui::End();
@@ -180,6 +178,8 @@ ctResults ctModelViewer::OnUIUpdate() {
 
 ctResults ctModelViewer::OnShutdown() {
    delete pSkeleton;
+   delete pMorphSet;
+   delete pAnimCanvas;
    return CT_SUCCESS;
 }
 
@@ -200,25 +200,28 @@ void ctModelViewer::BoneInfo(ctAnimBone bone) {
    pSkeleton->GetBoneName(bone, namebuff);
    if (ImGui::TreeNode(namebuff)) {
       if (ImGui::Button("Show Weights")) {
-         activeBone = bone.index;
+         previewBone = bone.index;
          viewMode = CT_MODELVIEW_BONE;
       }
       ImGui::Text("Graph: %d %d %d",
                   pSkeleton->GetBoneParent(bone).index,
                   pSkeleton->GetBoneFirstChild(bone).index,
                   pSkeleton->GetBoneNextSibling(bone).index);
+
+      bool needsUpdate = false;
       ctTransform transform = pSkeleton->GetLocalTransform(bone);
-      ImGui::Text("Local Translation: %f %f %f",
-                  transform.translation.x,
-                  transform.translation.y,
-                  transform.translation.z);
-      ImGui::Text("Local Rotation: %f %f %f %f",
-                  transform.rotation.x,
-                  transform.rotation.y,
-                  transform.rotation.z,
-                  transform.rotation.w);
-      ImGui::Text(
-        "Local Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
+      if (ImGui::InputFloat3("Local Translation", transform.translation.data)) {
+         needsUpdate = true;
+      }
+      if (ImGui::InputFloat4("Local Rotation", transform.rotation.data)) {
+         needsUpdate = true;
+      }
+      if (ImGui::InputFloat3("Local Scale", transform.scale.data)) { needsUpdate = true; }
+      if (needsUpdate) {
+         pSkeleton->SetLocalTransform(bone, transform);
+         pSkeleton->FlushBoneTransforms();
+      }
+
       transform = pSkeleton->GetModelTransform(bone);
       ImGui::Text("Model Translation: %f %f %f",
                   transform.translation.x,
@@ -246,6 +249,7 @@ void ctModelViewer::GeometryInfo() {
    ImGui::PushID("GEO_TREE");
    ImGui::Checkbox(CT_NC("Render Geometry"), &renderGeometry);
    ImGui::Checkbox(CT_NC("Render Bounding Boxes"), &renderBBOX);
+   ImGui::Checkbox(CT_NC("Apply Skinning"), &applySkin);
    ImGui::Combo(CT_NC("Geometry View"),
                 (int*)&viewMode,
                 meshModeNames,
@@ -259,7 +263,7 @@ void ctModelViewer::GeometryInfo() {
    }
    if (viewMode == CT_MODELVIEW_BONE) {
       ImGui::SliderInt(
-        CT_NC("Active Bone"), &activeBone, 0, model.skeleton.boneCount - 1);
+        CT_NC("Active Bone"), &previewBone, 0, model.skeleton.boneCount - 1);
    }
 
    if (ImGui::TreeNode("Meshes")) {
@@ -334,18 +338,26 @@ void ctModelViewer::GeometryInfo() {
 }
 
 void ctModelViewer::AnimationInfo() {
-   if (ImGui::TreeNode("Morph Target Layers")) {
-      for (auto it = morphLayers.GetIterator(); it; it++) {
-         ImGui::SliderFloat(it.Value().name, &it.Value().weight, 0.0f, 1.0f);
+   if (pMorphSet) {
+      if (ImGui::TreeNode("Morph Target Layers")) {
+         for (int32_t i = 0; i < pMorphSet->GetTargetCount(); i++) {
+            char buff[33];
+            memset(buff, 0, 33);
+            pMorphSet->GetTargetName(i, buff);
+            float value = pMorphSet->GetTarget(i);
+            if (ImGui::SliderFloat(buff, &value, 0.0f, 1.0f)) {
+               pMorphSet->SetTarget(i, value);
+            }
+         }
+         ImGui::TreePop();
       }
-      ImGui::TreePop();
    }
 }
 
 void ctModelViewer::SplinesInfo() {
 }
 
-void ctModelViewer::PhysXInfo() {
+void ctModelViewer::PhysicsInfo() {
 }
 
 void ctModelViewer::NavmeshInfo() {
@@ -621,7 +633,9 @@ public:
       ctVec3 position;
       float weight = 0.0f;
       for (int b = 0; b < 4; b++) {
-         if (skin.indices[b] == activeBone) { weight += skin.weights[b]; }
+         if (skin.indices[b] == activeBone) {
+            weight += (float)skin.weights[b] / UINT16_MAX;
+         }
       }
       return ctVec4(ctVec3(weight), 1.0f);
    }
@@ -671,9 +685,12 @@ void ctModelViewer::RenderGeometry() {
       /* fill anim data */
       FillAnimMeshData(coords, uvs, colors, lod.vertexCount, bbox, uvbox);
       /* apply morph targets*/
-      for (auto it = morphLayers.GetIterator(); it; it++) {
-         ApplyMorph(lod, it.Value().name, it.Value().weight);
+      if (pMorphSet) {
+         for (int32_t i = 0; i < pMorphSet->GetTargetCount(); i++) {
+            ApplyMorph(lod, i, pMorphSet->GetTarget(i));
+         }
       }
+      if (applySkin && pSkeleton && skins) { ApplySkeleton(skins, lod.vertexCount); }
 
       /* for each submesh */
       for (uint32_t submeshIdx = 0; submeshIdx < lod.submeshCount; submeshIdx++) {
@@ -719,7 +736,7 @@ void ctModelViewer::RenderGeometry() {
                ctModelViewFixedRendererModeColor(desc).Render();
             } break;
             case CT_MODELVIEW_BONE: {
-               ctModelViewFixedRendererModeBone(desc, activeBone).Render();
+               ctModelViewFixedRendererModeBone(desc, previewBone).Render();
             } break;
             case CT_MODELVIEW_MATERIAL: {
                ctModelViewFixedRendererModeMaterial(desc).Render();
@@ -787,14 +804,14 @@ void ctModelViewer::FillAnimMeshData(ctModelMeshVertexCoords* coords,
    }
 }
 
-void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, const char* name, float weight) {
+void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, int32_t idx, float weight) {
    if (weight == 0.0f) { return; }
    ctModelMeshVertexMorph* mverts =
      (ctModelMeshVertexMorph*)&model
        .inMemoryGeometryData[model.gpuTable.vertexDataMorphStart];
    for (uint32_t midx = 0; midx < lod.morphTargetCount; midx++) {
       const auto& morph = model.geometry.morphTargets[lod.morphTargetStart + midx];
-      if (ctCStrNEql(model.geometry.morphTargetMapping[morph.mapping].name, name, 32)) {
+      if (morph.mapping == idx) {
          for (uint32_t i = 0; i < morph.vertexCount; i++) {
             ctModelMeshVertexMorph mvert = mverts[morph.vertexDataMorphOffset + i];
 
@@ -825,6 +842,48 @@ void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, const char* name, float weig
               normalize(ctVec3(animTangents[i]) + (tangent * weight)), animTangents[i].w);
          }
          break;
+      }
+   }
+}
+
+void ctModelViewer::ApplySkeleton(ctModelMeshVertexSkinData* pSkins, size_t vertexCount) {
+   /* loop through vertices */
+   for (size_t i = 0; i < vertexCount; i++) {
+      const ctVec3 originalposition = animPositions[i];
+      const ctVec3 originalnormal = animNormals[i];
+      const ctVec3 originaltangent = animTangents[i];
+      /* for each skinnable bone on vertex */
+      for (int b = 0; b < 4; b++) {
+         /* initialize incoming data */
+         ctAnimBone bone = pSkins[i].indices[b];
+         float weight = (float)pSkins[i].weights[b] / UINT16_MAX;
+         ctVec3 position = originalposition;
+         ctVec3 normal = originalnormal;
+         ctVec3 tangent = originaltangent;
+
+         /* bring to root using inverse bind */
+         ctMat4 inverseBind = pSkeleton->GetInverseBindMatrix(bone);
+         position = position * inverseBind;
+         ctMat4RemoveTranslation(inverseBind);
+         normal = normalize(normal * inverseBind);
+         tangent = normalize(tangent * inverseBind);
+
+         /* bring to pose using model transform */
+         ctMat4 modelMatrix = pSkeleton->GetModelMatrix(bone);
+         position = position * modelMatrix;
+         ctMat4RemoveTranslation(modelMatrix);
+         normal = normalize(normal * modelMatrix);
+         tangent = normalize(tangent * modelMatrix);
+
+         /* turn to displacement */
+         position = (position - originalposition) * weight;
+         normal = (normal - originalnormal) * weight;
+         tangent = (tangent - originaltangent) * weight;
+
+         /* apply offsets */
+         animPositions[i] += position;
+         animNormals[i] += normal;
+         animTangents[i] += ctVec4(tangent, 0.0f);
       }
    }
 }

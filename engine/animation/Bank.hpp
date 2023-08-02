@@ -17,3 +17,8 @@
 #pragma once
 
 #include "utilities/Common.h"
+
+class CT_API ctAnimBank {
+public:
+
+};

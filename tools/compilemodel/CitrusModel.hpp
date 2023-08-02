@@ -74,7 +74,7 @@ struct ctGltf2ModelMesh {
          if (ctCStrNEql(morphMap[i].name, name, 32)) { return i; }
       }
       ctModelMeshMorphTargetMapping newMap = {};
-      newMap.defaultValue = 0.0f;
+      newMap.value = 0.0f;
       strncpy(newMap.name, name, 32);
       morphMap.Append(newMap);
       return (uint32_t)(morphMap.Count() - 1);

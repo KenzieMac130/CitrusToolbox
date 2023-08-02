@@ -113,7 +113,7 @@ struct ctModelMesh {
 
 struct ctModelMeshMorphTargetMapping {
    char name[32];
-   float defaultValue;
+   float value;
 };
 
 struct ctModelMeshMorphTarget {
@@ -202,14 +202,11 @@ struct ctModelSplineData {
 /* ------------------- Animation ------------------- */
 
 enum ctModelAnimationChannelType {
-   CT_MODEL_ANIMCHAN_BONE_LOCATION,
+   CT_MODEL_ANIMCHAN_BONE_TRANSLATION,
    CT_MODEL_ANIMCHAN_BONE_ROTATION,
    CT_MODEL_ANIMCHAN_BONE_SCALE,
-   CT_MODEL_ANIMCHAN_BONE_VISIBILITY,
    CT_MODEL_ANIMCHAN_MORPH_FACTOR,
-   CT_MODEL_ANIMCHAN_EVENT_FIRE,
    CT_MODEL_ANIMCHAN_CUSTOM_VALUE,
-   CT_MODEL_ANIMCHAN_CUSTOM_VECTOR
 };
 
 enum ctModelAnimationInterpolation {

@@ -18,24 +18,30 @@
 
 #include "utilities/Common.h"
 
-class CT_API ctAnimMorphSet {
-public:
-   ctAnimMorphSet(uint32_t morphCount);
-   ctAnimMorphSet(const ctAnimMorphSet& base);
-   ctAnimMorphSet(const struct ctModel& model);
-   ~ctAnimMorphSet();
+struct ctAnimCustomProp {
+    char name[32];
+    float value;
+};
 
-   inline int32_t GetTargetCount() const {
-      return morphCount;
+class CT_API ctAnimCustomPropSet {
+public:
+   ctAnimCustomPropSet(uint32_t propCount,
+                       const char** propNames = NULL,
+                       float* defaultValues = NULL);
+   ctAnimCustomPropSet(const ctAnimCustomPropSet& base);
+   ~ctAnimCustomPropSet();
+
+   inline int32_t GetPropCount() const {
+      return propCount;
    }
-   void SetTarget(int32_t index, float value);
-   void SetTarget(const char* name, float value);
-   float GetTarget(int32_t idx) const;
-   float GetTarget(const char* name) const;
-   void GetTargetName(int32_t idx, char output[32]) const;
+   void SetProp(const char* name, float value);
+   void SetProp(int32_t idx, float value);
+   float GetProp(int32_t idx) const;
+   float GetProp(const char* name) const;
+   void GetPropName(int32_t idx, char output[32]) const;
 
 protected:
    friend class ctAnimCanvas;
-   int32_t morphCount;
-   struct ctModelMeshMorphTargetMapping* pMappings;
+   int32_t propCount;
+   struct ctAnimCustomProp* pProps;
 };

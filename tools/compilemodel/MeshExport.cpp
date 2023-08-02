@@ -182,8 +182,8 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
             /* apply default value */
             if (mesh.weights_count == mesh.target_names_count) {
                /* assume 0 is uninitialized (could technically be intentional) */
-               if (outmesh->morphMap[morph.mapping].defaultValue == 0.0f) {
-                  outmesh->morphMap[morph.mapping].defaultValue = mesh.weights[i];
+               if (outmesh->morphMap[morph.mapping].value == 0.0f) {
+                  outmesh->morphMap[morph.mapping].value = mesh.weights[i];
                }
             }
             lod.originalMorphs.Append(morph);
@@ -212,7 +212,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
          }
       }
 
-      /* append mesh and instance */
+      /* append mesh and instance (skinned meshes cannot be instanced) */
       if (!(node.skin && allowSkinning)) {
          meshRedundancyTable.Insert((size_t)node.mesh, (uint32_t)tree.meshes.Count());
       }
@@ -788,6 +788,9 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
                outsubmesh->vertices.Append(vtx);
             }
 
+            /* enable skinning */
+            if (allowSkinning) { outlod.original.vertexDataSkinDataStart = 0; }
+
             /* for each morph target */
             for (size_t morphIdx = 0; morphIdx < outlod.originalMorphs.Count();
                  morphIdx++) {
@@ -1065,6 +1068,7 @@ ctResults ctGltf2Model::GenerateTangents() {
             genTangSpaceDefault(&ctx);
 
             /* generate tangents for each morph target */
+            /* todo: investigate breakage with merge meshes */
             for (uint32_t morphIdx = 0; morphIdx < submesh.morphs.Count(); morphIdx++) {
                auto& morphVertsOut = *morphScratchVertices[morphIdx];
 
