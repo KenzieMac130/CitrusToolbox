@@ -20,7 +20,6 @@
 
 class CT_API ctAnimCanvas {
 public:
-   ctAnimCanvas(int32_t boneCount, int32_t morphCount, int32_t propCount);
    ctAnimCanvas(const class ctAnimSkeleton* templateSkeleton,
                 const class ctAnimMorphSet* templateMorphSet = NULL,
                 const class ctAnimCustomPropSet* templateCustomProps = NULL);
@@ -52,6 +51,7 @@ protected:
    void ApplyProp(uint32_t hash, float value, float weight = 1.0f);
 
 private:
+   ctAnimCanvas(int32_t boneCount, int32_t morphCount, int32_t propCount);
    inline int32_t FindBoneIndex(uint32_t hash) {
       for (int32_t i = 0; i < boneCount; i++) {
          if (pBoneHashes[i] == hash) { return i; }

@@ -98,6 +98,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SpacialQuery.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
@@ -299,6 +300,7 @@ ${THIRD_PARTY_DIRECTORY}/imgui/imgui_draw.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui_tables.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui_widgets.cpp
 ${THIRD_PARTY_DIRECTORY}/imgui/imgui.cpp
+${THIRD_PARTY_DIRECTORY}/imnodes/imnodes.cpp
 ${THIRD_PARTY_DIRECTORY}/im3d/im3d.cpp
 ${THIRD_PARTY_DIRECTORY}/lz4/lz4.c
 ${THIRD_PARTY_DIRECTORY}/lz4/lz4frame.c

@@ -34,13 +34,26 @@ struct ctModelSkeletonBoneName {
    char name[32];
 };
 
+enum ctModelConstraintFlags {
+   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_X = 0x01,
+   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Y = 0x02,
+   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Z = 0x04
+};
+
+struct ctModelBoneConstraint {
+   int32_t flags;
+   ctVec3 rotationMin;
+   ctVec3 rotationMax;
+};
+
 struct ctModelSkeleton {
    uint32_t boneCount;
-   ctTransform* transformArray;          /* BXFORMS */
-   ctModelMatrix* inverseBindArray;      /* BINVBIND */
-   ctModelSkeletonBoneGraph* graphArray; /* BGRAPH */
-   uint32_t* hashArray;                  /* BHASHES */
-   ctModelSkeletonBoneName* nameArray;   /* BNAMES */
+   ctTransform* transformArray;            /* BXFORMS */
+   ctModelMatrix* inverseBindArray;        /* BINVBIND */
+   ctModelSkeletonBoneGraph* graphArray;   /* BGRAPH */
+   ctModelBoneConstraint* constraintArray; /* BCONSTR */
+   uint32_t* hashArray;                    /* BHASHES */
+   ctModelSkeletonBoneName* nameArray;     /* BNAMES */
 };
 
 /* ------------------- Mesh ------------------- */
@@ -150,41 +163,40 @@ struct ctModelMeshData {
    ctModelMeshScatter* scatters; /* MSCATTER */
 };
 
+/* ------------------- GPU Data ------------------- */
+
 enum ctModelGPUCompression {
    CT_MODEL_GPU_COMPRESS_NONE = 0,
    CT_MODEL_GPU_COMPRESS_DEFLATE = 1,
    CT_MODEL_GPU_COMPRESS_COUNT
 };
 
+struct ctModelGPUPayload {
+   uint32_t compression = CT_MODEL_GPU_COMPRESS_NONE;
+   uint64_t compressedSize = 0;
+   uint64_t size = 0;
+   uint64_t start = UINT64_MAX;
+};
+
 struct ctModelGPUPayloadInfo {
-   uint64_t indexDataSize = 0;
-   uint64_t indexDataStart = UINT64_MAX;
-
-   uint64_t vertexDataCoordsSize = 0;
-   uint64_t vertexDataCoordsStart = UINT64_MAX;
-
-   uint64_t vertexDataSkinSize = 0;
-   uint64_t vertexDataSkinStart = UINT64_MAX;
-
-   uint64_t vertexDataUVSize = 0;
-   uint64_t vertexDataUVStart = UINT64_MAX;
-
-   uint64_t vertexDataColorSize = 0;
-   uint64_t vertexDataColorStart = UINT64_MAX;
-
-   uint64_t vertexDataMorphSize = 0;
-   uint64_t vertexDataMorphStart = UINT64_MAX;
-
-   uint64_t scatterDataSize = 0;
-   uint64_t scatterDataStart = UINT64_MAX;
-
-   uint32_t compressionMode = CT_MODEL_GPU_COMPRESS_NONE;
+   ctModelGPUPayload indexData;
+   ctModelGPUPayload vertexDataCoords;
+   ctModelGPUPayload vertexDataSkin;
+   ctModelGPUPayload vertexDataUV;
+   ctModelGPUPayload vertexDataColor;
+   ctModelGPUPayload vertexDataMorph;
+   ctModelGPUPayload scatterData;
 };
 
 /* ------------------- Splines ------------------- */
 
+enum ctModelSplineFlags {
+   CT_MODEL_SPLINE_CYCLIC = 0x01,
+   CT_MODEL_SPLINE_INTERPOLATE_CUBIC = 0x02
+};
+
 struct ctModelSpline {
-   char name[32];
+   uint32_t flags;
    uint32_t pointCount;
    uint32_t pointOffset;
 };
@@ -194,9 +206,9 @@ struct ctModelSplineData {
    ctModelSpline* segments; /* SSEGS */
 
    uint32_t pointCount;
-   ctVec3* positions;  /* SPOS */
-   ctVec3* tangents;   /* STAN */
-   ctVec3* bitangents; /* SBITAN */
+   ctVec3* positions; /* SPOS */
+   ctVec3* normals;   /* SNRM */
+   ctVec3* tangents;  /* STAN */
 };
 
 /* ------------------- Animation ------------------- */
@@ -211,8 +223,7 @@ enum ctModelAnimationChannelType {
 
 enum ctModelAnimationInterpolation {
    CT_MODEL_ANIMINTERP_LINEAR,
-   CT_MODEL_ANIMINTERP_STEP,
-   CT_MODEL_ANIMINTERP_CUBIC
+   CT_MODEL_ANIMINTERP_STEP
 };
 
 struct ctModelAnimationChannel {
@@ -227,9 +238,6 @@ struct ctModelAnimationChannel {
 struct ctModelAnimationClip {
    char name[32];
    float clipLength;
-
-   float bboxDisplacement[2][3];
-   float bsphereDisplacement;
 
    uint32_t channelCount;
    int32_t channelStart;

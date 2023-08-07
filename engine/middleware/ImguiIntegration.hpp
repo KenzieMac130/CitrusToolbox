@@ -20,6 +20,7 @@
 #include "core/ModuleBase.hpp"
 
 #include "imgui/imgui.h"
+#include "imnodes/imnodes.h"
 
 namespace ImGui {
 IMGUI_API bool InputText(const char* label,

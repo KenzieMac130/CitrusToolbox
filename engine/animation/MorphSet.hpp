@@ -20,7 +20,6 @@
 
 class CT_API ctAnimMorphSet {
 public:
-   ctAnimMorphSet(uint32_t morphCount);
    ctAnimMorphSet(const ctAnimMorphSet& base);
    ctAnimMorphSet(const struct ctModel& model);
    ~ctAnimMorphSet();
@@ -35,6 +34,7 @@ public:
    void GetTargetName(int32_t idx, char output[32]) const;
 
 protected:
+   ctAnimMorphSet(uint32_t morphCount);
    friend class ctAnimCanvas;
    int32_t morphCount;
    struct ctModelMeshMorphTargetMapping* pMappings;

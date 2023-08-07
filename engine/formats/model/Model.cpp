@@ -50,6 +50,7 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    ctWADFindLump(&wad, "BXFORMS", (void**)&model.skeleton.transformArray, &tmpsize);
    ctWADFindLump(&wad, "BINVBIND", (void**)&model.skeleton.inverseBindArray, NULL);
    ctWADFindLump(&wad, "BGRAPH", (void**)&model.skeleton.graphArray, NULL);
+   ctWADFindLump(&wad, "BCONSTR", (void**)&model.skeleton.constraintArray, NULL);
    ctWADFindLump(&wad, "BHASHES", (void**)&model.skeleton.hashArray, NULL);
    ctWADFindLump(&wad, "BNAMES", (void**)&model.skeleton.nameArray, NULL);
    model.skeleton.boneCount = (uint32_t)tmpsize / sizeof(ctTransform);
@@ -71,8 +72,8 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    ctWADFindLump(&wad, "SSEGS", (void**)&model.splines.segments, &tmpsize);
    model.splines.segmentCount = (uint32_t)tmpsize / sizeof(ctModelSpline);
    ctWADFindLump(&wad, "SPOS", (void**)&model.splines.positions, &tmpsize);
+   ctWADFindLump(&wad, "SNRM", (void**)&model.splines.normals, NULL);
    ctWADFindLump(&wad, "STAN", (void**)&model.splines.tangents, NULL);
-   ctWADFindLump(&wad, "SBITAN", (void**)&model.splines.bitangents, NULL);
    model.splines.pointCount = (uint32_t)tmpsize / sizeof(ctVec3);
 
    /* Animation */
@@ -135,6 +136,11 @@ CT_API ctResults ctModelSave(ctModel& model,
                      (uint8_t*)model.skeleton.graphArray,
                      model.skeleton.boneCount * sizeof(model.skeleton.graphArray[0]));
    ctWADWriteSection(&wad,
+                     "BCONSTR",
+                     (uint8_t*)model.skeleton.constraintArray,
+                     model.skeleton.boneCount *
+                       sizeof(model.skeleton.constraintArray[0]));
+   ctWADWriteSection(&wad,
                      "BHASHES",
                      (uint8_t*)model.skeleton.hashArray,
                      model.skeleton.boneCount * sizeof(model.skeleton.hashArray[0]));
@@ -161,7 +167,7 @@ CT_API ctResults ctModelSave(ctModel& model,
                      "MORPHMAP",
                      (uint8_t*)model.geometry.morphTargetMapping,
                      model.geometry.morphTargetMappingCount *
-                     sizeof(model.geometry.morphTargetMapping[0]));
+                       sizeof(model.geometry.morphTargetMapping[0]));
 
    /* Spline */
    ctWADWriteSection(&wad,
@@ -173,13 +179,13 @@ CT_API ctResults ctModelSave(ctModel& model,
                      (uint8_t*)model.splines.positions,
                      model.splines.pointCount * sizeof(model.splines.positions[0]));
    ctWADWriteSection(&wad,
+                     "SNRM",
+                     (uint8_t*)model.splines.normals,
+                     model.splines.pointCount * sizeof(model.splines.normals[0]));
+   ctWADWriteSection(&wad,
                      "STAN",
                      (uint8_t*)model.splines.tangents,
                      model.splines.pointCount * sizeof(model.splines.tangents[0]));
-   ctWADWriteSection(&wad,
-                     "SBITAN",
-                     (uint8_t*)model.splines.bitangents,
-                     model.splines.pointCount * sizeof(model.splines.bitangents[0]));
 
    /* Animations */
    ctWADWriteSection(&wad,

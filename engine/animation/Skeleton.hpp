@@ -36,7 +36,6 @@ struct CT_API ctAnimBone {
 
 class CT_API ctAnimSkeleton {
 public:
-   ctAnimSkeleton(uint32_t boneCount);
    ctAnimSkeleton(const ctAnimSkeleton& base);
    ctAnimSkeleton(const struct ctModel& model);
    ~ctAnimSkeleton();
@@ -72,6 +71,7 @@ public:
    void ToInverseBindMatrixArray(ctMat4* matrices, uint32_t count);
 
 protected:
+   ctAnimSkeleton(uint32_t boneCount);
    friend class ctAnimCanvas;
    bool dirty;
    int32_t boneCount;

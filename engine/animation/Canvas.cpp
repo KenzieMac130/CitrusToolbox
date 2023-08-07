@@ -107,6 +107,7 @@ ctResults ctAnimCanvas::CopyToSkeleton(ctAnimSkeleton* dest) {
    memcpy(dest->pLocalTransforms,
           pCurrentBoneLocalTransforms,
           sizeof(pCurrentBoneLocalTransforms[0]) * boneCount);
+   dest->dirty = true;
    return CT_SUCCESS;
 }
 

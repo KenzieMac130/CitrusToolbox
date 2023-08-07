@@ -17,3 +17,17 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "LayerBase.hpp"
+
+class ctAnimLayerClip : public ctAnimLayerBase {
+public:
+   inline ctAnimLayerClip(class ctAnimClip& clip, float time) {
+      evalTime = time;
+      pClip = &clip;
+   }
+   virtual void OnApply();
+
+private:
+   class ctAnimClip* pClip;
+   float evalTime;
+};

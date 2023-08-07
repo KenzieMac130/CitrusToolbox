@@ -145,6 +145,9 @@ public:
    /* Animation */
    ctResults ExtractAnimations();
 
+   /* Splines */
+   ctResults ExtractSplines();
+
    /* Materials */
    ctResults ExtractMaterials();
 
@@ -161,7 +164,8 @@ protected:
    static ctGltf2ModelCollisionType getNodeCollisionType(const char* name);
    static bool isNodeCollision(const char* name);
    static bool isNodeLODLevel(const char* name);
-   static bool isNodePath(const char* name);
+   static bool isNodeCustomAnimProp(const char* name);
+   static bool isNodeSpline(const char* name);
    static bool isNodeBlockout(const char* name);
    static bool isNodeNavmesh(const char* name);
    static bool isNodeNavmeshConvexVolume(const char* name);
@@ -204,8 +208,26 @@ protected:
    }
    void CombineFromMeshTree(ctGltf2ModelTreeSplit& tree);
 
+   /* Animation Helpers */
+   ctModelAnimationInterpolation InterpolationFromGltf(cgltf_interpolation_type);
+   uint32_t AddTimeKeys(const cgltf_accessor& accessor);
+   void AddTranslationChannel(const cgltf_animation_sampler& insampler,
+                              uint32_t boneNameHash);
+   void AddRotationChannel(const cgltf_animation_sampler& insampler,
+                           uint32_t boneNameHash);
+   void AddScaleChannel(const cgltf_animation_sampler& insampler, uint32_t boneNameHash);
+   uint32_t AddWeightChannels(const cgltf_animation_sampler& insampler,
+                              size_t morphCount,
+                              const char** names);
+   void AddCustomChannel(const cgltf_animation_sampler& insampler, uint32_t propNameHash);
+   float GetClipLength(ctModelAnimationClip& outanim);
+
    /* Material Helpers */
    inline void WriteScalarProp(ctJSONWriter& writer, const char* name, float prop) {
+      writer.DeclareVariable(name);
+      writer.WriteNumber(prop);
+   }
+   inline void WriteIntegerProp(ctJSONWriter& writer, const char* name, int prop) {
       writer.DeclareVariable(name);
       writer.WriteNumber(prop);
    }
@@ -234,6 +256,10 @@ protected:
       WriteStringProp(writer, name, buff);
       return CT_SUCCESS;
    }
+   ctResults WriteTextureProp(ctJSONWriter& writer,
+                              const char* name,
+                              cgltf_texture_view* texture,
+                              bool includeXform);
 
    /* Physics Helpers */
    ctResults ExtractPxAsBodies(bool isCompound);
@@ -278,6 +304,17 @@ private:
    ctDynamicArray<ctModelMeshVertexColor> finalVertexColors;
    ctDynamicArray<ctModelMeshVertexUV> finalVertexUVs;
    ctDynamicArray<ctModelMeshVertexMorph> finalVertexMorph;
+
+   /* Animation */
+   ctDynamicArray<ctModelAnimationClip> animClips;
+   ctDynamicArray<ctModelAnimationChannel> animChannels;
+   ctDynamicArray<float> animScalars;
+
+   /* Splines */
+   ctDynamicArray<ctModelSpline> splines;
+   ctDynamicArray<ctVec3> splinePositions;
+   ctDynamicArray<ctVec3> splineNormals;
+   ctDynamicArray<ctVec3> splineTangents;
 
    /* Material */
    ctStringUtf8 materialText;

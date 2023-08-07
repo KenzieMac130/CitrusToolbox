@@ -73,6 +73,39 @@ ctResults ctImguiIntegration::Startup() {
    ImGui::NewFrame();
 #endif
 
+   ImVec4* colors = ImGui::GetStyle().Colors;
+   colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.16f, 0.48f, 0.54f);
+   colors[ImGuiCol_FrameBgHovered] = ImVec4(0.55f, 0.26f, 0.98f, 0.40f);
+   colors[ImGuiCol_FrameBgActive] = ImVec4(0.55f, 0.26f, 0.98f, 0.67f);
+   colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+   colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+   colors[ImGuiCol_SliderGrab] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+   colors[ImGuiCol_SliderGrabActive] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+   colors[ImGuiCol_Button] = ImVec4(0.20f, 0.16f, 0.48f, 0.40f);
+   colors[ImGuiCol_ButtonHovered] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+   colors[ImGuiCol_ButtonActive] = ImVec4(0.24f, 0.15f, 0.97f, 1.00f);
+   colors[ImGuiCol_Header] = ImVec4(0.20f, 0.16f, 0.48f, 0.31f);
+   colors[ImGuiCol_HeaderHovered] = ImVec4(0.20f, 0.16f, 0.48f, 0.80f);
+   colors[ImGuiCol_HeaderActive] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+   colors[ImGuiCol_SeparatorHovered] = ImVec4(0.28f, 0.11f, 0.73f, 0.78f);
+   colors[ImGuiCol_SeparatorActive] = ImVec4(0.28f, 0.11f, 0.73f, 1.00f);
+   colors[ImGuiCol_ResizeGrip] = ImVec4(0.20f, 0.16f, 0.48f, 0.39f);
+   colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.20f, 0.16f, 0.48f, 0.80f);
+   colors[ImGuiCol_ResizeGripActive] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+   colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.16f, 0.48f, 0.86f);
+   colors[ImGuiCol_TabHovered] = ImVec4(0.20f, 0.16f, 0.48f, 0.80f);
+   colors[ImGuiCol_TabActive] = ImVec4(0.36f, 0.31f, 0.73f, 0.80f);
+   colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.05f, 0.15f, 1.00f);
+   colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.13f, 0.11f, 0.31f, 1.00f);
+   colors[ImGuiCol_DockingPreview] = ImVec4(0.20f, 0.16f, 0.48f, 0.70f);
+   colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.24f, 0.92f, 1.00f);
+   colors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 0.45f, 0.94f, 1.00f);
+   colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.65f, 0.29f, 0.61f, 1.00f);
+   colors[ImGuiCol_TextSelectedBg] = ImVec4(0.20f, 0.16f, 0.48f, 0.35f);
+   colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 0.24f, 0.92f, 0.90f);
+   colors[ImGuiCol_NavHighlight] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
+
+   ImNodes::CreateContext();
    return CT_SUCCESS;
 }
 
@@ -80,6 +113,7 @@ ctResults ctImguiIntegration::Shutdown() {
 #if !CITRUS_HEADLESS
    ImGui_ImplSDL2_Shutdown();
 #endif
+   ImNodes::DestroyContext();
    ImGui::DestroyContext();
    return CT_SUCCESS;
 }

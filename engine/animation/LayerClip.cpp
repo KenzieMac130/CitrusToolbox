@@ -13,3 +13,31 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "LayerClip.hpp"
+#include "Bank.hpp"
+#include "formats/model/Model.hpp"
+
+void ctAnimLayerClip::OnApply() {
+   for (uint32_t chanIdx = 0; chanIdx < pClip->GetChannelCount(); chanIdx++) {
+      const ctAnimClipChannel& chan = pClip->GetChannel(chanIdx);
+      switch (chan.GetType()) {
+         case CT_ANIMCLIP_BONE_TRANSLATION:
+            ApplyBoneTranslation(chan.GetTargetHash(), chan.GetVectorAtTime(evalTime));
+            break;
+         case CT_ANIMCLIP_BONE_ROTATION:
+            ApplyBoneRotation(chan.GetTargetHash(), chan.GetRotationAtTime(evalTime));
+            break;
+         case CT_ANIMCLIP_BONE_SCALE:
+            ApplyBoneScale(chan.GetTargetHash(), chan.GetVectorAtTime(evalTime));
+            break;
+         case CT_ANIMCLIP_MORPH_FACTOR:
+            ApplyMorph(chan.GetTargetHash(), chan.GetFloatAtTime(evalTime));
+            break;
+         case CT_ANIMCLIP_CUSTOM_VALUE:
+            ApplyProp(chan.GetTargetHash(), chan.GetFloatAtTime(evalTime));
+            break;
+         default: break;
+      }
+   }
+}

@@ -36,6 +36,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
       const cgltf_node& node = gltf.nodes[nodeidx];
       if (!node.mesh) { continue; }
       if (isNodeCollision(node.name)) { continue; }
+      if (isNodeSpline(node.name)) { continue; }
       if (isNodeLODLevel(node.name)) { continue; } /* don't write lods in top level */
       const cgltf_mesh& mesh = *node.mesh;
 
@@ -124,8 +125,7 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
                   ctGltf2ModelVertex& vertex = submesh->vertices[i];
                   for (uint32_t j = 0; j < 4; j++) {
                      vertex.boneIndex[j] = (uint16_t)BoneIndexFromGltfNode(
-                       (uint32_t)((size_t)node.skin->joints[vertex.boneIndex[j]] -
-                                  (size_t)gltf.nodes));
+                       node.skin->joints[vertex.boneIndex[j]]->name);
                   }
                }
             }
@@ -651,6 +651,7 @@ void ctGltf2ModelMesh::ExtendLods(uint32_t count) {
 ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
    ZoneScoped;
    ctDebugLog("Merging Meshes...");
+   if (tree.meshes.isEmpty()) { return CT_SUCCESS; }
 
    ctGltf2ModelTreeSplit newTree = ctGltf2ModelTreeSplit();
    ctGltf2ModelMesh* outmesh = new ctGltf2ModelMesh();
@@ -811,7 +812,7 @@ ctResults ctGltf2Model::MergeMeshes(bool allowSkinning) {
                      ctMat4 transform = WorldMatrixFromGltfNodeIdx(instNode);
                      ctMat4RemoveTranslation(transform);
                      vtx.position = vtx.position * transform;
-                     vtx.normal = normalize(vtx.normal * transform);
+                     vtx.normal = vtx.normal * transform;
                      outsubmesh->morphs[morphIdx]->vertices.Append(vtx);
                   }
                } else /* write empty vertices */ {
@@ -1319,6 +1320,7 @@ ctResults ctGltf2Model::ComputeBounds() {
 ctResults ctGltf2Model::EncodeVertices() {
    ZoneScoped;
    ctDebugLog("Encoding Compressed Vertices...");
+   if (tree.meshes.isEmpty()) { return CT_SUCCESS; }
 
    /* create combined mesh */
    CombineFromMeshTree(tree);
@@ -1469,39 +1471,41 @@ ctResults ctGltf2Model::EncodeVertices() {
 
 /* --------------------------------- PACKAGE --------------------------------- */
 
-#define SET_GPU_TABLE(SIZE, OFFSET, ARRAY)                                               \
-   model.gpuTable.SIZE = sizeof(ARRAY[0]) * ARRAY.Count();                               \
-   model.gpuTable.OFFSET = model.gpuTable.SIZE ? runningOffset : UINT64_MAX;             \
+#define SET_GPU_TABLE(PAYLOAD_NAME, ARRAY)                                               \
+   model.gpuTable.PAYLOAD_NAME.size = sizeof(ARRAY[0]) * ARRAY.Count();                  \
+   model.gpuTable.PAYLOAD_NAME.start =                                                   \
+     model.gpuTable.PAYLOAD_NAME.size ? runningOffset : UINT64_MAX;                      \
    runningOffset =                                                                       \
      ctAlign(runningOffset + (sizeof(ARRAY[0]) * ARRAY.Count()), CT_ALIGNMENT_MODEL_GPU)
 
-#define WRITE_GPU_TABLE(SIZE, OFFSET, ARRAY)                                             \
-   memcpy(&model.inMemoryGeometryData[model.gpuTable.OFFSET],                            \
+#define WRITE_GPU_TABLE(PAYLOAD_NAME, ARRAY)                                             \
+   memcpy(&model.inMemoryGeometryData[model.gpuTable.PAYLOAD_NAME.start],                \
           ARRAY.Data(),                                                                  \
           sizeof(ARRAY[0]) * ARRAY.Count())
 
 ctResults ctGltf2Model::CreateGeometryBlob() {
    ZoneScoped;
    ctDebugLog("Packaging Geometry...");
+   if (finalMeshes.isEmpty()) { return CT_SUCCESS; }
 
    size_t runningOffset = 0;
-   SET_GPU_TABLE(indexDataSize, indexDataStart, finalIndices);
-   SET_GPU_TABLE(vertexDataCoordsSize, vertexDataCoordsStart, finalVertexCoords);
-   SET_GPU_TABLE(vertexDataSkinSize, vertexDataSkinStart, finalVertexSkinData);
-   SET_GPU_TABLE(vertexDataUVSize, vertexDataUVStart, finalVertexUVs);
-   SET_GPU_TABLE(vertexDataColorSize, vertexDataColorStart, finalVertexColors);
-   SET_GPU_TABLE(vertexDataMorphSize, vertexDataMorphStart, finalVertexMorph);
+   SET_GPU_TABLE(indexData, finalIndices);
+   SET_GPU_TABLE(vertexDataCoords, finalVertexCoords);
+   SET_GPU_TABLE(vertexDataSkin, finalVertexSkinData);
+   SET_GPU_TABLE(vertexDataUV, finalVertexUVs);
+   SET_GPU_TABLE(vertexDataColor, finalVertexColors);
+   SET_GPU_TABLE(vertexDataMorph, finalVertexMorph);
    // SET_GPU_TABLE(scatterDataSize, scatterDataStart, NULL);
 
    model.inMemoryGeometryData = (uint8_t*)ctMalloc(runningOffset);
    model.inMemoryGeometryDataSize = runningOffset;
 
-   WRITE_GPU_TABLE(indexDataSize, indexDataStart, finalIndices);
-   WRITE_GPU_TABLE(vertexDataCoordsSize, vertexDataCoordsStart, finalVertexCoords);
-   WRITE_GPU_TABLE(vertexDataSkinSize, vertexDataSkinStart, finalVertexSkinData);
-   WRITE_GPU_TABLE(vertexDataUVSize, vertexDataUVStart, finalVertexUVs);
-   WRITE_GPU_TABLE(vertexDataColorSize, vertexDataColorStart, finalVertexColors);
-   WRITE_GPU_TABLE(vertexDataMorphSize, vertexDataMorphStart, finalVertexMorph);
+   WRITE_GPU_TABLE(indexData, finalIndices);
+   WRITE_GPU_TABLE(vertexDataCoords, finalVertexCoords);
+   WRITE_GPU_TABLE(vertexDataSkin, finalVertexSkinData);
+   WRITE_GPU_TABLE(vertexDataUV, finalVertexUVs);
+   WRITE_GPU_TABLE(vertexDataColor, finalVertexColors);
+   WRITE_GPU_TABLE(vertexDataMorph, finalVertexMorph);
 
    return CT_SUCCESS;
 }

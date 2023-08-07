@@ -15,7 +15,6 @@
 */
 
 #include "MorphSet.hpp"
-#include "formats/model/Model.hpp"
 #include "CustomPropSet.hpp"
 
 ctAnimCustomPropSet::ctAnimCustomPropSet(uint32_t count,

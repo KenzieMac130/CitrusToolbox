@@ -152,11 +152,16 @@ bool ctGltf2Model::isNodeLODLevel(const char* name) {
    return false;
 }
 
-bool ctGltf2Model::isNodePath(const char* name) {
+bool ctGltf2Model::isNodeCustomAnimProp(const char* name) {
+   /* todo */
+   return false;
+}
+
+bool ctGltf2Model::isNodeSpline(const char* name) {
    size_t len = strlen(name);
    if (len < 5) { return false; }
    const char* postfix = &name[len - 4];
-   if (ctCStrNEql(postfix, "PATH", 4)) { return true; }
+   if (ctCStrNEql(postfix, "SPLN", 4)) { return true; }
    return false;
 }
 
@@ -203,7 +208,7 @@ bool ctGltf2Model::isNodeNavmeshOfflinkEnd(const char* name) {
 }
 
 bool ctGltf2Model::isNodePreserved(const char* name) {
-   if (isNodeCollision(name) || isNodeLODLevel(name) || isNodePath(name) ||
+   if (isNodeCollision(name) || isNodeLODLevel(name) || isNodeSpline(name) ||
        isNodeNavmeshRelated(name)) {
       return false;
    }

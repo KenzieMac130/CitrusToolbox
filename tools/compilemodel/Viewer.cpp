@@ -26,6 +26,8 @@
 #include "animation/Skeleton.hpp"
 #include "animation/MorphSet.hpp"
 #include "animation/Canvas.hpp"
+#include "animation/Bank.hpp"
+#include "animation/LayerClip.hpp"
 
 #include "scene/SceneEngine.hpp"
 
@@ -53,6 +55,12 @@ const char* meshModeNames[] {"Submesh",
                              "Bone",
                              "Material"};
 
+struct ctModelViewerAnimState {
+   float time = 0.0f;
+   float speed = 1.0f;
+   float weight = 0.0f;
+};
+
 class ctModelViewer : public ctApplication {
 public:
    virtual const char* GetAppName() {
@@ -75,10 +83,29 @@ public:
       Engine->SceneEngine->SetCameraOverride(camera);
 
       /* animation */
-      pAnimCanvas->ResetToDefault();
-      // todo: animation
-      pAnimCanvas->CopyToSkeleton(pSkeleton);
-      pAnimCanvas->CopyToMorphSet(pMorphSet);
+      if (applyKeyframes && pAnimCanvas && pAnimBank) {
+         pAnimCanvas->ResetToDefault();
+         for (uint32_t i = 0; i < pAnimBank->GetClipCount(); i++) {
+            animStates[i].time += deltaTime * animStates[i].speed;
+            if (animStates[i].time > pAnimBank->GetClip(i).GetLength()) {
+               animStates[i].time =
+                 animStates[i].time - pAnimBank->GetClip(i).GetLength();
+            } else if (animStates[i].time < 0.0f) {
+               animStates[i].time =
+                 pAnimBank->GetClip(i).GetLength() - ctAbs(animStates[i].time);
+            }
+            if (animStates[i].weight > 0.0f) {
+               pAnimCanvas->ApplyLayer(
+                 ctAnimLayerClip(pAnimBank->GetClip(i), animStates[i].time),
+                 animStates[i].weight);
+            }
+         }
+         if (pSkeleton) {
+            pAnimCanvas->CopyToSkeleton(pSkeleton);
+            pSkeleton->FlushBoneTransforms();
+         }
+         if (pMorphSet) { pAnimCanvas->CopyToMorphSet(pMorphSet); }
+      }
       return CT_SUCCESS;
    }
    virtual ctResults OnShutdown();
@@ -99,13 +126,17 @@ public:
    void RenderSkeleton();
    void RenderBoundingBoxes();
    void RenderGeometry();
+   void RenderSplines();
 
    /* Settings */
    bool renderSkeleton = false;
    bool renderBoneNames = false;
    bool renderGeometry = true;
    bool renderBBOX = true;
+   bool renderSplines = true;
    bool applySkin = true;
+   bool applyKeyframes = false;
+   float splineTailLength = 0.1f;
    ctModelViewerMeshMode viewMode = CT_MODELVIEW_WIREFRAME;
    int32_t uvChannel = 0;
    int32_t colorChannel = 0;
@@ -126,9 +157,11 @@ public:
    ctDynamicArray<ctVec2> animUVs;
    ctDynamicArray<ctVec4> animColors;
 
+   ctAnimBank* pAnimBank;
    ctAnimSkeleton* pSkeleton;
    ctAnimMorphSet* pMorphSet;
    ctAnimCanvas* pAnimCanvas;
+   ctDynamicArray<ctModelViewerAnimState> animStates;
 
    ctCameraInfo camera;
    float timer;
@@ -151,26 +184,31 @@ ctResults ctModelViewer::OnStartup() {
    /* setup animation */
    if (model.geometry.morphTargetMapping) { pMorphSet = new ctAnimMorphSet(model); }
    if (model.skeleton.boneCount) { pSkeleton = new ctAnimSkeleton(model); }
+   if (model.animation.clipCount) {
+      pAnimBank = new ctAnimBank(model);
+      animStates.Resize(pAnimBank->GetClipCount());
+   }
    pAnimCanvas = new ctAnimCanvas(pSkeleton, pMorphSet);
    return CT_SUCCESS;
 }
 
 ctResults ctModelViewer::OnUIUpdate() {
    ZoneScoped;
-   ImGui::Begin(CT_NC("Model"));
-   if (ImGui::CollapsingHeader(CT_NC("Preview"))) {
-      ImGui::InputFloat3("Camera Position", camera.position.data);
-      ImGui::InputFloat("Rotation Phase", &rotationPhase);
-      ImGui::InputFloat("Rotation Speed", &rotationSpeed);
+   if (ImGui::Begin(CT_NC("Model"))) {
+      if (ImGui::CollapsingHeader(CT_NC("Preview"))) {
+         ImGui::InputFloat3("Camera Position", camera.position.data);
+         ImGui::InputFloat("Rotation Phase", &rotationPhase);
+         ImGui::InputFloat("Rotation Speed", &rotationSpeed);
+      }
+      if (ImGui::CollapsingHeader(CT_NC("Skeleton"))) { SkeletonInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Geometry"))) { GeometryInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Animation"))) { AnimationInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Splines"))) { SplinesInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Material"))) { MaterialInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Physics"))) { PhysicsInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Navmesh"))) { NavmeshInfo(); }
+      if (ImGui::CollapsingHeader(CT_NC("Scene"))) { SceneInfo(); }
    }
-   if (ImGui::CollapsingHeader(CT_NC("Skeleton"))) { SkeletonInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Geometry"))) { GeometryInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Animation"))) { AnimationInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Splines"))) { SplinesInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Material"))) { MaterialInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Physics"))) { PhysicsInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Navmesh"))) { NavmeshInfo(); }
-   if (ImGui::CollapsingHeader(CT_NC("Scene"))) { SceneInfo(); }
    ImGui::End();
    RenderModel();
    return CT_SUCCESS;
@@ -184,6 +222,7 @@ ctResults ctModelViewer::OnShutdown() {
 }
 
 void ctModelViewer::SkeletonInfo() {
+   if (!pSkeleton) { return; }
    ImGui::PushID("BONE_TREE");
    ImGui::Checkbox(CT_NC("Render Skeleton"), &renderSkeleton);
    ImGui::Checkbox(CT_NC("Render Bone Names"), &renderBoneNames);
@@ -334,10 +373,7 @@ void ctModelViewer::GeometryInfo() {
       }
       ImGui::TreePop();
    }
-   ImGui::PopID();
-}
 
-void ctModelViewer::AnimationInfo() {
    if (pMorphSet) {
       if (ImGui::TreeNode("Morph Target Layers")) {
          for (int32_t i = 0; i < pMorphSet->GetTargetCount(); i++) {
@@ -352,9 +388,50 @@ void ctModelViewer::AnimationInfo() {
          ImGui::TreePop();
       }
    }
+
+   ImGui::PopID();
+}
+
+void ctModelViewer::AnimationInfo() {
+   if (pAnimBank) {
+      ImGui::Checkbox("Apply Keyframes", &applyKeyframes);
+      if (ImGui::TreeNode("Animation Clips")) {
+         for (uint32_t i = 0; i < pAnimBank->GetClipCount(); i++) {
+            char buff[33];
+            memset(buff, 0, 33);
+            pAnimBank->GetClip(i).GetName(buff);
+            if (ImGui::TreeNode(buff)) {
+               ImGui::InputFloat("Time", &animStates[i].time);
+               ImGui::InputFloat("Speed", &animStates[i].speed);
+               ImGui::InputFloat("Weight", &animStates[i].weight);
+               ImGui::TreePop();
+            }
+         }
+         ImGui::TreePop();
+      }
+   }
 }
 
 void ctModelViewer::SplinesInfo() {
+   if (!model.splines.segments) { return; }
+   ImGui::Checkbox("Render Splines", &renderSplines);
+   ImGui::SliderFloat("Axis Size", &splineTailLength, 0.001f, 1.0f);
+   if (ImGui::TreeNode("Segments")) {
+      for (uint32_t i = 0; i < model.splines.segmentCount; i++) {
+         ImGui::Text("Segment %u, Offset %u, Point Count %u, Type %s %s",
+                     i,
+                     model.splines.segments[i].pointOffset,
+                     model.splines.segments[i].pointCount,
+                     ctCFlagCheck(model.splines.segments[i].flags,
+                                  CT_MODEL_SPLINE_INTERPOLATE_CUBIC)
+                       ? "CUBIC"
+                       : "LINEAR",
+                     ctCFlagCheck(model.splines.segments[i].flags, CT_MODEL_SPLINE_CYCLIC)
+                       ? "CYCLIC"
+                       : "ACYCLIC");
+      }
+      ImGui::TreePop();
+   }
 }
 
 void ctModelViewer::PhysicsInfo() {
@@ -386,6 +463,7 @@ void ctModelViewer::RenderModel() {
    if (renderSkeleton) { RenderSkeleton(); }
    if (renderBBOX) { RenderBoundingBoxes(); }
    if (renderGeometry) { RenderGeometry(); }
+   if (renderSplines) { RenderSplines(); }
    Im3d::PopMatrix();
 }
 
@@ -655,19 +733,19 @@ void ctModelViewer::RenderGeometry() {
 
       /* map arrays */
       uint16_t* indices =
-        (uint16_t*)&model.inMemoryGeometryData[model.gpuTable.indexDataStart];
+        (uint16_t*)&model.inMemoryGeometryData[model.gpuTable.indexData.start];
       ctModelMeshVertexCoords* coords =
         (ctModelMeshVertexCoords*)&model
-          .inMemoryGeometryData[model.gpuTable.vertexDataCoordsStart];
+          .inMemoryGeometryData[model.gpuTable.vertexDataCoords.start];
       ctModelMeshVertexUV* uvs =
         (ctModelMeshVertexUV*)&model
-          .inMemoryGeometryData[model.gpuTable.vertexDataUVStart];
+          .inMemoryGeometryData[model.gpuTable.vertexDataUV.start];
       ctModelMeshVertexColor* colors =
         (ctModelMeshVertexColor*)&model
-          .inMemoryGeometryData[model.gpuTable.vertexDataColorStart];
+          .inMemoryGeometryData[model.gpuTable.vertexDataColor.start];
       ctModelMeshVertexSkinData* skins =
         (ctModelMeshVertexSkinData*)&model
-          .inMemoryGeometryData[model.gpuTable.vertexDataSkinStart];
+          .inMemoryGeometryData[model.gpuTable.vertexDataSkin.start];
 
       coords += lod.vertexDataCoordsStart;
       skins = lod.vertexDataSkinDataStart != UINT32_MAX
@@ -747,6 +825,51 @@ void ctModelViewer::RenderGeometry() {
    }
 }
 
+void ctModelViewer::RenderSplines() {
+   for (size_t seg = 0; seg < model.splines.segmentCount; seg++) {
+      ctModelSpline& spline = model.splines.segments[seg];
+
+      /* line */
+      Im3d::BeginLineStrip();
+      for (uint32_t i = 0; i < spline.pointCount; i++) {
+         Im3d::Vertex(ctVec3ToIm3d(model.splines.positions[spline.pointOffset + i]));
+      }
+      if (ctCFlagCheck(spline.flags, CT_MODEL_SPLINE_CYCLIC)) {
+         Im3d::Vertex(ctVec3ToIm3d(model.splines.positions[spline.pointOffset]));
+      }
+      Im3d::End();
+
+      /* normals */
+      Im3d::PushColor(Im3d::Color_Red);
+      for (uint32_t i = 0; i < spline.pointCount; i++) {
+         ctVec3 pos = model.splines.positions[spline.pointOffset + i];
+         ctVec3 n = model.splines.normals[spline.pointOffset + i] * splineTailLength;
+         Im3d::DrawArrow(ctVec3ToIm3d(pos), ctVec3ToIm3d((pos + n)));
+      }
+      Im3d::PopColor();
+
+      /* tangents */
+      Im3d::PushColor(Im3d::Color_Green);
+      for (uint32_t i = 0; i < spline.pointCount; i++) {
+         ctVec3 pos = model.splines.positions[spline.pointOffset + i];
+         ctVec3 t = model.splines.tangents[spline.pointOffset + i] * splineTailLength;
+         Im3d::DrawArrow(ctVec3ToIm3d(pos), ctVec3ToIm3d((pos + t)));
+      }
+      Im3d::PopColor();
+
+      /* bitangents */
+      Im3d::PushColor(Im3d::Color_Blue);
+      for (uint32_t i = 0; i < spline.pointCount; i++) {
+         ctVec3 pos = model.splines.positions[spline.pointOffset + i];
+         ctVec3 n = model.splines.normals[spline.pointOffset + i];
+         ctVec3 t = model.splines.tangents[spline.pointOffset + i];
+         ctVec3 b = cross(t, n) * splineTailLength;
+         Im3d::DrawArrow(ctVec3ToIm3d(pos), ctVec3ToIm3d((pos + b)));
+      }
+      Im3d::PopColor();
+   }
+}
+
 void ctModelViewer::FillAnimMeshData(ctModelMeshVertexCoords* coords,
                                      ctModelMeshVertexUV* uvs,
                                      ctModelMeshVertexColor* colors,
@@ -808,7 +931,7 @@ void ctModelViewer::ApplyMorph(ctModelMeshLod& lod, int32_t idx, float weight) {
    if (weight == 0.0f) { return; }
    ctModelMeshVertexMorph* mverts =
      (ctModelMeshVertexMorph*)&model
-       .inMemoryGeometryData[model.gpuTable.vertexDataMorphStart];
+       .inMemoryGeometryData[model.gpuTable.vertexDataMorph.start];
    for (uint32_t midx = 0; midx < lod.morphTargetCount; midx++) {
       const auto& morph = model.geometry.morphTargets[lod.morphTargetStart + midx];
       if (morph.mapping == idx) {
@@ -865,15 +988,15 @@ void ctModelViewer::ApplySkeleton(ctModelMeshVertexSkinData* pSkins, size_t vert
          ctMat4 inverseBind = pSkeleton->GetInverseBindMatrix(bone);
          position = position * inverseBind;
          ctMat4RemoveTranslation(inverseBind);
-         normal = normalize(normal * inverseBind);
-         tangent = normalize(tangent * inverseBind);
+         normal = normal * inverseBind;
+         tangent = tangent * inverseBind;
 
          /* bring to pose using model transform */
          ctMat4 modelMatrix = pSkeleton->GetModelMatrix(bone);
          position = position * modelMatrix;
          ctMat4RemoveTranslation(modelMatrix);
-         normal = normalize(normal * modelMatrix);
-         tangent = normalize(tangent * modelMatrix);
+         normal = normal * modelMatrix;
+         tangent = tangent * modelMatrix;
 
          /* turn to displacement */
          position = (position - originalposition) * weight;
@@ -882,8 +1005,8 @@ void ctModelViewer::ApplySkeleton(ctModelMeshVertexSkinData* pSkins, size_t vert
 
          /* apply offsets */
          animPositions[i] += position;
-         animNormals[i] += normal;
-         animTangents[i] += ctVec4(tangent, 0.0f);
+         animNormals[i] = normalize(normal + animNormals[i]);
+         animTangents[i] += ctVec4(normalize(ctVec3(animTangents[i]) + tangent), 0.0f);
       }
    }
 }
