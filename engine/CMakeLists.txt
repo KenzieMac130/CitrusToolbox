@@ -324,13 +324,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.hpp
 )
 
-if(CITRUS_PHYSX)
-list(APPEND ENGINE_SOURCE_FILES_MIDDLEWARE
-${CMAKE_CURRENT_SOURCE_DIR}/middleware/PhysXIntegration.cpp)
-list(APPEND ENGINE_HEADER_FILES_MIDDLEWARE
-${CMAKE_CURRENT_SOURCE_DIR}/middleware/PhysXIntegration.hpp)
-endif()
-
 # ---------- Scripting Integration ---------- 
 if(CITRUS_LUA)
 set(ENGINE_SOURCE_FILES_SCRIPTING
@@ -439,12 +432,6 @@ if(CITRUS_GPU_VULKAN)
 	target_include_directories(engine PUBLIC ${Vulkan_INCLUDE_DIRS})
 endif()
 
-if(CITRUS_PHYSX)
-	target_link_libraries(engine ${PHYSX_LIBRARIES})
-	target_link_libraries(engine ${PHYSX_STATIC_LIBRARIES})
-	target_include_directories(engine PUBLIC ${PHYSX_INCLUDE_DIR})
-endif()
-
 if(CITRUS_BLAST)
 	target_link_libraries(engine ${BLAST_LIBRARIES})
 	target_include_directories(engine PUBLIC ${BLAST_INCLUDE_DIR})
@@ -497,20 +484,4 @@ if(CITRUS_SHADERC)
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	"${SHARED_LIBRARY_DIRECTORY}/shaderc_shared${SHARED_LIBRARY_FORMAT}"
 	$<TARGET_FILE_DIR:engine>)
-endif()
-if(CITRUS_PHYSX)
-	foreach(LIB IN LISTS PHYSX_SHARED_LIBRARIES)
-		add_custom_command(TARGET engine POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${LIB}"
-		$<TARGET_FILE_DIR:engine>)
-	endforeach()
-endif()
-if(CITRUS_BLAST)
-	foreach(LIB IN LISTS BLAST_SHARED_LIBRARIES)
-		add_custom_command(TARGET engine POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${LIB}"
-		$<TARGET_FILE_DIR:engine>)
-	endforeach()
 endif()

@@ -55,10 +55,6 @@ public:
    class ctKeyLimeRenderer* Renderer;
    class ctSceneEngine* SceneEngine;
 
-#if CITRUS_PHYSX
-   class ctPhysXIntegration* PhysXIntegration;
-#endif
-
    ctStopwatch FrameTime;
 
 private:

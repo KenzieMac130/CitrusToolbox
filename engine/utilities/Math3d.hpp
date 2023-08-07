@@ -1021,37 +1021,3 @@ inline ctQuat::ctQuat(struct ctVec4 _v) {
           v(3, 1),                                                                       \
           v(3, 2),                                                                       \
           v(3, 3))
-
-#define ctVec2ToPx(v)      PxVec2(v.x, v.y)
-#define ctVec3ToPx(v)      PxVec3(v.x, v.y, v.z)
-#define ctVec3ToPxExt(v)   PxExtendedVec3((PxExtended)v.x, (PxExtended)v.y, (PxExtended)v.z)
-#define ctVec4ToPx(v)      PxVec4(v.x, v.y, v.z, v.w)
-#define ctQuatToPx(v)      PxQuat(v.x, v.y, v.z, v.w)
-#define ctTransformToPx(v) PxTransform(ctVec3ToPx(v.position), ctQuatToPx(v.rotation))
-#define ctBoundBoxToPx(v)  PxBounds3(ctVec3ToPx(v.min), ctVec3ToPx(v.max))
-#define ctMat4ToPx(v)      PxMat44(&v.data[0][0])
-
-#define ctVec2FromPx(v)      ctVec2(v.x, v.y)
-#define ctVec3FromPx(v)      ctVec3(v.x, v.y, v.z)
-#define ctVec3FromPxExt(v)   ctVec3((float)v.x, (float)v.y, (float)v.z)
-#define ctVec4FromPx(v)      ctVec4(v.x, v.y, v.z, v.w)
-#define ctQuatFromPx(v)      ctQuat(v.x, v.y, v.z, v.w)
-#define ctTransformFromPx(v) ctTransform(ctVec3FromPx(v.p), ctQuatFromPx(v.q))
-#define ctBoundBoxFromPx(v)  ctBoundBox(ctVec3FromPx(v.minimum), ctVec3FromPx(v.maximum))
-#define ctMat4FromPx(v)                                                                  \
-   ctMat4(v[0],                                                                          \
-          v[1],                                                                          \
-          v[2],                                                                          \
-          v[3],                                                                          \
-          v[4],                                                                          \
-          v[5],                                                                          \
-          v[6],                                                                          \
-          v[7],                                                                          \
-          v[8],                                                                          \
-          v[9],                                                                          \
-          v[10],                                                                         \
-          v[11],                                                                         \
-          v[12],                                                                         \
-          v[13],                                                                         \
-          v[14],                                                                         \
-          v[15])

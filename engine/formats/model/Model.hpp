@@ -263,8 +263,6 @@ struct ctModelBlobData {
 
 /*
 MATCODE: material json
-PXBAKEG: physx serialization for global (materials/shapes)
-PXBAKEI: physx serialization for instance (bodies, joints)
 NAVMESH: detour navmesh
 SCNCODE: lua script for the scene
 */
@@ -299,8 +297,6 @@ struct ctModel {
    ctModelAnimationData animation;
    ctModelSplineData splines;
    ctModelBlobData materialSet;         /* MATSET */
-   ctModelBlobData physxSerialGlobal;   /* PXBAKEG */
-   ctModelBlobData physxSerialInstance; /* PXBAKEI */
    ctModelBlobData navmeshData;         /* NAVMESH */
    ctModelBlobData sceneScript;         /* SCNCODE */
    ctModelGPUPayloadInfo gpuTable;      /* GPUTABLE */

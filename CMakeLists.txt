@@ -165,63 +165,6 @@ if(CITRUS_SHADERC)
    set(SHADERC_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Shaderc/Lib/shaderc_shared.lib)
 endif()
 
-# ---------- Find PhysX ----------
-set(CITRUS_PHYSX 1)
-set(CITRUS_PHYSX_CHECKED 1)
-set(CITRUS_PHYSX_RUNTIMECOOK 1)
-if(CITRUS_PHYSX)
-    set(PHYSX_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/PhysX/include)
-
-    if(CITRUS_PHYSX_CHECKED)
-        set(PHYSX_PROFILE_NAME checked)
-    else()
-        set(PHYSX_PROFILE_NAME release)
-    endif()
-
-    set(PHYSX_SHARED_LIBRARIES 
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${BUILD_CONFIGURATION_DIR}/PhysX_64${SHARED_LIBRARY_FORMAT}
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${BUILD_CONFIGURATION_DIR}/PhysXCommon_64${SHARED_LIBRARY_FORMAT}
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${BUILD_CONFIGURATION_DIR}/PhysXCooking_64${SHARED_LIBRARY_FORMAT}
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/bin/${BUILD_CONFIGURATION_DIR}/PhysXFoundation_64${SHARED_LIBRARY_FORMAT})
-    set(PHYSX_LIBRARIES 
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysX_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXCommon_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXCooking_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXFoundation_64.lib)
-    set(PHYSX_STATIC_LIBRARIES
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXTask_static_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXPvdSDK_static_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXExtensions_static_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXCharacterKinematic_static_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXVehicle_static_64.lib
-            ${BASE_LIBRARY_DIRECTORY}/PhysX/lib/${BUILD_CONFIGURATION_DIR}/PhysXVehicle2_static_64.lib)
-
-endif()
-
-# ---------- Find Blast ----------
-set(CITRUS_BLAST 1)
-set(BLAST_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/Blast/include)
-set(BLAST_SHARED_LIBRARIES 
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlast${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastExtAssetUtils${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastExtAuthoring${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastExtSerialization${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastExtShaders${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastExtStress${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastExtTkSerialization${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastGlobals${SHARED_LIBRARY_FORMAT}
-        ${BASE_LIBRARY_DIRECTORY}/Blast/bin/NvBlastTk${SHARED_LIBRARY_FORMAT})
-set(BLAST_LIBRARIES 
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlast.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastExtAssetUtils.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastExtAuthoring.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastExtSerialization.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastExtShaders.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastExtStress.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastExtTkSerialization.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastGlobals.lib
-        ${BASE_LIBRARY_DIRECTORY}/Blast/lib/NvBlastTk.lib)
-
 # ---------- Find Recast ----------
 set(CITRUS_RECAST 1)
 if(CITRUS_RECAST)

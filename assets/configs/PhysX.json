@@ -1,8 +1,0 @@
-{
-	"ConnectPvd": true,
-	"PvdHostAddress": "127.0.0.1",
-	"PvdHostPort": 5425,
-	"RecordAllocations": true,
-	"ToleranceLength": 1.0,
-	"ToleranceSpeed": 10.0
-}

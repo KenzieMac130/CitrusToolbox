@@ -15,10 +15,6 @@
     "path": "configs/JobSystem.json",
 	"out": "OUTPUT"
   },
-  "Settings_PhysX": {
-    "path": "configs/PhysX.json",
-	"out": "OUTPUT"
-  },
   "Settings_Renderer": {
     "path": "configs/Renderer.json",
 	"out": "OUTPUT"

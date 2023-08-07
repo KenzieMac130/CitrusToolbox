@@ -20,7 +20,6 @@
 #include "cgltf/cgltf.h"
 #include "formats/model/Model.hpp"
 #include "tiny_imageFormat/tinyimageformat.h"
-#include "middleware/PhysXIntegration.hpp"
 
 struct ctGltf2ModelVertex {
    ctVec3 position;
@@ -106,16 +105,6 @@ enum ctGltf2ModelCollisionType {
    CT_GLTF2MODEL_COLLISION_PILL,
    CT_GLTF2MODEL_COLLISION_TRI,
    CT_GLTF2MODEL_COLLISION_CONVEX
-};
-
-class ctGltf2ModelPxOutStream : public PxOutputStream {
-public:
-   virtual uint32_t write(const void* src, uint32_t count) {
-      output.Append((uint8_t*)src, count);
-      return count;
-   }
-
-   ctDynamicArray<uint8_t> output;
 };
 
 class ctGltf2Model {
@@ -261,18 +250,6 @@ protected:
                               cgltf_texture_view* texture,
                               bool includeXform);
 
-   /* Physics Helpers */
-   ctResults ExtractPxAsBodies(bool isCompound);
-   ctResults ExtractPxAsArticulation();
-   inline PxSerialObjectId GetSerialIdForPtr(const void* ptr) {
-      return (PxSerialObjectId)ptr;
-   }
-   PxShape* GetPxBox(const cgltf_node& node, PxMaterial& material);
-   PxShape* GetPxSphere(const cgltf_node& node, PxMaterial& material);
-   PxShape* GetPxCapsule(const cgltf_node& node, PxMaterial& material);
-   PxShape* GetPxConvex(const cgltf_node& node, PxMaterial& material);
-   PxShape* GetPxTris(const cgltf_node& node, PxMaterial& material);
-
 private:
    cgltf_data gltf;
    ctModel model;
@@ -318,12 +295,4 @@ private:
 
    /* Material */
    ctStringUtf8 materialText;
-
-   /* PhysX */
-   ctPhysXIntegration* pPhysXIntegration;
-   PxSerializationRegistry* pxSerialRegistry;
-   PxCollection* pxGlobalCollection;
-   PxCollection* pxInstanceCollection;
-   ctGltf2ModelPxOutStream instanceStream;
-   ctGltf2ModelPxOutStream globalStream;
 };

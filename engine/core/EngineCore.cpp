@@ -17,8 +17,6 @@
 #include "EngineCore.hpp"
 #include "Application.hpp"
 
-#include "middleware/PhysXIntegration.hpp"
-
 #include "GameLayer.hpp"
 
 #include "AsyncTasks.hpp"
@@ -80,7 +78,6 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Renderer = new ctKeyLimeRenderer();
    FrameTime = ctStopwatch();
    SceneEngine = new ctSceneEngine();
-   PhysXIntegration = new ctPhysXIntegration();
 #if CITRUS_INCLUDE_AUDITION
    Editor = new ctAuditionEditor();
    AssetCompiler = new ctAssetCompilerBootstrap();
@@ -107,7 +104,6 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Interact->ModuleStartup(this);
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
-   PhysXIntegration->ModuleStartup(this);
    Animation->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
    Renderer->ModuleStartup(this);
@@ -179,7 +175,6 @@ ctResults ctEngineCore::Shutdown() {
    Editor->ModuleShutdown();
 #endif
    SceneEngine->ModuleShutdown();
-   PhysXIntegration->ModuleShutdown();
    Animation->ModuleShutdown();
    Renderer->ModuleShutdown();
    Im3dIntegration->ModuleShutdown();
@@ -202,7 +197,6 @@ ctResults ctEngineCore::Shutdown() {
    delete AssetCompiler;
    delete Editor;
 #endif
-   delete PhysXIntegration;
    delete Animation;
    delete Renderer;
    delete Im3dIntegration;

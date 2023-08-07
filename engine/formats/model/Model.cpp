@@ -88,12 +88,6 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    ctWADFindLump(&wad, "MATSET", (void**)&model.materialSet.data, &tmpsize);
    model.materialSet.size = tmpsize;
 
-   /* PhysX Cook */
-   ctWADFindLump(&wad, "PXBAKEG", (void**)&model.physxSerialGlobal.data, &tmpsize);
-   model.physxSerialGlobal.size = tmpsize;
-   ctWADFindLump(&wad, "PXBAKEI", (void**)&model.physxSerialInstance.data, &tmpsize);
-   model.physxSerialInstance.size = tmpsize;
-
    /* Navmesh */
    ctWADFindLump(&wad, "NAVMESH", (void**)&model.navmeshData.data, &tmpsize);
    model.navmeshData.size = tmpsize;
@@ -200,16 +194,6 @@ CT_API ctResults ctModelSave(ctModel& model,
                      "ASCALARS",
                      (uint8_t*)model.animation.scalars,
                      model.animation.scalarCount * sizeof(model.animation.scalars[0]));
-
-   /* PhysX */
-   ctWADWriteSection(&wad,
-                     "PXBAKEG",
-                     (uint8_t*)model.physxSerialGlobal.data,
-                     model.physxSerialGlobal.size);
-   ctWADWriteSection(&wad,
-                     "PXBAKEI",
-                     (uint8_t*)model.physxSerialInstance.data,
-                     model.physxSerialInstance.size);
 
    /* Navmesh */
    ctWADWriteSection(

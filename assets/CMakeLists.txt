@@ -28,7 +28,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/configs/Audition.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/DebugSystem.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Honeybell.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/JobSystem.json
-${CMAKE_CURRENT_SOURCE_DIR}/configs/PhysX.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Renderer.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Translation.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Window.json
