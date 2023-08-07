@@ -25,8 +25,8 @@ CT_API bool ctMutexLock(ctMutex mutex);
 CT_API bool ctMutexTryLock(ctMutex mutex);
 CT_API bool ctMutexUnlock(ctMutex mutex);
 
-#define CT_MEMORY_BARRIER_ACQUIRE SDL_MemoryBarrierRelease
-#define CT_MEMORY_BARRIER_RELEASE SDL_MemoryBarrierAcquire
+#define CT_MEMORY_BARRIER_ACQUIRE SDL_MemoryBarrierAcquire
+#define CT_MEMORY_BARRIER_RELEASE SDL_MemoryBarrierRelease
 
 typedef SDL_SpinLock ctSpinLock;
 inline void ctSpinLockInit(ctSpinLock& val) {
