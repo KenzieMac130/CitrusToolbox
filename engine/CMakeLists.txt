@@ -432,14 +432,14 @@ if(CITRUS_GPU_VULKAN)
 	target_include_directories(engine PUBLIC ${Vulkan_INCLUDE_DIRS})
 endif()
 
-if(CITRUS_BLAST)
-	target_link_libraries(engine ${BLAST_LIBRARIES})
-	target_include_directories(engine PUBLIC ${BLAST_INCLUDE_DIR})
-endif()
-
 if(CITRUS_LUA)
 	target_link_libraries(engine ${LUA_LIBRARIES})
 	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
+endif()
+
+if(CITRUS_JOLT)
+	target_link_libraries(engine ${JOLT_LIBRARY})
+	target_include_directories(engine PUBLIC ${JOLT_INCLUDE_DIR})
 endif()
 
 if(CITRUS_RECAST)

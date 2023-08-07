@@ -165,6 +165,13 @@ if(CITRUS_SHADERC)
    set(SHADERC_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Shaderc/Lib/shaderc_shared.lib)
 endif()
 
+# ---------- Find Jolt ----------
+set(CITRUS_JOLT 1)
+if(CITRUS_JOLT)
+   set(JOLT_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/Jolt/include)
+   set(JOLT_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Jolt/lib/jolt.lib)
+endif()
+
 # ---------- Find Recast ----------
 set(CITRUS_RECAST 1)
 if(CITRUS_RECAST)
