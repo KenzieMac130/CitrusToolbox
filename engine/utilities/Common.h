@@ -165,7 +165,8 @@ struct ctGroupAllocDesc {
    size_t size;
    void** output;
 };
-CT_API void* ctGroupAlloc(size_t count, struct ctGroupAllocDesc* groups, size_t* pSizeOut);
+CT_API void*
+ctGroupAlloc(size_t count, struct ctGroupAllocDesc* groups, size_t* pSizeOut);
 
 #pragma warning(disable : 6255)
 #define ctStackAlloc(_SIZE) alloca(_SIZE)
@@ -183,6 +184,7 @@ CT_API size_t ctGetAliveAllocations();
 #include "GUID.hpp"
 #include "HandleManager.hpp"
 #include "StaticArray.hpp"
+#include "Reflect.hpp"
 #include "Math.hpp"
 #include "Math3d.hpp"
 #include "Noise.hpp"
