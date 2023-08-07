@@ -26,8 +26,6 @@ GAME_LAYER_API int ctGameAPIStartup(void* pEngine) {
 #if !CITRUS_STATIC_GAME
    Engine->GameLayer->_StartupGameLayerAsSharedObject();
 #endif
-
-   ctDebugLog("TEST");
    return (int)CT_SUCCESS;
 }
 
