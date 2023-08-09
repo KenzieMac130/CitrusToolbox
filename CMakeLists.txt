@@ -18,6 +18,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(CitrusToolbox)
 
+# ---------- Language Version ----------
+set (CMAKE_CXX_STANDARD 17)
+
 # ---------- Unicode ----------
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
