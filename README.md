@@ -8,7 +8,7 @@
  
 ## Building:
   * Prerequisites:
-     *  CMake 3.10x
+     *  CMake 3.15x
      *  C++ 17 Compiler
      *  Git + LFS
      *  Python 3
