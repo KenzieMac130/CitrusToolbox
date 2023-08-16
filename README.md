@@ -8,8 +8,8 @@
  
 ## Building:
   * Prerequisites:
-     *  CMake 3.10x
-     *  C++ 14 Compiler
+     *  CMake 3.15x
+     *  C++ 17 Compiler
      *  Git + LFS
      *  Python 3
   * Clone the repository/submodules to your machine in a directory with sufficient priveleges.
