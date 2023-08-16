@@ -148,6 +148,13 @@ enum ctResults {
 #define ctCFlagCheck(v, f)      ((v & f) == f)
 #define ctAlign(v, a)           ((v + (a - 1)) & -a)
 
+/*Debug*/
+#ifdef NDEBUG
+#define CITRUS_IS_DEBUG 0
+#else
+#define CITRUS_IS_DEBUG 1
+#endif
+
 /*Assert*/
 #define ctAssert(e) assert(e)
 

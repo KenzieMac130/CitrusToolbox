@@ -26,6 +26,7 @@ CT_API void _ctDebugLogSetCallback(void (*callback)(int level,
                                              const char* format,
                                              va_list args));
 CT_API void _ctDebugLogCallLogger(int level, const char* format, ...);
+CT_API void _ctDebugLogCallLoggerVa(int level, const char* format, va_list args);
 
 /**
  * @brief debug logging

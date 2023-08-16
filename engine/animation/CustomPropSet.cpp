@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include "MorphSet.hpp"
 #include "CustomPropSet.hpp"
 
 ctAnimCustomPropSet::ctAnimCustomPropSet(uint32_t count,

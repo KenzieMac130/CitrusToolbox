@@ -39,6 +39,22 @@ inline void ctSpinLockExitCritical(ctSpinLock& val) {
    SDL_AtomicUnlock(&val);
 };
 
+class _ctSpinLockAutoLifetimeObject {
+public:
+   inline _ctSpinLockAutoLifetimeObject(ctSpinLock& lock) : lockref(lock) {
+      ctSpinLockEnterCritical(lockref);
+   }
+   inline ~_ctSpinLockAutoLifetimeObject() {
+      ctSpinLockExitCritical(lockref);
+   }
+
+private:
+   ctSpinLock& lockref;
+};
+
+#define ctSpinLockEnterCriticalScoped(_NAME, _LOCKVAR)                                   \
+   _ctSpinLockAutoLifetimeObject _NAME = _ctSpinLockAutoLifetimeObject(_LOCKVAR);
+
 typedef SDL_atomic_t ctAtomic;
 inline void ctAtomicAdd(ctAtomic& atomic, int val) {
    SDL_AtomicAdd(&atomic, val);

@@ -43,6 +43,8 @@
 #include "renderer/KeyLimeRenderer.hpp"
 #include "scene/SceneEngine.hpp"
 
+#include "physics/Module.hpp"
+
 ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ZoneScoped;
    App = pApp;
@@ -76,6 +78,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Im3dIntegration = new ctIm3dIntegration();
    Animation = new ctAnimationSystem();
    Renderer = new ctKeyLimeRenderer();
+   Physics = new ctPhysicsModule();
    FrameTime = ctStopwatch();
    SceneEngine = new ctSceneEngine();
 #if CITRUS_INCLUDE_AUDITION
@@ -105,6 +108,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
    Animation->ModuleStartup(this);
+   Physics->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
    Renderer->ModuleStartup(this);
 #if CITRUS_INCLUDE_AUDITION
@@ -175,6 +179,7 @@ ctResults ctEngineCore::Shutdown() {
    Editor->ModuleShutdown();
 #endif
    SceneEngine->ModuleShutdown();
+   Physics->ModuleShutdown();
    Animation->ModuleShutdown();
    Renderer->ModuleShutdown();
    Im3dIntegration->ModuleShutdown();
@@ -197,6 +202,7 @@ ctResults ctEngineCore::Shutdown() {
    delete AssetCompiler;
    delete Editor;
 #endif
+   delete Physics;
    delete Animation;
    delete Renderer;
    delete Im3dIntegration;

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "utilities/RingBuffer.hpp"
 #include "ModuleBase.hpp"
 
 class CT_API ctJobSystem : public ctModuleBase {
@@ -37,6 +38,10 @@ public:
    bool isExiting() const;
    void WorkLoop();
 
+   inline size_t GetThreadCount() {
+      return threadPool.Count();
+   }
+
 protected:
    int32_t threadReserve;
    int32_t threadCount;
@@ -48,7 +53,8 @@ protected:
    };
    static_assert(sizeof(JobInternal) == CT_ALIGNMENT_CACHE,
                  "JobInternal does not fit cache boundary");
-   ctDynamicArray<JobInternal> jobQueue;
+   ctRingBuffer<JobInternal> jobQueue;
+
    ctSpinLock jobLock;
    ctAtomic jobCountAtom;
 

@@ -135,11 +135,11 @@ inline float dot(const ctVec2& a, const ctVec2& b) {
 }
 
 inline float distance(const ctVec2& a, const ctVec2& b) {
-   return ctSqrt(dot(a, b));
+   return ctSqrt(ctPow(a.x - b.x, 2.0f) + ctPow(a.y - b.y, 2.0f));
 }
 
 inline float length(const ctVec2& v) {
-   return distance(v, ctVec2(0.0f));
+   return ctSqrt(dot(v, v));
 }
 
 inline ctVec2 abs(const ctVec2& v) {
@@ -257,11 +257,12 @@ inline float dot(const ctVec3& a, const ctVec3& b) {
 }
 
 inline float distance(const ctVec3& a, const ctVec3& b) {
-   return ctSqrt(dot(a, b));
+   return ctSqrt(ctPow(a.x - b.x, 2.0f) + ctPow(a.y - b.y, 2.0f) +
+                 ctPow(a.z - b.z, 2.0f));
 }
 
 inline float length(const ctVec3& v) {
-   return distance(v, v);
+   return ctSqrt(dot(v, v));
 }
 
 inline ctVec3 abs(const ctVec3& v) {
@@ -396,11 +397,12 @@ inline float dot(const ctVec4& a, const ctVec4& b) {
 }
 
 inline float distance(const ctVec4& a, const ctVec4& b) {
-   return ctSqrt(dot(a, b));
+   return ctSqrt(ctPow(a.x - b.x, 2.0f) + ctPow(a.y - b.y, 2.0f) +
+                 ctPow(a.z - b.z, 2.0f) + ctPow(a.w - b.w, 2.0f));
 }
 
 inline float length(const ctVec4& v) {
-   return distance(v, ctVec4(0.0f));
+   return ctSqrt(dot(v, v));
 }
 
 inline ctVec4 abs(const ctVec4& v) {
@@ -760,7 +762,7 @@ struct CT_API CT_ALIGN(CT_ALIGNMENT_MAT4) ctMat4 {
       // clang-format on
    }
    inline ctMat4(const float* values) {
-      memcpy(&data[0][0], values, sizeof(float) * 4);
+      memcpy(&data[0][0], values, sizeof(float) * 4 * 4);
    }
    inline float& operator()(int r, int c) {
       return data[r][c];

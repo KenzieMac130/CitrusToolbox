@@ -1,0 +1,35 @@
+{
+	"default": {},
+	"stone":{},
+	"wood":{},
+	"metal":{},
+	"cardboard":{},
+	"paper":{},
+	"chainlink":{},
+	"glass":{},
+	"cloth":{},
+	"foliage":{},
+	"grass":{},
+	"gravel":{},
+	"dirt":{},
+	"mud":{},
+	"sand":{},
+	"snow":{},
+	"drywall":{},
+	"plastic":{},
+	"rubber":{},
+	"ceramic":{},
+	"ice":{},
+	"water":{},
+	"lava":{},
+	"flesh":{},
+
+	"wood_thin":{"parent":"wood"},
+	"wood_thick":{"parent":"wood"},
+
+	"metal_thin":{"parent":"metal"},
+	"metal_thick":{"parent":"metal"},
+
+	"glass_bottle":{"parent":"glass"},
+	"glass_bulletproof":{"parent":"glass"}
+}

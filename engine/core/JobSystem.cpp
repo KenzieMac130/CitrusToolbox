@@ -24,6 +24,8 @@ ctJobSystem::ctJobSystem(int32_t _threadReserve, bool shared) {
    if (shared) { gJobSystem = this; }
    threadReserve = _threadReserve;
    threadCount = -1;
+   ctSpinLockInit(jobLock);
+   ctAtomicSet(jobCountAtom, 0);
 }
 
 int ctJobWorker(void* data) {
@@ -81,7 +83,8 @@ ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
    return PushJobs(1, &fpFunction, &pData);
 }
 
-ctResults ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
+ctResults
+ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
    ZoneScoped;
    ctSpinLockEnterCritical(jobLock);
    for (size_t i = 0; i < count; i++) {
@@ -121,9 +124,9 @@ bool ctJobSystem::DoMoreWork() {
       ctSpinLockExitCritical(jobLock);
       return false;
    }
-   JobInternal job = jobQueue.Last();
+   JobInternal job = jobQueue.First();
    ctAtomicAdd(jobCountAtom, -1);
-   jobQueue.RemoveLast();
+   jobQueue.RemoveFirst();
    ctSpinLockExitCritical(jobLock);
    job.fpFunction(job.pData);
    return true;

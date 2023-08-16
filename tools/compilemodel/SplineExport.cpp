@@ -100,6 +100,12 @@ ctResults ctGltf2Model::ExtractSplines() {
             spline.pointOffset = (uint32_t)offset;
             splines.Append(spline);
          }
+
+         /* ensure normalized normals/tangents */
+         for (size_t i = 0; i < splinePositions.Count(); i++) {
+             splineNormals[i] = normalize(splineNormals[i]);
+             splineTangents[i] = normalize(splineTangents[i]);
+         }
       }
    }
    if (splines.isEmpty()) { return CT_SUCCESS; }

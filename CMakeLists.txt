@@ -15,7 +15,7 @@
 #
 
 # ---------- Project Config ----------
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(CitrusToolbox)
 
 # ---------- Language Version ----------
@@ -32,6 +32,9 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
 if(!MSVC)
    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 endif()
+
+#---------- Static Runtime Library ----------
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 #---------- Unhelpful Warnings ----------
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -98,6 +101,11 @@ else()
 set(CITRUS_USE_STDOUT 0)
 endif()
 option(IS_PRODUCTION_BUILD "Production Build" OFF)
+if(IS_PRODUCTION_BUILD)
+set(CITRUS_IS_PRODUCTION 1)
+else()
+set(CITRUS_IS_PRODUCTION 0)
+endif()
 
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
@@ -172,7 +180,12 @@ endif()
 set(CITRUS_JOLT 1)
 if(CITRUS_JOLT)
    set(JOLT_INCLUDE_DIR ${BASE_LIBRARY_DIRECTORY}/Jolt/include)
-   set(JOLT_LIBRARY ${BASE_LIBRARY_DIRECTORY}/Jolt/lib/jolt.lib)
+   set(JOLT_LIBRARY_DEBUG ${BASE_LIBRARY_DIRECTORY}/Jolt/lib/Debug/jolt.lib)
+   if(IS_PRODUCTION_BUILD)
+      set(JOLT_LIBRARY_RELEASE ${BASE_LIBRARY_DIRECTORY}/Jolt/lib/Distribution/jolt.lib)
+   else()
+      set(JOLT_LIBRARY_RELEASE ${BASE_LIBRARY_DIRECTORY}/Jolt/lib/Release/jolt.lib)
+   endif()
 endif()
 
 # ---------- Find Recast ----------

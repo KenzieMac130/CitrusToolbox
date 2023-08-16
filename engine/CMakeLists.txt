@@ -99,6 +99,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/RingBuffer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SpacialQuery.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
@@ -189,6 +190,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerClip.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/MorphSet.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Skeleton.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/animation/Spline.cpp
 )
 
 set(ENGINE_HEADER_FILES_ANIMATION
@@ -200,6 +202,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerClip.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/MorphSet.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/animation/Skeleton.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/animation/Spline.hpp
 )
 
 # ---------- File Formats  ---------- 
@@ -284,6 +287,56 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/DeviceBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
 
+# ---------- Physics Backend Files ----------
+set(ENGINE_HEADER_FILES_PHYSICS_INTERFACE
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Archive.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Baking.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Body.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Character.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Constraint.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Module.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Physics.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Query.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Ragdoll.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Shape.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/Surface.hpp)
+set(ENGINE_SOURCE_FILES_PHYSICS_INTERFACE)
+
+if(CITRUS_JOLT)
+set(ENGINE_SOURCE_FILES_PHYSICS_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltArchive.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBaking.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBody.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltCharacter.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltConstraint.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltContext.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltDebugRender.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltQuery.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltRagdoll.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltShape.cpp)
+
+set(ENGINE_HEADER_FILES_PHYSICS_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltArchive.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBaking.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBody.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltCharacter.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltConstraint.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltContext.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltDebugRender.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltQuery.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltRagdoll.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltShape.hpp)
+endif()
+
+list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Module.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Surface.cpp
+)
+
+list(APPEND ENGINE_HEADER_FILES_PHYSICS_BACKEND
+${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Surface.hpp
+)
+
 # ---------- Scene Engine ---------- 
 set(ENGINE_SOURCE_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.cpp
@@ -366,6 +419,8 @@ ${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
 ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
 ${ENGINE_SOURCE_FILES_GPU_INTERFACE} ${ENGINE_HEADER_FILES_GPU_INTERFACE}
 ${ENGINE_SOURCE_FILES_GPU_BACKEND} ${ENGINE_HEADER_FILES_GPU_BACKEND}
+${ENGINE_SOURCE_FILES_PHYSICS_INTERFACE} ${ENGINE_HEADER_FILES_PHYSICS_INTERFACE}
+${ENGINE_SOURCE_FILES_PHYSICS_BACKEND} ${ENGINE_HEADER_FILES_PHYSICS_BACKEND}
 ${ENGINE_SOURCE_FILES_INTERACT} ${ENGINE_HEADER_FILES_INTERACT}
 ${ENGINE_SOURCE_FILES_INTERACT_BACKEND} ${ENGINE_SOURCE_FILES_INTERACT_BACKEND}
 ${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
@@ -438,7 +493,7 @@ if(CITRUS_LUA)
 endif()
 
 if(CITRUS_JOLT)
-	target_link_libraries(engine ${JOLT_LIBRARY})
+	target_link_libraries(engine debug ${JOLT_LIBRARY_DEBUG} optimized ${JOLT_LIBRARY_RELEASE})
 	target_include_directories(engine PUBLIC ${JOLT_INCLUDE_DIR})
 endif()
 

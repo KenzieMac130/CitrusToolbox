@@ -28,6 +28,7 @@
 #include "animation/Canvas.hpp"
 #include "animation/Bank.hpp"
 #include "animation/LayerClip.hpp"
+#include "animation/Spline.hpp"
 
 #include "scene/SceneEngine.hpp"
 
@@ -163,6 +164,8 @@ public:
    ctAnimCanvas* pAnimCanvas;
    ctDynamicArray<ctModelViewerAnimState> animStates;
 
+   ctDynamicArray<ctAnimSpline*> splines;
+
    ctCameraInfo camera;
    float timer;
    float rotationPhase = 0.0f;
@@ -189,6 +192,9 @@ ctResults ctModelViewer::OnStartup() {
       animStates.Resize(pAnimBank->GetClipCount());
    }
    pAnimCanvas = new ctAnimCanvas(pSkeleton, pMorphSet);
+   for (uint32_t i = 0; i < model.splines.segmentCount; i++) {
+      splines.Append(new ctAnimSpline(model, i));
+   }
    return CT_SUCCESS;
 }
 
@@ -413,22 +419,17 @@ void ctModelViewer::AnimationInfo() {
 }
 
 void ctModelViewer::SplinesInfo() {
-   if (!model.splines.segments) { return; }
+   if (splines.isEmpty()) { return; }
    ImGui::Checkbox("Render Splines", &renderSplines);
    ImGui::SliderFloat("Axis Size", &splineTailLength, 0.001f, 1.0f);
    if (ImGui::TreeNode("Segments")) {
-      for (uint32_t i = 0; i < model.splines.segmentCount; i++) {
-         ImGui::Text("Segment %u, Offset %u, Point Count %u, Type %s %s",
+      for (uint32_t i = 0; i < (uint32_t)splines.Count(); i++) {
+         ImGui::Text("Segment %u, Point Count %u, Length %f, Type %s %s",
                      i,
-                     model.splines.segments[i].pointOffset,
-                     model.splines.segments[i].pointCount,
-                     ctCFlagCheck(model.splines.segments[i].flags,
-                                  CT_MODEL_SPLINE_INTERPOLATE_CUBIC)
-                       ? "CUBIC"
-                       : "LINEAR",
-                     ctCFlagCheck(model.splines.segments[i].flags, CT_MODEL_SPLINE_CYCLIC)
-                       ? "CYCLIC"
-                       : "ACYCLIC");
+                     splines[i]->GetPointCount(),
+                     splines[i]->GetLength(),
+                     splines[i]->isCubic() ? "CUBIC" : "LINEAR",
+                     splines[i]->isCyclic() ? "CYCLIC" : "ACYCLIC");
       }
       ImGui::TreePop();
    }
@@ -826,45 +827,50 @@ void ctModelViewer::RenderGeometry() {
 }
 
 void ctModelViewer::RenderSplines() {
-   for (size_t seg = 0; seg < model.splines.segmentCount; seg++) {
-      ctModelSpline& spline = model.splines.segments[seg];
+   for (size_t seg = 0; seg < splines.Count(); seg++) {
+      ctAnimSpline* spline = splines[seg];
 
       /* line */
       Im3d::BeginLineStrip();
-      for (uint32_t i = 0; i < spline.pointCount; i++) {
-         Im3d::Vertex(ctVec3ToIm3d(model.splines.positions[spline.pointOffset + i]));
+      for (int32_t i = 0; i < spline->GetPointCount(); i++) {
+         ctVec3 p, n, t;
+         spline->EvaluateAtPoint(i, p, n, t);
+         Im3d::Vertex(ctVec3ToIm3d(p));
       }
-      if (ctCFlagCheck(spline.flags, CT_MODEL_SPLINE_CYCLIC)) {
-         Im3d::Vertex(ctVec3ToIm3d(model.splines.positions[spline.pointOffset]));
+      if (spline->isCyclic()) {
+         ctVec3 p, n, t;
+         spline->EvaluateAtPoint(0, p, n, t);
+         Im3d::Vertex(ctVec3ToIm3d(p));
       }
       Im3d::End();
 
       /* normals */
       Im3d::PushColor(Im3d::Color_Red);
-      for (uint32_t i = 0; i < spline.pointCount; i++) {
-         ctVec3 pos = model.splines.positions[spline.pointOffset + i];
-         ctVec3 n = model.splines.normals[spline.pointOffset + i] * splineTailLength;
-         Im3d::DrawArrow(ctVec3ToIm3d(pos), ctVec3ToIm3d((pos + n)));
+      for (int32_t i = 0; i < spline->GetPointCount(); i++) {
+         ctVec3 p, n, t;
+         spline->EvaluateAtPoint(i, p, n, t);
+         n *= splineTailLength;
+         Im3d::DrawArrow(ctVec3ToIm3d(p), ctVec3ToIm3d((p + n)));
       }
       Im3d::PopColor();
 
       /* tangents */
       Im3d::PushColor(Im3d::Color_Green);
-      for (uint32_t i = 0; i < spline.pointCount; i++) {
-         ctVec3 pos = model.splines.positions[spline.pointOffset + i];
-         ctVec3 t = model.splines.tangents[spline.pointOffset + i] * splineTailLength;
-         Im3d::DrawArrow(ctVec3ToIm3d(pos), ctVec3ToIm3d((pos + t)));
+      for (int32_t i = 0; i < spline->GetPointCount(); i++) {
+         ctVec3 p, n, t;
+         spline->EvaluateAtPoint(i, p, n, t);
+         t *= splineTailLength;
+         Im3d::DrawArrow(ctVec3ToIm3d(p), ctVec3ToIm3d((p + t)));
       }
       Im3d::PopColor();
 
       /* bitangents */
       Im3d::PushColor(Im3d::Color_Blue);
-      for (uint32_t i = 0; i < spline.pointCount; i++) {
-         ctVec3 pos = model.splines.positions[spline.pointOffset + i];
-         ctVec3 n = model.splines.normals[spline.pointOffset + i];
-         ctVec3 t = model.splines.tangents[spline.pointOffset + i];
+      for (int32_t i = 0; i < spline->GetPointCount(); i++) {
+         ctVec3 p, n, t;
+         spline->EvaluateAtPoint(i, p, n, t);
          ctVec3 b = cross(t, n) * splineTailLength;
-         Im3d::DrawArrow(ctVec3ToIm3d(pos), ctVec3ToIm3d((pos + b)));
+         Im3d::DrawArrow(ctVec3ToIm3d(p), ctVec3ToIm3d((p + b)));
       }
       Im3d::PopColor();
    }

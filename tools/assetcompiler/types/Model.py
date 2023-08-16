@@ -1,4 +1,5 @@
 from assetcompiler.types.Base import CitrusAssetCompileTask
+import shutil
 
 class Task(CitrusAssetCompileTask):
 	name = "Model"
@@ -8,5 +9,7 @@ class Task(CitrusAssetCompileTask):
 	def get_asset_type(self, relativePath):
 		return "model"
 
-	def get_command(self):
-		return "{EXEC} -gpu \"{INPUT[0]}\" \"{OUTPUT[0]}\" \"{GUID_SCRIPT}\""
+	def run(self):
+		print("DUMMY MODEL PROCESSING! PLEASE REWRITE ASSET COMPILER")
+		shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
+		return 0
