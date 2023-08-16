@@ -115,10 +115,6 @@ JPH::Shape::ShapeResult CreateCompoundShape(const ctPhysicsEngine& ctx,
    return shape.Create();
 }
 
-void CreateShapeSettingsCitrus(const ctPhysicsEngine& ctx, ctPhysicsShapeSettings& desc, bool isNested, JoltShapeSettingsContainer& container)
-{
-}
-
 JPH::Shape::ShapeResult CreateShapeFromCitrus(const ctPhysicsEngine& ctx,
                                               ctPhysicsShapeSettings& desc,
                                               bool isNested) {
