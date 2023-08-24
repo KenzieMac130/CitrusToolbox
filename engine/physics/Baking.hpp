@@ -17,5 +17,48 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "Shape.hpp"
+#include "Physics.hpp"
 
-/* for baking triangle meshes and convex hulls */
+/* bakes a shape into a binary format to be loaded from later */
+ctResults ctPhysicsBakeShape(ctPhysicsEngine ctx,
+                             ctPhysicsShapeSettings& shape,
+                             ctDynamicArray<uint8_t>& output);
+
+enum ctPhysicsConvexDecompositionFill {
+   CT_PHYSICS_CONVEX_DECOMP_FLOOD_FILL,
+   CT_PHYSICS_CONVEX_DECOMP_SURFACE_ONLY,
+   CT_PHYSICS_CONVEX_DECOMP_RAYCAST_FILL
+};
+
+/* uses vhacd for convex hull decomposition, use in conjuntion with ctPhysicsBakeShape */
+class ctPhysicsConvexDecomposition {
+public:
+   ctPhysicsConvexDecomposition() = default;
+   ctPhysicsConvexDecomposition(const ctPhysicsConvexDecomposition& other) = delete;
+   ~ctPhysicsConvexDecomposition() = default;
+
+   uint32_t maxHulls = 64;
+   uint32_t resolution = 400000;
+   float minVolumePercentError = 1.0f;
+   uint32_t maxRecursion = 10;
+   bool shrinkWrap = true;
+   ctPhysicsConvexDecompositionFill fill = CT_PHYSICS_CONVEX_DECOMP_FLOOD_FILL;
+   uint32_t maxVertsPerHull = 64;
+   uint32_t minEdgeLength = 2;
+
+   ctResults ProcessMesh(ctVec3* pVertices,
+                         size_t vertexCount,
+                         uint32_t* pIndices,
+                         size_t indexCount,
+                         uint32_t surfaceTypeHash);
+
+   inline ctPhysicsShapeSettings& GetShape() {
+      return rootShape;
+   }
+
+private:
+   ctPhysicsShapeSettings rootShape;
+   ctDynamicArray<ctPhysicsShapeSettings> subshapes;
+   ctDynamicArray<ctVec3> pointsAll;
+};

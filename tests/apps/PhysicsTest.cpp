@@ -18,6 +18,7 @@
 #include "imgui/imgui.h"
 #include "interact/InteractionEngine.hpp"
 #include "physics/Physics.hpp"
+#include "physics/Baking.hpp"
 #include "scene/SceneEngine.hpp"
 
 class TestApp : public ctApplication {
@@ -53,19 +54,26 @@ ctResults TestApp::OnStartup() {
    camera.position = ctVec3(0.0f, 3.0f, -50.0f);
    Engine->SceneEngine->SetCameraOverride(camera);
 
+   /* shape baking */
+   ctDynamicArray<uint8_t> shapeBake;
+   ctPhysicsShapeSettings shapes[3];
+   shapes[0] = ctPhysicsShapeSphere();
+   shapes[1] = ctPhysicsShapeBox();
+   shapes[2] = ctPhysicsShapeCapsule();
+   shapes[1].transform.translation = ctVec3(0.5f, 0.0f, 0.0f);
+   shapes[2].transform.translation = ctVec3(-0.75f, 0.0f, 0.0f);
+   ctPhysicsShapeSettings compound =
+     ctPhysicsShapeCompound(ctCStaticArrayLen(shapes), shapes);
+   ctPhysicsShapeSettings box =
+     ctPhysicsShapeSphere(0.5f, 0, ctTransform(), ctVec3(0.0f, 1.0f, 0.0f));
+   ctPhysicsBakeShape(physics, box, shapeBake);
+
    /* rigidbodies */ {
-      bodies.Resize(1000);
-      for (uint32_t i = 0; i < 1000; i++) {
+      bodies.Resize(50);
+      for (uint32_t i = 0; i < 50; i++) {
          ctPhysicsBodyDesc desc = ctPhysicsBodyDesc();
          desc.position = ctVec3(0.0f, 50.0f + (1.0f * i), 5.0f);
-
-         ctPhysicsShapeSettings shapes[3];
-         shapes[0] = ctPhysicsShapeSphere();
-         shapes[1] = ctPhysicsShapeBox();
-         shapes[2] = ctPhysicsShapeCapsule();
-         shapes[1].transform.translation = ctVec3(0.5f, 0.0f, 0.0f);
-         shapes[2].transform.translation = ctVec3(-0.75f, 0.0f, 0.0f);
-         desc.shape = ctPhysicsShapeCompound(ctCStaticArrayLen(shapes), shapes);
+         desc.shape = ctPhysicsShapeBaked(shapeBake.Data(), shapeBake.Count());
          desc.startActive = true;
          desc.friction = 0.8f;
          ctPhysicsCreateBody(physics, bodies[i], desc);

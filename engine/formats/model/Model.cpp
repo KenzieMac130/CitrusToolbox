@@ -50,7 +50,6 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    ctWADFindLump(&wad, "BXFORMS", (void**)&model.skeleton.transformArray, &tmpsize);
    ctWADFindLump(&wad, "BINVBIND", (void**)&model.skeleton.inverseBindArray, NULL);
    ctWADFindLump(&wad, "BGRAPH", (void**)&model.skeleton.graphArray, NULL);
-   ctWADFindLump(&wad, "BCONSTR", (void**)&model.skeleton.constraintArray, NULL);
    ctWADFindLump(&wad, "BHASHES", (void**)&model.skeleton.hashArray, NULL);
    ctWADFindLump(&wad, "BNAMES", (void**)&model.skeleton.nameArray, NULL);
    model.skeleton.boneCount = (uint32_t)tmpsize / sizeof(ctTransform);
@@ -83,6 +82,15 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    model.animation.clipCount = (uint32_t)tmpsize / sizeof(ctModelAnimationClip);
    ctWADFindLump(&wad, "ASCALARS", (void**)&model.animation.scalars, &tmpsize);
    model.animation.scalarCount = (uint32_t)tmpsize / sizeof(float);
+
+   /* Physics */
+   ctWADFindLump(&wad, "PHYSHAPE", (void**)&model.physics.shapes, &tmpsize);
+   model.physics.shapeCount = (uint32_t)tmpsize / sizeof(ctModelCollisionShape);
+   ctWADFindLump(&wad, "RAGCONST", (void**)&model.physics.ragdollConstraints, &tmpsize);
+   model.physics.ragdollConstraintCount =
+     (uint32_t)tmpsize / sizeof(ctModelRagdollConstraint);
+   ctWADFindLump(&wad, "PHYSBAKE", (void**)&model.physics.bake.data, &tmpsize);
+   model.physics.bake.size = tmpsize;
 
    /* Material Script */
    ctWADFindLump(&wad, "MATSET", (void**)&model.materialSet.data, &tmpsize);
@@ -129,11 +137,6 @@ CT_API ctResults ctModelSave(ctModel& model,
                      "BGRAPH",
                      (uint8_t*)model.skeleton.graphArray,
                      model.skeleton.boneCount * sizeof(model.skeleton.graphArray[0]));
-   ctWADWriteSection(&wad,
-                     "BCONSTR",
-                     (uint8_t*)model.skeleton.constraintArray,
-                     model.skeleton.boneCount *
-                       sizeof(model.skeleton.constraintArray[0]));
    ctWADWriteSection(&wad,
                      "BHASHES",
                      (uint8_t*)model.skeleton.hashArray,
@@ -194,6 +197,19 @@ CT_API ctResults ctModelSave(ctModel& model,
                      "ASCALARS",
                      (uint8_t*)model.animation.scalars,
                      model.animation.scalarCount * sizeof(model.animation.scalars[0]));
+
+   /* Physics */
+   ctWADWriteSection(&wad,
+                     "PHYSHAPE",
+                     (uint8_t*)model.physics.shapes,
+                     model.physics.shapeCount * sizeof(model.physics.shapes[0]));
+   ctWADWriteSection(&wad,
+                     "RAGCONST",
+                     (uint8_t*)model.physics.ragdollConstraints,
+                     model.physics.ragdollConstraintCount *
+                       sizeof(model.physics.ragdollConstraints[0]));
+   ctWADWriteSection(
+     &wad, "PHYSBAKE", (uint8_t*)model.physics.bake.data, model.physics.bake.size);
 
    /* Navmesh */
    ctWADWriteSection(

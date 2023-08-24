@@ -20,6 +20,8 @@
 #include "utilities/RingBuffer.hpp"
 #include "ModuleBase.hpp"
 
+typedef uint16_t ctJobSystemDependency;
+
 class CT_API ctJobSystem : public ctModuleBase {
 public:
    ctJobSystem(int32_t threadReserve, bool shared = true);
@@ -27,8 +29,16 @@ public:
    ctResults Shutdown() final;
    const char* GetModuleName() final;
 
-   ctResults PushJob(void (*fpFunction)(void*), void* pData);
-   ctResults PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData);
+   ctJobSystemDependency DeclareDependency(const char* name);
+   ctResults PushJob(void (*fpFunction)(void*),
+                     void* pData,
+                     size_t dependencyCount = 0,
+                     ctJobSystemDependency* pDependencies = NULL);
+   ctResults PushJobs(size_t count,
+                      void (**pfpFunction)(void*),
+                      void** ppData,
+                      size_t dependencyCount = 0,
+                      ctJobSystemDependency* pDependencies = NULL);
    void WaitBarrier();
 
    void DebugImGui();
@@ -49,7 +59,7 @@ protected:
    struct JobInternal {
       void (*fpFunction)(void*);
       void* pData;
-      char _pad[CT_ALIGNMENT_CACHE - (sizeof(void*) * 2)];
+      uint16_t dependencies[24];
    };
    static_assert(sizeof(JobInternal) == CT_ALIGNMENT_CACHE,
                  "JobInternal does not fit cache boundary");
@@ -60,11 +70,13 @@ protected:
 
    struct ThreadInternal {
       ctThread thread;
-      char _pad[CT_ALIGNMENT_CACHE - (sizeof(ctThread))];
    };
-   static_assert(sizeof(ThreadInternal) == CT_ALIGNMENT_CACHE,
-                 "ThreadInternal does not fit cache boundary");
    ctDynamicArray<ThreadInternal> threadPool;
+
+   struct DependencyInternal {
+      ctMutex mutex;
+   };
+   ctDynamicArray<DependencyInternal> dependencyPool;
 
    bool wantsExit = false;
 };

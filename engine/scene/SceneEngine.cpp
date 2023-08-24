@@ -18,6 +18,7 @@
 #include "core/EngineCore.hpp"
 
 #include "middleware/ImguiIntegration.hpp"
+#include "middleware/Im3dIntegration.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
 #include "core/WindowManager.hpp"
 #include "core/Application.hpp"
@@ -32,8 +33,29 @@ ctResults ctSceneEngine::Shutdown() {
 
 ctResults ctSceneEngine::NextFrame(double deltaTime) {
    Engine->App->OnTick((float)deltaTime);
+
+   /* debug camera */
+   if (debugCameraEnabled) {
+      debugCamera.FrameUpdate((float)deltaTime);
+      mainCamera = debugCamera.camera;
+   }
    PushCameraToRenderer();
+   PushAndResetCursor();
    return CT_SUCCESS;
+}
+
+void ctSceneEngine::EnableDebugCamera() {
+   debugCameraEnabled = true;
+   debugCamera.camera = mainCamera;
+}
+
+void ctSceneEngine::DisableDebugCamera() {
+   debugCameraEnabled = false;
+}
+
+void ctSceneEngine::UpdateCursor() {
+   ctVec2 mousePosition = ctVec2(); /* todo: get from audition */
+   cursorDirection = normalize(mainCamera.ScreenToWorld(mousePosition));
 }
 
 void ctSceneEngine::PushCameraToRenderer() {
@@ -41,6 +63,11 @@ void ctSceneEngine::PushCameraToRenderer() {
    Engine->WindowManager->GetMainWindowDrawableSize(&width, &height);
    mainCamera.aspectRatio = (float)width / (float)height;
    Engine->Renderer->UpdateCamera(mainCamera);
+}
+
+void ctSceneEngine::PushAndResetCursor() {
+   Engine->Im3dIntegration->SetSelection(mainCamera.position, cursorDirection);
+   cursorDirection = ctVec3(0.0f); /* reset cursor each frame */
 }
 
 const char* ctSceneEngine::GetModuleName() {

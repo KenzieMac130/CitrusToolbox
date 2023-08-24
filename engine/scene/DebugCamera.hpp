@@ -18,4 +18,15 @@
 
 #include "utilities/Common.h"
 
-/* in charge of physics serialization/deserialization (and object search/hookup) */
+class ctDebugCamera {
+public:
+   ctDebugCamera();
+   void FrameUpdate(float deltaTime);
+
+   float speedDefault;
+   float speedFast;
+   float lookSpeed;
+   float camYaw;
+   float camPitch;
+   ctCameraInfo camera;
+};

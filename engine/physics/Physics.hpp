@@ -110,7 +110,6 @@ ctResults ctPhysicsEngineUpdate(ctPhysicsEngine ctx, float deltaTime, int32_t st
 ctResults ctPhysicsEngineExecDebugDraw(ctPhysicsEngine ctx);
 ctResults ctPhysicsEngineExecDebugUI(ctPhysicsEngine ctx);
 
-#include "Archive.hpp"
 #include "Body.hpp"
 #include "Character.hpp"
 #include "Constraint.hpp"

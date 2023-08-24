@@ -243,3 +243,32 @@ ctResults ctPhysicsEngineExecDebugUI(ctPhysicsEngine ctx) {
                stats.mNumSoftBodies);
    return CT_SUCCESS;
 }
+
+/* ----------------- Stream ----------------- */
+
+void CitrusJoltStreamOut::WriteBytes(const void* inData, size_t inNumBytes) {
+   pOutArray->Append((uint8_t*)inData, inNumBytes);
+}
+
+bool CitrusJoltStreamOut::IsFailed() const {
+   return false;
+}
+
+CitrusJoltStreamIn::CitrusJoltStreamIn(uint8_t* dest, size_t size) {
+   seek = 0;
+   ptr = dest;
+   maxSize = size;
+}
+
+void CitrusJoltStreamIn::ReadBytes(void* outData, size_t inNumBytes) {
+   memcpy(outData, ptr + seek, inNumBytes);
+   seek += inNumBytes;
+}
+
+bool CitrusJoltStreamIn::IsEOF() const {
+   return seek == maxSize;
+}
+
+bool CitrusJoltStreamIn::IsFailed() const {
+   return false;
+}

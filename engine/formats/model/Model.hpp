@@ -17,6 +17,20 @@
 #pragma once
 
 #include "utilities/Common.h"
+
+/* ------------------- Blobs ------------------- */
+
+struct ctModelBlobData {
+   uint64_t size;
+   uint8_t* data;
+};
+
+/*
+MATCODE: material json
+NAVMESH: detour navmesh
+SCNCODE: lua script for the scene
+*/
+
 /* ------------------- Skeleton ------------------- */
 
 /* ctMat4 without alignment enforcement */
@@ -34,26 +48,13 @@ struct ctModelSkeletonBoneName {
    char name[32];
 };
 
-enum ctModelConstraintFlags {
-   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_X = 0x01,
-   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Y = 0x02,
-   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Z = 0x04
-};
-
-struct ctModelBoneConstraint {
-   int32_t flags;
-   ctVec3 rotationMin;
-   ctVec3 rotationMax;
-};
-
 struct ctModelSkeleton {
    uint32_t boneCount;
-   ctTransform* transformArray;            /* BXFORMS */
-   ctModelMatrix* inverseBindArray;        /* BINVBIND */
-   ctModelSkeletonBoneGraph* graphArray;   /* BGRAPH */
-   ctModelBoneConstraint* constraintArray; /* BCONSTR */
-   uint32_t* hashArray;                    /* BHASHES */
-   ctModelSkeletonBoneName* nameArray;     /* BNAMES */
+   ctTransform* transformArray;          /* BXFORMS */
+   ctModelMatrix* inverseBindArray;      /* BINVBIND */
+   ctModelSkeletonBoneGraph* graphArray; /* BGRAPH */
+   uint32_t* hashArray;                  /* BHASHES */
+   ctModelSkeletonBoneName* nameArray;   /* BNAMES */
 };
 
 /* ------------------- Mesh ------------------- */
@@ -254,18 +255,38 @@ struct ctModelAnimationData {
    float* scalars; /* ASCALARS */
 };
 
-/* ------------------- Blobs ------------------- */
+/* ------------------ Physics ------------------*/
 
-struct ctModelBlobData {
-   uint64_t size;
-   uint8_t* data;
+struct ctModelCollisionShape {
+   int32_t boneIndex;
+   uint32_t bakeOffset;
+   uint32_t bakeSize;
 };
 
-/*
-MATCODE: material json
-NAVMESH: detour navmesh
-SCNCODE: lua script for the scene
-*/
+enum ctModelConstraintFlags {
+   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_X = 0x01,
+   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Y = 0x02,
+   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Z = 0x04
+};
+
+/* todo: move to physics stuff */
+struct ctModelRagdollConstraint {
+   int32_t boneA;
+   int32_t boneB;
+   int32_t flags;
+   ctVec3 rotationMin;
+   ctVec3 rotationMax;
+};
+
+struct ctModelPhysicsData {
+   uint32_t shapeCount;
+   ctModelCollisionShape* shapes; /* PHYSHAPE */
+
+   uint32_t ragdollConstraintCount;
+   ctModelRagdollConstraint* ragdollConstraints; /* RAGCONST */
+
+   ctModelBlobData bake; /* PHYSBAKE */
+};
 
 /* ------------------- Main ------------------- */
 
@@ -296,10 +317,11 @@ struct ctModel {
    ctModelMeshData geometry;
    ctModelAnimationData animation;
    ctModelSplineData splines;
-   ctModelBlobData materialSet;         /* MATSET */
-   ctModelBlobData navmeshData;         /* NAVMESH */
-   ctModelBlobData sceneScript;         /* SCNCODE */
-   ctModelGPUPayloadInfo gpuTable;      /* GPUTABLE */
+   ctModelPhysicsData physics;
+   ctModelBlobData materialSet;    /* MATSET */
+   ctModelBlobData navmeshData;    /* NAVMESH */
+   ctModelBlobData sceneScript;    /* SCNCODE */
+   ctModelGPUPayloadInfo gpuTable; /* GPUTABLE */
 
    uint64_t mappedCpuDataSize;
    void* mappedCpuData;

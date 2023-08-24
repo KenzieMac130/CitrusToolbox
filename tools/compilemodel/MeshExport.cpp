@@ -82,8 +82,8 @@ ctResults ctGltf2Model::ExtractGeometry(bool allowSkinning) {
             }
 
             /* setup material slot */
-            uint32_t materialSlot = /* todo: reindex based on exported materials */
-              prim.material ? (uint32_t)(prim.material - gltf.materials) : UINT32_MAX;
+            uint32_t materialSlot =
+              prim.material ? GetMaterialIndex(prim.material->name) : UINT32_MAX;
             ctGltf2ModelSubmesh* submesh = new ctGltf2ModelSubmesh();
             submesh->original.materialIndex = materialSlot;
 

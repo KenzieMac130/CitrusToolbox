@@ -28,6 +28,15 @@
 #include "Jolt/Physics/Collision/Shape/ScaledShape.h"
 #include "Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h"
 
-JPH::Shape::ShapeResult CreateShapeFromCitrus(const ctPhysicsEngine& ctx,
-                                              ctPhysicsShapeSettings& desc,
-                                              bool isNested = false);
+enum CreateShapeFromCitrusLayer {
+   CT_JOLT_SHAPE_LAYER_BASE,
+   CT_JOLT_SHAPE_LAYER_COMPOUND,
+   CT_JOLT_SHAPE_LAYER_CENTER_OF_MASS,
+   CT_JOLT_SHAPE_LAYER_SCALE,
+   CT_JOLT_SHAPE_LAYER_TRANSFORM
+};
+
+JPH::Shape::ShapeResult
+CreateShapeFromCitrus(const ctPhysicsEngine& ctx,
+                      ctPhysicsShapeSettings& desc,
+                      CreateShapeFromCitrusLayer layer = CT_JOLT_SHAPE_LAYER_TRANSFORM);

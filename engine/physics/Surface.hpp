@@ -20,6 +20,6 @@
 
 typedef class ctPhysicsSurfaceT* ctPhysicsSurface;
 
-float ctPhysicsSurfaceGetScalar(const ctPhysicsSurfaceType surface, const char* propName);
-const char* ctPhysicsSurfaceGetString(const ctPhysicsSurfaceType surface, const char* propName);
-bool ctPhysicsSurfaceGetFlag(const ctPhysicsSurfaceType surface, const char* propName);
+float ctPhysicsSurfaceGetScalar(const ctPhysicsSurface surface, const char* propName);
+const char* ctPhysicsSurfaceGetString(const ctPhysicsSurface surface, const char* propName);
+bool ctPhysicsSurfaceGetFlag(const ctPhysicsSurface surface, const char* propName);

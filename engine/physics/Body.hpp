@@ -30,8 +30,8 @@ struct ctPhysicsBodyDesc {
    ctPhysicsMotionType motion = CT_PHYSICS_DYNAMIC;
    ctPhysicsDOF allowedDOFs = CT_PHYSICS_DOF_ALL;
    ctPhysicsShapeSettings shape = ctPhysicsShapeBox();
-   const char* bodyTag = "DEFAULT";     /* body tag name for gameplay purposes */
-   bool isTrigger = false;              /* only fire callbacks */
+   const char* bodyTag = "DEFAULT"; /* body tag name for gameplay purposes */
+   bool isTrigger = false;          /* only fire callbacks */
    bool allowSleep = true;
    bool allowMoving = true;  /* a purely static object will be false */
    bool isDetail = false;    /* is detail physics object (shouldn't affect controller) */
@@ -44,6 +44,7 @@ struct ctPhysicsBodyDesc {
    float maxLinearVelocity = 500.0f;
    float maxAngularVelocity = CT_PI * 0.25f * 60.0f;
    float gravityFactor = 1.0f;
+   float massOverride = -1.0f;
    ctPhysicsLayer layerOverride = CT_PHYSICS_LAYER_DEFAULT;
 };
 
@@ -51,4 +52,3 @@ typedef uint32_t ctPhysicsBody;
 ctResults
 ctPhysicsCreateBody(ctPhysicsEngine ctx, ctPhysicsBody& body, ctPhysicsBodyDesc& desc);
 void ctPhysicsDestroy(ctPhysicsEngine ctx, ctPhysicsBody body);
-

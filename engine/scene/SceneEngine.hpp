@@ -19,6 +19,8 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
+#include "DebugCamera.hpp"
+
 class CT_API ctSceneEngine : public ctModuleBase {
 public:
    virtual ctResults Startup();
@@ -26,6 +28,7 @@ public:
    virtual ctResults NextFrame(double deltaTime);
    virtual const char* GetModuleName();
 
+   /* ------------ Camera Override ------------ */
    inline void EnableCameraOverride() {
       cameraOverride = true;
    }
@@ -35,9 +38,26 @@ public:
    inline void DisableCameraOverride() {
       cameraOverride = false;
    }
+   inline bool isCameraOverrideActive() const {
+      return cameraOverride;
+   }
+
+   /* ------------ Debug Camera ------------ */
+   void EnableDebugCamera();
+   void DisableDebugCamera();
+   inline bool isDebugCameraActive() const {
+      return debugCameraEnabled;
+   }
 
 protected:
    bool cameraOverride;
    ctCameraInfo mainCamera;
+   ctVec3 cursorDirection;
+
+   bool debugCameraEnabled;
+   ctDebugCamera debugCamera;
+
+   void UpdateCursor();
    void PushCameraToRenderer();
+   void PushAndResetCursor();
 };

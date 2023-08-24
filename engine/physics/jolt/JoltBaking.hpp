@@ -17,27 +17,24 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "../Baking.hpp"
+#include "JoltContext.hpp"
+#include "JoltShape.hpp"
 
 /* for baking triangle meshes and convex hulls */
 
-typedef struct ctPhysicsBakedShapeT* ctPhysicsBakedShape;
+/* sections go as follows:
+0: base shape (SaveBinaryState)
+1: material hash list (SaveMaterialState)
+2+: subshapes (recursive)
+*/
 
-struct ctPhysicsBakedMeshDesc {
-   ctVec3* vertexPositions;
-   size_t vertexCount;
-
-   uint32_t* indices;
-   size_t indexCount;
-
-   uint32_t* triMaterialIndices;
-   size_t triMaterialIndexCount;
-
-   uint32_t* surfaceTypeHashes;
-   size_t surfaceTypeHashCount;
+struct CitrusJoltBakeHeader {
+   size_t sectionsOffset;
+   size_t sectionsCount;
 };
 
-struct ctPhysicsBakedConvexHullDesc {
-   ctVec3* inputPoints;
-   size_t inputPointCount;
-   uint32_t surfaceTypeHash;
+struct CitrusJoltBakeSection {
+   size_t offset;
+   size_t size;
 };

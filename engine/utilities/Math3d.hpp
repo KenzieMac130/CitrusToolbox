@@ -489,6 +489,10 @@ struct CT_API ctBoundBox {
 
    inline struct ctBoundSphere ToSphere();
 
+   inline ctVec3 Center() {
+      return min / 2 + max / 2;
+   }
+
    ctVec3 min;
    ctVec3 max;
 };
@@ -973,6 +977,26 @@ inline ctQuat::ctQuat(struct ctVec4 _v) {
    y = _v.y;
    z = _v.z;
    w = _v.w;
+}
+
+/* --- Comparisons --- */
+inline bool operator==(const ctVec2& a, const ctVec2& b) {
+   return ctFloatCompare(a.x, b.x) && ctFloatCompare(a.y, b.y);
+}
+
+inline bool operator==(const ctVec3& a, const ctVec3& b) {
+   return ctFloatCompare(a.x, b.x) && ctFloatCompare(a.y, b.y) &&
+          ctFloatCompare(a.z, b.z);
+}
+
+inline bool operator==(const ctVec4& a, const ctVec4& b) {
+   return ctFloatCompare(a.x, b.x) && ctFloatCompare(a.y, b.y) &&
+          ctFloatCompare(a.z, b.z) && ctFloatCompare(a.w, b.w);
+}
+
+inline bool operator==(const ctQuat& a, const ctQuat& b) {
+   return ctFloatCompare(a.x, b.x) && ctFloatCompare(a.y, b.y) &&
+          ctFloatCompare(a.z, b.z) && ctFloatCompare(a.w, b.w);
 }
 
 /* --- Middleware Conversion --- */

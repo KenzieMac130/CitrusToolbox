@@ -167,6 +167,56 @@ public:
    JPH::Color debugColor;
 };
 
+class CitrusJoltStreamOut : public JPH::StreamOut {
+public:
+   inline CitrusJoltStreamOut(ctDynamicArray<uint8_t>* dest) {
+      pOutArray = dest;
+   }
+   virtual ~CitrusJoltStreamOut() = default;
+
+   virtual void WriteBytes(const void* inData, size_t inNumBytes);
+   virtual bool IsFailed() const;
+
+   inline int64_t Tell() {
+       return (int64_t)pOutArray->Count();
+   }
+
+   inline void* Ptr(size_t offset) {
+       return &(*pOutArray)[offset];
+   }
+
+private:
+   ctDynamicArray<uint8_t>* pOutArray;
+};
+
+class CitrusJoltStreamIn : public JPH::StreamIn {
+public:
+   CitrusJoltStreamIn(uint8_t* dest, size_t size);
+
+   virtual void ReadBytes(void* outData, size_t inNumBytes);
+   inline void Seek(int64_t offset, ctFileSeekMode mode = CT_FILE_SEEK_SET) {
+      switch (mode) {
+         case CT_FILE_SEEK_SET: seek = offset; break;
+         case CT_FILE_SEEK_CUR: seek = offset + seek; break;
+         case CT_FILE_SEEK_END: seek = offset + maxSize; break;
+         default: break;
+      }
+   }
+   inline int64_t Tell() {
+      return (int64_t)seek;
+   }
+   inline void* CurrPtr() {
+      return ptr + seek;
+   }
+   virtual bool IsEOF() const;
+   virtual bool IsFailed() const;
+
+private:
+   uint8_t* ptr;
+   size_t maxSize;
+   size_t seek;
+};
+
 struct ctPhysicsEngineT {
    JPH::TempAllocatorImpl* pTempAllocator;
    CitrusJoltJobSystem* pJobSystem;

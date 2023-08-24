@@ -116,7 +116,7 @@ ctResults ctGltf2Model::ExtractSkeleton() {
    return CT_SUCCESS;
 }
 
-ctGltf2ModelCollisionType ctGltf2Model::getNodeCollisionType(const char* name) {
+ctGltf2ModelCollisionType ctGltf2Model::GetNodeCollisionType(const char* name) {
    size_t len = strlen(name);
    if (len < 4) { return CT_GLTF2MODEL_COLLISION_NONE; }
    const char* postfix = &name[len - 4];
@@ -126,7 +126,7 @@ ctGltf2ModelCollisionType ctGltf2Model::getNodeCollisionType(const char* name) {
    if (ctCStrNEql(postfix, "_CSP", 4)) /* sphere collision */ {
       return CT_GLTF2MODEL_COLLISION_SPHERE;
    }
-   if (ctCStrNEql(postfix, "_CPL", 4)) /* pill collision */ {
+   if (ctCStrNEql(postfix, "_CPL", 4)) /* capsule collision */ {
       return CT_GLTF2MODEL_COLLISION_PILL;
    }
    if (ctCStrNEql(postfix, "_CTR", 4)) /* triangle collision */ {
@@ -135,11 +135,23 @@ ctGltf2ModelCollisionType ctGltf2Model::getNodeCollisionType(const char* name) {
    if (ctCStrNEql(postfix, "_CVX", 4)) /* convex collision */ {
       return CT_GLTF2MODEL_COLLISION_CONVEX;
    }
+   if (ctCStrNEql(name, "UBX_", 4)) /* unreal box collision */ {
+      return CT_GLTF2MODEL_COLLISION_BOX;
+   }
+   if (ctCStrNEql(name, "USP_", 4)) /* unreal sphere collision */ {
+      return CT_GLTF2MODEL_COLLISION_SPHERE;
+   }
+   if (ctCStrNEql(name, "UCP_", 4)) /* unreal capsule collision */ {
+      return CT_GLTF2MODEL_COLLISION_PILL;
+   }
+   if (ctCStrNEql(name, "UCX_", 4)) /* unreal convex collision */ {
+      return CT_GLTF2MODEL_COLLISION_CONVEX;
+   }
    return CT_GLTF2MODEL_COLLISION_NONE;
 }
 
 bool ctGltf2Model::isNodeCollision(const char* name) {
-   return getNodeCollisionType(name) != CT_GLTF2MODEL_COLLISION_NONE;
+   return GetNodeCollisionType(name) != CT_GLTF2MODEL_COLLISION_NONE;
 }
 
 bool ctGltf2Model::isNodeLODLevel(const char* name) {
@@ -153,7 +165,10 @@ bool ctGltf2Model::isNodeLODLevel(const char* name) {
 }
 
 bool ctGltf2Model::isNodeCustomAnimProp(const char* name) {
-   /* todo */
+   size_t len = strlen(name);
+   if (len < 4) { return false; }
+   const char* postfix = &name[len - 4];
+   if (ctCStrNEql(postfix, "_CAP", 4)) { return true; }
    return false;
 }
 

@@ -82,6 +82,9 @@ int main(int argc, char* argv[]) {
    /* Skeleton */
    CT_RETURN_ON_FAIL(exporter.ExtractSkeleton(), -2000);
 
+   /* Material */
+   exporter.ExtractMaterials();
+
    /* Geometry */
    CT_RETURN_ON_FAIL(exporter.ExtractGeometry(FindFlag("--skin")), -3000);
    if (FindFlag("--lod_generate")) {
@@ -129,9 +132,6 @@ int main(int argc, char* argv[]) {
    CT_RETURN_ON_FAIL(exporter.EncodeVertices(), -3100);
    CT_RETURN_ON_FAIL(exporter.CreateGeometryBlob(), -3200);
 
-   /* Material */
-   exporter.ExtractMaterials();
-
    /* Animations */
    if (FindFlag("--animations")) { exporter.ExtractAnimations(); }
 
@@ -139,17 +139,26 @@ int main(int argc, char* argv[]) {
    if (FindFlag("--splines")) { exporter.ExtractSplines(); }
 
    /* Physics */
-   paramStr = "compound";  // FindParam("--physics");
+   paramStr = FindParam("--physics");
    ctGltf2ModelPhysicsMode phys = CT_GLTF2MODEL_PHYS_COMPOUND;
    if (paramStr) {
       if (ctCStrEql(paramStr, "compound")) {
          phys = CT_GLTF2MODEL_PHYS_COMPOUND;
+      } else if (ctCStrEql(paramStr, "convex")) {
+         phys = CT_GLTF2MODEL_PHYS_CONVEX;
+      } else if (ctCStrEql(paramStr, "mesh")) {
+         phys = CT_GLTF2MODEL_PHYS_MESH;
       } else if (ctCStrEql(paramStr, "scene")) {
          phys = CT_GLTF2MODEL_PHYS_SCENE;
       } else if (ctCStrEql(paramStr, "ragdoll")) {
          phys = CT_GLTF2MODEL_PHYS_RAGDOLL;
       }
-      if (!ctCStrEql(paramStr, "none")) { exporter.ExtractPhysics(phys); }
+      if (!ctCStrEql(paramStr, "none")) {
+         paramStr = FindParam("--surface_override");
+         uint32_t surfaceOverride = 0;
+         if (paramStr) { surfaceOverride = ctXXHash32(paramStr); }
+         exporter.ExtractPhysics(phys, surfaceOverride);
+      }
    }
 
    /* View Model */
@@ -183,7 +192,7 @@ ctResults ctGltf2Model::SaveModel(const char* filepath) {
    ZoneScoped;
    ctFile file;
    if (file.Open(filepath, CT_FILE_OPEN_WRITE) == CT_SUCCESS) {
-      return ctModelSave(model, file);
+      return ctModelSave(model, file, CT_MODEL_CPU_COMPRESS_NONE);
    }
    return CT_FAILURE_INACCESSIBLE;
 }

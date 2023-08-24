@@ -31,6 +31,7 @@
 #include "animation/Spline.hpp"
 
 #include "scene/SceneEngine.hpp"
+#include "core/JobSystem.hpp"
 
 enum ctModelViewerMeshMode {
    CT_MODELVIEW_SUBMESH,
@@ -79,9 +80,9 @@ public:
    virtual ctResults OnStartup();
    virtual ctResults OnUIUpdate();
    virtual ctResults OnTick(float deltaTime) {
+      ctPhysicsEngineUpdate(Engine->Physics->GetPhysicsEngine(), deltaTime);
+
       timer += deltaTime;
-      rotationPhase += rotationSpeed * deltaTime;
-      Engine->SceneEngine->SetCameraOverride(camera);
 
       /* animation */
       if (applyKeyframes && pAnimCanvas && pAnimBank) {
@@ -166,10 +167,14 @@ public:
 
    ctDynamicArray<ctAnimSpline*> splines;
 
-   ctCameraInfo camera;
+   ctDynamicArray<ctPhysicsBody> bodies;
+   ctDynamicArray<ctPhysicsBody> physicsTestBodies;
+   int32_t testShapeGrid[2] = {64, 16};
+   float testShapeSize = 0.3f;
+   float testShapeSpacing = 0.25f;
+   float testShapeHeight = 3.0f;
+   void CreateTestShapes();
    float timer;
-   float rotationPhase = 0.0f;
-   float rotationSpeed = 1.0f;
 };
 
 ctResults ctGltf2Model::ModelViewer(int argc, char* argv[]) {
@@ -181,8 +186,7 @@ ctResults ctGltf2Model::ModelViewer(int argc, char* argv[]) {
 }
 
 ctResults ctModelViewer::OnStartup() {
-   Engine->SceneEngine->EnableCameraOverride();
-   camera.position = ctVec3(0.0f, 1.0f, -10.0f);
+   Engine->SceneEngine->EnableDebugCamera();
 
    /* setup animation */
    if (model.geometry.morphTargetMapping) { pMorphSet = new ctAnimMorphSet(model); }
@@ -195,17 +199,54 @@ ctResults ctModelViewer::OnStartup() {
    for (uint32_t i = 0; i < model.splines.segmentCount; i++) {
       splines.Append(new ctAnimSpline(model, i));
    }
+
+   /* setup collisions */
+   for (uint32_t i = 0; i < model.physics.shapeCount; i++) {
+      ctPhysicsBody body;
+      ctModelCollisionShape shape = model.physics.shapes[i];
+      uint8_t* data = model.physics.bake.data + shape.bakeOffset;
+      ctPhysicsBodyDesc desc = ctPhysicsBodyDesc();
+      desc.motion = CT_PHYSICS_STATIC;
+      desc.shape = ctPhysicsShapeBaked(data, shape.bakeSize);
+      ctPhysicsCreateBody(Engine->Physics->GetPhysicsEngine(), body, desc);
+      bodies.Append(body);
+   }
    return CT_SUCCESS;
+}
+
+void ctModelViewer::CreateTestShapes() {
+   ctGetJobSystem()->WaitBarrier();
+   for (size_t i = 0; i < physicsTestBodies.Count(); i++) {
+      ctPhysicsDestroy(Engine->Physics->GetPhysicsEngine(), physicsTestBodies[i]);
+   }
+   physicsTestBodies.Clear();
+
+   ctVec3 startPos = ctVec3(-testShapeSize * (testShapeGrid[0] / 2),
+                            testShapeHeight,
+                            -testShapeSize * (testShapeGrid[1] / 2));
+   ctVec3 vecProgX = ctVec3(testShapeSize, 0.0f, 0.0f);
+   ctVec3 vecProgY = ctVec3(0.0f, 0.0f, testShapeSize);
+   float finalShapeSize = testShapeSize * testShapeSpacing;
+   ctRandomGenerator rng = ctRandomGenerator();
+
+   for (int32_t x = 0; x < testShapeGrid[0]; x++) {
+      for (int32_t y = 0; y < testShapeGrid[1]; y++) {
+         ctVec3 randomJitter = rng.GetVec3() * testShapeSize * 0.5f;
+         ctPhysicsBody body;
+         ctPhysicsBodyDesc desc = ctPhysicsBodyDesc();
+         desc.position = startPos + (vecProgX * x) + (vecProgY * y) + randomJitter;
+         desc.rotation = normalize(ctQuat(rng.GetVec4()));
+         desc.shape = ctPhysicsShapeBox(finalShapeSize);
+         desc.startActive = true;
+         ctPhysicsCreateBody(Engine->Physics->GetPhysicsEngine(), body, desc);
+         physicsTestBodies.Append(body);
+      }
+   }
 }
 
 ctResults ctModelViewer::OnUIUpdate() {
    ZoneScoped;
    if (ImGui::Begin(CT_NC("Model"))) {
-      if (ImGui::CollapsingHeader(CT_NC("Preview"))) {
-         ImGui::InputFloat3("Camera Position", camera.position.data);
-         ImGui::InputFloat("Rotation Phase", &rotationPhase);
-         ImGui::InputFloat("Rotation Speed", &rotationSpeed);
-      }
       if (ImGui::CollapsingHeader(CT_NC("Skeleton"))) { SkeletonInfo(); }
       if (ImGui::CollapsingHeader(CT_NC("Geometry"))) { GeometryInfo(); }
       if (ImGui::CollapsingHeader(CT_NC("Animation"))) { AnimationInfo(); }
@@ -436,6 +477,7 @@ void ctModelViewer::SplinesInfo() {
 }
 
 void ctModelViewer::PhysicsInfo() {
+   if (ImGui::Button("Drop Shapes")) { CreateTestShapes(); }
 }
 
 void ctModelViewer::NavmeshInfo() {
@@ -459,21 +501,16 @@ void ctModelViewer::SceneInfo() {
 
 void ctModelViewer::RenderModel() {
    ZoneScoped;
-   ctQuat quat = ctQuatYawPitchRoll(rotationPhase, 0.0f, 0.0f);
-   Im3d::PushMatrix(ctMat4ToIm3d(ctMat4FromQuat(quat)));
    if (renderSkeleton) { RenderSkeleton(); }
    if (renderBBOX) { RenderBoundingBoxes(); }
    if (renderGeometry) { RenderGeometry(); }
    if (renderSplines) { RenderSplines(); }
-   Im3d::PopMatrix();
 }
 
 void ctModelViewer::RenderSkeleton() {
    ZoneScoped;
-   ctQuat quat = ctQuatYawPitchRoll(rotationPhase, 0.0f, 0.0f);
-   ctMat4 worldRot = ctMat4FromQuat(quat);
    for (int32_t i = 0; i < pSkeleton->GetBoneCount(); i++) {
-      Im3d::PushMatrix(ctMat4ToIm3d((worldRot * pSkeleton->GetModelMatrix(i))));
+      Im3d::PushMatrix(ctMat4ToIm3d((pSkeleton->GetModelMatrix(i))));
       Im3d::DrawXyzAxes();
       if (renderBoneNames) {
          char buff[33];

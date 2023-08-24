@@ -30,6 +30,8 @@
 #include "spaces/asseteditors/TextEditor.hpp"
 #include "spaces/HexViewer.hpp"
 
+#include "scene/SceneEngine.hpp"
+
 ctResults ctAuditionEditor::Startup() {
    ctSettingsSection* settings = Engine->Settings->GetOrCreateSection("Audition", 1);
    settings->BindInteger(&isHidden,
@@ -141,6 +143,15 @@ void ctAuditionEditor::UpdateEditor() {
 
       if (ImGui::BeginMenu(CT_NC("View"))) {
          if (ImGui::MenuItem(CT_NC("Hide Editor"), "Ctrl+Grave")) { isHidden = true; }
+
+         bool isDebugCamActive = Engine->SceneEngine->isDebugCameraActive();
+         if (ImGui::MenuItem(CT_NC("Debug Camera"), NULL, &isDebugCamActive)) {
+            if (!isDebugCamActive) {
+               Engine->SceneEngine->DisableDebugCamera();
+            } else {
+               Engine->SceneEngine->EnableDebugCamera();
+            }
+         }
          ImGui::EndMenu();
       }
       ImGui::EndMainMenuBar();

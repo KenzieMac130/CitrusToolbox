@@ -22,7 +22,7 @@
 #define CT_PI_D 3.141592653589793238462643383279
 
 /* Float Compare */
-inline bool ctFloatCompare(const float a, const float b, const float threshold = 0.001f);
+inline bool ctFloatCompare(const float a, const float b, const float threshold = 0.0001f);
 
 /* Lerp */
 inline float ctLerp(const float a, const float b, const float factor);
@@ -111,6 +111,17 @@ inline void ctHexToBytes(size_t byteCount, const char* hex, uint8_t* bytes);
 
 inline bool ctFloatCompare(const float a, const float b, const float threshold) {
    return ctAbs(a - b) < threshold;
+}
+
+inline bool ctMultiFloatCompare(const size_t count,
+                                const float* a,
+                                const float* b,
+                                const float threshold) {
+   for (size_t i = 0; i < count; i++) {
+      bool result = ctFloatCompare(a[i], b[i], threshold);
+      if (!result) { return false; }
+   }
+   return true;
 }
 
 inline float ctLerp(const float a, const float b, const float t) {

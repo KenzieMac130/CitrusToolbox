@@ -21,7 +21,7 @@
 ctPhysicsSurfaceTypeT::ctPhysicsSurfaceTypeT(ctJSONReadEntry dict, const char* inName) :
     ctPhysicsSurfaceTypeT() {
    name = inName;
-   for (size_t i = 0; i < dict.GetObjectEntryCount(); i++) {
+   for (int i = 0; i < dict.GetObjectEntryCount(); i++) {
       ctJSONReadEntry varentry;
       ctStringUtf8 varname;
       if (dict.GetObjectEntry(i, varentry, &varname) != CT_SUCCESS) { continue; }
@@ -47,7 +47,7 @@ ctPhysicsSurfaceTypeT::ctPhysicsSurfaceTypeT(ctJSONReadEntry dict, const char* i
 }
 
 ctPhysicsSurfaceTypeFactory::ctPhysicsSurfaceTypeFactory(ctJSONReadEntry jsonRoot) {
-   for (size_t i = 0; i < jsonRoot.GetObjectEntryCount(); i++) {
+   for (int i = 0; i < jsonRoot.GetObjectEntryCount(); i++) {
       ctJSONReadEntry varentry;
       ctStringUtf8 varname;
       if (jsonRoot.GetObjectEntry(i, varentry, &varname) != CT_SUCCESS) { continue; }

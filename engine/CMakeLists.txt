@@ -289,7 +289,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
 
 # ---------- Physics Backend Files ----------
 set(ENGINE_HEADER_FILES_PHYSICS_INTERFACE
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Archive.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/Baking.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/Body.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/Character.hpp
@@ -304,7 +303,6 @@ set(ENGINE_SOURCE_FILES_PHYSICS_INTERFACE)
 
 if(CITRUS_JOLT)
 set(ENGINE_SOURCE_FILES_PHYSICS_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltArchive.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBaking.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBody.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltCharacter.cpp
@@ -316,7 +314,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltRagdoll.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltShape.cpp)
 
 set(ENGINE_HEADER_FILES_PHYSICS_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltArchive.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBaking.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBody.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltCharacter.hpp
@@ -331,6 +328,7 @@ endif()
 list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Module.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Surface.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/ConvexDecompose.cpp
 )
 
 list(APPEND ENGINE_HEADER_FILES_PHYSICS_BACKEND
@@ -340,10 +338,12 @@ ${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Surface.hpp
 # ---------- Scene Engine ---------- 
 set(ENGINE_SOURCE_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/DebugCamera.cpp
 )
 
 set(ENGINE_HEADER_FILES_SCENE
 ${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/scene/DebugCamera.hpp
 )
 
 # ---------- Third Party Implementation ---------- 

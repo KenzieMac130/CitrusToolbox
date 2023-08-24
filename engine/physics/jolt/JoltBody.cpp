@@ -23,8 +23,11 @@
 
 ctResults
 ctPhysicsCreateBody(ctPhysicsEngine ctx, ctPhysicsBody& body, ctPhysicsBodyDesc& desc) {
+   /* get actual allowed movement */
    bool allowMove = desc.allowMoving;
    if (desc.motion != CT_PHYSICS_STATIC) { allowMove = true; }
+
+   /* initialize any direct mapping */
    JPH::BodyCreationSettings settings = JPH::BodyCreationSettings();
    settings.mPosition = ctVec3ToJolt(desc.position);
    settings.mRotation = ctQuatToJolt(desc.rotation);
@@ -35,16 +38,6 @@ ctPhysicsCreateBody(ctPhysicsEngine ctx, ctPhysicsBody& body, ctPhysicsBodyDesc&
    settings.mIsSensor = desc.isTrigger;
    settings.mAllowSleeping = desc.allowSleep;
    settings.mAllowDynamicOrKinematic = allowMove;
-   if (desc.layerOverride != CT_PHYSICS_LAYER_DEFAULT) {
-      settings.mObjectLayer = desc.layerOverride;
-   } else { /* auto select layer */
-      if (allowMove) {
-         settings.mObjectLayer = desc.isDetail ? CT_PHYSICS_LAYER_DYNAMIC_DETAIL
-                                               : CT_PHYSICS_LAYER_DYNAMIC_CORE;
-      } else {
-         settings.mObjectLayer = CT_PHYSICS_LAYER_STATIC;
-      }
-   }
    settings.mMotionQuality =
      desc.isHighSpeed ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
    settings.mFriction = desc.friction;
@@ -55,16 +48,56 @@ ctPhysicsCreateBody(ctPhysicsEngine ctx, ctPhysicsBody& body, ctPhysicsBodyDesc&
    settings.mGravityFactor = desc.gravityFactor;
    settings.mUserData = ctXXHash32(desc.bodyTag);
 
+   /* setup mass override */
+   bool overrideMass = false;
+   if (desc.massOverride > 0.0f) {
+      overrideMass = true;
+      JPH::MassProperties massProps = JPH::MassProperties();
+      massProps.mMass = desc.massOverride;
+      settings.mMassPropertiesOverride = massProps;
+      settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+   }
+
+   /* setup physics layer */
+   if (desc.layerOverride != CT_PHYSICS_LAYER_DEFAULT) {
+      settings.mObjectLayer = desc.layerOverride;
+   } else { /* auto select layer */
+      if (allowMove) {
+         settings.mObjectLayer = desc.isDetail ? CT_PHYSICS_LAYER_DYNAMIC_DETAIL
+                                               : CT_PHYSICS_LAYER_DYNAMIC_CORE;
+      } else {
+         settings.mObjectLayer = CT_PHYSICS_LAYER_STATIC;
+      }
+   }
+
+   /* setup shape */
    JPH::Shape::ShapeResult shape = CreateShapeFromCitrus(ctx, desc.shape);
    if (!shape.IsValid()) {
-      ctDebugError("FAILED TO CREATE SHAPE FOR BODY AT (%f,%f,%f)!!!");
+      ctDebugError("FAILED TO CREATE SHAPE FOR BODY AT (%f,%f,%f)!!!",
+                   desc.position.x,
+                   desc.position.y,
+                   desc.position.z);
       settings.SetShape(new JPH::SphereShape(0.5f));
    } else {
       settings.SetShape(shape.Get());
    }
 
-   JPH::BodyInterface& interfa = ctx->physics.GetBodyInterface();
-   body = interfa
+   /* fixup mass properties from shape  */
+   if (allowMove && settings.GetMassProperties().mMass <= 0.0f && !overrideMass) {
+      ctDebugWarning("MASS WAS LESS THAN ZERO FOR BODY AT (%f,%f,%f)!!!",
+                     desc.position.x,
+                     desc.position.y,
+                     desc.position.z);
+      JPH::MassProperties mass = JPH::MassProperties();
+      mass.SetMassAndInertiaOfSolidBox(JPH::Vec3Arg(0.5f, 0.5f, 0.5f), 1.0f);
+      settings.mOverrideMassProperties =
+        JPH::EOverrideMassProperties::MassAndInertiaProvided;
+      settings.mMassPropertiesOverride = mass;
+   }
+
+   /* create body */
+   JPH::BodyInterface& binterface = ctx->physics.GetBodyInterface();
+   body = binterface
             .CreateAndAddBody(settings,
                               desc.startActive ? JPH::EActivation::Activate
                                                : JPH::EActivation::DontActivate)
@@ -74,4 +107,5 @@ ctPhysicsCreateBody(ctPhysicsEngine ctx, ctPhysicsBody& body, ctPhysicsBodyDesc&
 
 void ctPhysicsDestroy(ctPhysicsEngine ctx, ctPhysicsBody body) {
    ctx->physics.GetBodyInterface().RemoveBody(JPH::BodyID(body));
+   ctx->physics.GetBodyInterface().DestroyBody(JPH::BodyID(body));
 }

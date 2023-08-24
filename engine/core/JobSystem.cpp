@@ -78,20 +78,39 @@ const char* ctJobSystem::GetModuleName() {
    return "Job System";
 }
 
-ctResults ctJobSystem::PushJob(void (*fpFunction)(void*), void* pData) {
-   ZoneScoped;
-   return PushJobs(1, &fpFunction, &pData);
+ctJobSystemDependency ctJobSystem::DeclareDependency(const char* name) {
+   return ctJobSystemDependency();
+   /* todo*/
 }
 
-ctResults
-ctJobSystem::PushJobs(size_t count, void (**pfpFunction)(void*), void** ppData) {
+ctResults ctJobSystem::PushJob(void (*fpFunction)(void*),
+                               void* pData,
+                               size_t dependencyCount,
+                               ctJobSystemDependency* pDependencies) {
+   ZoneScoped;
+   return PushJobs(1, &fpFunction, &pData, dependencyCount, pDependencies);
+}
+
+ctResults ctJobSystem::PushJobs(size_t count,
+                                void (**pfpFunction)(void*),
+                                void** ppData,
+                                size_t dependencyCount,
+                                ctJobSystemDependency* pDependencies) {
    ZoneScoped;
    ctSpinLockEnterCritical(jobLock);
+   JobInternal jobBase = JobInternal();
+   ctAssert(dependencyCount <= ctCStaticArrayLen(jobBase.dependencies));
+   for (size_t j = 0; j < dependencyCount; j++) {
+      jobBase.dependencies[j] = pDependencies[j];
+   }
    for (size_t i = 0; i < count; i++) {
-      JobInternal job = JobInternal();
+      JobInternal job = jobBase;
       job.fpFunction = pfpFunction[i];
       job.pData = ppData[i];
       jobQueue.Append(job);
+      /* todo: job slot target is last non-empty, else loop to first */
+      /* in practice looping to first should never happen as all will be cleared by a host
+       * call to WaitBarrier() at least once each frame unless dependencyPool saturates */
    }
    ctSpinLockExitCritical(jobLock);
    ctAtomicAdd(jobCountAtom, (int)count);
@@ -125,10 +144,15 @@ bool ctJobSystem::DoMoreWork() {
       return false;
    }
    JobInternal job = jobQueue.First();
+   /* todo: factor in dependencies */
    ctAtomicAdd(jobCountAtom, -1);
    jobQueue.RemoveFirst();
+   /* todo: fixed job slots which are scanned for sequentially */
+   /* removal will be nullification of function pointer */
    ctSpinLockExitCritical(jobLock);
+   /* try to lock mutexes or continue */
    job.fpFunction(job.pData);
+   /* unlock mutexes */
    return true;
 }
 

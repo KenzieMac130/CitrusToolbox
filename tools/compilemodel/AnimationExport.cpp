@@ -28,6 +28,9 @@ ctResults ctGltf2Model::ExtractAnimations() {
       strncpy(outanim.name, inanim.name, 32);
       outanim.channelStart = (uint32_t)animChannels.Count();
 
+      /* skip empty clips */
+      if (inanim.channels_count == 0) { continue; }
+
       /* for each channel */
       for (size_t chanIndex = 0; chanIndex < inanim.channels_count; chanIndex++) {
          const cgltf_animation_channel& inchan = inanim.channels[chanIndex];
@@ -38,12 +41,20 @@ ctResults ctGltf2Model::ExtractAnimations() {
          /* get target node hash */
          uint32_t targetNodeHash = 0;
          if (inchan.target_node) {
+            /* skip unpreserved nodes (ex: collisions, lod levels) */
+            if (!isNodePreserved(inchan.target_node->name)) { continue; }
             targetNodeHash = ctXXHash32(inchan.target_node->name);
          }
 
          /* add channel for type */
          if (isNodeCustomAnimProp(inchan.target_node->name)) {
-            AddCustomChannel(*inchan.sampler, 0); /* todo: extract custom props */
+            if (inchan.target_path != cgltf_animation_path_type_translation) { continue; }
+            char nameBuff[64];
+            strncpy(nameBuff, inchan.target_node->name, 64);
+            nameBuff[strlen(nameBuff) - 4] = 0;
+            AddCustomChannel(*inchan.sampler,
+                             ctXXHash32(nameBuff)); /* todo: extract custom props */
+            /* todo: test */
             outanim.channelCount++;
          } else {
             switch (inchan.target_path) {

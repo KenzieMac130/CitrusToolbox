@@ -21,6 +21,9 @@
 #include "formats/model/Model.hpp"
 #include "tiny_imageFormat/tinyimageformat.h"
 
+#include "physics/Physics.hpp"
+#include "physics/Baking.hpp"
+
 struct ctGltf2ModelVertex {
    ctVec3 position;
    ctVec3 normal;
@@ -94,8 +97,10 @@ enum ctGltf2ModelLodQuality {
 
 enum ctGltf2ModelPhysicsMode {
    CT_GLTF2MODEL_PHYS_SCENE,    /* mutiple shapes */
-   CT_GLTF2MODEL_PHYS_COMPOUND, /* single compound shape */
-   CT_GLTF2MODEL_PHYS_RAGDOLL   /* articulation */
+   CT_GLTF2MODEL_PHYS_COMPOUND, /* prop made of compound shapes */
+   CT_GLTF2MODEL_PHYS_CONVEX,   /* convex hull prop */
+   CT_GLTF2MODEL_PHYS_MESH,     /* mesh is collision */
+   CT_GLTF2MODEL_PHYS_RAGDOLL   /* ragdoll rig */
 };
 
 enum ctGltf2ModelCollisionType {
@@ -104,7 +109,28 @@ enum ctGltf2ModelCollisionType {
    CT_GLTF2MODEL_COLLISION_SPHERE,
    CT_GLTF2MODEL_COLLISION_PILL,
    CT_GLTF2MODEL_COLLISION_TRI,
-   CT_GLTF2MODEL_COLLISION_CONVEX
+   CT_GLTF2MODEL_COLLISION_CONVEX,
+};
+
+struct ctGltf2ModelCollision {
+   uint32_t compoundNodeNameHash;
+   int32_t boneAssociation;
+   ctPhysicsShapeSettings shapeSettings;
+   ctDynamicArray<ctVec3> points;
+   ctDynamicArray<uint32_t> indices;
+   ctDynamicArray<uint32_t> materialIndices;
+   ctDynamicArray<uint32_t> materialHashes;
+   ctPhysicsConvexDecomposition decomp;
+};
+
+struct ctGltf2ModelCollisionCompound {
+   int32_t parentBone;
+   uint32_t bakeHash;
+};
+
+struct ctGltf2ModelCollisionBake {
+   uint32_t writtenOffset;
+   ctDynamicArray<uint8_t> bytes;
 };
 
 class ctGltf2Model {
@@ -141,7 +167,7 @@ public:
    ctResults ExtractMaterials();
 
    /* Physics */
-   ctResults ExtractPhysics(ctGltf2ModelPhysicsMode mode);
+   ctResults ExtractPhysics(ctGltf2ModelPhysicsMode mode, uint32_t surfaceHashOverride);
 
    /* Scene */
 
@@ -150,7 +176,7 @@ public:
 
 protected:
    /* Skeleton Helpers */
-   static ctGltf2ModelCollisionType getNodeCollisionType(const char* name);
+   static ctGltf2ModelCollisionType GetNodeCollisionType(const char* name);
    static bool isNodeCollision(const char* name);
    static bool isNodeLODLevel(const char* name);
    static bool isNodeCustomAnimProp(const char* name);
@@ -212,6 +238,12 @@ protected:
    float GetClipLength(ctModelAnimationClip& outanim);
 
    /* Material Helpers */
+   inline uint32_t GetMaterialIndex(const char* name) {
+      uint32_t hash = ctXXHash32(name);
+      uint32_t* pIdx = materialNameToIndex.FindPtr(hash);
+      if (pIdx) { return *pIdx; }
+      return 0;
+   }
    inline void WriteScalarProp(ctJSONWriter& writer, const char* name, float prop) {
       writer.DeclareVariable(name);
       writer.WriteNumber(prop);
@@ -249,6 +281,37 @@ protected:
                               const char* name,
                               cgltf_texture_view* texture,
                               bool includeXform);
+
+   /* Collision Helpers */
+   ctResults CreateCollisionFromConvex(uint32_t surfaceHash);
+   ctResults CreateCollisionFromMesh(uint32_t surfaceHash);
+   ctResults CreateCollisionFromRig(ctGltf2ModelPhysicsMode mode,
+                                    uint32_t surfaceHashOverride);
+   ctTransform GetCollisionTransform(const cgltf_node& node,
+                                     bool absolute,
+                                     ctVec3 translateLocal = ctVec3(0.0f),
+                                     bool isMesh = false);
+   void GetCollisionDimensions(
+     const cgltf_node& node,
+     ctVec3& localTranslation, /* center of bbox */
+     ctVec3& comOffset,        /* offset from center to origin */
+     ctVec3& halfExtents);     /* bounding box half extents from center */
+   uint32_t GetSurfaceHashForPrimitive(const cgltf_node& node, uint32_t primIdx = 0);
+   uint32_t GetSurfaceHashForPrimitive(const cgltf_mesh& mesh, uint32_t primIdx = 0);
+   cgltf_mesh* GetCollisionMeshForNode(const cgltf_node& node);
+   void GetCollisionMeshData(cgltf_mesh* input,
+                             ctGltf2ModelCollision* output,
+                             bool getIndices,
+                             bool getMaterialMap,
+                             ctVec3 scale);
+   void GetCollisionMeshDataFromVisuals(ctGltf2ModelCollision* output, bool getIndices);
+   ctGltf2ModelCollision* GetBoxCollision(const cgltf_node& node, bool absolute);
+   ctGltf2ModelCollision* GetSphereCollision(const cgltf_node& node, bool absolute);
+   ctGltf2ModelCollision* GetCapsuleCollision(const cgltf_node& node, bool absolute);
+   ctGltf2ModelCollision* GetConvexCollision(const cgltf_node& node, bool absolute);
+   ctGltf2ModelCollision* GetTriangleCollision(const cgltf_node& node, bool absolute);
+   ctResults CreateCollisionForCompoundHash(uint32_t hash);
+   void SavePhysicsData();
 
 private:
    cgltf_data gltf;
@@ -295,4 +358,14 @@ private:
 
    /* Material */
    ctStringUtf8 materialText;
+   ctHashTable<uint32_t, uint32_t> materialNameToIndex;
+
+   /* Physics */
+   ctPhysicsEngine physicsEngine; /* NO SIMULATION SETUP! */
+   ctDynamicArray<ctGltf2ModelCollision*> subshapes;
+   ctHashTable<ctGltf2ModelCollisionCompound*, uint32_t> collisionsByGroupHash;
+   ctHashTable<ctGltf2ModelCollisionBake*, uint32_t> collisionBakeGroups;
+   ctDynamicArray<ctModelCollisionShape> finalCollisions;
+   ctDynamicArray<uint8_t> finalPhysBake;
+   /* todo: physics shape to node relationship */
 };

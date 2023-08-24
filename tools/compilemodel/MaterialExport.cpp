@@ -61,10 +61,18 @@ ctResults ctGltf2Model::ExtractMaterials() {
    writer.DeclareVariable("materials");
    writer.PushArray();
 
-   /* todo */
+   uint32_t matIdx = 0;
    for (size_t matidx = 0; matidx < gltf.materials_count; matidx++) {
-      writer.PushObject();
       cgltf_material& material = gltf.materials[matidx];
+
+      /* skip physics materials */
+      if (ctCStrNEql(material.name, "CM_", 3)) { continue; }
+
+      /* create mapping */
+      materialNameToIndex.Insert(ctXXHash32(material.name), matIdx);
+      matIdx++;
+
+      writer.PushObject();
 
       /* material name */
       writer.DeclareVariable("name");

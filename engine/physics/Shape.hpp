@@ -24,7 +24,8 @@ enum ctPhysicsShapeType {
    CT_PHYSICS_SHAPE_CAPSULE,
    CT_PHYSICS_SHAPE_CONVEX_HULL,
    CT_PHYSICS_SHAPE_MESH,
-   CT_PHYSICS_SHAPE_COMPOUND
+   CT_PHYSICS_SHAPE_COMPOUND,
+   CT_PHYSICS_SHAPE_BAKED
 };
 
 struct ctPhysicsShapeSettings {
@@ -48,7 +49,7 @@ struct ctPhysicsShapeSettings {
       struct {
          ctVec3* points;
          uint32_t pointCount;
-         bool skipBake;
+         bool ensureConvex;
       } convexHull;
       struct {
          ctVec3* vertices;
@@ -67,25 +68,39 @@ struct ctPhysicsShapeSettings {
          ctPhysicsShapeSettings* shapes;
          size_t shapeCount;
       } compound;
+      struct {
+         uint8_t* bytes;
+         size_t byteCount;
+      } baked;
    };
 };
 
 inline ctPhysicsShapeSettings ctPhysicsShapeBox(ctVec3 halfExtent = ctVec3(0.5f),
+                                                uint32_t surfaceTypeHash = 0,
                                                 ctTransform transform = ctTransform(),
                                                 ctVec3 centerOfMassOffset = ctVec3()) {
+   if (halfExtent.x < 0.005f) { halfExtent.x = 0.005f; }
+   if (halfExtent.y < 0.005f) { halfExtent.y = 0.005f; }
+   if (halfExtent.z < 0.005f) { halfExtent.z = 0.005f; }
    ctPhysicsShapeSettings result = {};
    result.type = CT_PHYSICS_SHAPE_BOX;
+   result.transform = transform;
    result.centerOfMassOffset = centerOfMassOffset;
+   result.surfaceTypeHash = surfaceTypeHash;
    result.box.halfExtent = halfExtent;
    return result;
 }
 
 inline ctPhysicsShapeSettings ctPhysicsShapeSphere(float radius = 0.5f,
+                                                   uint32_t surfaceTypeHash = 0,
                                                    ctTransform transform = ctTransform(),
                                                    ctVec3 centerOfMassOffset = ctVec3()) {
+   if (radius < 0.005f) { radius = 0.005f; }
    ctPhysicsShapeSettings result = {};
    result.type = CT_PHYSICS_SHAPE_SPHERE;
+   result.transform = transform;
    result.centerOfMassOffset = centerOfMassOffset;
+   result.surfaceTypeHash = surfaceTypeHash;
    result.sphere.radius = radius;
    return result;
 }
@@ -93,12 +108,16 @@ inline ctPhysicsShapeSettings ctPhysicsShapeSphere(float radius = 0.5f,
 inline ctPhysicsShapeSettings
 ctPhysicsShapeCapsule(float radius = 0.5f,
                       float halfHeight = 0.5f,
+                      uint32_t surfaceTypeHash = 0,
                       ctTransform transform = ctTransform(),
                       ctVec3 centerOfMassOffset = ctVec3()) {
+   if (radius < 0.005f) { radius = 0.005f; }
+   if (halfHeight < 0.0f) { halfHeight = 0.0f; }
    ctPhysicsShapeSettings result = {};
    result.type = CT_PHYSICS_SHAPE_CAPSULE;
    result.transform = transform;
    result.centerOfMassOffset = centerOfMassOffset;
+   result.surfaceTypeHash = surfaceTypeHash;
    result.capsule.radius = radius;
    result.capsule.halfHeight = halfHeight;
    return result;
@@ -107,14 +126,17 @@ ctPhysicsShapeCapsule(float radius = 0.5f,
 inline ctPhysicsShapeSettings
 ctPhysicsShapeConvexHull(ctVec3* points,
                          uint32_t pointCount,
+                         uint32_t surfaceTypeHash = 0,
                          ctTransform transform = ctTransform(),
                          ctVec3 centerOfMassOffset = ctVec3()) {
    ctPhysicsShapeSettings result = {};
    result.type = CT_PHYSICS_SHAPE_CONVEX_HULL;
    result.transform = transform;
    result.centerOfMassOffset = centerOfMassOffset;
+   result.surfaceTypeHash = surfaceTypeHash;
    result.convexHull.pointCount = pointCount;
    result.convexHull.points = points;
+   result.convexHull.ensureConvex = true;
    return result;
 }
 
@@ -122,16 +144,26 @@ inline ctPhysicsShapeSettings ctPhysicsShapeMesh(ctVec3* vertices,
                                                  uint32_t vertexCount,
                                                  uint32_t* indices,
                                                  uint32_t indexCount,
+                                                 uint32_t singleSurfaceTypeHash = 0,
+                                                 uint32_t* triSurfaceIndices = NULL,
+                                                 uint32_t triSurfaceIndexCount = 0,
+                                                 uint32_t* surfaceTypeHashes = NULL,
+                                                 uint32_t surfaceTypeHashCount = 0,
                                                  ctTransform transform = ctTransform(),
                                                  ctVec3 centerOfMassOffset = ctVec3()) {
    ctPhysicsShapeSettings result = {};
-   result.type = CT_PHYSICS_SHAPE_CONVEX_HULL;
+   result.type = CT_PHYSICS_SHAPE_MESH;
    result.transform = transform;
    result.centerOfMassOffset = centerOfMassOffset;
+   result.surfaceTypeHash = singleSurfaceTypeHash;
    result.mesh.vertices = vertices;
-   result.mesh.indices = indices;
    result.mesh.vertexCount = vertexCount;
+   result.mesh.indices = indices;
    result.mesh.indexCount = indexCount;
+   result.mesh.triSurfaceIndices = triSurfaceIndices;
+   result.mesh.triSurfaceIndexCount = triSurfaceIndexCount;
+   result.mesh.surfaceTypeHashes = surfaceTypeHashes;
+   result.mesh.surfaceTypeHashCount = surfaceTypeHashCount;
    return result;
 }
 
@@ -143,5 +175,15 @@ inline ctPhysicsShapeSettings ctPhysicsShapeCompound(size_t count,
    result.centerOfMassOffset = ctVec3();
    result.compound.shapeCount = count;
    result.compound.shapes = others;
+   return result;
+}
+
+inline ctPhysicsShapeSettings ctPhysicsShapeBaked(uint8_t* bytes, size_t byteCount) {
+   ctPhysicsShapeSettings result = {};
+   result.type = CT_PHYSICS_SHAPE_BAKED;
+   result.transform = ctTransform();
+   result.centerOfMassOffset = ctVec3();
+   result.baked.bytes = bytes;
+   result.baked.byteCount = byteCount;
    return result;
 }
