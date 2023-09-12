@@ -27,7 +27,4 @@ target_link_libraries(Test_Scene PUBLIC engine)
 target_link_libraries(Test_Scene PUBLIC game)
 
 #Physics Test
-add_executable(Test_Physics PhysicsTest.cpp)
-set_property(TARGET Test_Physics PROPERTY FOLDER "tests")
-target_link_libraries(Test_Physics PUBLIC engine)
-target_link_libraries(Test_Physics PUBLIC game)
+add_subdirectory(physics)
