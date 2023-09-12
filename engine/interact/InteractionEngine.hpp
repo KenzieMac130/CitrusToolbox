@@ -27,11 +27,13 @@
 /* Simple Input API */
 float ctGetSignal(const char* path); /* todo: add local player index */
 bool ctGetButton(const char* path);
+void ctRequestRelativePointer();
 
-/* todo: paths should only be manipulated by backends (changing values) or lua (which will be another backend)*/
+/* todo: paths should only be manipulated by backends (changing values) or lua (which will
+ * be another backend)*/
 
 /* --------------------------- Virtual Directory --------------------------- */
-
+// clang-format off
 enum ctInteractionNodeType {
    CT_INTERACT_NODETYPE_NULL = 0,
    CT_INTERACT_NODETYPE_SCALAR = 1,      /* Data points to a float */ /* todo: float pointer */
@@ -42,6 +44,7 @@ enum ctInteractionNodeType {
    /* todo: CT_INTERACT_NODETYPE_SCRIPT_STRING (Data points to a string) */
    CT_INTERACT_NODETYPE_MAX = UINT8_MAX
 };
+// clang-format on
 
 struct CT_API ctInteractPath {
    ctInteractPath();
@@ -64,12 +67,12 @@ struct CT_API ctInteractNode {
    }
    float GetScalar();
    bool SetScalar(float value);
-   class ctInteractBinding* GetAsBinding(); /* todo: remove */
+   class ctInteractBinding* GetAsBinding();     /* todo: remove */
    class ctInteractActionSet* GetAsActionSet(); /* todo: remove */
    ctInteractPath path;
    ctInteractionNodeType type;
    bool accessible; /* todo: remove*/
-   void* pData; /* todo: replace with proper get/set behind virtuals */
+   void* pData;     /* todo: replace with proper get/set behind virtuals */
 };
 
 /* todo: one per player */
@@ -77,30 +80,59 @@ class CT_API ctInteractDirectorySystem {
 public:
    ~ctInteractDirectorySystem();
    ctResults CreateActionSetsFromFile(ctFile& file); /* todo: run action set lua script */
-   ctResults CreateBindingsFromFile(ctFile& file); /* todo: feeds user settings json to script */
+   ctResults
+   CreateBindingsFromFile(ctFile& file); /* todo: feeds user settings json to script */
    ctResults Update();
    ctResults AddNode(ctInteractNode& node);
    ctResults RemoveNode(ctInteractPath& path);
-   void EnableActionSet(ctInteractPath& path); /* todo: remove, now handled by params */
+   void EnableActionSet(ctInteractPath& path);  /* todo: remove, now handled by params */
    void DisableActionSet(ctInteractPath& path); /* todo: remove, now handled by params */
    ctResults SetNodeAccessible(ctInteractPath& path, bool accessible); /* todo: remove */
-   ctResults
-   GetNode(ctInteractPath& path, ctInteractNode*& pOutNode, bool forceAccess = false); /* todo: remove force access*/
+   ctResults GetNode(ctInteractPath& path,
+                     ctInteractNode*& pOutNode,
+                     bool forceAccess = false); /* todo: remove force access*/
    float GetSignal(ctInteractPath& path);
-/* todo: request device (requests a device be mapped to the directory)*/
-/* */
+   /* todo: request device (requests a device be mapped to the directory)*/
+
+   /* stakeholders can request a relative pointer to be used next frame
+   once there are no more relative pointer stakeholders on a frame relative mode is
+   dropped the next frame */
+   inline void RequestRelativePointerNextFrame() {
+      relatvePointerRequests++;
+   }
+   /* indicates wheter relative pointer is requested next frame */
+   inline bool isRelativePointerRequested() {
+      return relatvePointerRequests;
+   }
+   /* indicates whether pointer is in relative mode */
+   inline bool isRelativePointerUsed() {
+      return usedRelative;
+   }
+   /* cursor position using normalized screen coordinates from bottom left */
+   inline ctVec2 GetCursorPosition() {
+      if (usedRelative) { return ctVec2(0.5f); }
+      return cursorPosition;
+   }
 
    void LogContents();
    void DebugImGui();
    void _ReloadClear();
+   inline void _SetRelativeFlag(bool enabled) {
+      usedRelative = enabled;
+   }
+   inline void _SetCursorPos(ctVec3 pos) {
+   }
 
 #if CITRUS_INCLUDE_AUDITION
    ctHotReloadCategory configHotReload;
 #endif
 
 private:
+   bool usedRelative;
+   ctVec3 cursorPosition;
+   uint32_t relatvePointerRequests;
    ctDynamicArray<ctInteractPath> activeActionSets; /* todo: remove */
-   ctHashTable<ctInteractNode, uint64_t> nodes; /* todo: make pointer objects */
+   ctHashTable<ctInteractNode, uint64_t> nodes;     /* todo: make pointer objects */
 };
 
 /* --------------------------- Bindings --------------------------- */
@@ -159,7 +191,7 @@ public:
    virtual void DebugUI(bool useGizmos);
 
    ctInteractDirectorySystem Directory; /* todo: one per player */
-   bool isFrameActive; /* todo: move to directory */
+   bool isFrameActive;                  /* todo: move to directory */
 
 protected:
    ctDynamicArray<class ctInteractAbstractBackend*> pBackends;
