@@ -161,6 +161,9 @@ int main(int argc, char* argv[]) {
       }
    }
 
+   /* Scene */
+   if (FindFlag("--scene")) { exporter.ExtractSceneScript(); }
+
    /* View Model */
    if (FindFlag("--viewer")) { exporter.ModelViewer(argc, argv); }
 
@@ -192,7 +195,7 @@ ctResults ctGltf2Model::SaveModel(const char* filepath) {
    ZoneScoped;
    ctFile file;
    if (file.Open(filepath, CT_FILE_OPEN_WRITE) == CT_SUCCESS) {
-      return ctModelSave(model, file, CT_MODEL_CPU_COMPRESS_NONE);
+      return ctModelSave(model, file, CT_MODEL_CPU_COMPRESS_LZ4);
    }
    return CT_FAILURE_INACCESSIBLE;
 }

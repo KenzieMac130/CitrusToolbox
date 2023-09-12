@@ -169,7 +169,11 @@ public:
    /* Physics */
    ctResults ExtractPhysics(ctGltf2ModelPhysicsMode mode, uint32_t surfaceHashOverride);
 
+   /* Navmesh */
+   ctResults GenerateNavmesh();
+
    /* Scene */
+   ctResults ExtractSceneScript();
 
    /* Viewer */
    ctResults ModelViewer(int argc, char* argv[]);
@@ -313,6 +317,28 @@ protected:
    ctResults CreateCollisionForCompoundHash(uint32_t hash);
    void SavePhysicsData();
 
+   /* Scene Heplers */
+   void SpawnScriptStart(const char* type);
+   void SpawnScriptNumber(const char* key, int64_t value);
+   void SpawnScriptNumber(const char* key, float value);
+   void SpawnScriptBool(const char* key, bool value);
+   void SpawnScriptString(const char* key, const char* value);
+   void SpawnScriptGUID(const char* key, ctGUID value);
+   void SpawnScriptGUID(const char* key, const char* relativePath);
+   void SpawnScriptVec2(const char* key, ctVec2 value);
+   void SpawnScriptVec3(const char* key, ctVec3 value);
+   void SpawnScriptVec4(const char* key, ctVec4 value);
+   void SpawnScriptQuat(const char* key, ctQuat value);
+   void SpawnScriptEnd();
+   ctStringUtf8 GetSpawnTypeName(const cgltf_node& node);
+   int32_t GetNodeMeshAssociation(const cgltf_node& node);
+   int32_t GetNodeScatterAssociation(const cgltf_node& node);
+   int32_t GetNodeCollisionAssociation(const cgltf_node& node);
+   int32_t GetNodeSplineAssociation(const cgltf_node& node,
+                                    int32_t currentIndex,
+                                    ctStringUtf8& nameOut);
+   void TryCreateSpawnerForNode(const cgltf_node& node);
+
 private:
    cgltf_data gltf;
    ctModel model;
@@ -368,4 +394,11 @@ private:
    ctDynamicArray<ctModelCollisionShape> finalCollisions;
    ctDynamicArray<uint8_t> finalPhysBake;
    /* todo: physics shape to node relationship */
+
+   /* Scene */
+   ctStringUtf8 sceneScript;
+   ctDynamicArray<uint8_t> sceneScriptCompiled;
+   ctHashTable<uint32_t, uint32_t> gltfNodeToMeshIndex;
+   ctHashTable<uint32_t, uint32_t> gltfNodeToShapeIndex;
+   ctHashTable<uint32_t, uint32_t> gltfNodeToSplineIndex;
 };

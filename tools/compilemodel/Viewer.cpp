@@ -169,10 +169,10 @@ public:
 
    ctDynamicArray<ctPhysicsBody> bodies;
    ctDynamicArray<ctPhysicsBody> physicsTestBodies;
-   int32_t testShapeGrid[2] = {64, 16};
+   int32_t testShapeGrid[2] = {16, 16};
    float testShapeSize = 0.3f;
    float testShapeSpacing = 0.25f;
-   float testShapeHeight = 3.0f;
+   float testShapeHeight = 25.0f;
    void CreateTestShapes();
    float timer;
 };
@@ -234,9 +234,11 @@ void ctModelViewer::CreateTestShapes() {
          ctVec3 randomJitter = rng.GetVec3() * testShapeSize * 0.5f;
          ctPhysicsBody body;
          ctPhysicsBodyDesc desc = ctPhysicsBodyDesc();
-         desc.position = startPos + (vecProgX * x) + (vecProgY * y) + randomJitter;
+         desc.position =
+           startPos + (vecProgX * (float)x) + (vecProgY * (float)y) + randomJitter;
          desc.rotation = normalize(ctQuat(rng.GetVec4()));
-         desc.shape = ctPhysicsShapeBox(finalShapeSize);
+         desc.shape = ctPhysicsShapeSphere(finalShapeSize);
+         desc.isHighSpeed = true;
          desc.startActive = true;
          ctPhysicsCreateBody(Engine->Physics->GetPhysicsEngine(), body, desc);
          physicsTestBodies.Append(body);
@@ -477,6 +479,10 @@ void ctModelViewer::SplinesInfo() {
 }
 
 void ctModelViewer::PhysicsInfo() {
+   ImGui::SliderInt2("Grid Size", testShapeGrid, 1, 64);
+   ImGui::SliderFloat("Size", &testShapeSize, 0.01f, 50.0f);
+   ImGui::SliderFloat("Spacing", &testShapeSpacing, 0.01f, 1.0f);
+   ImGui::InputFloat("Height", &testShapeHeight);
    if (ImGui::Button("Drop Shapes")) { CreateTestShapes(); }
 }
 
@@ -492,11 +498,6 @@ void ctModelViewer::MaterialInfo() {
 }
 
 void ctModelViewer::SceneInfo() {
-   if (!model.sceneScript.data) {
-      ImGui::Text("No scene data");
-   } else {
-      ImGui::TextUnformatted((const char*)model.sceneScript.data);
-   }
 }
 
 void ctModelViewer::RenderModel() {

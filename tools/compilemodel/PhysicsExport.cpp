@@ -122,6 +122,7 @@ void ctGltf2Model::GetCollisionMeshData(cgltf_mesh* input,
    for (size_t p = 0; p < input->primitives_count; p++) {
       cgltf_primitive& prim = input->primitives[p];
       /* load vertices*/
+      uint32_t vertexOffset = (uint32_t)output->points.Count();
       for (size_t a = 0; a < prim.attributes_count; a++) {
          cgltf_attribute& attrib = prim.attributes[a];
          if (attrib.type == cgltf_attribute_type_position) {
@@ -145,6 +146,11 @@ void ctGltf2Model::GetCollisionMeshData(cgltf_mesh* input,
                                TinyImageFormat_R32_UINT,
                                sizeof(uint32_t),
                                0);
+
+         /* apply vertex offset */
+         for (size_t i = idxOffset; i < output->indices.Count(); i++) {
+            output->indices[i] += vertexOffset;
+         }
       }
 
       if (getMaterialMap) {
@@ -165,8 +171,10 @@ void ctGltf2Model::GetCollisionMeshData(cgltf_mesh* input,
 
 void ctGltf2Model::GetCollisionMeshDataFromVisuals(ctGltf2ModelCollision* output,
                                                    bool getIndices) {
-   /* todo: load visual mesh into arrays */
-   // for(size_t i = 0; i < tree.instances.Count(); i++)
+   /* load visual mesh into arrays */
+   // for (size_t i = 0; i < tree.instances.Count(); i++) {
+   //     tree.instances[i].meshIndex
+   //}
 }
 
 ctGltf2ModelCollision* ctGltf2Model::GetBoxCollision(const cgltf_node& node,
@@ -409,6 +417,14 @@ void ctGltf2Model::SavePhysicsData() {
       shape.bakeOffset = (uint32_t)(*ppBake)->writtenOffset;
       finalCollisions.Append(shape);
    }
+
+   /* write constraints */
+   // todo
+
+   /* write ragdoll description */
+   // todo
+
+   /* map output */
    model.physics.shapeCount = (uint32_t)finalCollisions.Count();
    model.physics.shapes = finalCollisions.Data();
    model.physics.bake.size = finalPhysBake.Count();
