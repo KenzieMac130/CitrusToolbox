@@ -18,8 +18,8 @@
 #include "interact/InteractionEngine.hpp"
 
 ctDebugCamera::ctDebugCamera() {
-   speedDefault = 1.0f;
-   speedFast = 5.0f;
+   speedDefault = 5.0f;
+   speedFast = 15.0f;
    lookSpeed = 2.0f;
    camYaw = 0.0f;
    camPitch = 0.0f;
@@ -29,6 +29,7 @@ ctDebugCamera::ctDebugCamera() {
 
 void ctDebugCamera::FrameUpdate(float deltaTime) {
    if (!ctGetSignal("actions/debug/lookEnable")) { return; }
+   ctRequestRelativePointer();
    float forwardMovement = ctGetSignal("actions/debug/moveForward");
    float rightMovement = ctGetSignal("actions/debug/moveRight");
    float upMovement = ctGetSignal("actions/debug/moveUp");
