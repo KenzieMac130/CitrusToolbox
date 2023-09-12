@@ -59,7 +59,8 @@ const char* ctInteractSDLKeyboardMouseBackend::GetModuleName() {
    return "SDL Keyboard and Mouse";
 }
 
-ctResults ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory) {
+ctResults
+ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory) {
    ZoneScoped;
    /* Add all key inputs */
    for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
@@ -67,7 +68,8 @@ ctResults ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem&
       node.type = CT_INTERACT_NODETYPE_BOOL;
       node.accessible = true;
       node.pData = &keyStates[i];
-      snprintf(node.path.str, CT_MAX_INTERACT_PATH_SIZE, "dev/keyboard/input/scancode/%d", i);
+      snprintf(
+        node.path.str, CT_MAX_INTERACT_PATH_SIZE, "dev/keyboard/input/scancode/%d", i);
       directory.AddNode(node);
    }
 
@@ -100,10 +102,12 @@ ctResults ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem&
    }
 
    ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
-   Engine->FileSystem->OpenDataFileByGUID(file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
+   Engine->FileSystem->OpenDataFileByGUID(
+     file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
    directory.CreateBindingsFromFile(file);
    file.Close();
 #if CITRUS_INCLUDE_AUDITION
@@ -114,8 +118,24 @@ ctResults ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem&
    return CT_SUCCESS;
 }
 
-ctResults ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) {
+ctResults
+ctInteractSDLKeyboardMouseBackend::Update(ctInteractDirectorySystem& directory) {
    ZoneScoped;
+   if (directory.isRelativePointerRequested()) {
+      SDL_SetRelativeMouseMode(SDL_TRUE);
+      directory._SetRelativeFlag(true);
+   } else { /* non-relative mouse pointer */
+      SDL_SetRelativeMouseMode(SDL_FALSE);
+      directory._SetRelativeFlag(false);
+
+      int x, y;
+      SDL_GetMouseState(&x, &y);
+      int w, h;
+      SDL_Window* pWindow = SDL_GetMouseFocus();
+      SDL_GetWindowSize(pWindow, &w, &h);
+      directory._SetCursorPos(ctVec2((float)x / w, (float)y / w));
+   }
+
    int x, y;
    uint32_t mouseFlags = SDL_GetRelativeMouseState(&x, &y);
    memset(mouseButtonStates, 0, sizeof(mouseButtonStates));

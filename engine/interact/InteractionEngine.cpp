@@ -281,6 +281,7 @@ ctResults ctInteractDirectorySystem::Update() {
          pActionSet->actionPrevious[j] = pActionSet->actionOutputs[j];
       }
    }
+   relatvePointerRequests = 0;
    return CT_SUCCESS;
 }
 
@@ -438,4 +439,9 @@ float ctGetSignal(const char* path) {
 
 bool ctGetButton(const char* path) {
    return !ctFloatCompare(ctGetSignal(path), 0.0f);
+}
+
+void ctRequestRelativePointer() {
+   if (!gMainInteractEngine) { return; }
+   return gMainInteractEngine->Directory.RequestRelativePointerNextFrame();
 }

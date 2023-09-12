@@ -18,7 +18,7 @@
 		"output": "actions/debug/moveFaster",
 		"inputs": [{
 			"path": "dev/keyboard/input/scancode/225",
-			"scale": 1.0,
+			"scale": 1.0
 		}]
 	},
 	"dev/keyboard/bind/actions/debug/moveForward": {
