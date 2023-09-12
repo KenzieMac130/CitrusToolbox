@@ -69,10 +69,48 @@ void WriteShape(const JPH::Shape* pShape, CitrusJoltStreamOut& stream) {
 ctResults ctPhysicsBakeShape(ctPhysicsEngine ctx,
                              ctPhysicsShapeSettings& shape,
                              ctDynamicArray<uint8_t>& output) {
-   output.Reserve(500000); /* reserve 0.5mb to avoid possible slowdown */
+   output.Reserve(250000); /* reserve 0.25mb to avoid possible slowdown */
    JPH::Shape::ShapeResult shaperes = CreateShapeFromCitrus(ctx, shape);
    if (!shaperes.IsValid()) { return CT_FAILURE_INVALID_PARAMETER; }
    CitrusJoltStreamOut stream = CitrusJoltStreamOut(&output);
    WriteShape(shaperes.Get(), stream);
+   return CT_SUCCESS;
+}
+
+ctResults ctPhysicsBakeConstraint(ctPhysicsEngine ctx,
+                                  ctPhysicsConstraintSettings& constraint,
+                                  ctDynamicArray<uint8_t>& output) {
+   /* todo */
+   return CT_SUCCESS;
+}
+
+ctResults ctPhysicsShapeToMesh(ctPhysicsEngine ctx,
+                               ctPhysicsShapeSettings& shape,
+                               ctDynamicArray<ctVec3>& vertices) {
+   JPH::Shape::ShapeResult shaperes = CreateShapeFromCitrus(ctx, shape);
+   if (!shaperes.IsValid()) { return CT_FAILURE_UNKNOWN; }
+   JPH::Shape& jshape = *shaperes.Get();
+
+   /* see the following code for more details, code was mostly taken from this
+    * https://github.com/jrouwe/JoltPhysics/blob/577c84920434b41995616acaf5714a2111ebb43d/Samples/SamplesApp.cpp#L2244
+    */
+   JPH::Shape::GetTrianglesContext trictx;
+   jshape.GetTrianglesStart(trictx,
+                            JPH::AABox::sBiggest(),
+                            JPH::Vec3::sZero(),
+                            JPH::Quat::sIdentity(),
+                            JPH::Vec3::sReplicate(1.0f));
+   for (;;) {
+      const int cMaxTriangles = 256;
+      JPH::Float3 jverts[3 * cMaxTriangles];
+      int triangle_count = jshape.GetTrianglesNext(trictx, cMaxTriangles, jverts);
+      if (triangle_count == 0) break;
+      vertices.Reserve(vertices.Count() + ((size_t)triangle_count * 3));
+      for (int tri = 0; tri < triangle_count; tri++) {
+         vertices.Append(ctVec3FromJoltF3((jverts[(tri * 3) + 0])));
+         vertices.Append(ctVec3FromJoltF3((jverts[(tri * 3) + 1])));
+         vertices.Append(ctVec3FromJoltF3((jverts[(tri * 3) + 2])));
+      }
+   }
    return CT_SUCCESS;
 }

@@ -50,6 +50,10 @@ public:
    }
 
 protected:
+   double timeAccumulator;
+   float timeStep = 1.0f / 30;
+   float maxFrameTime = 1.0f / 15.0f;
+
    bool cameraOverride;
    ctCameraInfo mainCamera;
    ctVec3 cursorDirection;

@@ -183,8 +183,13 @@ ctResults ctPhysicsEngineStartup(ctPhysicsEngine& ctx, ctPhysicsEngineDesc& desc
    ctx->allowRenderDebug = true;
    ctx->lastStatistics = JPH::PhysicsSystem::BodyStats();
 
+   /* shape caching */
+   ctSpinLockInit(ctx->bakeShapeLock);
+
    /* debug rendering */
 #ifdef JPH_DEBUG_RENDERER
+   ctx->bodyDraw = JPH::BodyManager::DrawSettings();
+   ctx->drawConstraints = true;
    ctx->pDebugRenderer = new CitrusJoltDebugRenderer();
    JPH::DebugRenderer::sInstance = ctx->pDebugRenderer;
 #endif
@@ -194,6 +199,7 @@ ctResults ctPhysicsEngineStartup(ctPhysicsEngine& ctx, ctPhysicsEngineDesc& desc
 
 ctResults ctPhysicsEngineShutdown(ctPhysicsEngine ctx) {
    /* we assumed the api user waited for all jobs to finish */
+   ctx->bakeShapeCache.Clear();
    JPH::UnregisterTypes();
    delete JPH::Factory::sInstance;
    JPH::Factory::sInstance = NULL;
@@ -219,8 +225,14 @@ ctResults ctPhysicsEngineUpdate(ctPhysicsEngine ctx, float deltaTime, int32_t st
 ctResults ctPhysicsEngineExecDebugDraw(ctPhysicsEngine ctx) {
    if (!ctx->allowRenderDebug) { return CT_SUCCESS; }
 #ifdef JPH_DEBUG_RENDERER
-   JPH::BodyManager::DrawSettings bodyDraw = JPH::BodyManager::DrawSettings();
-   ctx->physics.DrawBodies(bodyDraw, ctx->pDebugRenderer);
+   ctx->physics.DrawBodies(ctx->bodyDraw, ctx->pDebugRenderer);
+   if (ctx->drawConstraints) { ctx->physics.DrawConstraints(ctx->pDebugRenderer); }
+   if (ctx->drawConstraintLimits) {
+      ctx->physics.DrawConstraintLimits(ctx->pDebugRenderer);
+   }
+   if (ctx->drawConstraintReferenceFrame) {
+      ctx->physics.DrawConstraintReferenceFrame(ctx->pDebugRenderer);
+   }
    ctx->pDebugRenderer->Render();
 #endif
    return CT_SUCCESS;
@@ -241,6 +253,32 @@ ctResults ctPhysicsEngineExecDebugUI(ctPhysicsEngine ctx) {
                stats.mNumBodiesKinematic,
                stats.mNumActiveSoftBodies,
                stats.mNumSoftBodies);
+   if (ImGui::CollapsingHeader("Draw Options")) {
+      ImGui::Checkbox("Shape", &ctx->bodyDraw.mDrawShape);
+      ImGui::Checkbox("Shape Wireframe", &ctx->bodyDraw.mDrawShapeWireframe);
+      const char* shapeColorOptions[] {
+        "Instance", "Shape Type", "Motion Type", "Sleep", "Island", "Material"};
+      ImGui::Combo("Shape Color",
+                   (int*)&ctx->bodyDraw.mDrawShapeColor,
+                   shapeColorOptions,
+                   ctCStaticArrayLen(shapeColorOptions),
+                   -1);
+
+      // ImGui::Checkbox("Support Function", &ctx->bodyDraw.mDrawGetSupportFunction);
+      ImGui::Checkbox("Support Direction", &ctx->bodyDraw.mDrawSupportDirection);
+      // ImGui::Checkbox("Supporting Face", &ctx->bodyDraw.mDrawGetSupportingFace);
+
+      ImGui::Checkbox("Bounding Box", &ctx->bodyDraw.mDrawBoundingBox);
+      ImGui::Checkbox("Center of Mass Transform",
+                      &ctx->bodyDraw.mDrawCenterOfMassTransform);
+      ImGui::Checkbox("World Transform", &ctx->bodyDraw.mDrawWorldTransform);
+      ImGui::Checkbox("Velocity", &ctx->bodyDraw.mDrawVelocity);
+      ImGui::Checkbox("Mass and Interia", &ctx->bodyDraw.mDrawMassAndInertia);
+      // ImGui::Checkbox("Sleep Stats", &ctx->bodyDraw.mDrawSleepStats);
+      ImGui::Checkbox("Constraints", &ctx->drawConstraints);
+      ImGui::Checkbox("Constraint Limits", &ctx->drawConstraintLimits);
+      ImGui::Checkbox("Constraint Reference Frame", &ctx->drawConstraintReferenceFrame);
+   }
    return CT_SUCCESS;
 }
 

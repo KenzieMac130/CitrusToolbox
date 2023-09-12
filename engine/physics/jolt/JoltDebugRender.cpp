@@ -91,8 +91,8 @@ const ctVec3 gLightDir = normalize(ctVec3(0.5f, 0.5f, -0.5f));
 
 inline ctVec4 CitrusJoltDebugRenderer::DebugBatch::ShadeVertex(ctVec4 color,
                                                                ctVec3 normal) {
-   const float lighting =
-     ctClamp(dot((normal * mnotranslate), gLightDir) * 0.5f + 0.5f, 0.0f, 1.0f);
+   const float lighting = ctClamp(
+     dot((normalize(normal * mnotranslate)), gLightDir) * 0.5f + 0.5f, 0.0f, 1.0f);
    return ctVec4(color.r * lighting, color.g * lighting, color.b * lighting, color.a);
 }
 

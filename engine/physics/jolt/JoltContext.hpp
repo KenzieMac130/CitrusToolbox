@@ -178,11 +178,11 @@ public:
    virtual bool IsFailed() const;
 
    inline int64_t Tell() {
-       return (int64_t)pOutArray->Count();
+      return (int64_t)pOutArray->Count();
    }
 
    inline void* Ptr(size_t offset) {
-       return &(*pOutArray)[offset];
+      return &(*pOutArray)[offset];
    }
 
 private:
@@ -230,6 +230,10 @@ struct ctPhysicsEngineT {
    JPH::PhysicsSystem::BodyStats lastStatistics;
 
 #ifdef JPH_DEBUG_RENDERER
+   JPH::BodyManager::DrawSettings bodyDraw;
+   bool drawConstraints;
+   bool drawConstraintLimits;
+   bool drawConstraintReferenceFrame;
    class CitrusJoltDebugRenderer* pDebugRenderer;
 #endif
 
@@ -246,4 +250,7 @@ struct ctPhysicsEngineT {
       }
       return (JPH::PhysicsMaterial*)*ppMaterial;
    }
+
+   ctSpinLock bakeShapeLock;
+   ctHashTable<JPH::Shape::ShapeResult, uint32_t> bakeShapeCache;
 };

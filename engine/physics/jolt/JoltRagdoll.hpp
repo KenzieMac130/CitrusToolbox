@@ -17,3 +17,9 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "JoltContext.hpp"
+#include "../Ragdoll.hpp"
+
+class ctPhysicsRagdollFactoryT {
+
+};

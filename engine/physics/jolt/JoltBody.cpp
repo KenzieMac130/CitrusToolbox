@@ -109,3 +109,7 @@ void ctPhysicsDestroy(ctPhysicsEngine ctx, ctPhysicsBody body) {
    ctx->physics.GetBodyInterface().RemoveBody(JPH::BodyID(body));
    ctx->physics.GetBodyInterface().DestroyBody(JPH::BodyID(body));
 }
+
+bool ctPhysicsIsValid(ctPhysicsBody body) {
+   return !((JPH::BodyID)body).IsInvalid();
+}

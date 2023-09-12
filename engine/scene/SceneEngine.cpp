@@ -22,6 +22,7 @@
 #include "renderer/KeyLimeRenderer.hpp"
 #include "core/WindowManager.hpp"
 #include "core/Application.hpp"
+#include "physics/Module.hpp"
 
 ctResults ctSceneEngine::Startup() {
    return ctResults();
@@ -32,7 +33,30 @@ ctResults ctSceneEngine::Shutdown() {
 }
 
 ctResults ctSceneEngine::NextFrame(double deltaTime) {
-   Engine->App->OnTick((float)deltaTime);
+   /* update the time accumulator */
+   timeAccumulator += deltaTime;
+   int32_t tickNumber = 0;
+   float frameTime = 0.0f;
+   while (timeAccumulator >= timeStep) {
+      ctStopwatch tickTimer = ctStopwatch();
+
+      /* update subsystems */
+      Engine->App->OnTick((float)timeStep);
+      ctPhysicsEngineUpdate(Engine->Physics->GetPhysicsEngine(), timeStep);
+
+      /* finalize tick loop info */
+      tickTimer.NextLap();
+      frameTime += tickTimer.GetDeltaTimeFloat();
+      if (frameTime > maxFrameTime) {
+         ctDebugWarning("TICK LOOP EXCEEDED %f SECONDS, MAX IS %f, BAILING OUT!",
+                        frameTime,
+                        maxFrameTime);
+         timeAccumulator = 0.0f;
+      } else {
+         timeAccumulator -= timeStep;
+      }
+      tickNumber++;
+   }
 
    /* debug camera */
    if (debugCameraEnabled) {

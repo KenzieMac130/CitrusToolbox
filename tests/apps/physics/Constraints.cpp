@@ -14,13 +14,26 @@
    limitations under the License.
 */
 
-#include "JoltRagdoll.hpp"
+#include "Constraints.hpp"
 
-ctResults ctPhysicsCreateRagdollFactory(ctPhysicsRagdollFactory& factory,
-                                        ctPhysicsRagdollFactoryDesc& desc) {
-   return ctResults();
+const char* ConstraintTest::GetName() {
+   return "Constraints";
 }
 
-void ctPhysicsReleaseRagdollFactory(ctPhysicsRagdollFactory& factory)
-{
+void ConstraintTest::UIOptions() {
+}
+
+void ConstraintTest::OnTestStartup() {
+}
+
+void ConstraintTest::OnTick(float) {
+}
+
+void ConstraintTest::UIStatus() {
+}
+
+void ConstraintTest::OnTestShutdown() {
+   for (size_t i = 0; i < bodies.Count(); i++) {
+      ctPhysicsDestroy(Engine->Physics->GetPhysicsEngine(), bodies[i]);
+   }
 }

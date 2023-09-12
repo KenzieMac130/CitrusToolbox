@@ -14,13 +14,22 @@
    limitations under the License.
 */
 
-#include "JoltRagdoll.hpp"
+#pragma once
 
-ctResults ctPhysicsCreateRagdollFactory(ctPhysicsRagdollFactory& factory,
-                                        ctPhysicsRagdollFactoryDesc& desc) {
-   return ctResults();
-}
+#include "utilities/Common.h"
 
-void ctPhysicsReleaseRagdollFactory(ctPhysicsRagdollFactory& factory)
-{
-}
+#include "PhysicsTest.hpp"
+
+class StackTest : public PhysicsTestBase {
+public:
+   virtual const char* GetName();
+   virtual void UIOptions();
+   virtual void OnTestStartup();
+   virtual void OnTick(float);
+   virtual void UIStatus();
+   virtual void OnTestShutdown();
+
+private:
+   int bodyCount = 50;
+   ctDynamicArray<ctPhysicsBody> bodies;
+};

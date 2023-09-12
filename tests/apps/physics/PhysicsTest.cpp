@@ -14,12 +14,11 @@
    limitations under the License.
 */
 
+#include "PhysicsTest.hpp"
 #include "core/Application.hpp"
-#include "imgui/imgui.h"
-#include "interact/InteractionEngine.hpp"
-#include "physics/Physics.hpp"
-#include "physics/Baking.hpp"
-#include "scene/SceneEngine.hpp"
+
+#include "StackTest.hpp"
+#include "Constraints.hpp"
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
@@ -31,11 +30,10 @@ class TestApp : public ctApplication {
    virtual ctResults OnShutdown();
 
    int32_t scenarioIndex;
+   PhysicsTestBase* activeScenario = NULL;
+   ctDynamicArray<PhysicsTestBase*> scenarios;
    ctDynamicArray<const char*> scenariosText;
    void StartScenario();
-
-   ctPhysicsBody ground;
-   ctDynamicArray<ctPhysicsBody> bodies;
 };
 
 const char* TestApp::GetAppName() {
@@ -51,59 +49,40 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
-   ctPhysicsEngine physics = Engine->Physics->GetPhysicsEngine();
+   /* setup camera */
    Engine->SceneEngine->EnableCameraOverride();
-
    ctCameraInfo camera;
-   camera.position = ctVec3(0.0f, 3.0f, -50.0f);
+   camera.position = ctVec3(0.0f, 3.0f, -25.0f);
    Engine->SceneEngine->SetCameraOverride(camera);
+   Engine->SceneEngine->EnableDebugCamera();
 
-   scenariosText.Append("Drop Boxes");
+   /* create scenarios */
+   scenarios.Append(new StackTest());
+   scenarios.Append(new ConstraintTest());
 
-   /* shape baking */
-   ctDynamicArray<uint8_t> shapeBake;
-   ctPhysicsShapeSettings shapes[3];
-   shapes[0] = ctPhysicsShapeSphere();
-   shapes[1] = ctPhysicsShapeBox();
-   shapes[2] = ctPhysicsShapeCapsule();
-   shapes[1].transform.translation = ctVec3(0.5f, 0.0f, 0.0f);
-   shapes[2].transform.translation = ctVec3(-0.75f, 0.0f, 0.0f);
-   ctPhysicsShapeSettings compound =
-     ctPhysicsShapeCompound(ctCStaticArrayLen(shapes), shapes);
-   ctPhysicsBakeShape(physics, compound, shapeBake);
-
-   /* rigidbodies */ {
-      bodies.Resize(50);
-      for (uint32_t i = 0; i < 50; i++) {
-         ctPhysicsBodyDesc desc = ctPhysicsBodyDesc();
-         desc.position = ctVec3(0.0f, 50.0f + (1.0f * i), 5.0f);
-         desc.shape = ctPhysicsShapeBaked(shapeBake.Data(), shapeBake.Count());
-         desc.startActive = true;
-         desc.friction = 0.8f;
-         ctPhysicsCreateBody(physics, bodies[i], desc);
-      }
-   }
-   /* static ground */ {
-      ctPhysicsBodyDesc desc = ctPhysicsBodyDesc();
-      desc.position = ctVec3(0.0f, -0.5f, 0.0f);
-      desc.motion = CT_PHYSICS_STATIC;
-      desc.shape = ctPhysicsShapeBox(ctVec3(100.0f, 0.1f, 100.0f));
-      desc.friction = 0.8f;
-      ctPhysicsCreateBody(physics, ground, desc);
+   for (size_t i = 0; i < scenarios.Count(); i++) {
+      scenarios[i]->Engine = Engine;
+      scenariosText.Append(scenarios[i]->GetName());
    }
    return CT_SUCCESS;
 }
 
 ctResults TestApp::OnTick(const float deltatime) {
-   ctPhysicsEngineUpdate(Engine->Physics->GetPhysicsEngine(), 1.0f / 60.0f);
+   if (activeScenario) { activeScenario->OnTick(deltatime); }
    return CT_SUCCESS;
 }
 
 ctResults TestApp::OnUIUpdate() {
    if (ImGui::Begin("Physics Test")) {
       ImGui::Combo(
-        "Scenario", &scenarioIndex, scenariosText.Data(), scenariosText.Count(), -1);
-      if (ImGui::Button("Start")) {}
+        "Scenario", &scenarioIndex, scenariosText.Data(), (int)scenariosText.Count(), -1);
+      scenarios[scenarioIndex]->UIOptions();
+      if (ImGui::Button("Start")) {
+         if (activeScenario) { activeScenario->OnTestShutdown(); }
+         activeScenario = scenarios[scenarioIndex];
+         activeScenario->OnTestStartup();
+      }
+      if (activeScenario) { activeScenario->UIStatus(); }
    }
    ImGui::End();
    return CT_SUCCESS;

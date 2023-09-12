@@ -52,3 +52,6 @@ typedef uint32_t ctPhysicsBody;
 ctResults
 ctPhysicsCreateBody(ctPhysicsEngine ctx, ctPhysicsBody& body, ctPhysicsBodyDesc& desc);
 void ctPhysicsDestroy(ctPhysicsEngine ctx, ctPhysicsBody body);
+bool ctPhysicsIsValid(ctPhysicsBody body);
+
+/* todo: velocity and impulses */

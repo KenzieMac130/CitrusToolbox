@@ -19,12 +19,31 @@
 #include "utilities/Common.h"
 #include "Shape.hpp"
 #include "Physics.hpp"
+#include "Constraint.hpp"
+#include "animation/Skeleton.hpp"
+
+/* ------------------------- Shape ------------------------- */
 
 /* bakes a shape into a binary format to be loaded from later */
 ctResults ctPhysicsBakeShape(ctPhysicsEngine ctx,
                              ctPhysicsShapeSettings& shape,
                              ctDynamicArray<uint8_t>& output);
 
+/* ------------------------- Constraint ------------------------- */
+
+/* bakes a constraint description into a binary format to be loaded from later */
+ctResults ctPhysicsBakeConstraint(ctPhysicsEngine ctx,
+                                  ctPhysicsConstraintSettings& constraint,
+                                  ctDynamicArray<uint8_t>& output);
+
+/* ------------------------- Mesh Extraction ------------------------- */
+
+/* gets a unindexed mesh representation of a shape, useful for navmesh baking */
+ctResults ctPhysicsShapeToMesh(ctPhysicsEngine ctx,
+                               ctPhysicsShapeSettings& shape,
+                               ctDynamicArray<ctVec3>& vertices);
+
+/* ------------------------- Convex Decompose ------------------------- */
 enum ctPhysicsConvexDecompositionFill {
    CT_PHYSICS_CONVEX_DECOMP_FLOOD_FILL,
    CT_PHYSICS_CONVEX_DECOMP_SURFACE_ONLY,
@@ -62,3 +81,20 @@ private:
    ctDynamicArray<ctPhysicsShapeSettings> subshapes;
    ctDynamicArray<ctVec3> pointsAll;
 };
+
+/* ------------------------- Ragdoll ------------------------- */
+
+struct ctPhysicsBakeRagdollBone {
+   ctPhysicsShapeSettings shape;
+   ctPhysicsConstraintSettings toParent;
+};
+
+struct ctPhysicsBakeRagdollDesc {
+   const ctAnimSkeleton* pAnimationSkeleton;
+   const ctAnimSkeleton* pRagdollSkeleton;
+   ctPhysicsBakeRagdollBone* pRagdollBones; /* must match ragdoll skeleton bone count */
+};
+
+ctResults ctPhysicsBakeRagdoll(ctPhysicsEngine ctx,
+                               ctPhysicsBakeRagdollDesc& desc,
+                               ctDynamicArray<uint8_t>& output);

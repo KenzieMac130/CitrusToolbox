@@ -182,8 +182,21 @@ JPH::Shape::ShapeResult CreateBakedSubshape(const ctPhysicsEngine& ctx,
 
 JPH::Shape::ShapeResult CreateBakedShape(const ctPhysicsEngine& ctx,
                                          ctPhysicsShapeSettings& desc) {
+   /* search for cached shapes */
+   uint32_t hash = ctXXHash32(desc.baked.bytes, desc.baked.byteCount);
+   ctSpinLockEnterCritical(ctx->bakeShapeLock);
+   JPH::Shape::ShapeResult* pRes = ctx->bakeShapeCache.FindPtr(hash);
+   ctSpinLockExitCritical(ctx->bakeShapeLock);
+   if (pRes) { 
+       return *pRes;
+   }
+
    CitrusJoltStreamIn stream = CitrusJoltStreamIn(desc.baked.bytes, desc.baked.byteCount);
-   return CreateBakedSubshape(ctx, stream);
+   JPH::Shape::ShapeResult result = CreateBakedSubshape(ctx, stream);
+   ctSpinLockEnterCritical(ctx->bakeShapeLock);
+   ctx->bakeShapeCache.InsertOrReplace(hash, result);
+   ctSpinLockExitCritical(ctx->bakeShapeLock);
+   return result;
 }
 
 ctVec3 MakeValidScale(ctVec3 scale, ctPhysicsShapeType type) {

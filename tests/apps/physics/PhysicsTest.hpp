@@ -14,13 +14,24 @@
    limitations under the License.
 */
 
-#include "JoltRagdoll.hpp"
+#pragma once
 
-ctResults ctPhysicsCreateRagdollFactory(ctPhysicsRagdollFactory& factory,
-                                        ctPhysicsRagdollFactoryDesc& desc) {
-   return ctResults();
-}
+#include "utilities/Common.h"
+#include "core/EngineCore.hpp"
+#include "physics/Physics.hpp"
+#include "physics/Baking.hpp"
+#include "imgui/imgui.h"
+#include "interact/InteractionEngine.hpp"
+#include "scene/SceneEngine.hpp"
 
-void ctPhysicsReleaseRagdollFactory(ctPhysicsRagdollFactory& factory)
-{
-}
+class PhysicsTestBase {
+public:
+   virtual const char* GetName() = 0;
+   virtual void UIOptions() = 0;
+
+   virtual void OnTestStartup() = 0;
+   virtual void OnTick(float deltaTime) = 0;
+   virtual void UIStatus() = 0;
+   virtual void OnTestShutdown() = 0;
+   class ctEngineCore* Engine;
+};

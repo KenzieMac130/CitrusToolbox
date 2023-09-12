@@ -263,27 +263,22 @@ struct ctModelCollisionShape {
    uint32_t bakeSize;
 };
 
-enum ctModelConstraintFlags {
-   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_X = 0x01,
-   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Y = 0x02,
-   CT_MODEL_CONSTRAINT_LIMIT_ROTATION_Z = 0x04
-};
-
-/* todo: move to physics stuff */
-struct ctModelRagdollConstraint {
-   int32_t boneA;
-   int32_t boneB;
-   int32_t flags;
-   ctVec3 rotationMin;
-   ctVec3 rotationMax;
+struct ctModelPhysicsConstraint {
+   float bondStrength; /* breakables */
+   int32_t shapeIndexA;
+   int32_t shapeIndexB;
+   uint32_t bakeOffset;
+   uint32_t bakeSize;
 };
 
 struct ctModelPhysicsData {
    uint32_t shapeCount;
    ctModelCollisionShape* shapes; /* PHYSHAPE */
 
-   uint32_t ragdollConstraintCount;
-   ctModelRagdollConstraint* ragdollConstraints; /* RAGCONST */
+   uint32_t constraintCount;
+   ctModelPhysicsConstraint* constraints; /* PHYSCONS */
+
+   ctModelBlobData ragdoll /* RAGDOLL */;
 
    ctModelBlobData bake; /* PHYSBAKE */
 };

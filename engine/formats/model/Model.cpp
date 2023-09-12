@@ -86,9 +86,6 @@ CT_API ctResults ctModelLoad(ctModel& model, ctFile& file, bool CPUGeometryData)
    /* Physics */
    ctWADFindLump(&wad, "PHYSHAPE", (void**)&model.physics.shapes, &tmpsize);
    model.physics.shapeCount = (uint32_t)tmpsize / sizeof(ctModelCollisionShape);
-   ctWADFindLump(&wad, "RAGCONST", (void**)&model.physics.ragdollConstraints, &tmpsize);
-   model.physics.ragdollConstraintCount =
-     (uint32_t)tmpsize / sizeof(ctModelRagdollConstraint);
    ctWADFindLump(&wad, "PHYSBAKE", (void**)&model.physics.bake.data, &tmpsize);
    model.physics.bake.size = tmpsize;
 
@@ -203,11 +200,6 @@ CT_API ctResults ctModelSave(ctModel& model,
                      "PHYSHAPE",
                      (uint8_t*)model.physics.shapes,
                      model.physics.shapeCount * sizeof(model.physics.shapes[0]));
-   ctWADWriteSection(&wad,
-                     "RAGCONST",
-                     (uint8_t*)model.physics.ragdollConstraints,
-                     model.physics.ragdollConstraintCount *
-                       sizeof(model.physics.ragdollConstraints[0]));
    ctWADWriteSection(
      &wad, "PHYSBAKE", (uint8_t*)model.physics.bake.data, model.physics.bake.size);
 
