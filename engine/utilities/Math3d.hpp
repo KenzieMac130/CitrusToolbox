@@ -42,9 +42,14 @@
 #define CT_VEC3_FROM_2D_FRONT(v)  ctVec3(v.x, v.y, 0.0f)
 #define CT_VEC3_FROM_2D_SIDE(v)   ctVec3(0.0f, v.y, v.x)
 
-#define CT_AXIS_UP y
-#define CT_AXIS_NS z
-#define CT_AXIS_EW x
+enum ctAxis {
+   CT_AXIS_X = 0,
+   CT_AXIS_Y = 1,
+   CT_AXIS_Z = 2,
+   CT_AXIS_UP = CT_AXIS_Y,
+   CT_AXIS_NS = CT_AXIS_Z,
+   CT_AXIS_EW = CT_AXIS_X
+};
 
 /* --- Vec2 --- */
 struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC2) ctVec2 {

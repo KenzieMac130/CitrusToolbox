@@ -151,7 +151,7 @@ void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
    const size_t beginning_length = ByteLength();
    if (max == 0) {
       char tmp;
-      buffsize = vsnprintf(&tmp, 1, format, args);
+      buffsize = vsnprintf(&tmp, 1, format, args) + 1;
    }
    Append('\0', buffsize);
    vsnprintf((char*)_dataVoid() + beginning_length, buffsize, format, args);
@@ -181,6 +181,30 @@ ctStringUtf8& ctStringUtf8::ToUpper() {
 ctStringUtf8& ctStringUtf8::ToLower() {
    if (isEmpty()) { return *this; }
    utf8lwr(_dataVoid());
+   return *this;
+}
+
+ctStringUtf8& ctStringUtf8::ExpandToEscapeCodes() {
+   ctStringUtf8 output = "";
+   const size_t len = ByteLength();
+   output.Reserve(len);
+   for (size_t inIdx = 0; inIdx < len; inIdx++) {
+      switch (_data[inIdx]) {
+         case '\'': output += '\\\''; break;
+         case '\"': output += '\\\"'; break;
+         case '\?': output += '\\\?'; break;
+         case '\\': output += '\\\\'; break;
+         case '\a': output += '\\\a'; break;
+         case '\b': output += '\\\b'; break;
+         case '\f': output += '\\\f'; break;
+         case '\n': output += '\\\n'; break;
+         case '\r': output += '\\\r'; break;
+         case '\t': output += '\\\t'; break;
+         case '\v': output += '\\\v'; break;
+         default: output += _data[inIdx];
+      }
+   }
+   *this = output;
    return *this;
 }
 

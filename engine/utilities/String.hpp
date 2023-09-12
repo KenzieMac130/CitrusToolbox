@@ -65,6 +65,7 @@ public:
 
    ctStringUtf8& ToUpper();
    ctStringUtf8& ToLower();
+   ctStringUtf8& ExpandToEscapeCodes();
    ctStringUtf8& ProcessEscapeCodes();
 
    bool isNumber() const;
