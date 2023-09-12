@@ -101,6 +101,7 @@ def make_ext(extclass, gltf2_node, blender_object : bpy.types.Object):
         gltf2_node.extensions = {}
     gltf2_node.extensions[glTF_extension_name_spline] = extclass(
         name=glTF_extension_name_spline,
+        required=False,
         extension={
             "type": spline_type,
             "cyclic" : spline.use_cyclic_u,
