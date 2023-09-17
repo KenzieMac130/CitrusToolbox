@@ -99,7 +99,7 @@ void ctGltf2Model::TryCreateSpawnerForNode(const cgltf_node& node) {
    ctVec3 scale;
    ctMat4AwkwardDecompose(worldMatrix, translation, rotation, scale);
    SpawnScriptVec3("translation", translation);
-   SpawnScriptQuat("rotation", rotation);
+   SpawnScriptVec4("rotation", ctVec4(rotation.data));
    SpawnScriptVec3("scale", scale);
 
    /* light properties */

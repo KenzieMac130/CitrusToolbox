@@ -323,12 +323,9 @@ protected:
    void SpawnScriptNumber(const char* key, float value);
    void SpawnScriptBool(const char* key, bool value);
    void SpawnScriptString(const char* key, const char* value);
-   void SpawnScriptGUID(const char* key, ctGUID value);
-   void SpawnScriptGUID(const char* key, const char* relativePath);
    void SpawnScriptVec2(const char* key, ctVec2 value);
    void SpawnScriptVec3(const char* key, ctVec3 value);
    void SpawnScriptVec4(const char* key, ctVec4 value);
-   void SpawnScriptQuat(const char* key, ctQuat value);
    void SpawnScriptEnd();
    ctStringUtf8 GetSpawnTypeName(const cgltf_node& node);
    int32_t GetNodeMeshAssociation(const cgltf_node& node);
