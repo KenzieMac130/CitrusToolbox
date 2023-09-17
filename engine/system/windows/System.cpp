@@ -143,7 +143,21 @@ int ctSystemExecuteCommand(const char* commandAlias,
 }
 
 int ctSystemShowFileToDeveloper(const char* path) {
-   return system(path);
+   wchar_t wpath[4096];
+   memset(wpath, 0, 4096 * sizeof(wchar_t));
+   MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), wpath, 4096);
+   SHELLEXECUTEINFO ShExecInfo = {0};
+   ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+   ShExecInfo.fMask = SEE_MASK_DEFAULT;
+   ShExecInfo.hwnd = NULL;
+   ShExecInfo.lpVerb = L"open";
+   ShExecInfo.lpFile = wpath;
+   ShExecInfo.lpParameters = NULL;
+   ShExecInfo.lpDirectory = NULL;
+   ShExecInfo.nShow = SW_SHOW;
+   ShExecInfo.hInstApp = NULL;
+   ShellExecuteEx(&ShExecInfo);
+   return 0;
 }
 
 int ctSystemPositionalPrintToString(char* dest,
