@@ -1,4 +1,3 @@
-#include "AssetEditorBase.hpp"
 /*
    Copyright 2023 MacKenzie Strand
 
@@ -14,6 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "AssetEditorBase.hpp"
+#include "system/System.h"
 
 ctAuditionSpaceAssetEditorBase::ctAuditionSpaceAssetEditorBase() {
    hasMenu = true;
@@ -38,6 +40,9 @@ void ctAuditionSpaceAssetEditorBase::OnGui(ctAuditionSpaceContext& ctx) {
    if (ImGui::BeginMenuBar()) {
       if (ImGui::MenuItem(CT_NC("Save"), "Ctrl + S")) { Save(); }
       if (ImGui::MenuItem(CT_NC("Reload"))) { Load(); }
+      if (ImGui::MenuItem(CT_NC("External"))) {
+         ctSystemShowFileToDeveloper(assetFilePath.CStr());
+      }
       ImGui::EndMenuBar();
    }
 
@@ -76,7 +81,7 @@ void ctAuditionSpaceAssetEditorBase::OnGui(ctAuditionSpaceContext& ctx) {
          ImGui::EndTabItem();
       }
       if (ImGui::BeginTabItem(CT_NC("Outputs"))) {
-         ImGui::InputText("Nickname Prefix", &nickname);
+         ImGui::InputText(CT_NC("Nickname"), &nickname);
          if (ImGui::BeginTable("OutputsTable",
                                3,
                                ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |

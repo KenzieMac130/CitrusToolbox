@@ -22,6 +22,8 @@
 class CT_API ctAuditionSpaceAssetEditorTextEditor :
     public ctAuditionSpaceAssetEditorBase {
 public:
+    ctAuditionSpaceAssetEditorTextEditor();
+    ~ctAuditionSpaceAssetEditorTextEditor();
    virtual const char* GetAssetTypeName();
 
    virtual ctResults OnLoad(ctJSONReader& configFile);
@@ -31,4 +33,5 @@ public:
 private:
    bool canSave = false;
    ctStringUtf8 contents = "";
+   class TextEditor* pTextEditor;
 };
