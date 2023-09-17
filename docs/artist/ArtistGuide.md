@@ -98,6 +98,7 @@ Todo
 * Animations will be resampled into linear or stepped interpolation from more advanced interpolation types used in your animation package. Assume each frame passed is a keyframe on each bone active in the animation at worst case.
 * Cubic interpolation is currently not supported in Citrus for animations
 * Custom animation channels are created by keyframing the local X translation channel of an object that has the name of the channel followed by the `_CAP` postfix.
+* Known issue: ensure all DCC keyframes are sampled in the exporter options.
 
 ### Splines
 Splines (or curves) are supported in citrus toolbox for gameplay purposes.
@@ -139,6 +140,14 @@ Each node that has a name which ends in the following will be considered a colli
 
 #### Physics Materials
 All physics materials have the prefix `CM_`, these will not be exported as a renderable material. The name following should be one of the ones found in `PhysicsSurfaces.json`
+
+### Constraints
+
+Todo
+
+### Ragdoll
+
+Todo
 
 ### Navmesh
 
