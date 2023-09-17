@@ -19,13 +19,10 @@
 #include "utilities/Common.h"
 #include "ModuleBase.hpp"
 
-/* Defined via codegen */
+// TODO: REMOVE ME, NOW RESPONSIBILITY OF RESOURCE MANAGER
 extern const char* ctGetDataGuidFromHash(size_t hash);
-
-/* Get a guid for the nickname from the asset system with constant string */
 #define CT_CDATA(_constname)                                                             \
    ctGUID(ctGetDataGuidFromHash(CT_COMPILE_HORNER_HASH(_constname)))
-/* Get a guid for the nickname from the asset system with dynamic string  */
 #define CT_DDATA(_name) ctGUID(ctGetDataGuidFromHash(ctHornerHash(_name)))
 
 class CT_API ctFileSystem : public ctModuleBase {
