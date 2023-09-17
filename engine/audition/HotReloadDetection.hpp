@@ -38,7 +38,7 @@ public:
 
 protected:
 private:
-   ctDynamicArray<uint64_t> watchedPathHashes; /* todo: hash set */
+   ctDynamicArray<uint64_t> watchedPathHashes;
    ctDynamicArray<ctStringUtf8> updatedPaths;
 };
 
