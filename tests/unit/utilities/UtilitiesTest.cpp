@@ -387,6 +387,25 @@ void noise_test(void) {
    // ctSystemShowFileToDeveloper(path);
 }
 
+class MyTestObject {
+public:
+   MyTestObject(int v) {
+      value = v;
+   }
+   ~MyTestObject() {
+      ctDebugLog("Deleted %d", value);
+   }
+   int value;
+};
+
+void handle_ptr_test(void) {
+   _ctHandlePtrGlobalInit(10000);
+   ctHandlePtr<MyTestObject> handle = new MyTestObject(32);
+   ctHandlePtr<MyTestObject> handle2 = handle;
+   handle.SwapPointer(new MyTestObject(64));
+   ctDebugLog("Ref %d, Value %d", handle.Refcount(), handle2.Get().value);
+}
+
 void math_3d_test(void) {
 }
 

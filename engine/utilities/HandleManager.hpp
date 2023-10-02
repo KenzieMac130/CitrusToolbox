@@ -36,6 +36,12 @@ inline uint32_t ctHandleGetIndex(ctHandle hndl) {
    return rep.idx;
 }
 
+inline bool ctHandleIsValid(ctHandle hndl) {
+   _ctInternalHandleRep rep;
+   rep.data = hndl;
+   return rep.idx != 0;
+}
+
 class ctHandleManager {
 public:
    inline ctHandleManager() {
