@@ -188,7 +188,7 @@ ctResults LoadDDS(ctFile& file, ctTextureLoadCtx* ctx) {
 
    /* load data */
    for (uint32_t mip = 0; mip < ctx->mips; mip++) {
-      uint32_t size = TinyDDS_ImageSize(tinyDDS, mip);
+      ctx->levelSizes[mip] = TinyDDS_ImageSize(tinyDDS, mip);
       ctx->levels[mip] = TinyDDS_ImageRawData(tinyDDS, mip);
    }
 

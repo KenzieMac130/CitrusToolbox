@@ -223,7 +223,7 @@ ctResults ctKeyLimeRenderer::Startup() {
    ctGPUExternalTexturePoolCreate(pGPUDevice, &pGPUTexturePool, &texturePoolInfo);
 
    /* Missing Texture */
-   ctGPUExternalTextureCreateFuncInfo missingTextureCreateInfo = {};
+   ctGPUExternalTextureCreateInfo missingTextureCreateInfo = {};
    missingTextureCreateInfo.debugName = "Missing Textue";
    missingTextureCreateInfo.depth = 1;
    missingTextureCreateInfo.width = 32;
@@ -232,8 +232,8 @@ ctResults ctKeyLimeRenderer::Startup() {
    missingTextureCreateInfo.mips = 1;
    missingTextureCreateInfo.updateMode = CT_GPU_UPDATE_STATIC;
    missingTextureCreateInfo.type = CT_GPU_EXTERN_TEXTURE_TYPE_2D;
-   missingTextureCreateInfo.generationFunction = GenerateMissingTexture;
-   missingTextureCreateInfo.userData = NULL;
+   missingTextureCreateInfo.fpUploadSlice = GenerateMissingTexture;
+   missingTextureCreateInfo.uploadData = NULL;
    ctGPUExternalTextureCreate(
      pGPUDevice, pGPUTexturePool, &pMissingTexture, &missingTextureCreateInfo);
 
@@ -447,16 +447,23 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
    return CT_SUCCESS;
 }
 
-ctResults
-ctKeyLimeRenderer::LoadOrReplaceTexture(ctGUID guid,
-                                        struct ctGPUExternalTexture** ppTexture) {
+#include "formats/texture/TextureLoad.h"
+ctResults ctKeyLimeRenderer::CreateOrReplaceTexture(struct ctTextureLoadCtx* pLoadCtx,
+                                                    struct ctKeyLimeTexture** ppTexture) {
    ctAssert(ppTexture);
    ctMutexLockScoped(RenderThread, renderThreadLock);
    /* todo */
+   //ctGPUExternalTextureCreateInfo createInfo = {};
+   //createInfo.depth = pLoadCtx->depth;
+   //createInfo.width = pLoadCtx->width;
+   //createInfo.format = pLoadCtx->format;
+   //createInfo.mips = pLoadCtx->mips;
+   //createInfo.userData = pLoadCtx;
+   //createInfo.generationFunction 
    return CT_SUCCESS;
 }
 
-ctResults ctKeyLimeRenderer::DeleteTexture(ctGPUExternalTexture* pTexture) {
+ctResults ctKeyLimeRenderer::DeleteTexture(ctKeyLimeTexture* pTexture) {
    ctMutexLockScoped(RenderThread, renderThreadLock);
    return CT_SUCCESS;
 }

@@ -43,6 +43,7 @@ struct ctTextureLoadCtx {
    uint32_t mips;
    enum TinyImageFormat format;
    enum ctTextureLoadType type;
+   size_t levelSizes[CT_MAX_MIP_LEVELS];
    const void* levels[CT_MAX_MIP_LEVELS];
    void* loaderdata;
 };

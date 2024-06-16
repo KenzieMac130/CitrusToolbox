@@ -44,16 +44,6 @@ inline size_t AlignOffsetIntoMapping(size_t base) {
    return base;
 }
 
-void ctGPUTextureGenerateFnQuickMemcpy(uint8_t* dest,
-                                       ctGPUExternalGenerateContext* pCtx,
-                                       void* userData) {
-   ctAssert(pCtx->currentLayer == 0 && pCtx->currentMipLevel == 0);
-   ctAssert(TinyImageFormat_IsHomogenous(pCtx->format));
-   const size_t bytesPerPixel = (size_t)TinyImageFormat_BitSizeOfBlock(pCtx->format) / 8;
-   const size_t byteCount = bytesPerPixel * pCtx->width * pCtx->height * pCtx->depth;
-   memcpy(dest, userData, byteCount);
-}
-
 CT_API ctResults
 ctGPUExternalTexturePoolCreate(ctGPUDevice* pDevice,
                                ctGPUExternalTexturePool** ppPool,
@@ -102,11 +92,10 @@ CT_API ctResults ctGPUExternalTexturePoolDispatch(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
-CT_API ctResults
-ctGPUExternalTextureCreate(ctGPUDevice* pDevice,
-                               ctGPUExternalTexturePool* pPool,
-                               ctGPUExternalTexture** ppTexture,
-                               ctGPUExternalTextureCreateFuncInfo* pInfo) {
+CT_API ctResults ctGPUExternalTextureCreate(ctGPUDevice* pDevice,
+                                            ctGPUExternalTexturePool* pPool,
+                                            ctGPUExternalTexture** ppTexture,
+                                            ctGPUExternalTextureCreateInfo* pInfo) {
    VkFormat nativeFormat = (VkFormat)TinyImageFormat_ToVkFormat(pInfo->format);
    if (pInfo->updateMode == CT_GPU_UPDATE_STREAM || pInfo->height == 0 ||
        pInfo->width == 0 || pInfo->depth == 0 || pInfo->mips == 0 ||
@@ -127,8 +116,6 @@ ctGPUExternalTextureCreate(ctGPUDevice* pDevice,
    pTexture->currentFrame = 0;
    pTexture->frameCount =
      pInfo->updateMode == CT_GPU_UPDATE_STATIC ? 1 : CT_MAX_INFLIGHT_FRAMES;
-   pTexture->generationFunction = pInfo->generationFunction;
-   pTexture->userData = pInfo->userData;
 
    /* Get image and view type */
    VkImageType imageType = VK_IMAGE_TYPE_2D;
@@ -161,19 +148,17 @@ ctGPUExternalTextureCreate(ctGPUDevice* pDevice,
      pDevice->vkDevice, pTexture->contents[0].image, &pTexture->memreq);
    pTexture->AquireStaging(pDevice);
    pTexture->GenMappings(pDevice);
-   pTexture->GenerateContents();
+   pTexture->GenerateContents(pInfo->fpUploadSlice, pInfo->uploadData);
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUExternalTextureRebuild(ctGPUDevice* pDevice,
-                                             ctGPUExternalTexturePool* pPool,
-                                             size_t textureCount,
-                                             ctGPUExternalTexture** ppTextures) {
-   for (size_t i = 0; i < textureCount; i++) {
-      ppTextures[i]->MakeReady(false);
-      ppTextures[i]->NextFrame();
-      ppTextures[i]->GenerateContents();
-   }
+CT_API ctResults ctGPUExternalTextureUpload(ctGPUDevice* pDevice,
+                                            ctGPUExternalTexturePool* pPool,
+                                            ctGPUExternalTexture* ppTexture,
+                                            ctGPUTextureUploadFn fpUploadSlice,
+                                            void* uploadData) {
+   ppTexture->NextFrame();
+   ppTexture->GenerateContents(fpUploadSlice, uploadData);
    return CT_SUCCESS;
 }
 
@@ -182,12 +167,6 @@ CT_API ctResults ctGPUExternalTextureRelease(ctGPUDevice* pDevice,
                                              ctGPUExternalTexture* pTexture) {
    pPool->garbageList.Append(pTexture);
    return CT_SUCCESS;
-}
-
-CT_API bool ctGPUExternalTextureIsReady(ctGPUDevice* pDevice,
-                                        ctGPUExternalTexturePool* pPool,
-                                        ctGPUExternalTexture* pTexture) {
-   return pTexture->isReady();
 }
 
 CT_API ctResults ctGPUExternalTextureGetCurrentAccessor(ctGPUDevice* pDevice,
@@ -205,12 +184,6 @@ ctGPUExternalTexturePool::ctGPUExternalTexturePool(
 void ctGPUExternalTexturePool::GarbageCollect(ctGPUDevice* pDevice) {
    for (size_t i = 0; i < garbageList.Count(); i++) {
       ctGPUExternalTexture* pTexture = garbageList[i];
-      /* Don't release if it is still in use */
-      if (!pTexture->isReady()) {
-         incompleteGarbageList.Append(pTexture);
-         continue;
-      }
-
       /* Release internals */
       pTexture->FreeMappings(pDevice);
       pTexture->ReleaseStaging(pDevice);
@@ -330,7 +303,8 @@ void ctGPUExternalTexture::FreeMappings(ctGPUDevice* pDevice) {
    }
 }
 
-void ctGPUExternalTexture::GenSlices() {
+void ctGPUExternalTexture::GenSlices(ctGPUTextureUploadFn fpUploadSlice,
+                                     void* uploadData) {
    size_t currentSeekIntoChunk = 0;
    ctGPUExternalGenerateContext ctx;
    ctx.format = universalFormat;
@@ -344,8 +318,7 @@ void ctGPUExternalTexture::GenSlices() {
          ctx.width = mipWidth;
          ctx.height = mipHeight;
          ctAssert(mappings[currentFrame]);
-         generationFunction(
-           mappings[currentFrame] + currentSeekIntoChunk, &ctx, userData);
+         fpUploadSlice(mappings[currentFrame] + currentSeekIntoChunk, &ctx, uploadData);
          currentSeekIntoChunk = AlignOffsetIntoMapping(
            currentSeekIntoChunk +
            GetPhysicalSizeOfChunk(universalFormat, mipWidth, mipHeight, 0));
@@ -367,7 +340,8 @@ void ctGPUExternalTexture::GenSlices() {
    }
 }
 
-void ctGPUExternalTexture::GenVolume() {
+void ctGPUExternalTexture::GenVolume(ctGPUTextureUploadFn fpUploadSlice,
+                                     void* uploadData) {
    size_t currentSeekIntoChunk = 0;
    ctGPUExternalGenerateContext ctx;
    ctx.format = universalFormat;
@@ -384,7 +358,7 @@ void ctGPUExternalTexture::GenVolume() {
       ctx.width = mipWidth;
       ctx.height = mipHeight;
       ctx.depth = mipDepth;
-      generationFunction(mappings[currentFrame] + currentSeekIntoChunk, &ctx, userData);
+      fpUploadSlice(mappings[currentFrame] + currentSeekIntoChunk, &ctx, uploadData);
       currentSeekIntoChunk = AlignOffsetIntoMapping(
         currentSeekIntoChunk +
         GetPhysicalSizeOfChunk(universalFormat, mipWidth, mipHeight, 0));
@@ -403,13 +377,13 @@ void ctGPUExternalTexture::GenVolume() {
    }
 }
 
-void ctGPUExternalTexture::GenerateContents() {
+void ctGPUExternalTexture::GenerateContents(ctGPUTextureUploadFn fpUploadSlice,
+                                            void* uploadData) {
    if (type == CT_GPU_EXTERN_TEXTURE_TYPE_3D) {
-      GenVolume();
+      GenVolume(fpUploadSlice, uploadData);
    } else {
-      GenSlices();
+      GenSlices(fpUploadSlice, uploadData);
    }
-   MakeReady(true);
    if (updateMode != CT_GPU_UPDATE_STREAM) { pPool->AddToUpload(this); }
 }
 

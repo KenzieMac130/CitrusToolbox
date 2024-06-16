@@ -57,20 +57,20 @@ public:
 private:
    ctCameraInfo cameraInfo;
    void DrawGPU(struct ctGPUArchitectExecutionContext* pCtx, bool xray);
-   static void ctIm3dUploadViewData(uint8_t* dest, size_t size, void* data);
-   static void ctIm3dUploadVertexData(uint8_t* dest, size_t size, void* data);
+   void UploadViewData(uint8_t* dest);
+   void UploadVertexData(uint8_t* dest);
 
    void* pPipelines[Im3d::DrawPrimitive_Count];
    struct ctGPUExternalBuffer* pViewBuffer;
    struct ctGPUExternalBuffer* pVertexBuffer;
 
    struct ctGPUStructAssembler* pVertexStructAssembler;
-   uint32_t positionScale;
-   uint32_t icolor;
+   uint32_t positionScaleIdx;
+   uint32_t icolorIdx;
 
    struct ctGPUStructAssembler* pViewStructAssembler;
-   uint32_t viewProj;
-   uint32_t viewportSize;
+   uint32_t viewProjIdx;
+   uint32_t viewportSizeIdx;
 
    uint32_t drawListCount = 0;
    uint32_t vertexCount = 0;

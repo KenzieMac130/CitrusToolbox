@@ -43,37 +43,31 @@ const char* ctIm3dIntegration::GetModuleName() {
    return "Im3d";
 }
 
-void ctIm3dIntegration::ctIm3dUploadViewData(uint8_t* dest, size_t size, void* data) {
-   ctIm3dIntegration* pIm3d = (ctIm3dIntegration*)data;
-
-   ctMat4 viewProj = pIm3d->cameraInfo.GetViewInverseProjectionMatrix();
+void ctIm3dIntegration::UploadViewData(uint8_t* dest) {
+   ctMat4 viewProj = cameraInfo.GetViewInverseProjectionMatrix();
    ctVec2 viewportSize = ctVec2FromIm3d(Im3d::GetAppData().m_viewportSize);
-   ctGPUStructSetVariable(
-     pIm3d->pViewStructAssembler, &viewProj, dest, pIm3d->viewProj, 0);
-   ctGPUStructSetVariable(
-     pIm3d->pViewStructAssembler, &viewportSize, dest, pIm3d->viewportSize, 0);
+   ctGPUStructSetVariable(pViewStructAssembler, &viewProj, dest, viewProjIdx, 0);
+   ctGPUStructSetVariable(pViewStructAssembler, &viewportSize, dest, viewportSizeIdx, 0);
 }
 
-void ctIm3dIntegration::ctIm3dUploadVertexData(uint8_t* dest, size_t size, void* data) {
-   ctIm3dIntegration* pIm3d = (ctIm3dIntegration*)data;
+void ctIm3dIntegration::UploadVertexData(uint8_t* dest) {
    uint32_t drawListCount = Im3d::GetDrawListCount();
-
    const Im3d::DrawList* pDrawLists = Im3d::GetDrawLists();
    size_t vtxoffset = 0;
    for (uint32_t i = 0; i < drawListCount; i++) {
       const Im3d::DrawList& drawList = pDrawLists[i];
-      ctGPUStructSetVariableMany(pIm3d->pVertexStructAssembler,
+      ctGPUStructSetVariableMany(pVertexStructAssembler,
                                  (void*)drawList.m_vertexData,
                                  dest,
-                                 pIm3d->positionScale,
+                                 positionScaleIdx,
                                  vtxoffset,
                                  drawList.m_vertexCount,
                                  offsetof(Im3d::VertexData, m_positionSize),
                                  sizeof(Im3d::VertexData));
-      ctGPUStructSetVariableMany(pIm3d->pVertexStructAssembler,
+      ctGPUStructSetVariableMany(pVertexStructAssembler,
                                  (void*)drawList.m_vertexData,
                                  dest,
-                                 pIm3d->icolor,
+                                 icolorIdx,
                                  vtxoffset,
                                  drawList.m_vertexCount,
                                  offsetof(Im3d::VertexData, m_color),
@@ -93,14 +87,15 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    /* Define Structs */
    pVertexStructAssembler =
      ctGPUStructAssemblerNew(pGPUDevice, CT_GPU_STRUCT_TYPE_STORAGE);
-   positionScale =
+   positionScaleIdx =
      ctGPUStructDefineVariable(pVertexStructAssembler, CT_GPU_SVAR_FLOAT_VEC4);
-   icolor = ctGPUStructDefineVariable(pVertexStructAssembler, CT_GPU_SVAR_UINT);
+   icolorIdx = ctGPUStructDefineVariable(pVertexStructAssembler, CT_GPU_SVAR_UINT);
 
    pViewStructAssembler = ctGPUStructAssemblerNew(pGPUDevice, CT_GPU_STRUCT_TYPE_STORAGE);
-   viewProj =
+   viewProjIdx =
      ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_MATRIX4X4);
-   viewportSize = ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_VEC2);
+   viewportSizeIdx =
+     ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_VEC2);
 
    ctHandlePtr<ctResourceShader> shader =
      ctGetResourceCritical(ctResourceShader, "Shader_Im3d");
@@ -151,27 +146,21 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ctGPUPipelineBuilderDelete(pPipelineBuilder);
 
    /* View Buffer */
-   ctGPUExternalBufferCreateFuncInfo viewBufferInfo = {};
+   ctGPUExternalBufferCreateInfo viewBufferInfo = {};
    viewBufferInfo.debugName = "Im3d View";
    viewBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
    viewBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    viewBufferInfo.size = ctGPUStructGetBufferSize(pViewStructAssembler, 1);
-   viewBufferInfo.generationFunction = ctIm3dIntegration::ctIm3dUploadViewData;
-   viewBufferInfo.userData = this;
-   ctGPUExternalBufferCreate(
-     pGPUDevice, pGPUBufferPool, &pViewBuffer, &viewBufferInfo);
+   ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, &pViewBuffer, &viewBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, viewBind, pViewBuffer);
 
    /* Vertex Buffer */
-   ctGPUExternalBufferCreateFuncInfo vBufferInfo = {};
+   ctGPUExternalBufferCreateInfo vBufferInfo = {};
    vBufferInfo.debugName = "Im3d Vertices";
    vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
    vBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    vBufferInfo.size = ctGPUStructGetBufferSize(pVertexStructAssembler, maxVerts);
-   vBufferInfo.generationFunction = ctIm3dIntegration::ctIm3dUploadVertexData;
-   vBufferInfo.userData = this;
-   ctGPUExternalBufferCreate(
-     pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
+   ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
    return CT_SUCCESS;
 }
@@ -195,8 +184,18 @@ void ctIm3dIntegration::SkipGPU() {
 ctResults ctIm3dIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
                                              ctGPUExternalBufferPool* pGPUBufferPool) {
    Im3d::EndFrame();
-   ctGPUExternalBuffer* externBuffers[2] = {pVertexBuffer, pViewBuffer};
-   ctGPUExternalBufferRebuild(pGPUDevice, pGPUBufferPool, 2, externBuffers);
+   /* Vertex Upload*/
+   void* tmpBuffer;
+   ctGPUExternalBufferUploadMap(pGPUDevice, pGPUBufferPool, pVertexBuffer, &tmpBuffer);
+   UploadVertexData((uint8_t*)tmpBuffer);
+   ctGPUExternalBufferUploadFlush(pGPUDevice, pGPUBufferPool, pVertexBuffer);
+
+   /* View Upload */
+   ctGPUExternalBufferUploadMap(pGPUDevice, pGPUBufferPool, pViewBuffer, &tmpBuffer);
+   UploadViewData((uint8_t*)tmpBuffer);
+   ctGPUExternalBufferUploadFlush(pGPUDevice, pGPUBufferPool, pViewBuffer);
+
+   /* Text Draw */
    triangleCount = 0;
    lineCount = 0;
    pointCount = 0;

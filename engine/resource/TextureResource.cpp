@@ -15,12 +15,17 @@
 */
 
 #include "TextureResource.hpp"
+#include "formats/texture/TextureLoad.h"
 
 const char* ctResourceTexture::GetName() {
    return "Texture";
 }
 
 ctResults ctResourceTexture::LoadTask() {
+   ctFile file;
+   CT_RETURN_FAIL(Engine->FileSystem->OpenDataFileByGUID(file, GetDataGUID()));
+   ctTextureLoadCtx* pTextureLoader = new ctTextureLoadCtx();
+   ctTextureLoadFromFile(file, pTextureLoader);
    return CT_SUCCESS;
 }
 

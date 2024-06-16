@@ -46,15 +46,6 @@ struct ctGPUExternalGenerateContext {
    uint32_t currentMipLevel;
 };
 
-typedef void (*ctGPUTextureGenerateFn)(uint8_t* dest,
-                                       struct ctGPUExternalGenerateContext* pCtx,
-                                       void* userData);
-
-/* Assumes userdata fits the whole size of the first slice/mip of the texture */
-void ctGPUTextureGenerateFnQuickMemcpy(uint8_t* dest,
-                                       struct ctGPUExternalGenerateContext* pCtx,
-                                       void* userData);
-
 /* ------------------------------------------------------------------------------------ */
 
 struct ctGPUExternalTexturePoolCreateInfo {
@@ -85,7 +76,21 @@ ctGPUExternalTexturePoolDispatch(struct ctGPUDevice* pDevice,
 
 /* ------------------------------------------------------------------------------------ */
 
-struct ctGPUExternalTextureCreateFuncInfo {
+typedef void (*ctGPUTextureUploadFn)(uint8_t* dest,
+                                     struct ctGPUExternalGenerateContext* pCtx,
+                                     void* userData);
+
+/* Assumes userdata fits the whole size of the first slice/mip of the texture */
+void ctGPUTextureUploadFnQuickMemcpy(uint8_t* dest,
+                                     struct ctGPUExternalGenerateContext* pCtx,
+                                     void* userData);
+
+/* Assumes userdata is a pointer to a valid ctTextureLoadCtx */
+void ctGPUTextureUploadFnTextureLoader(uint8_t* dest,
+                                       struct ctGPUExternalGenerateContext* pCtx,
+                                       void* userData);
+
+struct ctGPUExternalTextureCreateInfo {
    const char* debugName;
    enum ctGPUExternalTextureType type;
    enum ctGPUExternalUpdateMode updateMode;
@@ -94,30 +99,26 @@ struct ctGPUExternalTextureCreateFuncInfo {
    uint32_t width;
    uint32_t depth;
    uint32_t mips;
-   ctGPUTextureGenerateFn generationFunction;
-   void* userData;
+   ctGPUTextureUploadFn fpUploadSlice;
+   void* uploadData;
 };
 
 CT_API enum ctResults
 ctGPUExternalTextureCreate(struct ctGPUDevice* pDevice,
                            struct ctGPUExternalTexturePool* pPool,
                            struct ctGPUExternalTexture** ppTexture,
-                           struct ctGPUExternalTextureCreateFuncInfo* pInfo);
+                           struct ctGPUExternalTextureCreateInfo* pInfo);
 
-CT_API enum ctResults
-ctGPUExternalTextureRebuild(struct ctGPUDevice* pDevice,
-                            struct ctGPUExternalTexturePool* pPool,
-                            size_t textureCount,
-                            struct ctGPUExternalTexture** ppTextures);
+CT_API enum ctResults ctGPUExternalTextureUpload(struct ctGPUDevice* pDevice,
+                                                 struct ctGPUExternalTexturePool* pPool,
+                                                 struct ctGPUExternalTexture* ppTexture,
+                                                 ctGPUTextureUploadFn fpUploadSlice,
+                                                 void* uploadData);
+
 CT_API enum ctResults ctGPUExternalTextureRelease(struct ctGPUDevice* pDevice,
                                                   struct ctGPUExternalTexturePool* pPool,
                                                   struct ctGPUExternalTexture* pTexture);
 
-CT_API bool ctGPUExternalTextureIsReady(struct ctGPUDevice* pDevice,
-                                        struct ctGPUExternalTexturePool* pPool,
-                                        struct ctGPUExternalTexture* pTexture);
-
-/* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalTextureIsReady()! */
 CT_API enum ctResults
 ctGPUExternalTextureGetCurrentAccessor(struct ctGPUDevice* pDevice,
                                        struct ctGPUExternalTexture* pTexture,

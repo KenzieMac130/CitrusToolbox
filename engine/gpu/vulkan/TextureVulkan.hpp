@@ -35,6 +35,9 @@ struct ctGPUExternalTexture {
 
    uint32_t frameCount;
    uint32_t currentFrame;
+   inline void NextFrame() {
+      currentFrame = (currentFrame + 1) % frameCount;
+   }
 
    /* Contents */
    ctVkCompleteImage contents[CT_MAX_INFLIGHT_FRAMES];
@@ -60,23 +63,9 @@ struct ctGPUExternalTexture {
 
    /* Generation */
    ctGPUExternalTexturePool* pPool;
-   ctGPUTextureGenerateFn generationFunction;
-   void* userData;
-   void GenSlices();
-   void GenVolume();
-   void GenerateContents();
-
-   /* Sync */
-   ctAtomic contentsReady;
-   inline bool isReady() {
-      return ctAtomicGet(contentsReady);
-   }
-   inline void MakeReady(bool val) {
-      ctAtomicSet(contentsReady, val);
-   }
-   inline void NextFrame() {
-      currentFrame = (currentFrame + 1) % frameCount;
-   }
+   void GenSlices(ctGPUTextureUploadFn fpUploadSlice, void* uploadData);
+   void GenVolume(ctGPUTextureUploadFn fpUploadSlice, void* uploadData);
+   void GenerateContents(ctGPUTextureUploadFn fpUploadSlice, void* uploadData);
 
    /* Commands */
    void ExecuteCommands(VkCommandBuffer cmd);

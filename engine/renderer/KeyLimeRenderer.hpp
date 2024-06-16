@@ -19,6 +19,11 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 
+struct CT_API ctKeyLimeTexture {
+   int32_t bindingIdx;
+   struct ctGPUExternalTexture* pTexture;
+};
+
 class CT_API ctKeyLimeRenderer : public ctModuleBase {
 public:
    ctResults Startup() final;
@@ -29,8 +34,9 @@ public:
    ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
    ctResults RenderFrame();
 
-   ctResults LoadOrReplaceTexture(ctGUID guid, struct ctGPUExternalTexture** ppTexture);
-   ctResults DeleteTexture(struct ctGPUExternalTexture* pTexture);
+   ctResults CreateOrReplaceTexture(struct ctTextureLoadCtx* pLoadCtx,
+                                    struct ctKeyLimeTexture** ppTexture);
+   ctResults DeleteTexture(struct ctKeyLimeTexture* pTexture);
 
 protected:
    ctMutex renderThreadLock;

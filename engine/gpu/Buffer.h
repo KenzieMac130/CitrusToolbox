@@ -72,13 +72,12 @@ ctGPUExternalBufferPoolDispatch(struct ctGPUDevice* pDevice,
 
 /* ------------------------------------------------------------------------------------ */
 
-struct ctGPUExternalBufferCreateFuncInfo {
+struct ctGPUExternalBufferCreateInfo {
    const char* debugName;
    enum ctGPUExternalBufferType type;
    enum ctGPUExternalUpdateMode updateMode;
    size_t size;
-   ctGPUBufferGenerateFn generationFunction;
-   void* userData;
+   uint8_t* data;
 };
 
 // clang-format off
@@ -86,21 +85,19 @@ struct ctGPUExternalBufferCreateFuncInfo {
 CT_API enum ctResults ctGPUExternalBufferCreate(struct ctGPUDevice* pDevice,
                                                     struct ctGPUExternalBufferPool* pPool,
                                                     struct ctGPUExternalBuffer** ppBuffer,
-                                                    struct ctGPUExternalBufferCreateFuncInfo* pInfo);
+                                                    struct ctGPUExternalBufferCreateInfo* pInfo);
+CT_API enum ctResults ctGPUExternalBufferUploadMap(struct ctGPUDevice* pDevice,
+                                                struct ctGPUExternalBufferPool* pPool,
+                                                struct ctGPUExternalBuffer* pBuffer,
+                                                void** ppDest);
+CT_API enum ctResults ctGPUExternalBufferUploadFlush(struct ctGPUDevice* pDevice,
+                                                   struct ctGPUExternalBufferPool* pPool,
+                                                   struct ctGPUExternalBuffer* pBuffer);
 
-CT_API enum ctResults ctGPUExternalBufferRebuild(struct ctGPUDevice* pDevice,
-                                            struct ctGPUExternalBufferPool* pPool,
-                                            size_t bufferCount,
-                                            struct ctGPUExternalBuffer** ppBuffers);
 CT_API enum ctResults ctGPUExternalBufferRelease(struct ctGPUDevice* pDevice,
                                             struct ctGPUExternalBufferPool* pPool,
                                             struct ctGPUExternalBuffer* pBuffer);
 
-CT_API bool ctGPUExternalBufferIsReady(struct ctGPUDevice* pDevice,
-                                       struct ctGPUExternalBufferPool* pPool,
-                                       struct ctGPUExternalBuffer* pBuffer);
-
-/* NOT GUARANTEED TO EXIST BEFORE ctGPUExternalBufferIsReady()! */
 CT_API enum ctResults ctGPUExternalBufferGetCurrentAccessor(struct ctGPUDevice* pDevice,
                                                        struct ctGPUExternalBuffer* pBuffer,
                                                        ctGPUBufferAccessor* pAccessor);

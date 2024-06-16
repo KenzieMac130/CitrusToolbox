@@ -29,6 +29,9 @@ struct ctGPUExternalBuffer {
 
    uint32_t frameCount;
    uint32_t currentFrame;
+   inline void NextFrame() {
+       currentFrame = (currentFrame + 1) % frameCount;
+   }
 
    /* Contents */
    ctVkCompleteBuffer contents[CT_MAX_INFLIGHT_FRAMES];
@@ -50,21 +53,6 @@ struct ctGPUExternalBuffer {
 
    /* Generation */
    ctGPUExternalBufferPool* pPool;
-   ctGPUBufferGenerateFn generationFunction;
-   void* userData;
-   void GenerateContents();
-
-   /* Syncs */
-   ctAtomic contentsReady;
-   inline bool isReady() {
-      return ctAtomicGet(contentsReady);
-   }
-   inline void MakeReady(bool val) {
-      ctAtomicSet(contentsReady, val);
-   }
-   inline void NextFrame() {
-      currentFrame = (currentFrame + 1) % frameCount;
-   }
 
    /* Commands */
    void ExecuteCommands(VkCommandBuffer cmd);

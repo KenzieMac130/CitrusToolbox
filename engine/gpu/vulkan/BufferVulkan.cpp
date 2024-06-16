@@ -59,15 +59,10 @@ CT_API ctResults ctGPUExternalBufferPoolDispatch(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
-ctResults ctGPUAsyncBufferGenerateWork(ctGPUExternalBuffer* pBuffer) {
-   pBuffer->GenerateContents();
-   return CT_SUCCESS;
-}
-
 CT_API ctResults ctGPUExternalBufferCreate(ctGPUDevice* pDevice,
                                            ctGPUExternalBufferPool* pPool,
                                            ctGPUExternalBuffer** ppBuffer,
-                                           ctGPUExternalBufferCreateFuncInfo* pInfo) {
+                                           ctGPUExternalBufferCreateInfo* pInfo) {
    if (pInfo->size == 0) { return CT_FAILURE_INVALID_PARAMETER; }
    ctGPUExternalBuffer* pBuffer = new ctGPUExternalBuffer();
    *ppBuffer = pBuffer;
@@ -78,8 +73,6 @@ CT_API ctResults ctGPUExternalBufferCreate(ctGPUDevice* pDevice,
    pBuffer->currentFrame = 0;
    pBuffer->frameCount =
      pInfo->updateMode == CT_GPU_UPDATE_STATIC ? 1 : CT_MAX_INFLIGHT_FRAMES;
-   pBuffer->generationFunction = pInfo->generationFunction;
-   pBuffer->userData = pInfo->userData;
 
    VkBufferUsageFlags usage = 0;
    switch (pInfo->type) {
@@ -109,24 +102,8 @@ CT_API ctResults ctGPUExternalBufferCreate(ctGPUDevice* pDevice,
    pBuffer->AllocateContents(pDevice, usage, memUsage, pInfo->debugName);
    if (pInfo->updateMode != CT_GPU_UPDATE_STREAM) { pBuffer->AquireStaging(pDevice); }
    pBuffer->GenMappings(pDevice);
-   pBuffer->GenerateContents();
-   return CT_SUCCESS;
-}
-
-CT_API ctResults ctGPUExternalBufferRebuild(ctGPUDevice* pDevice,
-                                            ctGPUExternalBufferPool* pPool,
-                                            size_t bufferCount,
-                                            ctGPUExternalBuffer** ppBuffers) {
-   for (size_t i = 0; i < bufferCount; i++) {
-      ppBuffers[i]->MakeReady(false);
-      ppBuffers[i]->NextFrame();
-      ppBuffers[i]->GenerateContents();
-      if (ppBuffers[i]->updateMode == CT_GPU_UPDATE_STREAM) {
-         vmaFlushAllocation(pDevice->vmaAllocator,
-                            ppBuffers[i]->contents[ppBuffers[i]->currentFrame].alloc,
-                            0,
-                            VK_WHOLE_SIZE);
-      }
+   if (pInfo->data) {
+      memcpy(pBuffer->mappings[pBuffer->currentFrame], pInfo->data, pInfo->size);
    }
    return CT_SUCCESS;
 }
@@ -136,12 +113,6 @@ CT_API ctResults ctGPUExternalBufferRelease(ctGPUDevice* pDevice,
                                             ctGPUExternalBuffer* pBuffer) {
    pPool->garbageList.Append(pBuffer);
    return CT_SUCCESS;
-}
-
-CT_API bool ctGPUExternalBufferIsReady(ctGPUDevice* pDevice,
-                                       ctGPUExternalBufferPool* pPool,
-                                       ctGPUExternalBuffer* pBuffer) {
-   return pBuffer->isReady();
 }
 
 CT_API ctResults ctGPUExternalBufferGetCurrentAccessor(ctGPUDevice* pDevice,
@@ -159,12 +130,6 @@ ctGPUExternalBufferPool::ctGPUExternalBufferPool(
 void ctGPUExternalBufferPool::GarbageCollect(ctGPUDevice* pDevice) {
    for (size_t i = 0; i < garbageList.Count(); i++) {
       ctGPUExternalBuffer* pBuffer = garbageList[i];
-      /* Don't release if it is still in use */
-      if (!pBuffer->isReady()) {
-         incompleteGarbageList.Append(pBuffer);
-         continue;
-      }
-
       /* Release internals */
       pBuffer->FreeMappings(pDevice);
       pBuffer->ReleaseStaging(pDevice);
@@ -252,10 +217,21 @@ void ctGPUExternalBuffer::FreeMappings(ctGPUDevice* pDevice) {
    }
 }
 
-void ctGPUExternalBuffer::GenerateContents() {
-   generationFunction(mappings[currentFrame], size, userData);
-   MakeReady(true);
-   if (updateMode != CT_GPU_UPDATE_STREAM) { pPool->AddToUpload(this); }
+CT_API ctResults ctGPUExternalBufferUploadMap(ctGPUDevice* pDevice,
+                                              ctGPUExternalBufferPool* pPool,
+                                              ctGPUExternalBuffer* pBuffer,
+                                              void** ppDest) {
+   ctAssert(ppDest);
+   pBuffer->NextFrame();
+   *ppDest = pBuffer->mappings[pBuffer->currentFrame];
+   return CT_SUCCESS;
+}
+
+CT_API ctResults ctGPUExternalBufferUploadFlush(ctGPUDevice* pDevice,
+                                                ctGPUExternalBufferPool* pPool,
+                                                ctGPUExternalBuffer* pBuffer) {
+   if (pBuffer->updateMode != CT_GPU_UPDATE_STREAM) { pPool->AddToUpload(pBuffer); }
+   return CT_SUCCESS;
 }
 
 void ctGPUExternalBuffer::ExecuteCommands(VkCommandBuffer cmd) {

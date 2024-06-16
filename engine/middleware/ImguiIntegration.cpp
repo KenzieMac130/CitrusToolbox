@@ -123,38 +123,6 @@ const char* ctImguiIntegration::GetModuleName() {
    return "ImGui";
 }
 
-void ctImguiUploadIndices(uint8_t* dest, size_t size, void* unused) {
-   ImDrawData* pDrawData = ImGui::GetDrawData();
-   if (!pDrawData) {
-      memset(dest, 0, size);
-      return;
-   }
-   size_t offset = 0;
-   for (int i = 0; i < pDrawData->CmdListsCount; i++) {
-      const ImDrawList* pCmd = pDrawData->CmdLists[i];
-      const ImDrawIdx* pIndices = pCmd->IdxBuffer.Data;
-      const int count = pCmd->IdxBuffer.Size;
-      memcpy(&dest[offset], pIndices, sizeof(pIndices[0]) * count);
-      offset += sizeof(pIndices[0]) * count;
-   }
-}
-
-void ctImguiUploadVertices(uint8_t* dest, size_t size, void* unused) {
-   ImDrawData* pDrawData = ImGui::GetDrawData();
-   if (!pDrawData) {
-      memset(dest, 0, size);
-      return;
-   }
-   size_t offset = 0;
-   for (int i = 0; i < pDrawData->CmdListsCount; i++) {
-      const ImDrawList* pCmd = pDrawData->CmdLists[i];
-      const ImDrawVert* pVertices = pCmd->VtxBuffer.Data;
-      const int count = pCmd->VtxBuffer.Size;
-      memcpy(&dest[offset], pVertices, sizeof(pVertices[0]) * count);
-      offset += sizeof(pVertices[0]) * count;
-   }
-}
-
 ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
                                          struct ctGPUBindlessManager* pBindless,
                                          struct ctGPUExternalBufferPool* pGPUBufferPool,
@@ -172,7 +140,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    int32_t fontHeight;
    uint8_t* pixels = NULL;
    ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &fontWidth, &fontHeight);
-   ctGPUExternalTextureCreateFuncInfo fontTexInfo = {};
+   ctGPUExternalTextureCreateInfo fontTexInfo = {};
    fontTexInfo.debugName = "Imgui Font";
    fontTexInfo.type = CT_GPU_EXTERN_TEXTURE_TYPE_2D;
    fontTexInfo.updateMode = CT_GPU_UPDATE_STATIC;
@@ -181,8 +149,8 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    fontTexInfo.height = fontHeight;
    fontTexInfo.depth = 1;
    fontTexInfo.mips = 1;
-   fontTexInfo.userData = pixels;
-   fontTexInfo.generationFunction = ctGPUTextureGenerateFnQuickMemcpy;
+   fontTexInfo.uploadData = pixels;
+   fontTexInfo.fpUploadSlice = ctGPUTextureUploadFnQuickMemcpy;
    CT_RETURN_FAIL(ctGPUExternalTextureCreate(
      pGPUDevice, pGPUTexturePool, &pFontTexture, &fontTexInfo));
    fontBind =
@@ -190,24 +158,20 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ImGui::GetIO().Fonts->SetTexID((ImTextureID)(size_t)fontBind);
 
    /* Index Buffer */
-   ctGPUExternalBufferCreateFuncInfo iBufferInfo = {};
+   ctGPUExternalBufferCreateInfo iBufferInfo = {};
    iBufferInfo.debugName = "Imgui Indices";
    iBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_INDEX;
    iBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    iBufferInfo.size = maxIndices * sizeof(ImDrawIdx);
-   iBufferInfo.generationFunction = ctImguiUploadIndices;
-   iBufferInfo.userData = NULL;
    ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, &pIndexBuffer, &iBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, idxBind, pIndexBuffer);
 
    /* Vertex Buffer */
-   ctGPUExternalBufferCreateFuncInfo vBufferInfo = {};
+   ctGPUExternalBufferCreateInfo vBufferInfo = {};
    vBufferInfo.debugName = "Imgui Vertices";
    vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_VERTEX;
    vBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    vBufferInfo.size = maxVerts * sizeof(ImDrawVert);
-   vBufferInfo.generationFunction = ctImguiUploadVertices;
-   vBufferInfo.userData = NULL;
    ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
 
@@ -287,8 +251,31 @@ ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
                                               ctGPUExternalBufferPool* pGPUBufferPool) {
    ImGui::Render();
    ImGui::EndFrame();
-   ctGPUExternalBuffer* externBuffers[2] = {pVertexBuffer, pIndexBuffer};
-   ctGPUExternalBufferRebuild(pGPUDevice, pGPUBufferPool, 2, externBuffers);
+
+   /* Geometry Upload */
+   uint8_t* vdest;
+   uint8_t* idest;
+   ctGPUExternalBufferUploadMap(pGPUDevice, pGPUBufferPool, pVertexBuffer, (void**)&vdest);
+   ctGPUExternalBufferUploadMap(pGPUDevice, pGPUBufferPool, pIndexBuffer, (void**)&idest);
+   ImDrawData* pDrawData = ImGui::GetDrawData();
+   if (pDrawData) {
+       size_t ioffset = 0;
+       size_t voffset = 0;
+       for (int i = 0; i < pDrawData->CmdListsCount; i++) {
+           const ImDrawList* pCmd = pDrawData->CmdLists[i];
+           const ImDrawIdx* pIndices = pCmd->IdxBuffer.Data;
+           const int icount = pCmd->IdxBuffer.Size;
+           memcpy(&idest[ioffset], pIndices, sizeof(pIndices[0]) * icount);
+           ioffset += sizeof(pIndices[0]) * icount;
+
+           const ImDrawVert* pVertices = pCmd->VtxBuffer.Data;
+           const int vcount = pCmd->VtxBuffer.Size;
+           memcpy(&vdest[voffset], pVertices, sizeof(pVertices[0]) * vcount);
+           voffset += sizeof(pVertices[0]) * vcount;
+       }
+   }
+   ctGPUExternalBufferUploadFlush(pGPUDevice, pGPUBufferPool, pIndexBuffer);
+   ctGPUExternalBufferUploadFlush(pGPUDevice, pGPUBufferPool, pVertexBuffer);
    return CT_SUCCESS;
 }
 
