@@ -153,28 +153,24 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    /* View Buffer */
    ctGPUExternalBufferCreateFuncInfo viewBufferInfo = {};
    viewBufferInfo.debugName = "Im3d View";
-   viewBufferInfo.async = false;
-   viewBufferInfo.pPlaceholder = NULL;
    viewBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
    viewBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    viewBufferInfo.size = ctGPUStructGetBufferSize(pViewStructAssembler, 1);
    viewBufferInfo.generationFunction = ctIm3dIntegration::ctIm3dUploadViewData;
    viewBufferInfo.userData = this;
-   ctGPUExternalBufferCreateFunc(
+   ctGPUExternalBufferCreate(
      pGPUDevice, pGPUBufferPool, &pViewBuffer, &viewBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, viewBind, pViewBuffer);
 
    /* Vertex Buffer */
    ctGPUExternalBufferCreateFuncInfo vBufferInfo = {};
    vBufferInfo.debugName = "Im3d Vertices";
-   vBufferInfo.async = false;
-   vBufferInfo.pPlaceholder = NULL;
    vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_STORAGE;
    vBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    vBufferInfo.size = ctGPUStructGetBufferSize(pVertexStructAssembler, maxVerts);
    vBufferInfo.generationFunction = ctIm3dIntegration::ctIm3dUploadVertexData;
    vBufferInfo.userData = this;
-   ctGPUExternalBufferCreateFunc(
+   ctGPUExternalBufferCreate(
      pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
    return CT_SUCCESS;

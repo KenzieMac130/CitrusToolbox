@@ -47,8 +47,6 @@ typedef void (*ctGPUBufferGenerateFn)(uint8_t* dest, size_t size, void* userData
 struct ctGPUExternalBufferPoolCreateInfo {
    int32_t flags;
    size_t baseStagingSize;
-   ctGPUAsyncSchedulerFn fpAsyncScheduler;
-   void* pAsyncUserData;
 };
 
 CT_API enum ctResults
@@ -76,8 +74,6 @@ ctGPUExternalBufferPoolDispatch(struct ctGPUDevice* pDevice,
 
 struct ctGPUExternalBufferCreateFuncInfo {
    const char* debugName;
-   bool async;
-   struct ctGPUExternalBuffer* pPlaceholder;
    enum ctGPUExternalBufferType type;
    enum ctGPUExternalUpdateMode updateMode;
    size_t size;
@@ -87,24 +83,10 @@ struct ctGPUExternalBufferCreateFuncInfo {
 
 // clang-format off
 
-CT_API enum ctResults ctGPUExternalBufferCreateFunc(struct ctGPUDevice* pDevice,
+CT_API enum ctResults ctGPUExternalBufferCreate(struct ctGPUDevice* pDevice,
                                                     struct ctGPUExternalBufferPool* pPool,
                                                     struct ctGPUExternalBuffer** ppBuffer,
                                                     struct ctGPUExternalBufferCreateFuncInfo* pInfo);
-struct ctGPUExternalBufferCreateLoadInfo {
-   const char* debugName;
-   bool async;
-   struct ctGPUExternalBuffer* pPlaceholder;
-   enum ctGPUExternalBufferType type;
-   struct ctGPUAssetIdentifier* identifier;
-   size_t offset;
-   size_t size;
-};
-
-CT_API enum ctResults ctGPUExternalBufferCreateLoad(struct ctGPUDevice* pDevice,
-                                                    struct ctGPUExternalBufferPool* pPool,
-                                                    struct ctGPUExternalBuffer** ppBuffer,
-                                                    struct ctGPUExternalBufferCreateLoadInfo* pInfo);
 
 CT_API enum ctResults ctGPUExternalBufferRebuild(struct ctGPUDevice* pDevice,
                                             struct ctGPUExternalBufferPool* pPool,

@@ -15,8 +15,6 @@
 */
 
 #include "TextureVulkan.hpp"
-#include "gpu/shared/ExternalLoading.hpp"
-
 #include "vulkan/vulkan.h"
 
 size_t GetPhysicalSizeOfChunk(TinyImageFormat universalFormat,
@@ -104,13 +102,8 @@ CT_API ctResults ctGPUExternalTexturePoolDispatch(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
-ctResults ctGPUAsyncTextureGenerateWork(ctGPUExternalTexture* pTexture) {
-   pTexture->GenerateContents();
-   return CT_SUCCESS;
-}
-
 CT_API ctResults
-ctGPUExternalTextureCreateFunc(ctGPUDevice* pDevice,
+ctGPUExternalTextureCreate(ctGPUDevice* pDevice,
                                ctGPUExternalTexturePool* pPool,
                                ctGPUExternalTexture** ppTexture,
                                ctGPUExternalTextureCreateFuncInfo* pInfo) {
@@ -168,24 +161,8 @@ ctGPUExternalTextureCreateFunc(ctGPUDevice* pDevice,
      pDevice->vkDevice, pTexture->contents[0].image, &pTexture->memreq);
    pTexture->AquireStaging(pDevice);
    pTexture->GenMappings(pDevice);
-
-   /* Add to async list */
-   if (pInfo->async && pPool->fpAsyncScheduler) {
-      pTexture->wantsAsync = true;
-      pPool->fpAsyncScheduler(
-        (ctGPUAsyncWorkFn)ctGPUAsyncTextureGenerateWork, pTexture, pPool->pAsyncUserData);
-   } else {
-      pTexture->GenerateContents();
-   }
+   pTexture->GenerateContents();
    return CT_SUCCESS;
-}
-
-CT_API ctResults
-ctGPUExternalTextureCreateLoad(struct ctGPUDevice* pDevice,
-                               struct ctGPUExternalTexturePool* pPool,
-                               struct ctGPUExternalTexture** ppTexture,
-                               struct ctGPUExternalTextureCreateLoadInfo* pInfo) {
-   return ctGPUExternalTextureCreateLoadCPU(pDevice, pPool, ppTexture, pInfo);
 }
 
 CT_API ctResults ctGPUExternalTextureRebuild(ctGPUDevice* pDevice,
@@ -195,13 +172,7 @@ CT_API ctResults ctGPUExternalTextureRebuild(ctGPUDevice* pDevice,
    for (size_t i = 0; i < textureCount; i++) {
       ppTextures[i]->MakeReady(false);
       ppTextures[i]->NextFrame();
-      if (ppTextures[i]->wantsAsync && pPool->fpAsyncScheduler) {
-         pPool->fpAsyncScheduler((ctGPUAsyncWorkFn)ctGPUAsyncTextureGenerateWork,
-                                 ppTextures[i],
-                                 pPool->pAsyncUserData);
-      } else {
-         ppTextures[i]->GenerateContents();
-      }
+      ppTextures[i]->GenerateContents();
    }
    return CT_SUCCESS;
 }
@@ -228,8 +199,6 @@ CT_API ctResults ctGPUExternalTextureGetCurrentAccessor(ctGPUDevice* pDevice,
 
 ctGPUExternalTexturePool::ctGPUExternalTexturePool(
   ctGPUExternalTexturePoolCreateInfo* pInfo) {
-   fpAsyncScheduler = pInfo->fpAsyncScheduler;
-   pAsyncUserData = pInfo->pAsyncUserData;
    ctSpinLockInit(uploadListLock);
 }
 

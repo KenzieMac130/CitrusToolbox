@@ -173,9 +173,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    uint8_t* pixels = NULL;
    ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &fontWidth, &fontHeight);
    ctGPUExternalTextureCreateFuncInfo fontTexInfo = {};
-   fontTexInfo.async = false;
    fontTexInfo.debugName = "Imgui Font";
-   fontTexInfo.pPlaceholder = NULL;
    fontTexInfo.type = CT_GPU_EXTERN_TEXTURE_TYPE_2D;
    fontTexInfo.updateMode = CT_GPU_UPDATE_STATIC;
    fontTexInfo.format = TinyImageFormat_R8G8B8A8_UNORM;
@@ -185,7 +183,7 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    fontTexInfo.mips = 1;
    fontTexInfo.userData = pixels;
    fontTexInfo.generationFunction = ctGPUTextureGenerateFnQuickMemcpy;
-   CT_RETURN_FAIL(ctGPUExternalTextureCreateFunc(
+   CT_RETURN_FAIL(ctGPUExternalTextureCreate(
      pGPUDevice, pGPUTexturePool, &pFontTexture, &fontTexInfo));
    fontBind =
      ctGPUBindlessManagerMapTexture(pGPUDevice, pBindless, fontBind, pFontTexture);
@@ -194,28 +192,23 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    /* Index Buffer */
    ctGPUExternalBufferCreateFuncInfo iBufferInfo = {};
    iBufferInfo.debugName = "Imgui Indices";
-   iBufferInfo.async = false;
-   iBufferInfo.pPlaceholder = NULL;
    iBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_INDEX;
    iBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    iBufferInfo.size = maxIndices * sizeof(ImDrawIdx);
    iBufferInfo.generationFunction = ctImguiUploadIndices;
    iBufferInfo.userData = NULL;
-   ctGPUExternalBufferCreateFunc(pGPUDevice, pGPUBufferPool, &pIndexBuffer, &iBufferInfo);
+   ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, &pIndexBuffer, &iBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, idxBind, pIndexBuffer);
 
    /* Vertex Buffer */
    ctGPUExternalBufferCreateFuncInfo vBufferInfo = {};
    vBufferInfo.debugName = "Imgui Vertices";
-   vBufferInfo.async = false;
-   vBufferInfo.pPlaceholder = NULL;
    vBufferInfo.type = CT_GPU_EXTERN_BUFFER_TYPE_VERTEX;
    vBufferInfo.updateMode = CT_GPU_UPDATE_STREAM;
    vBufferInfo.size = maxVerts * sizeof(ImDrawVert);
    vBufferInfo.generationFunction = ctImguiUploadVertices;
    vBufferInfo.userData = NULL;
-   ctGPUExternalBufferCreateFunc(
-     pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
+   ctGPUExternalBufferCreate(pGPUDevice, pGPUBufferPool, &pVertexBuffer, &vBufferInfo);
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
 
    /* Pipeline */
@@ -225,14 +218,12 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
 
    ctGPUShaderModule vertShader;
    ctGPUShaderModule fragShader;
-   CT_PANIC_FAIL(
-     ctGPUShaderCreateFromWad(
-       pGPUDevice, &vertShader, &shader->GetWAD(), NULL, CT_GPU_SHADER_VERT),
-     CT_NC("Failed to create imgui shader!"));
-   CT_PANIC_FAIL(
-     ctGPUShaderCreateFromWad(
-       pGPUDevice, &fragShader, &shader->GetWAD(), NULL, CT_GPU_SHADER_FRAG),
-     CT_NC("Failed to create imgui shader!"));
+   CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
+                   pGPUDevice, &vertShader, &shader->GetWAD(), NULL, CT_GPU_SHADER_VERT),
+                 CT_NC("Failed to create imgui shader!"));
+   CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
+                   pGPUDevice, &fragShader, &shader->GetWAD(), NULL, CT_GPU_SHADER_FRAG),
+                 CT_NC("Failed to create imgui shader!"));
 
    ctGPUPipelineBuilder* pPipelineBuilder =
      ctGPUPipelineBuilderNew(pGPUDevice, CT_GPU_PIPELINE_RASTER);

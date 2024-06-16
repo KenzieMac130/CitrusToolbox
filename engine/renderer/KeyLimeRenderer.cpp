@@ -172,12 +172,6 @@ OpenAssetFileCallback(ctFile* pFileOut, ctGUID* pGuid, ctFileSystem* pFileSystem
    return pFileSystem->OpenDataFileByGUID(*pFileOut, *pGuid);
 }
 
-ctResults
-AsyncSchedulerCallback(ctGPUAsyncWorkFn fpWork, void* data, ctAsyncManager* pAsync) {
-   pAsync->CreateTask("Async Render Work", fpWork, data, 0);
-   return CT_SUCCESS;
-}
-
 void GenerateMissingTexture(uint8_t* dest,
                             struct ctGPUExternalGenerateContext* pCtx,
                             void* userData) {
@@ -222,19 +216,14 @@ ctResults ctKeyLimeRenderer::Startup() {
 
    /* Buffer Pool */
    ctGPUExternalBufferPoolCreateInfo bufferPoolInfo = {};
-   bufferPoolInfo.fpAsyncScheduler = (ctGPUAsyncSchedulerFn)AsyncSchedulerCallback;
-   bufferPoolInfo.pAsyncUserData = ctGetAsyncManager();
    ctGPUExternalBufferPoolCreate(pGPUDevice, &pGPUBufferPool, &bufferPoolInfo);
 
    /* Texture Pool */
    ctGPUExternalTexturePoolCreateInfo texturePoolInfo = {};
-   texturePoolInfo.fpAsyncScheduler = (ctGPUAsyncSchedulerFn)AsyncSchedulerCallback;
-   texturePoolInfo.pAsyncUserData = ctGetAsyncManager();
    ctGPUExternalTexturePoolCreate(pGPUDevice, &pGPUTexturePool, &texturePoolInfo);
 
    /* Missing Texture */
    ctGPUExternalTextureCreateFuncInfo missingTextureCreateInfo = {};
-   missingTextureCreateInfo.async = false;
    missingTextureCreateInfo.debugName = "Missing Textue";
    missingTextureCreateInfo.depth = 1;
    missingTextureCreateInfo.width = 32;
@@ -245,7 +234,7 @@ ctResults ctKeyLimeRenderer::Startup() {
    missingTextureCreateInfo.type = CT_GPU_EXTERN_TEXTURE_TYPE_2D;
    missingTextureCreateInfo.generationFunction = GenerateMissingTexture;
    missingTextureCreateInfo.userData = NULL;
-   ctGPUExternalTextureCreateFunc(
+   ctGPUExternalTextureCreate(
      pGPUDevice, pGPUTexturePool, &pMissingTexture, &missingTextureCreateInfo);
 
    /* Setup Imgui */
@@ -463,18 +452,7 @@ ctKeyLimeRenderer::LoadOrReplaceTexture(ctGUID guid,
                                         struct ctGPUExternalTexture** ppTexture) {
    ctAssert(ppTexture);
    ctMutexLockScoped(RenderThread, renderThreadLock);
-   /* todo acquire lock */
-   ctGPUExternalTextureCreateLoadInfo loadInfo = {};
-   loadInfo.async = true;
-   loadInfo.desiredBinding = -1;
-   char debugName[33];
-   memset(debugName, 0, sizeof(debugName));
-   guid.ToHex(debugName);
-   loadInfo.debugName = debugName;
-   ctGPUAssetIdentifier assetId;
-   memcpy(assetId.guidData, guid.data, sizeof(guid.data));
-   loadInfo.identifier = &assetId;
-   ctGPUExternalTextureCreateLoad(pGPUDevice, pGPUTexturePool, ppTexture, &loadInfo);
+   /* todo */
    return CT_SUCCESS;
 }
 

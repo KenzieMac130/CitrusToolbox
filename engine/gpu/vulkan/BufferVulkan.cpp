@@ -15,8 +15,6 @@
 */
 
 #include "BufferVulkan.hpp"
-#include "gpu/shared/ExternalLoading.hpp"
-
 #include "vulkan/vulkan.h"
 
 CT_API ctResults ctGPUExternalBufferPoolCreate(ctGPUDevice* pDevice,
@@ -66,10 +64,10 @@ ctResults ctGPUAsyncBufferGenerateWork(ctGPUExternalBuffer* pBuffer) {
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUExternalBufferCreateFunc(ctGPUDevice* pDevice,
-                                               ctGPUExternalBufferPool* pPool,
-                                               ctGPUExternalBuffer** ppBuffer,
-                                               ctGPUExternalBufferCreateFuncInfo* pInfo) {
+CT_API ctResults ctGPUExternalBufferCreate(ctGPUDevice* pDevice,
+                                           ctGPUExternalBufferPool* pPool,
+                                           ctGPUExternalBuffer** ppBuffer,
+                                           ctGPUExternalBufferCreateFuncInfo* pInfo) {
    if (pInfo->size == 0) { return CT_FAILURE_INVALID_PARAMETER; }
    ctGPUExternalBuffer* pBuffer = new ctGPUExternalBuffer();
    *ppBuffer = pBuffer;
@@ -91,14 +89,19 @@ CT_API ctResults ctGPUExternalBufferCreateFunc(ctGPUDevice* pDevice,
       case CT_GPU_EXTERN_BUFFER_TYPE_INDIRECT:
          usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
          break;
-      case CT_GPU_EXTERN_BUFFER_TYPE_UNIFORM: usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-      case CT_GPU_EXTERN_BUFFER_TYPE_INDEX: usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-      case CT_GPU_EXTERN_BUFFER_TYPE_VERTEX: usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+      case CT_GPU_EXTERN_BUFFER_TYPE_UNIFORM:
+         usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+         break;
+      case CT_GPU_EXTERN_BUFFER_TYPE_INDEX:
+         usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+         break;
+      case CT_GPU_EXTERN_BUFFER_TYPE_VERTEX:
+         usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+         break;
       default: break;
    }
    VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY;
    if (pInfo->updateMode == CT_GPU_UPDATE_STREAM) {
-      pInfo->async = false; /* dont allow async on streams */
       memUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
    } else {
       usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -106,23 +109,8 @@ CT_API ctResults ctGPUExternalBufferCreateFunc(ctGPUDevice* pDevice,
    pBuffer->AllocateContents(pDevice, usage, memUsage, pInfo->debugName);
    if (pInfo->updateMode != CT_GPU_UPDATE_STREAM) { pBuffer->AquireStaging(pDevice); }
    pBuffer->GenMappings(pDevice);
-
-   /* Add to async list */
-   if (pInfo->async && pPool->fpAsyncScheduler) {
-      pBuffer->wantsAsync = true;
-      pPool->fpAsyncScheduler(
-        (ctGPUAsyncWorkFn)ctGPUAsyncBufferGenerateWork, pBuffer, pPool->pAsyncUserData);
-   } else {
-      pBuffer->GenerateContents();
-   }
+   pBuffer->GenerateContents();
    return CT_SUCCESS;
-}
-
-CT_API ctResults ctGPUExternalBufferCreateLoad(ctGPUDevice* pDevice,
-                                               ctGPUExternalBufferPool* pPool,
-                                               ctGPUExternalBuffer** ppBuffer,
-                                               ctGPUExternalBufferCreateLoadInfo* pInfo) {
-   return ctGPUExternalBufferCreateLoadCPU(pDevice, pPool, ppBuffer, pInfo);
 }
 
 CT_API ctResults ctGPUExternalBufferRebuild(ctGPUDevice* pDevice,
@@ -132,18 +120,12 @@ CT_API ctResults ctGPUExternalBufferRebuild(ctGPUDevice* pDevice,
    for (size_t i = 0; i < bufferCount; i++) {
       ppBuffers[i]->MakeReady(false);
       ppBuffers[i]->NextFrame();
-      if (ppBuffers[i]->wantsAsync && pPool->fpAsyncScheduler) {
-         pPool->fpAsyncScheduler((ctGPUAsyncWorkFn)ctGPUAsyncBufferGenerateWork,
-                                 ppBuffers[i],
-                                 pPool->pAsyncUserData);
-      } else {
-         ppBuffers[i]->GenerateContents();
-         if (ppBuffers[i]->updateMode == CT_GPU_UPDATE_STREAM) {
-            vmaFlushAllocation(pDevice->vmaAllocator,
-                               ppBuffers[i]->contents[ppBuffers[i]->currentFrame].alloc,
-                               0,
-                               VK_WHOLE_SIZE);
-         }
+      ppBuffers[i]->GenerateContents();
+      if (ppBuffers[i]->updateMode == CT_GPU_UPDATE_STREAM) {
+         vmaFlushAllocation(pDevice->vmaAllocator,
+                            ppBuffers[i]->contents[ppBuffers[i]->currentFrame].alloc,
+                            0,
+                            VK_WHOLE_SIZE);
       }
    }
    return CT_SUCCESS;
@@ -171,8 +153,6 @@ CT_API ctResults ctGPUExternalBufferGetCurrentAccessor(ctGPUDevice* pDevice,
 
 ctGPUExternalBufferPool::ctGPUExternalBufferPool(
   ctGPUExternalBufferPoolCreateInfo* pInfo) {
-   fpAsyncScheduler = pInfo->fpAsyncScheduler;
-   pAsyncUserData = pInfo->pAsyncUserData;
    ctSpinLockInit(uploadListLock);
 }
 

@@ -305,12 +305,10 @@ ${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/StructVulkan.hpp)
 endif()
 
 list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp)
 list(APPEND ENGINE_HEADER_FILES_GPU_BACKEND
 ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/DeviceBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ExternalLoading.hpp)
+${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp)
 
 # ---------- Physics Backend Files ----------
 set(ENGINE_HEADER_FILES_PHYSICS_INTERFACE

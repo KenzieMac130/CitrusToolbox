@@ -54,8 +54,7 @@ struct ctGPUExternalBuffer {
    void* userData;
    void GenerateContents();
 
-   /* Async features */
-   bool wantsAsync;
+   /* Syncs */
    ctAtomic contentsReady;
    inline bool isReady() {
       return ctAtomicGet(contentsReady);
@@ -75,9 +74,6 @@ struct ctGPUExternalBufferPool {
    ctGPUExternalBufferPool(ctGPUExternalBufferPoolCreateInfo* pInfo);
 
    void GarbageCollect(ctGPUDevice* pDevice);
-
-   ctGPUAsyncSchedulerFn fpAsyncScheduler;
-   void* pAsyncUserData;
 
    /* Hot list is protected by the spinlock and access is in critical section */
    ctSpinLock uploadListLock;

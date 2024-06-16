@@ -76,8 +76,6 @@ CT_API void ctGPUDeviceWaitForIdle(struct ctGPUDevice* pDevice);
 CT_API enum ctResults ctGPUDeviceShutdown(struct ctGPUDevice* pDevice);
 
 /* Common data types  */
-typedef enum ctResults (*ctGPUAsyncWorkFn)(void*);
-typedef void (*ctGPUAsyncSchedulerFn)(ctGPUAsyncWorkFn, void* pData, void* pUserData);
 
 enum ctGPUExternalUpdateMode {
    CT_GPU_UPDATE_STATIC,  /* Statics are only ever uploaded once */

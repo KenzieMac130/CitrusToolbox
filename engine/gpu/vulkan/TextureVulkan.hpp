@@ -66,8 +66,7 @@ struct ctGPUExternalTexture {
    void GenVolume();
    void GenerateContents();
 
-   /* Async features */
-   bool wantsAsync;
+   /* Sync */
    ctAtomic contentsReady;
    inline bool isReady() {
       return ctAtomicGet(contentsReady);
@@ -87,9 +86,6 @@ struct ctGPUExternalTexturePool {
    ctGPUExternalTexturePool(ctGPUExternalTexturePoolCreateInfo* pInfo);
 
    void GarbageCollect(ctGPUDevice* pDevice);
-
-   ctGPUAsyncSchedulerFn fpAsyncScheduler;
-   void* pAsyncUserData;
 
    /* Hot list is protected by the spinlock and access is in critical section */
    ctSpinLock uploadListLock;

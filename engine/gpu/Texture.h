@@ -60,8 +60,6 @@ void ctGPUTextureGenerateFnQuickMemcpy(uint8_t* dest,
 struct ctGPUExternalTexturePoolCreateInfo {
    int32_t flags;
    size_t baseStagingSize;
-   ctGPUAsyncSchedulerFn fpAsyncScheduler;
-   void* pAsyncUserData;
 };
 
 CT_API enum ctResults
@@ -89,8 +87,6 @@ ctGPUExternalTexturePoolDispatch(struct ctGPUDevice* pDevice,
 
 struct ctGPUExternalTextureCreateFuncInfo {
    const char* debugName;
-   bool async;
-   struct ctGPUExternalTexture* pPlaceholder;
    enum ctGPUExternalTextureType type;
    enum ctGPUExternalUpdateMode updateMode;
    enum TinyImageFormat format;
@@ -103,25 +99,10 @@ struct ctGPUExternalTextureCreateFuncInfo {
 };
 
 CT_API enum ctResults
-ctGPUExternalTextureCreateFunc(struct ctGPUDevice* pDevice,
-                               struct ctGPUExternalTexturePool* pPool,
-                               struct ctGPUExternalTexture** ppTexture,
-                               struct ctGPUExternalTextureCreateFuncInfo* pInfo);
-
-struct ctGPUExternalTextureCreateLoadInfo {
-   const char* debugName;
-   bool async;
-   int32_t desiredBinding;
-   struct ctGPUExternalTexture* pPlaceholder;
-   enum ctGPUExternalTextureType type;
-   struct ctGPUAssetIdentifier* identifier;
-};
-
-CT_API enum ctResults
-ctGPUExternalTextureCreateLoad(struct ctGPUDevice* pDevice,
-                               struct ctGPUExternalTexturePool* pPool,
-                               struct ctGPUExternalTexture** ppTexture,
-                               struct ctGPUExternalTextureCreateLoadInfo* pInfo);
+ctGPUExternalTextureCreate(struct ctGPUDevice* pDevice,
+                           struct ctGPUExternalTexturePool* pPool,
+                           struct ctGPUExternalTexture** ppTexture,
+                           struct ctGPUExternalTextureCreateFuncInfo* pInfo);
 
 CT_API enum ctResults
 ctGPUExternalTextureRebuild(struct ctGPUDevice* pDevice,
