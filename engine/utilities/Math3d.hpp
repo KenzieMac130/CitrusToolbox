@@ -921,8 +921,6 @@ struct CT_API ctCameraInfo {
    }
    inline ctVec3 ProjectionToWorld(ctVec4 projectionCoord) {
       ctMat4 matrix = ctMat4InverseLossy(GetViewInverseProjectionMatrix());
-      ctMat4Translate(matrix, position);
-      ctMat4Rotate(matrix, rotation);
       return ctVec3(projectionCoord * matrix);
    }
    /* Viewport Coord (XY) Depth (Z) Visible Sign (W) */

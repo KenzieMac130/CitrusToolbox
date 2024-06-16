@@ -21,6 +21,7 @@
 
 #include "imgui/imgui.h"
 #include "imnodes/imnodes.h"
+#include "implot/implot.h"
 
 namespace ImGui {
 IMGUI_API bool InputText(const char* label,
@@ -74,6 +75,8 @@ public:
 
 private:
    bool showDemoWindow = false;
+   bool showImPlotWindow = false;
+   bool showImNodesWindow = false;
    bool showMetricsWindow = false;
 
    void DrawGPU(struct ctGPUArchitectExecutionContext* pCtx);

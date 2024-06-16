@@ -104,6 +104,7 @@ void ctAuditionEditor::UpdateEditor() {
    if (toggleSignal > 0.0f) { isHidden = !isHidden; }
    if (isHidden) { return; }
 
+   ImGui::DockSpaceOverViewport(0, 0, ImGuiDockNodeFlags_PassthruCentralNode);
    bool isHotReloadActive = Engine->HotReload->isStarted();
    if (ImGui::BeginMainMenuBar()) {
       if (ImGui::BeginMenu(CT_NC("Game"))) {

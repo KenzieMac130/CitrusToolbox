@@ -107,6 +107,7 @@ ctResults ctImguiIntegration::Startup() {
    colors[ImGuiCol_NavHighlight] = ImVec4(0.20f, 0.16f, 0.48f, 1.00f);
 
    ImNodes::CreateContext();
+   ImPlot::CreateContext();
    return CT_SUCCESS;
 }
 
@@ -114,6 +115,7 @@ ctResults ctImguiIntegration::Shutdown() {
 #if !CITRUS_HEADLESS
    ImGui_ImplSDL2_Shutdown();
 #endif
+   ImPlot::DestroyContext();
    ImNodes::DestroyContext();
    ImGui::DestroyContext();
    return CT_SUCCESS;
@@ -255,24 +257,25 @@ ctResults ctImguiIntegration::PrepareFrameGPU(ctGPUDevice* pGPUDevice,
    /* Geometry Upload */
    uint8_t* vdest;
    uint8_t* idest;
-   ctGPUExternalBufferUploadMap(pGPUDevice, pGPUBufferPool, pVertexBuffer, (void**)&vdest);
+   ctGPUExternalBufferUploadMap(
+     pGPUDevice, pGPUBufferPool, pVertexBuffer, (void**)&vdest);
    ctGPUExternalBufferUploadMap(pGPUDevice, pGPUBufferPool, pIndexBuffer, (void**)&idest);
    ImDrawData* pDrawData = ImGui::GetDrawData();
    if (pDrawData) {
-       size_t ioffset = 0;
-       size_t voffset = 0;
-       for (int i = 0; i < pDrawData->CmdListsCount; i++) {
-           const ImDrawList* pCmd = pDrawData->CmdLists[i];
-           const ImDrawIdx* pIndices = pCmd->IdxBuffer.Data;
-           const int icount = pCmd->IdxBuffer.Size;
-           memcpy(&idest[ioffset], pIndices, sizeof(pIndices[0]) * icount);
-           ioffset += sizeof(pIndices[0]) * icount;
+      size_t ioffset = 0;
+      size_t voffset = 0;
+      for (int i = 0; i < pDrawData->CmdListsCount; i++) {
+         const ImDrawList* pCmd = pDrawData->CmdLists[i];
+         const ImDrawIdx* pIndices = pCmd->IdxBuffer.Data;
+         const int icount = pCmd->IdxBuffer.Size;
+         memcpy(&idest[ioffset], pIndices, sizeof(pIndices[0]) * icount);
+         ioffset += sizeof(pIndices[0]) * icount;
 
-           const ImDrawVert* pVertices = pCmd->VtxBuffer.Data;
-           const int vcount = pCmd->VtxBuffer.Size;
-           memcpy(&vdest[voffset], pVertices, sizeof(pVertices[0]) * vcount);
-           voffset += sizeof(pVertices[0]) * vcount;
-       }
+         const ImDrawVert* pVertices = pCmd->VtxBuffer.Data;
+         const int vcount = pCmd->VtxBuffer.Size;
+         memcpy(&vdest[voffset], pVertices, sizeof(pVertices[0]) * vcount);
+         voffset += sizeof(pVertices[0]) * vcount;
+      }
    }
    ctGPUExternalBufferUploadFlush(pGPUDevice, pGPUBufferPool, pIndexBuffer);
    ctGPUExternalBufferUploadFlush(pGPUDevice, pGPUBufferPool, pVertexBuffer);
@@ -343,6 +346,32 @@ ctResults ctImguiIntegration::DrawCallback(ctGPUArchitectExecutionContext* pCtx,
    return CT_SUCCESS;
 }
 
+void ImNodesDemo(bool* p_open) {
+   ImGui::Begin("simple node editor", p_open);
+
+   ImNodes::BeginNodeEditor();
+   ImNodes::BeginNode(1);
+
+   ImNodes::BeginNodeTitleBar();
+   ImGui::TextUnformatted("simple node :)");
+   ImNodes::EndNodeTitleBar();
+
+   ImNodes::BeginInputAttribute(2);
+   ImGui::Text("input");
+   ImNodes::EndInputAttribute();
+
+   ImNodes::BeginOutputAttribute(3);
+   ImGui::Indent(40);
+   ImGui::Text("output");
+   ImNodes::EndOutputAttribute();
+
+   ImNodes::EndNode();
+   ImNodes::MiniMap();
+   ImNodes::EndNodeEditor();
+
+   ImGui::End();
+}
+
 ctResults ctImguiIntegration::NextFrame() {
 #if CITRUS_HEADLESS
    ImGui::EndFrame();
@@ -354,6 +383,8 @@ ctResults ctImguiIntegration::NextFrame() {
       Engine->Interact->isFrameActive = false;
    }
    if (showDemoWindow) { ImGui::ShowDemoWindow(&showDemoWindow); }
+   if (showImPlotWindow) { ImPlot::ShowDemoWindow(&showImPlotWindow); }
+   if (showImNodesWindow) { ImNodesDemo(&showImNodesWindow); }
    if (showMetricsWindow) { ImGui::ShowMetricsWindow(&showMetricsWindow); }
 #endif
    return CT_SUCCESS;
@@ -361,6 +392,8 @@ ctResults ctImguiIntegration::NextFrame() {
 
 void ctImguiIntegration::DebugUI(bool useGizmos) {
    if (ImGui::Button(CT_NC("Show Demo Window"))) { showDemoWindow = true; }
+   if (ImGui::Button(CT_NC("Show ImPlot Window"))) { showImPlotWindow = true; }
+   if (ImGui::Button(CT_NC("Show ImNodes Window"))) { showImNodesWindow = true; }
    if (ImGui::Button(CT_NC("Show Metrics Window"))) { showMetricsWindow = true; }
    if (ImGui::CollapsingHeader(CT_NC("Style"))) { ImGui::ShowStyleEditor(); }
 }
