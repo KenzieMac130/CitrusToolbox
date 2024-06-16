@@ -3,5 +3,6 @@
   "guids": {
     "OUTPUT": "451e20a525f84bb1850d4c7710eb3a66"
   },
-  "type": "text"
+  "type": "text",
+  "nickname": "Input_Gamepad"
 }

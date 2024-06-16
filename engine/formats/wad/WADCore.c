@@ -35,7 +35,7 @@ enum ctResults ctWADReaderBind(struct ctWADReader* pReader, uint8_t* blob, size_
    return CT_SUCCESS;
 }
 
-enum ctResults ctWADFindLump(struct ctWADReader* pReader,
+enum ctResults ctWADFindLump(const struct ctWADReader* pReader,
                              const char* name,
                              void** ppDataOut,
                              int32_t* ppSizeOut) {
@@ -52,7 +52,7 @@ enum ctResults ctWADFindLump(struct ctWADReader* pReader,
    return CT_FAILURE_NOT_FOUND;
 }
 
-enum ctResults ctWADFindLumpInMarker(struct ctWADReader* pReader,
+enum ctResults ctWADFindLumpInMarker(const struct ctWADReader* pReader,
                                      int32_t occurrence,
                                      const char* beginName,
                                      const char* endName,
@@ -82,7 +82,7 @@ enum ctResults ctWADFindLumpInMarker(struct ctWADReader* pReader,
    return CT_FAILURE_NOT_FOUND;
 }
 
-const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset) {
+const char* ctWADGetStringExt(const struct ctWADReader* pReader, int32_t offset) {
    if (!pReader) { return NULL; }
    if (!pReader->pInfo) { return NULL; }
    if (!pReader->pInfo->numlumps) { return NULL; }

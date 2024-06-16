@@ -18,16 +18,14 @@
 #include "gpu/Buffer.h"
 #include "gpu/Texture.h"
 
-CT_API ctResults ctGPUExternalBufferCreateLoadCPU(ctGPUDevice* pDevice,
-                                                  ctGPUExternalBufferPool* pPool,
-                                                  ctGPUExternalBuffer** ppBuffer,
-                                                  ctGPUExternalBufferCreateLoadInfo* pInfo);
+CT_API ctResults
+ctGPUExternalBufferCreateLoadCPU(ctGPUDevice* pDevice,
+                                 ctGPUExternalBufferPool* pPool,
+                                 ctGPUExternalBuffer** ppBuffer,
+                                 ctGPUExternalBufferCreateLoadInfo* pInfo);
 
-CT_API ctResults ctGPUExternalTextureCreateLoadCPU(ctGPUDevice* pDevice,
-                                                   ctGPUExternalTexturePool* pPool,
-                                                   ctGPUExternalTexture** ppTexture,
-                                                   const char* debugName,
-                                                   int32_t desiredBinding,
-                                                   ctGPUExternalTexture* pPlaceholder,
-                                                   ctGPUExternalTextureType type,
-                                                   ctGPUAssetIdentifier* identifier);
+CT_API ctResults
+ctGPUExternalTextureCreateLoadCPU(ctGPUDevice* pDevice,
+                                  ctGPUExternalTexturePool* pPool,
+                                  ctGPUExternalTexture** ppTexture,
+                                  ctGPUExternalTextureCreateLoadInfo* pInfo);

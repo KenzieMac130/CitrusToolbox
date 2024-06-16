@@ -101,19 +101,8 @@ ctInteractSDLKeyboardMouseBackend::Register(ctInteractDirectorySystem& directory
       directory.AddNode(node);
    }
 
-   ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Keyboard"), CT_FILE_OPEN_READ_TEXT);
-   directory.CreateBindingsFromFile(file);
-   file.Close();
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Mouse"), CT_FILE_OPEN_READ_TEXT);
-   directory.CreateBindingsFromFile(file);
-   file.Close();
-#if CITRUS_INCLUDE_AUDITION
-   directory.configHotReload.RegisterData(CT_CDATA("Input_Keyboard"));
-   directory.configHotReload.RegisterData(CT_CDATA("Input_Mouse"));
-#endif
+   directory.CreateBindingsFromFile("Input_Keyboard");
+   directory.CreateBindingsFromFile("Input_Mouse");
 
    return CT_SUCCESS;
 }

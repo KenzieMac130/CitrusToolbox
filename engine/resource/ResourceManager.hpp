@@ -26,15 +26,20 @@ enum ctResourcePriority {
    CT_RESOURCE_PRIORITY_BACKGROUND, /* scenery models, textures, level chunks, etc */
    CT_RESOURCE_PRIORITY_FOREGROUND, /* hud models, cutscene content, etc */
    CT_RESOURCE_PRIORITY_HIGHEST,    /* highest priority gameplay config data */
+   CT_RESOURCE_PRIORITY_CRITICAL,   /* blocks further execution */
 };
 
 #define ctGetResource(_TYPE, _KEY)                                                       \
-   (_TYPE) ctGetResourceManager()->GetOrLoad(                                            \
-     ##_TYPE, _KEY, CT_RESOURCE_PRIORITY_BACKGROUND)
+   ctHandlePtrCast<_TYPE>(                                                               \
+     ctGetResourceManager()->GetOrLoad(#_TYPE, _KEY, CT_RESOURCE_PRIORITY_BACKGROUND))
+#define ctGetResourceCritical(_TYPE, _KEY)                                               \
+   ctHandlePtrCast<_TYPE>(                                                               \
+     ctGetResourceManager()->GetOrLoad(#_TYPE, _KEY, CT_RESOURCE_PRIORITY_CRITICAL))
 #define ctGetResourceWithPriority(_TYPE, _KEY, _PRIORITY)                                \
-   (_TYPE) ctGetResourceManager()->GetOrLoad(##_TYPE, _KEY, _PRIORITY)
+   ctHandlePtrCast<_TYPE>(ctGetResourceManager()->GetOrLoad(#_TYPE, _KEY, _PRIORITY))
 
 class ctResourceManager : public ctModuleBase {
+public:
    ctResourceManager(bool shared);
    virtual ctResults Startup();
    virtual ctResults Shutdown();
@@ -45,18 +50,16 @@ class ctResourceManager : public ctModuleBase {
    void StartupServers();
    void ReloadNicknames();
 
-   class ctResourceBase*
+   ctHandlePtr<class ctResourceBase>
    GetOrLoad(const char* className, ctGUID guid, ctResourcePriority priority);
-   class ctResourceBase*
+   ctHandlePtr<class ctResourceBase>
    GetOrLoad(const char* className, const char* nickname, ctResourcePriority priority);
    ctResults GetGUIDForNickname(ctGUID& result, const char* nickname);
 
 private:
    ctHashTable<class ctResourceServerBase*, size_t> resourceServers;
-   inline void RegisterServer(const char* resourceClassName,
-                              class ctResourceServerBase* server) {
-      resourceServers.Insert(ctHornerHash(resourceClassName), server);
-   }
+   void RegisterServer(const char* resourceClassName,
+                              class ctResourceServerBase* server);
    inline class ctResourceServerBase* GetServer(const char* className) {
    }
    ctHashTable<ctGUID, uint64_t> nicknameToGUIDs;

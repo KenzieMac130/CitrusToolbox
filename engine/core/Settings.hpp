@@ -20,6 +20,7 @@
 #include "ModuleBase.hpp"
 #include "FileSystem.hpp"
 #include "Translation.hpp"
+#include "resource/JSONResource.hpp"
 
 #define CT_SETTINGS_BOUNDS_BOOL 0, 1
 #define CT_SETTINGS_BOUNDS_UINT 0, UINT32_MAX
@@ -83,15 +84,15 @@ protected:
    };
 
    ctResults BindVar(SettingType type,
-                      bool save,
-                      bool load,
-                      const char* name,
-                      const char* help,
-                      void* ptr,
-                      void (*setCallback)(const char* value, void* customData),
-                      void* customData,
-                      double min = -DBL_MAX,
-                      double max = DBL_MAX);
+                     bool save,
+                     bool load,
+                     const char* name,
+                     const char* help,
+                     void* ptr,
+                     void (*setCallback)(const char* value, void* customData),
+                     void* customData,
+                     double min = -DBL_MAX,
+                     double max = DBL_MAX);
 
    struct Setting {
       bool changed;
@@ -111,9 +112,8 @@ protected:
    ctHashTable<Setting, uint32_t> settings;
    ctSettingsManager* pManager;
 
-   ctDynamicArray<char> defaultJsonBytes;
+   ctHandlePtr<ctResourceJSON> defaultJson;
    ctDynamicArray<char> userJsonBytes;
-   ctJSONReader defaultJson;
    ctJSONReader userJson;
 };
 

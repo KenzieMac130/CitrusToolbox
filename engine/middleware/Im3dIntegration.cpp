@@ -19,6 +19,7 @@
 #include "core/WindowManager.hpp"
 #include "core/Translation.hpp"
 #include "core/FileSystem.hpp"
+#include "resource/ShaderResource.hpp"
 #include "im3d/im3d_math.h"
 #include "imgui/imgui.h"
 
@@ -101,14 +102,8 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
      ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_MATRIX4X4);
    viewportSize = ctGPUStructDefineVariable(pViewStructAssembler, CT_GPU_SVAR_FLOAT_VEC2);
 
-   ctFile wadFile;
-   ctDynamicArray<uint8_t> wadBytes;
-   ctWADReader wadReader;
-   CT_PANIC_FAIL(Engine->FileSystem->OpenDataFileByGUID(wadFile, CT_CDATA("Shader_Im3d")),
-                 CT_NC("Failed to open shader file!"));
-   wadFile.GetBytes(wadBytes);
-   ctWADReaderBind(&wadReader, wadBytes.Data(), wadBytes.Count());
-
+   ctHandlePtr<ctResourceShader> shader =
+     ctGetResourceCritical(ctResourceShader, "Shader_Im3d");
    ctGPUPipelineBuilder* pPipelineBuilder =
      ctGPUPipelineBuilderNew(pGPUDevice, CT_GPU_PIPELINE_RASTER);
    ctGPUPipelineBuilderSetAttachments(pPipelineBuilder, depthFormat, 1, &colorFormat);
@@ -120,14 +115,18 @@ ctResults ctIm3dIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    for (int i = 0; i < Im3d::DrawPrimitive_Count; i++) {
       ctGPUShaderModule vertShader;
       ctGPUShaderModule fragShader;
-      CT_PANIC_FAIL(
-        ctGPUShaderCreateFromWad(
-          pGPUDevice, &vertShader, &wadReader, fxNames[i], CT_GPU_SHADER_VERT),
-        CT_NC("Failed to create im3d shader!"));
-      CT_PANIC_FAIL(
-        ctGPUShaderCreateFromWad(
-          pGPUDevice, &fragShader, &wadReader, fxNames[i], CT_GPU_SHADER_FRAG),
-        CT_NC("Failed to create im3d shader!"));
+      CT_PANIC_FAIL(ctGPUShaderCreateFromWad(pGPUDevice,
+                                             &vertShader,
+                                             &shader.Get().GetWAD(),
+                                             fxNames[i],
+                                             CT_GPU_SHADER_VERT),
+                    CT_NC("Failed to create im3d shader!"));
+      CT_PANIC_FAIL(ctGPUShaderCreateFromWad(pGPUDevice,
+                                             &fragShader,
+                                             &shader.Get().GetWAD(),
+                                             fxNames[i],
+                                             CT_GPU_SHADER_FRAG),
+                    CT_NC("Failed to create im3d shader!"));
 
       ctGPUPipelineBuilderSetFillMode(pPipelineBuilder, (ctGPUFillMode)i);
       ctGPUPipelineBuilderSetFaceCull(pPipelineBuilder, CT_GPU_FACE_NONE);

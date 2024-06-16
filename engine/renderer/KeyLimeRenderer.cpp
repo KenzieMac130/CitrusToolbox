@@ -178,8 +178,19 @@ AsyncSchedulerCallback(ctGPUAsyncWorkFn fpWork, void* data, ctAsyncManager* pAsy
    return CT_SUCCESS;
 }
 
+void GenerateMissingTexture(uint8_t* dest,
+                            struct ctGPUExternalGenerateContext* pCtx,
+                            void* userData) {
+   uint32_t* idest = (uint32_t*)dest;
+   for (size_t i = 0; i < 32 * 32; i++) {
+      idest[i] = 0xFF00FFFF;
+   }
+}
+
 ctResults ctKeyLimeRenderer::Startup() {
    ZoneScoped;
+   renderThreadLock = ctMutexCreate();
+   ctMutexLockScoped(RenderThread, renderThreadLock);
 #if !CITRUS_HEADLESS
    /* OS Events */
    Engine->OSEventManager->WindowEventHandlers.Append(
@@ -220,6 +231,22 @@ ctResults ctKeyLimeRenderer::Startup() {
    texturePoolInfo.fpAsyncScheduler = (ctGPUAsyncSchedulerFn)AsyncSchedulerCallback;
    texturePoolInfo.pAsyncUserData = ctGetAsyncManager();
    ctGPUExternalTexturePoolCreate(pGPUDevice, &pGPUTexturePool, &texturePoolInfo);
+
+   /* Missing Texture */
+   ctGPUExternalTextureCreateFuncInfo missingTextureCreateInfo = {};
+   missingTextureCreateInfo.async = false;
+   missingTextureCreateInfo.debugName = "Missing Textue";
+   missingTextureCreateInfo.depth = 1;
+   missingTextureCreateInfo.width = 32;
+   missingTextureCreateInfo.height = 32;
+   missingTextureCreateInfo.format = TinyImageFormat_R8G8B8A8_UNORM;
+   missingTextureCreateInfo.mips = 1;
+   missingTextureCreateInfo.updateMode = CT_GPU_UPDATE_STATIC;
+   missingTextureCreateInfo.type = CT_GPU_EXTERN_TEXTURE_TYPE_2D;
+   missingTextureCreateInfo.generationFunction = GenerateMissingTexture;
+   missingTextureCreateInfo.userData = NULL;
+   ctGPUExternalTextureCreateFunc(
+     pGPUDevice, pGPUTexturePool, &pMissingTexture, &missingTextureCreateInfo);
 
    /* Setup Imgui */
    Engine->ImguiIntegration->StartupGPU(pGPUDevice,
@@ -348,10 +375,12 @@ ctResults ctKeyLimeRenderer::Startup() {
 
 ctResults ctKeyLimeRenderer::Shutdown() {
    ZoneScoped;
+   ctMutexLockScoped(RenderThread, renderThreadLock);
 #if !CITRUS_HEADLESS
    ctGPUDeviceWaitForIdle(pGPUDevice);
    Engine->Im3dIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool);
    Engine->ImguiIntegration->ShutdownGPU(pGPUDevice, pGPUBufferPool, pGPUTexturePool);
+   ctGPUExternalTextureRelease(pGPUDevice, pGPUTexturePool, pMissingTexture);
    ctGPUExternalTexturePoolDestroy(pGPUDevice, pGPUTexturePool);
    ctGPUExternalBufferPoolDestroy(pGPUDevice, pGPUBufferPool);
    ctGPUArchitectShutdown(pGPUDevice, pGPUArchitect);
@@ -367,14 +396,15 @@ const char* ctKeyLimeRenderer::GetModuleName() {
 }
 
 void ctKeyLimeRenderer::DebugUI(bool useGizmos) {
+   ctMutexLockScoped(RenderThread, renderThreadLock);
    ctGPUDebugUIDevice(pGPUDevice);
    ctGPUDebugUIArchitect(pGPUDevice, pGPUArchitect, true);
 }
 
 ctResults ctKeyLimeRenderer::RenderFrame() {
    ZoneScoped;
+   ctMutexLockScoped(RenderThread, renderThreadLock);
 #if !CITRUS_HEADLESS
-
    /* Handle Presentation State */
    uint32_t width;
    uint32_t height;
@@ -428,7 +458,33 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
    return CT_SUCCESS;
 }
 
+ctResults
+ctKeyLimeRenderer::LoadOrReplaceTexture(ctGUID guid,
+                                        struct ctGPUExternalTexture** ppTexture) {
+   ctAssert(ppTexture);
+   ctMutexLockScoped(RenderThread, renderThreadLock);
+   /* todo acquire lock */
+   ctGPUExternalTextureCreateLoadInfo loadInfo = {};
+   loadInfo.async = true;
+   loadInfo.desiredBinding = -1;
+   char debugName[33];
+   memset(debugName, 0, sizeof(debugName));
+   guid.ToHex(debugName);
+   loadInfo.debugName = debugName;
+   ctGPUAssetIdentifier assetId;
+   memcpy(assetId.guidData, guid.data, sizeof(guid.data));
+   loadInfo.identifier = &assetId;
+   ctGPUExternalTextureCreateLoad(pGPUDevice, pGPUTexturePool, ppTexture, &loadInfo);
+   return CT_SUCCESS;
+}
+
+ctResults ctKeyLimeRenderer::DeleteTexture(ctGPUExternalTexture* pTexture) {
+   ctMutexLockScoped(RenderThread, renderThreadLock);
+   return CT_SUCCESS;
+}
+
 ctResults ctKeyLimeRenderer::UpdateCamera(const ctCameraInfo& cameraInfo) {
+   ctMutexLockScoped(RenderThread, renderThreadLock);
    mainCamera = cameraInfo;
    return CT_SUCCESS;
 }

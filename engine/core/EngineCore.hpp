@@ -39,6 +39,7 @@ public:
    class ctOSEventManager* OSEventManager;
    class ctTranslation* Translation;
    class ctFileSystem* FileSystem;
+   class ctResourceManager* ResourceManager;
    class ctSettingsManager* Settings;
 #if CITRUS_INCLUDE_AUDITION
    class ctHotReloadDetection* HotReload;

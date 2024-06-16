@@ -16,16 +16,21 @@
 
 #include "JSONResource.hpp"
 
-ctResults ctResourceJSON::LoadTask(ctEngineCore* Engine) {
+const char* ctResourceJSON::GetName() {
+   return "JSON";
+}
+
+ctResults ctResourceJSON::LoadTask() {
    ctFile file;
    CT_RETURN_FAIL(Engine->FileSystem->OpenDataFileByGUID(file, GetDataGUID()));
    file.GetText(string);
+   file.Close();
    CT_RETURN_FAIL(reader.BuildJsonForPtr(string.CStr(), string.ByteLength()));
-   CT_RETURN_FAIL(reader.GetRootEntry(rootEntry));
+   CT_RETURN_FAIL(reader.GetRootEntry(ctJSONReadEntry())); /* check parse */
    return CT_SUCCESS;
 }
 
-void ctResourceJSON::OnRelease(ctEngineCore* Engine) {
+void ctResourceJSON::OnRelease() {
    /* destructor handles this */
 }
 
@@ -33,6 +38,10 @@ bool ctResourceJSON::isHotReloadSupported() {
    return true;
 }
 
-void ctResourceJSON::OnReloadComplete(ctEngineCore* Engine) {
+void ctResourceJSON::OnReloadComplete() {
    /* signal the scene system to reset (covers many use cases) */
+}
+
+ctResourceBase* ctResourceServerJSON::NewResource(ctGUID guid) {
+   return new ctResourceJSON(this, Engine, guid);
 }

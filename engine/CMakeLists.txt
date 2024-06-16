@@ -72,6 +72,7 @@ set(ENGINE_SOURCE_FILES_UTILITIES
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandlePointer.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.cpp
@@ -91,6 +92,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandleManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandledList.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandlePointer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
@@ -230,12 +232,22 @@ set(ENGINE_SOURCE_FILES_RESOURCE_MANAGER
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceManager.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceTypeBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/JSONResource.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/TextResource.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/ShaderResource.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/TranslationResource.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/TextureResource.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/ModelResource.cpp
 )
 
 set(ENGINE_HEADER_FILES_RESOURCE_MANAGER
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceTypeBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/JSONResource.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/TextResource.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/ShaderResource.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/TranslationResource.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/TextureResource.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/ModelResource.hpp
 )
 
 # ---------- Renderer Frontend ---------- 

@@ -44,30 +44,25 @@ To support hot reload:
 Note: DO NOT DO ANY RESOURCE INITIALIZATION IN THE CONSTRUCTOR! */
 class ctResourceBase {
 public:
-   inline ctResourceBase(ctResourceServerBase* pServer, ctGUID guid) {
+   inline ctResourceBase(class ctResourceServerBase* pServer,
+                         ctEngineCore* pEngine,
+                         ctGUID guid) {
+      Engine = pEngine;
       pCachedServer = pServer;
       dataGUID = guid;
-      ctAtomicSet(refcount, 0);
       ctAtomicSet(state, CT_RESOURCE_STATE_LOADING);
    }
+   virtual const char* GetName() = 0;
    ctResourceBase(ctResourceBase& other) = delete;
    ctResourceBase(const ctResourceBase& other) = delete;
    /* Was the resource loader finished (doesn't mean the resource is valid)
    ALWAYS USE THIS FUNCTION BEFORE ACCESSING THE RESOURCE */
-   bool isReady();
+   virtual bool isReady();
    /* Is the resource valid (may include fallbacks)
    ALWAYS USE THIS FUNCTION BEFORE ACCESSING THE RESOURCE AFTER isReady() */
    virtual bool isValid();
    inline ctResourceState GetLoadState() {
       return (ctResourceState)ctAtomicGet(state);
-   }
-
-   inline void Reference() {
-      ctAtomicAdd(refcount, 1);
-   }
-   void Dereference();
-   inline int32_t GetRefcount() {
-      return ctAtomicGet(refcount);
    }
    inline ctGUID GetDataGUID() {
       return dataGUID;
@@ -79,27 +74,32 @@ public:
    }
 
 protected:
-   friend class ctResourceManager;
+   friend ctResourceManager;
    friend class ctResourceServerBase;
 
    /* executed by the resource manager using the async task manager */
-   virtual ctResults LoadTask(ctEngineCore* Engine) = 0;
+   virtual ctResults LoadTask() = 0;
    /* called during the resource polling loop to release resource data */
-   virtual void OnRelease(ctEngineCore* Engine) = 0;
+   static void LoadTaskFn(ctResourceBase* resource);
+   virtual void OnRelease() = 0;
    virtual bool isHotReloadSupported();
    /* called during the resource polling loop to update dependent systems */
-   virtual void OnReloadBegin(ctEngineCore* Engine);
-   virtual void OnReloadComplete(ctEngineCore* Engine);
-   void ctResourceBase::SetLoadState(ctResourceState newstate) {
+   virtual void OnReloadBegin();
+   virtual void OnReloadComplete();
+   inline void SetLoadState(ctResourceState newstate) {
       ctAtomicSet(state, newstate);
    }
-   void ctResourceBase::MarkReady() {
+   inline void MarkReady() {
       SetLoadState(CT_RESOURCE_STATE_LOADED);
    }
+   void MarkGarbageCollect();
+   static void HandlePointerGarbageCollect(ctResourceBase* object, void* unused);
+
+protected:
+   ctEngineCore* Engine;
 
 private:
    class ctResourceServerBase* pCachedServer;
-   ctAtomic refcount;
    ctAtomic state;
    ctGUID dataGUID;
 };
@@ -108,7 +108,8 @@ class ctResourceServerBase {
 public:
    /* should look like "return new ctResourceMyType();"
    DO NOT DO ANY LOADING HERE! */
-   virtual ctResourceBase* NewResource(ctGUID guid, ctEngineCore* Engine) = 0;
+   virtual ctResourceBase* NewResource(ctGUID guid) = 0;
+   virtual ctGUID GetDefaultResourceGUID();
 
 protected:
    friend class ctResourceManager;
@@ -117,14 +118,15 @@ protected:
       ctSpinLockEnterCriticalScoped(TABLE, resourceTableLock);
       toGarbageCollect.Append(resource);
    }
-   ctResourceBase* GetOrLoad(ctGUID guid, ctResourcePriority priority);
+   ctHandlePtr<ctResourceBase> GetOrLoad(ctGUID guid, ctResourcePriority priority);
    ctEngineCore* Engine;
    void DoGarbageCollection();
+   void MarkLiveForGarbageCollect();
    void NotifyHotReload(ctGUID guid);
 
 private:
    ctSpinLock resourceTableLock;
-   ctHashTable<ctResourceBase*, uint64_t> resources;
+   ctHashTable<ctHandle, uint64_t> resourceHandles;
    ctDynamicArray<ctResourceBase*> toGarbageCollect;
    ctDynamicArray<ctResourceBase*> toGarbageCollectCarryOver;
 };

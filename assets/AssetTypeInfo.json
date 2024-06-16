@@ -1,8 +1,0 @@
-{
-"types":[
-	{"globs":["*.txt","*.json"]},
-	{"globs":["*.gltf"]},
-	{"globs":["*.ctsi"]},
-	{"globs":["*.png",".jpg",".jpeg"]}
-]
-}

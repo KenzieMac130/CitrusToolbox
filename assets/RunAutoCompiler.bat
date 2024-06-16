@@ -1,2 +1,0 @@
-python AutoCompiler.py
-pause

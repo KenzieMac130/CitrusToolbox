@@ -59,7 +59,8 @@ ctResults ctMOReaderRelease(ctMOReader* pReader) {
 }
 
 const char* ctMOFindTranslation(ctMOReader* pReader, const char* original) {
-   if (!pReader->searchStructure) { return NULL; }
+   ctAssert(pReader);
+   if (!pReader->pHeader || !pReader->searchStructure) { return NULL; }
    uint32_t hash = ctXXHash32(original);
    ctMOReaderSearchStructure* pSearchStruct =
      (ctMOReaderSearchStructure*)pReader->searchStructure;

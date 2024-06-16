@@ -19,12 +19,6 @@
 #include "utilities/Common.h"
 #include "ModuleBase.hpp"
 
-// TODO: REMOVE ME, NOW RESPONSIBILITY OF RESOURCE MANAGER
-extern const char* ctGetDataGuidFromHash(size_t hash);
-#define CT_CDATA(_constname)                                                             \
-   ctGUID(ctGetDataGuidFromHash(CT_COMPILE_HORNER_HASH(_constname)))
-#define CT_DDATA(_name) ctGUID(ctGetDataGuidFromHash(ctHornerHash(_name)))
-
 class CT_API ctFileSystem : public ctModuleBase {
 public:
    ctFileSystem(const ctStringUtf8& appName, const ctStringUtf8& organizationName);

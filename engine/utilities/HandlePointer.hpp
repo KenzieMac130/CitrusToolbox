@@ -75,6 +75,7 @@ public:
                       void* pUserData = NULL) {
       opaque = _ctHandleOpaquePtr(
         value, (_ctHandleOpaquePtrGarbageCollectFn)fpGarbageCollection, pUserData);
+      opaque.Reference();
    }
    /* Swaps the pointer value for this and all handles which have coppied this one
    MAKE SURE NO OTHER THREADS ARE ACTIVELY USING THE Get() RESULTS */
@@ -88,7 +89,7 @@ public:
    inline T* GetPtr() const {
       return (T*)opaque.Get();
    }
-   inline bool isValid() const {
+   inline bool isHandleValid() const {
       if (!ctHandleIsValid(opaque.handle)) { return false; }
       return opaque.Get();
    }

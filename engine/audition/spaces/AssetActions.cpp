@@ -37,8 +37,8 @@ struct NewTypeEntry {
    const char* cmd;
 };
 
-NewTypeEntry NewAssetTypes[] = {{"Scene", "scene"},
-                                {"Particle Effect", "particle_effect"}};
+NewTypeEntry NewAssetTypes[] = {{"Scene", "scene.json"},
+                                {"Particle Effect", "particle.json"}};
 
 void ctAuditionSpaceActionNewAsset::OnGui(ctAuditionSpaceContext& ctx) {
    if (ImGui::BeginCombo(CT_NC("Type"), NewAssetTypes[typeId].ui)) {

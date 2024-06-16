@@ -60,7 +60,7 @@ enum ctGPUShaderType {
 };
 CT_API enum ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
                                                ctGPUShaderModule* pShaderOut,
-                                               struct ctWADReader* pWad,
+                                               const struct ctWADReader* pWad,
                                                const char* name,
                                                ctGPUShaderType type);
 CT_API void ctGPUShaderSoftRelease(ctGPUDevice* pDevice, ctGPUShaderModule shader);

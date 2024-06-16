@@ -69,16 +69,14 @@ public:
    ctResults Startup() final;
    ctResults Shutdown() final;
    const char* GetModuleName() final;
-
-   ctResults NextFrame();
-
    ctResults SetDictionary(ctTranslationCatagory category, const char* basePath);
    ctResults LoadLanguage(const char* isoCode);
    ctResults LoadDictionary(ctTranslationCatagory category);
    ctResults LoadAll();
 
-   const char*
-   GetLocalString(ctTranslationCatagory category, const char* tag, const char* nativeText) const;
+   const char* GetLocalString(ctTranslationCatagory category,
+                              const char* tag,
+                              const char* nativeText) const;
 
    /* Returns the users preferred language if possible
     Ideally in RFC 4646 but the OS might have other plans
@@ -90,13 +88,9 @@ public:
    ctStringUtf8 GetCurrentLanguage() const;
 
 private:
-#if CITRUS_INCLUDE_AUDITION
-   ctHotReloadCategory TextHotReload;
-#endif
-
    class _dictionary {
    public:
-      ctMOReader mo;
+      ctHandlePtr<class ctResourceTranslation> translation;
       ctStringUtf8 basePath;
    };
    ctStringUtf8 isoLanguage;

@@ -3,5 +3,6 @@
   "guids": {
     "OUTPUT": "2e912321a0f44f4c936f731578c5510d"
   },
-  "type": "shader"
+  "type": "shader",
+  "nickname": "Shader_Im3d"
 }

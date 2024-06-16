@@ -393,17 +393,39 @@ public:
       value = v;
    }
    ~MyTestObject() {
-      ctDebugLog("Deleted %d", value);
    }
    int value;
+   ctStringUtf8 string = "FOO";
 };
+
+ctHandlePtr<MyTestObject>
+create_handle(int value, ctStaticArray<ctHandlePtr<MyTestObject>, 500>& handles) {
+   ctHandlePtr<MyTestObject> handle = new MyTestObject((int)(value));
+   handles.Append(handle);
+   return handle;
+}
+
+void handle_ptr_test_generation_ctx(size_t generation) {
+   ctStaticArray<ctHandlePtr<MyTestObject>, 500> handles;
+   for (size_t i = 0; i < 500; i++) {
+      ctHandlePtr<MyTestObject> obj = create_handle(((int)i + generation), handles);
+      ctAssert(obj.Get().value == ((int)i + generation));
+   }
+   handles[0].SwapPointer(new MyTestObject(64));
+   for (size_t i = 0; i < handles.Count(); i++) {
+      ctHandlePtr<MyTestObject> handle = handles[i];
+      ctAssert(handle.isHandleValid());
+      ctAssert(handle.Get().string == "FOO");
+      ctAssert(handle.Get().value == i + generation ||
+               i == 0 && handle.Get().value == 64);
+   }
+}
 
 void handle_ptr_test(void) {
    _ctHandlePtrGlobalInit(10000);
-   ctHandlePtr<MyTestObject> handle = new MyTestObject(32);
-   ctHandlePtr<MyTestObject> handle2 = handle;
-   handle.SwapPointer(new MyTestObject(64));
-   ctDebugLog("Ref %d, Value %d", handle.Refcount(), handle2.Get().value);
+   for (size_t i = 0; i < 1024; i++) {
+      handle_ptr_test_generation_ctx(i);
+   }
 }
 
 void math_3d_test(void) {

@@ -203,4 +203,5 @@ CT_API size_t ctGetAliveAllocations();
 #include "Time.hpp"
 #include "File.hpp"
 #include "Random.hpp"
+#include "HandlePointer.hpp"
 #endif

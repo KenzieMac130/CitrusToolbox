@@ -1,0 +1,11 @@
+{
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none",
+    "files.associations": {
+        "*.ctsh": "hlsl",
+        "*.ctsi": "hlsl",
+        "*.in": "cpp"
+    }
+}

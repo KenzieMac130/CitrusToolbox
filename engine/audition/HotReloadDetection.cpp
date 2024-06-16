@@ -116,14 +116,14 @@ void ctHotReloadCategory::UnregisterData(const ctGUID& guid) {
 
 void ctHotReloadCategory::RegisterPath(const char* relativePath) {
    ZoneScoped;
-   uint64_t hash = XXH64(relativePath, strlen(relativePath), 0);
+   uint64_t hash = ctXXHash64(relativePath, strlen(relativePath), 0);
    if (watchedPathHashes.FindIndex(hash) >= 0) { return; }
    watchedPathHashes.Append(hash);
 }
 
 void ctHotReloadCategory::UnregisterPath(const char* relativePath) {
    ZoneScoped;
-   uint64_t hash = XXH64(relativePath, strlen(relativePath), 0);
+   uint64_t hash = ctXXHash64(relativePath, strlen(relativePath), 0);
    watchedPathHashes.Remove(hash);
 }
 
@@ -158,6 +158,6 @@ void ctHotReloadCategory::ClearChanges() {
 
 void ctHotReloadCategory::_AddFileUpdate(const char* path) {
    ZoneScoped;
-   uint64_t hash = XXH64(path, strlen(path), 0);
+   uint64_t hash = ctXXHash64(path, strlen(path), 0);
    if (watchedPathHashes.Exists(hash)) { updatedPaths.Append(path); }
 }

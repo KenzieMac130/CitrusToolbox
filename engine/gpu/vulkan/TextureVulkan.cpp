@@ -180,22 +180,12 @@ ctGPUExternalTextureCreateFunc(ctGPUDevice* pDevice,
    return CT_SUCCESS;
 }
 
-CT_API ctResults ctGPUExternalTextureCreateLoad(ctGPUDevice* pDevice,
-                                                ctGPUExternalTexturePool* pPool,
-                                                ctGPUExternalTexture** ppTexture,
-                                                const char* debugName,
-                                                int32_t desiredBinding,
-                                                ctGPUExternalTexture* pPlaceholder,
-                                                ctGPUExternalTextureType type,
-                                                ctGPUAssetIdentifier* identifier) {
-   return ctGPUExternalTextureCreateLoadCPU(pDevice,
-                                            pPool,
-                                            ppTexture,
-                                            debugName,
-                                            desiredBinding,
-                                            pPlaceholder,
-                                            type,
-                                            identifier);
+CT_API ctResults
+ctGPUExternalTextureCreateLoad(struct ctGPUDevice* pDevice,
+                               struct ctGPUExternalTexturePool* pPool,
+                               struct ctGPUExternalTexture** ppTexture,
+                               struct ctGPUExternalTextureCreateLoadInfo* pInfo) {
+   return ctGPUExternalTextureCreateLoadCPU(pDevice, pPool, ppTexture, pInfo);
 }
 
 CT_API ctResults ctGPUExternalTextureRebuild(ctGPUDevice* pDevice,

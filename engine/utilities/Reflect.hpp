@@ -30,6 +30,8 @@ class Baz : public ctReflectorBase {
 public:
    CT_DEFINE_REFLECTOR_VFUNC()
    int* mvar3; // pointers are supported!
+   ctDynamicArray<uint8_t> darray;
+   ctStaticArray<uint8_t> darray;
 };
 
 struct Bar {
@@ -61,21 +63,47 @@ CT_IMPLEMENT_REFLECTOR(Baz){
 CT_IMPLEMENT_REFLECTOR_VFUNC(Baz)
 */
 
+struct ctReflectContainerInterface {
+   /* container type */
+   /* get extra offset */
+   /* get count */
+   /* get size */
+   /* get key type */
+   /* get value type */
+   /* get key at */
+   /* get value at */
+   /* insert at */
+   /* remove at */
+};
+
 /* the reflector context is responsible for implementing ui/saving/loading/etc */
 class ctReflectContext {
 public:
-   virtual void OnBasicType(const char* typeName,
+   virtual void OnBasicType(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+   virtual void OnStructBegin(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+   virtual void OnStructEnd(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+   virtual void OnArrayBegin(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+   virtual void OnArrayEnd(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+
+   virtual void OnTableKey(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+   virtual void OnTableBegin(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+   virtual void OnTableEnd(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
+
+   virtual void LowLevelBasicType(const char* typeName,
                             const char* name,
                             size_t offset,
+                            const ctReflectContainerInterface* pCallbacks,
                             const char* metadata) const = 0;
-   virtual void OnStructType(const char* typeName,
+   virtual void LowLevelStructType(const char* typeName,
                              const char* name,
                              size_t offset,
+                             const ctReflectContainerInterface* pCallbacks,
                              const char* metadata,
                              const class ctReflectorBase& reflector) const = 0;
-   virtual void OnPolyType(const char* typeName,
+   virtual void LowLevelPolyType(const char* typeName,
                            const char* name,
                            size_t offset,
+                           const ctReflectContainerInterface* pCallbacks,
                            const char* metadata) const = 0;
 };
 
@@ -135,15 +163,23 @@ public:
 
 /* Adds a basic type (whatever is handled natively by the context) */
 #define CT_REFLECT_BASIC_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
-   ctx.OnBasicType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _METADATA)
+   ctx.LowLevelBasicType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), NULL, _METADATA)
 
 /* for other classes/structs that have a sidecar ctReflectorBase defined */
 #define CT_REFLECT_STRUCT_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                     \
-   ctx.OnStructType(                                                                     \
-     #_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _METADATA, _##_TYPE##_citreflget())
+   ctx.LowLevelStructType(                                                                     \
+     #_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), NULL, _METADATA, _##_TYPE##_citreflget())
 
 /* for classes that derive from ctReflectorBase themself */
 #define CT_REFLECT_POLY_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                       \
-   ctx.OnPolyType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _METADATA)
+   ctx.LowLevelPolyType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), NULL, _METADATA)
 
-/* todo: ctDynamicArray support */
+/* Adds a citrus container */
+#define CT_REFLECT_CONTAINER_BASIC_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
+   ctx.LowLevelBasicType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _TYPE::_GetReflectInterface(), _METADATA)
+
+#define CT_REFLECT_CONTAINER_STRUCT_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
+   ctx.LowLevelStructType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _TYPE::_GetReflectInterface(), _METADATA, _##_TYPE##_citreflget())
+
+#define CT_REFLECT_CONTAINER_POLY_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
+   ctx.LowLevelStructType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _TYPE::_GetReflectInterface(), _METADATA)

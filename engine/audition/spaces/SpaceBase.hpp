@@ -23,6 +23,8 @@
 
 class CT_API ctAuditionSpaceBase {
 public:
+   ctAuditionSpaceBase() = default;
+   virtual ~ctAuditionSpaceBase() = default;
    void Poll(ctAuditionSpaceContext& ctx) {
       if (!_Open) { return; }
       if (ImGui::Begin(

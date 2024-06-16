@@ -26,7 +26,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/input/keyboard.json
 ${CMAKE_CURRENT_SOURCE_DIR}/input/mouse.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Audition.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/DebugSystem.json
-${CMAKE_CURRENT_SOURCE_DIR}/configs/Honeybell.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/JobSystem.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Renderer.json
 ${CMAKE_CURRENT_SOURCE_DIR}/configs/Translation.json
@@ -57,7 +56,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ASSET_CORE_FILES})
 add_custom_target(assets_build 
 COMMAND python waf build -v
 DEPENDS ${ASSET_CORE_FILES} assets_configure
-SOURCES wscript ${ASSET_CORE_FILES}
+SOURCES ${ASSET_CORE_FILES}
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(assets_configure 
@@ -67,7 +66,7 @@ COMMAND python waf configure
 -o ${CMAKE_BINARY_DIR}/output/data
 --libs ${BASE_LIBRARY_DIRECTORY}
 --build ${CMAKE_BINARY_DIR}
-DEPENDS Gltf2Citrus
+DEPENDS CitrusModel CitrusShader
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(assets_clean 

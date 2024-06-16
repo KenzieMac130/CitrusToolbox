@@ -18,9 +18,15 @@
 /* -------------- Register Servers Here -------------- */
 
 #include "JSONResource.hpp"
+#include "TextResource.hpp"
+#include "TranslationResource.hpp"
+#include "ShaderResource.hpp"
 
 void ctResourceManager::StartupServers() {
    RegisterServer("ctResourceJSON", new ctResourceServerJSON());
+   RegisterServer("ctResourceText", new ctResourceServerText());
+   RegisterServer("ctResourceTranslation", new ctResourceServerTranslation());
+   RegisterServer("ctResourceShader", new ctResourceServerShader());
 }
 
 /* --------------------------------------------------- */
@@ -38,7 +44,10 @@ ctResults ctResourceManager::Startup() {
 }
 
 ctResults ctResourceManager::Shutdown() {
-   // todo
+   for (auto it = resourceServers.GetIterator(); it; it++) {
+      it.Value()->MarkLiveForGarbageCollect();
+      it.Value()->DoGarbageCollection();
+   }
    return CT_SUCCESS;
 }
 
@@ -58,45 +67,47 @@ void ctResourceManager::Poll() {
 }
 
 void ctResourceManager::ReloadNicknames() {
-   ctResourceJSON* pResourceNicknames =
-     (ctResourceJSON*)GetOrLoad("ctResourceJSON",
-                                ctGUID("00000000000000000000000000000000"),
-                                CT_RESOURCE_PRIORITY_HIGHEST);
-   pResourceNicknames->WaitForReady();
-   if (!pResourceNicknames->isValid()) {
-      ctDebugError("FAILED TO LOAD RESOURCE NICKNAMES");
+   ctHandlePtr<ctResourceJSON> resourceNicknames =
+     ctHandlePtrCast<ctResourceJSON>(GetOrLoad("ctResourceJSON",
+                                               ctGUID("b48f4ee47fb142aea5c6c8416eff85f4"),
+                                               CT_RESOURCE_PRIORITY_CRITICAL));
+   resourceNicknames.Get().WaitForReady();
+   if (!resourceNicknames.Get().isValid()) {
+      ctFatalError(-1, "FAILED TO PARSE RESOURCE NICKNAMES");
       return;
    }
-   ctJSONReadEntry root = pResourceNicknames->rootEntry;
+
+   ctJSONReadEntry root;
+   resourceNicknames.Get().GetRootEntry(root);
    for (size_t i = 0; i < root.GetObjectEntryCount(); i++) {
       ctStringUtf8 name;
       ctJSONReadEntry entry;
-      root.GetObjectEntry(i, entry, &name);
+      root.GetObjectEntry((int)i, entry, &name);
       char guidStr[34];
       memset(guidStr, 34, 0);
-      name.CopyToArray(guidStr, 34);
+      entry.GetString(guidStr, 33);
       ctGUID guid = ctGUID(guidStr);
       nicknameToGUIDs.Insert(name.xxHash64(), guid);
    }
-   pResourceNicknames->Dereference();
 }
 
-ctResourceBase* ctResourceManager::GetOrLoad(const char* className,
-                                             ctGUID guid,
-                                             ctResourcePriority priority) {
-   // todo
-   return NULL;
+ctHandlePtr<ctResourceBase> ctResourceManager::GetOrLoad(const char* className,
+                                                         ctGUID guid,
+                                                         ctResourcePriority priority) {
+   ctResourceServerBase** ppServer = resourceServers.FindPtr(ctXXHash32(className));
+   ctAssert(ppServer);
+   return (*ppServer)->GetOrLoad(guid, priority);
 }
 
-ctResourceBase* ctResourceManager::GetOrLoad(const char* className,
-                                             const char* nickname,
-                                             ctResourcePriority priority) {
+ctHandlePtr<ctResourceBase> ctResourceManager::GetOrLoad(const char* className,
+                                                         const char* nickname,
+                                                         ctResourcePriority priority) {
    ctGUID guid;
    if (GetGUIDForNickname(guid, nickname) != CT_SUCCESS) {
-      ctDebugError("RESOURCE OF NICKNAME \"$s\" NOT FOUND!", nickname);
-      return NULL;
+      ctDebugError("RESOURCE OF NICKNAME \"%s\" NOT FOUND!", nickname);
+      return GetOrLoad(className, ctGUID("00000000000000000000000000000000"), priority);
    }
-   return GetOrLoad(className, nickname, priority);
+   return GetOrLoad(className, guid, priority);
 }
 
 ctResults ctResourceManager::GetGUIDForNickname(ctGUID& result, const char* nickname) {
@@ -106,6 +117,12 @@ ctResults ctResourceManager::GetGUIDForNickname(ctGUID& result, const char* nick
       return CT_SUCCESS;
    }
    return CT_FAILURE_NOT_FOUND;
+}
+
+void ctResourceManager::RegisterServer(const char* resourceClassName,
+                                       ctResourceServerBase* server) {
+   server->Engine = Engine;
+   resourceServers.Insert(ctXXHash32(resourceClassName), server);
 }
 
 #if CITRUS_INCLUDE_AUDITION

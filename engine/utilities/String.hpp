@@ -30,6 +30,7 @@ public:
 
    const char* CStr() const;
    void* Data() const;
+   void* Data();
    size_t CodeLength() const;
    size_t ByteLength() const;
    size_t Capacity() const;
@@ -56,8 +57,8 @@ public:
    friend bool operator==(const ctStringUtf8& a, const ctStringUtf8& b);
    friend bool operator==(const char* a, const ctStringUtf8& b);
 
-   void Printf(const size_t max, const char* format, ...);
-   void VPrintf(const size_t max, const char* format, va_list va);
+   ctStringUtf8& Printf(const size_t max, const char* format, ...);
+   ctStringUtf8& VPrintf(const size_t max, const char* format, va_list va);
 
    int Cmp(const ctStringUtf8& str) const;
    int Cmp(const char* str) const;
@@ -88,6 +89,7 @@ public:
    size_t HornerHash() const;
 
    void MakeUTF16Array(ctDynamicArray<char16_t>& arr) const;
+   void MakeUTF32Array(ctDynamicArray<char32_t>& arr) const;
    void CopyToArray(char* dest, size_t destSize);
 
 private:

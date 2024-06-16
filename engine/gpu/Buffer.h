@@ -93,6 +93,7 @@ CT_API enum ctResults ctGPUExternalBufferCreateFunc(struct ctGPUDevice* pDevice,
                                                     struct ctGPUExternalBufferCreateFuncInfo* pInfo);
 struct ctGPUExternalBufferCreateLoadInfo {
    const char* debugName;
+   bool async;
    struct ctGPUExternalBuffer* pPlaceholder;
    enum ctGPUExternalBufferType type;
    struct ctGPUAssetIdentifier* identifier;

@@ -182,7 +182,7 @@ enum myEnum {
 
 ### Version
 
-**C++14**
+**C++17**
 
 ### File Extensions
 * Header: ".hpp"
@@ -235,6 +235,7 @@ enum myEnum {
 
 ### STL/BOOST/Other Features
 * **DONT**
+* Some external libraries may use STL. They should be closely inspected for their usage and ideally be kept offline or outside hot sections as much as possible. Jolt is an example of a library that makes mostly responsible use of the STL containers and keeps runtime memory allocations in check using a custom scratch allocator.
 
 ## CMake
 

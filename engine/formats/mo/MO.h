@@ -20,7 +20,7 @@
 
 #include "utilities/Common.h"
 
-#define CT_MO_MAGIC 0xde120495
+#define CT_MO_MAGIC 0x950412de
 #define CT_MO_CUR_VER 0
 
 struct ctMOHeader {

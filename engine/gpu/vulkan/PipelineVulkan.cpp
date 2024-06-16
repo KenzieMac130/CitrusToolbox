@@ -94,7 +94,7 @@ CT_API void ctGPUPipelineBuilderReset(ctGPUPipelineBuilder* pBuilder) {
 
 CT_API ctResults ctGPUShaderCreateFromWad(ctGPUDevice* pDevice,
                                           ctGPUShaderModule* pShaderOut,
-                                          ctWADReader* pWad,
+                                          const ctWADReader* pWad,
                                           const char* name,
                                           ctGPUShaderType type) {
    ctAssert(pDevice);

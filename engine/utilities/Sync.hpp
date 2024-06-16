@@ -25,6 +25,22 @@ CT_API bool ctMutexLock(ctMutex mutex);
 CT_API bool ctMutexTryLock(ctMutex mutex);
 CT_API bool ctMutexUnlock(ctMutex mutex);
 
+class _ctMutexAutoLifetimeObject {
+public:
+   inline _ctMutexAutoLifetimeObject(ctMutex& lock) : lockref(lock) {
+      ctMutexLock(lockref);
+   }
+   inline ~_ctMutexAutoLifetimeObject() {
+      ctMutexUnlock(lockref);
+   }
+
+private:
+   ctMutex& lockref;
+};
+
+#define ctMutexLockScoped(_NAME, _LOCKVAR)                                               \
+   _ctMutexAutoLifetimeObject _NAME = _ctMutexAutoLifetimeObject(_LOCKVAR);
+
 #define CT_MEMORY_BARRIER_ACQUIRE SDL_MemoryBarrierAcquire
 #define CT_MEMORY_BARRIER_RELEASE SDL_MemoryBarrierRelease
 
@@ -32,6 +48,9 @@ typedef SDL_SpinLock ctSpinLock;
 inline void ctSpinLockInit(ctSpinLock& val) {
    val = 0;
 };
+inline ctSpinLock ctSpinLockInit() {
+   return 0;
+}
 inline void ctSpinLockEnterCritical(ctSpinLock& val) {
    SDL_AtomicLock(&val);
 };

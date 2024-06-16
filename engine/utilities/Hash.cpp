@@ -18,9 +18,49 @@
 #define XXH_IMPLEMENTATION
 #include "Hash.hpp"
 
+#if CT_HASH_COLLISION_CHECK
+ctSpinLock gHashCollisionCheckLock = ctSpinLockInit();
+ctHashTable<uint32_t, uint32_t> gHashCollisionTableXXH32 =
+  ctHashTable<uint32_t, uint32_t>();
+ctHashTable<uint64_t, uint64_t> gHashCollisionTableXXH64 =
+  ctHashTable<uint64_t, uint64_t>();
+
+#define _XXH_DO_COLLISION_CHECK(_HTYPE, _XXHALG, _COLLISION_TABLE)                       \
+   if (seed != 0) { /* don't support alternative seed checking right now */              \
+      return _XXHALG(pData, size, seed);                                                 \
+   }                                                                                     \
+   _HTYPE originalHash = _XXHALG(pData, size, seed);                                     \
+   _HTYPE secondHash = _XXHALG(pData, size, (size_t)seed + 1);                           \
+   ctAssert(originalHash&& secondHash); /* zero check */                                 \
+   ctSpinLockEnterCritical(gHashCollisionCheckLock);                                     \
+   _HTYPE* pExpectedSecondHash = _COLLISION_TABLE.FindPtr(secondHash);                   \
+   if (pExpectedSecondHash) {                                                            \
+      if (*pExpectedSecondHash != secondHash) {                                          \
+         ctFatalError(-33, "HASH COLLISION FOUND!");                                     \
+      }                                                                                  \
+   } else {                                                                              \
+      _COLLISION_TABLE.Insert(originalHash, secondHash);                                 \
+   }                                                                                     \
+   ctSpinLockExitCritical(gHashCollisionCheckLock);                                      \
+   return originalHash;
+
+uint32_t ctXXHash32(const void* pData, const size_t size, uint32_t seed) {
+   _XXH_DO_COLLISION_CHECK(uint32_t, XXH32, gHashCollisionTableXXH32);
+}
+
+uint64_t ctXXHash64(const void* pData, const size_t size, uint64_t seed) {
+   _XXH_DO_COLLISION_CHECK(uint64_t, XXH64, gHashCollisionTableXXH64);
+}
+
+#else
 uint32_t ctXXHash32(const void* pData, const size_t size, uint32_t seed) {
    return XXH32(pData, size, seed);
 }
+
+uint64_t ctXXHash64(const void* pData, const size_t size, uint64_t seed) {
+   return XXH64(pData, size, seed);
+}
+#endif
 
 uint32_t ctXXHash32(const char* pStr, int seed) {
    return ctXXHash32(pStr, strlen(pStr), seed);
@@ -32,10 +72,6 @@ uint32_t ctXXHash32(const void* pData, const size_t size) {
 
 uint32_t ctXXHash32(const char* pStr) {
    return ctXXHash32(pStr, 0);
-}
-
-uint64_t ctXXHash64(const void* pData, const size_t size, uint64_t seed) {
-   return XXH64(pData, size, seed);
 }
 
 uint64_t ctXXHash64(const char* pStr, int seed) {

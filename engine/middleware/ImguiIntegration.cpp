@@ -22,6 +22,7 @@
 #include "core/OSEvents.hpp"
 #include "core/FileSystem.hpp"
 #include "core/Translation.hpp"
+#include "resource/ShaderResource.hpp"
 #include "interact/InteractionEngine.hpp"
 #include "gpu/Device.h"
 #include "gpu/Texture.h"
@@ -218,23 +219,20 @@ ctResults ctImguiIntegration::StartupGPU(struct ctGPUDevice* pGPUDevice,
    ctGPUBindlessManagerMapStorageBuffer(pGPUDevice, pBindless, vtxBind, pVertexBuffer);
 
    /* Pipeline */
-   ctFile wadFile;
-   ctDynamicArray<uint8_t> wadBytes;
-   ctWADReader wadReader;
-   CT_PANIC_FAIL(
-     Engine->FileSystem->OpenDataFileByGUID(wadFile, CT_CDATA("Shader_ImGUI")),
-     CT_NC("Failed to open shader file!"));
-   wadFile.GetBytes(wadBytes);
-   ctWADReaderBind(&wadReader, wadBytes.Data(), wadBytes.Count());
+   ctHandlePtr<ctResourceShader> spShader =
+     ctGetResourceCritical(ctResourceShader, "Shader_ImGui");
+   const ctResourceShader* shader = spShader.GetPtr();
 
    ctGPUShaderModule vertShader;
    ctGPUShaderModule fragShader;
-   CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
-                   pGPUDevice, &vertShader, &wadReader, NULL, CT_GPU_SHADER_VERT),
-                 CT_NC("Failed to create imgui shader!"));
-   CT_PANIC_FAIL(ctGPUShaderCreateFromWad(
-                   pGPUDevice, &fragShader, &wadReader, NULL, CT_GPU_SHADER_FRAG),
-                 CT_NC("Failed to create imgui shader!"));
+   CT_PANIC_FAIL(
+     ctGPUShaderCreateFromWad(
+       pGPUDevice, &vertShader, &shader->GetWAD(), NULL, CT_GPU_SHADER_VERT),
+     CT_NC("Failed to create imgui shader!"));
+   CT_PANIC_FAIL(
+     ctGPUShaderCreateFromWad(
+       pGPUDevice, &fragShader, &shader->GetWAD(), NULL, CT_GPU_SHADER_FRAG),
+     CT_NC("Failed to create imgui shader!"));
 
    ctGPUPipelineBuilder* pPipelineBuilder =
      ctGPUPipelineBuilderNew(pGPUDevice, CT_GPU_PIPELINE_RASTER);

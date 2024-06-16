@@ -28,9 +28,6 @@ ctInteractionEngine::ctInteractionEngine(bool shared) {
 
 ctResults ctInteractionEngine::Startup() {
    ZoneScoped;
-#if CITRUS_INCLUDE_AUDITION
-   Engine->HotReload->RegisterDataCategory(&Directory.configHotReload);
-#endif
    ctToggleInteractBackend("SdlGamepad", true);
    ctToggleInteractBackend("SdlKeyboardMouse", true);
    CT_RETURN_FAIL(ctStartAndRetrieveInteractBackends(Engine, pBackends));
@@ -48,14 +45,7 @@ const char* ctInteractionEngine::GetModuleName() {
 }
 
 ctResults ctInteractionEngine::RegisterAll() {
-   ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Actions"), CT_FILE_OPEN_READ_TEXT);
-   Directory.CreateActionSetsFromFile(file);
-#if CITRUS_INCLUDE_AUDITION
-   Directory.configHotReload.RegisterData(CT_CDATA("Input_Actions"));
-#endif
-   file.Close();
+   Directory.CreateActionSetsFromFile("Input_Actions");
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->Register(Directory);
    }
@@ -64,14 +54,6 @@ ctResults ctInteractionEngine::RegisterAll() {
 
 ctResults ctInteractionEngine::PumpInput() {
    ZoneScoped;
-#if CITRUS_INCLUDE_AUDITION
-   if (Directory.configHotReload.isContentUpdated()) {
-      Directory.configHotReload.ClearChanges();
-      Directory._ReloadClear();
-      RegisterAll();
-      ctDebugLog("Reloaded Interact Configs...");
-   }
-#endif
    isFrameActive = true;
    for (int i = 0; i < pBackends.Count(); i++) {
       pBackends[i]->Update(Directory);
@@ -119,18 +101,12 @@ ctInteractDirectorySystem::~ctInteractDirectorySystem() {
    }
 }
 
-ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
+ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(const char* nickname) {
    ctDebugLog("Loading Action Sets...");
-   size_t fileSize = file.GetFileSize();
-   char* fileData = (char*)ctMalloc(fileSize + 1);
-   memset(fileData, 0, fileSize + 1);
-   file.ReadRaw(fileData, 1, fileSize);
-   ctJSONReader json;
-   CT_RETURN_FAIL_CLEAN(json.BuildJsonForPtr(fileData, fileSize), ctFree(fileData);
-                        ctDebugError("ACTION SET FILE INVALID!");)
-   ctJSONReadEntry jsonRoot = ctJSONReadEntry();
-   json.GetRootEntry(jsonRoot);
-
+   ctHandlePtr<ctResourceJSON> json = ctGetResourceCritical(ctResourceJSON, nickname);
+   if (!json.isHandleValid()) { return CT_FAILURE_FILE_NOT_FOUND; }
+   ctJSONReadEntry jsonRoot;
+   json.Get().GetRootEntry(jsonRoot);
    int numSets = jsonRoot.GetObjectEntryCount();
    for (int i = 0; i < numSets; i++) {
       ctStringUtf8 setName;
@@ -177,21 +153,14 @@ ctResults ctInteractDirectorySystem::CreateActionSetsFromFile(ctFile& file) {
          pActionSet->actions.Append(actionEntry);
       }
    }
-   ctFree(fileData);
    return CT_SUCCESS;
 }
 
-ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
-   size_t fileSize = file.GetFileSize();
-   char* fileData = (char*)ctMalloc(fileSize + 1);
-   memset(fileData, 0, fileSize + 1);
-   file.ReadRaw(fileData, 1, fileSize);
-   ctJSONReader json;
-   CT_RETURN_FAIL_CLEAN(json.BuildJsonForPtr(fileData, fileSize), ctFree(fileData);
-                        ctDebugError("BINDING FILE INVALID!");)
-   ctJSONReadEntry jsonRoot = ctJSONReadEntry();
-   json.GetRootEntry(jsonRoot);
-
+ctResults ctInteractDirectorySystem::CreateBindingsFromFile(const char* nickname) {
+   ctHandlePtr<ctResourceJSON> json = ctGetResourceCritical(ctResourceJSON, nickname);
+   if (!json.Get().isValid()) { return CT_FAILURE_FILE_NOT_FOUND; }
+   ctJSONReadEntry jsonRoot;
+   json.Get().GetRootEntry(jsonRoot);
    int numBinds = jsonRoot.GetObjectEntryCount();
    for (int i = 0; i < numBinds; i++) {
       ctStringUtf8 bindName;
@@ -253,7 +222,6 @@ ctResults ctInteractDirectorySystem::CreateBindingsFromFile(ctFile& file) {
          pBinding->inputs.Append(bindEntry);
       }
    }
-   ctFree(fileData);
    return CT_SUCCESS;
 }
 

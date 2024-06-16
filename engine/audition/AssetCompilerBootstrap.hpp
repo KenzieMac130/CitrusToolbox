@@ -35,7 +35,7 @@ public:
    void ReleaseOutputLock();
 
    ctStringUtf8 pythonPath = CT_AUDITION_PYTHON;
-   ctStringUtf8 wafPath = CT_AUDITION_WAF_PATH;
+   ctStringUtf8 wafPath = CT_AUDITION_ASSET_PATH;
 
 private:
    ctSpinLock lock;

@@ -21,14 +21,21 @@
 
 class ctResourceJSON : public ctResourceBase {
 public:
-   ctResourceJSON(ctResourceServerBase* pServer, ctGUID guid) : ctResourceBase(pServer, guid) {};
-   ctJSONReadEntry rootEntry;
+   ctResourceJSON(ctResourceServerBase* pServer, ctEngineCore* pEngine, ctGUID guid) :
+       ctResourceBase(pServer, pEngine, guid) {
+      reader = ctJSONReader();
+   };
+   inline ctResults GetRootEntry(ctJSONReadEntry& entry) {
+      return reader.GetRootEntry(entry);
+   }
+
+   virtual const char* GetName();
 
 protected:
-   virtual ctResults LoadTask(ctEngineCore* Engine);
-   virtual void OnRelease(ctEngineCore* Engine);
+   virtual ctResults LoadTask();
+   virtual void OnRelease();
    virtual bool isHotReloadSupported();
-   virtual void OnReloadComplete(ctEngineCore* Engine);
+   virtual void OnReloadComplete();
 
    ctStringUtf8 string;
    ctJSONReader reader;
@@ -36,5 +43,5 @@ protected:
 
 class ctResourceServerJSON : public ctResourceServerBase {
 public:
-   virtual ctResourceBase* NewResource(ctGUID guid, ctEngineCore* Engine);
+   virtual ctResourceBase* NewResource(ctGUID guid);
 };

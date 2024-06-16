@@ -110,6 +110,7 @@ ctGPUExternalTextureCreateFunc(struct ctGPUDevice* pDevice,
 
 struct ctGPUExternalTextureCreateLoadInfo {
    const char* debugName;
+   bool async;
    int32_t desiredBinding;
    struct ctGPUExternalTexture* pPlaceholder;
    enum ctGPUExternalTextureType type;

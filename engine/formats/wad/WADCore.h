@@ -42,11 +42,11 @@ struct CT_API ctWADReader {
 };
 
 enum ctResults ctWADReaderBind(struct ctWADReader* pReader, uint8_t* blob, size_t size);
-enum ctResults ctWADFindLump(struct ctWADReader* pReader,
+enum ctResults ctWADFindLump(const struct ctWADReader* pReader,
                              const char* name,
                              void** ppDataOut,
                              int32_t* ppSizeOut);
-enum ctResults ctWADFindLumpInMarker(struct ctWADReader* pReader,
+enum ctResults ctWADFindLumpInMarker(const struct ctWADReader* pReader,
                                      int32_t occurrence,
                                      const char* beginName,
                                      const char* endName,
@@ -55,7 +55,7 @@ enum ctResults ctWADFindLumpInMarker(struct ctWADReader* pReader,
                                      int32_t* ppSizeOut);
 
 #define CT_WADBLOB_NAME_STRINGS "STRINGS"
-const char* ctWADGetStringExt(struct ctWADReader* pReader, int32_t offset);
+const char* ctWADGetStringExt(const struct ctWADReader* pReader, int32_t offset);
 
 enum ctResults ctWADSetupWrite(struct ctWADReader* pReader);
 enum ctResults ctWADWriteSection(struct ctWADReader* pReader,

@@ -68,6 +68,10 @@ void* ctStringUtf8::Data() const {
    return _dataVoid();
 }
 
+void* ctStringUtf8::Data() {
+   return _dataVoid();
+}
+
 size_t ctStringUtf8::CodeLength() const {
    if (isEmpty()) { return 0; }
    return utf8len(_dataVoid());
@@ -137,16 +141,17 @@ ctStringUtf8& ctStringUtf8::Append(const char chr, const size_t count) {
    return *this;
 }
 
-void ctStringUtf8::Printf(const size_t max, const char* format, ...) {
-   if (!format) { return; }
+ctStringUtf8& ctStringUtf8::Printf(const size_t max, const char* format, ...) {
+   if (!format) { return *this; }
    va_list args;
    va_start(args, format);
    VPrintf(max, format, args);
    va_end(args);
+   return *this;
 }
 
-void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
-   if (!format) { return; }
+ctStringUtf8& ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
+   if (!format) { return *this; }
    size_t buffsize = max;
    const size_t beginning_length = ByteLength();
    if (max == 0) {
@@ -155,6 +160,7 @@ void ctStringUtf8::VPrintf(const size_t max, const char* format, va_list args) {
    }
    Append('\0', buffsize);
    vsnprintf((char*)_dataVoid() + beginning_length, buffsize, format, args);
+   return *this;
 }
 
 int ctStringUtf8::Cmp(const ctStringUtf8& str) const {
@@ -386,7 +392,7 @@ ctStringUtf8 ctStringUtf8::FilePathGetExtension() const {
 
 uint32_t ctStringUtf8::xxHash32(const int seed) const {
    if (isEmpty()) { return 0; }
-   return XXH32(_dataVoid(), ByteLength(), seed);
+   return ctXXHash32(_dataVoid(), ByteLength(), seed);
 }
 
 uint32_t ctStringUtf8::xxHash32() const {
@@ -395,7 +401,7 @@ uint32_t ctStringUtf8::xxHash32() const {
 
 uint64_t ctStringUtf8::xxHash64(const int seed) const {
    if (isEmpty()) { return 0; }
-   return XXH64(_dataVoid(), ByteLength(), seed);
+   return ctXXHash64(_dataVoid(), ByteLength(), seed);
 }
 
 uint64_t ctStringUtf8::xxHash64() const {
@@ -415,7 +421,22 @@ void ctStringUtf8::MakeUTF16Array(ctDynamicArray<char16_t>& arr) const {
    while (1) {
       int32_t chr = 0;
       data = utf8codepoint(data, &chr);
-      arr.Append((char16_t)chr);
+      char16_t* pChrs = (char16_t*)&chr;
+      if (pChrs[0]) { arr.Append(pChrs[0]); }
+      if (pChrs[1]) { arr.Append(pChrs[1]); }
+      if (chr == 0) { break; }
+   }
+}
+
+void ctStringUtf8::MakeUTF32Array(ctDynamicArray<char32_t>& arr) const {
+   size_t size = CodeLength();
+   arr.Reserve(size);
+   arr.Clear();
+   void* data = _dataVoid();
+   while (1) {
+      int32_t chr = 0;
+      data = utf8codepoint(data, &chr);
+      arr.Append(*(char32_t*)&chr);
       if (chr == 0) { break; }
    }
 }

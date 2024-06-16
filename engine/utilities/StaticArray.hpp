@@ -360,7 +360,7 @@ inline uint32_t ctStaticArray<T, TCAPACITY>::xxHash32(const size_t position,
                                                       const size_t amount,
                                                       const int seed) const {
    if (isEmpty()) { return 0; }
-   return XXH32((const void*)(Data() + position), amount, seed);
+   return ctXXHash32((const void*)(Data() + position), amount, seed);
 }
 
 template<class T, size_t TCAPACITY>
@@ -378,7 +378,7 @@ inline uint64_t ctStaticArray<T, TCAPACITY>::xxHash64(const size_t position,
                                                       const size_t amount,
                                                       const int seed) const {
    if (isEmpty()) { return 0; }
-   return XXH64((const void*)(Data() + position), amount, seed);
+   return ctXXHash64((const void*)(Data() + position), amount, seed);
 }
 
 template<class T, size_t TCAPACITY>

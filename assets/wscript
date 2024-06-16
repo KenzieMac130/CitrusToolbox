@@ -2,39 +2,11 @@ import sys
 sys.path.insert(0, '../tools')
 import assetcompiler.Core
 
-# Define command line options
 def options(ctx):
-	ctx.add_option('--final', default=False, action='store', help='is production build')
-	ctx.add_option('--libs', default='', action='store', help='path to platform libs')
-	ctx.add_option('--build', default='', action='store', help='path to build dir')
-	ctx.add_option('--platform', default='shared', action='store', help='target platform')
+	assetcompiler.Core.options(ctx)
 
-# On environment configure
 def configure(ctx):
-	outPathList = [ctx.options.libs,ctx.options.build+'/output/',ctx.options.build+'/output/Release',ctx.options.build+'/output/Debug',ctx.options.build]
-	try:
-		ctx.find_program("compressonatorcli", path_list=ctx.options.libs+ '/Compressonator/', var='Compressonator')
-	except:
-		raise ValueError("Could not find Compressonator!")
-	try:
-		ctx.find_program("luajit", path_list=ctx.options.libs+ '/LuaJIT/bin/', var='LuaJIT')
-	except:
-		raise ValueError("Could not find LuaJIT!")	
-	try:
-		ctx.find_program("CitrusShader", path_list=outPathList, var='CitrusShader')
-	except:
-		pass
-		#raise ValueError("Could not find CitrusShader! Please build tools and reconfigure")
-	try:
-		ctx.find_program("CitrusModel", path_list=outPathList, var='CitrusModel')
-	except:
-		pass
-		#raise ValueError("Could not find CitrusModel! Please build tools and reconfigure")
-	ctx.env.platform = ctx.options.platform
-	ctx.env.final = ctx.options.final
-	ctx.env.codegenPath = ctx.options.build+'/generated/'
+	assetcompiler.Core.configure(ctx)
 
-# On asset processing build
 def build(ctx):
-	print('Building: ' + ctx.path.abspath())
 	assetcompiler.Core.build(ctx)

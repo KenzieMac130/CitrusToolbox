@@ -56,9 +56,7 @@ bool ctGUID::isValid() const {
    return memcmp(data, empty, 16) != 0;
 }
 
-ctResults ctGUIDFromAssetPath(ctGUID& result,
-                              const char* assetPath,
-                              const char* output) {
+ctResults ctGUIDFromAssetPath(ctGUID& result, const char* assetPath, const char* output) {
    ctStringUtf8 ctacPath = assetPath;
    ctacPath += ".ctac";
    ctacPath.FilePathLocalize();

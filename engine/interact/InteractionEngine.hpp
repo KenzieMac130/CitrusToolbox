@@ -19,6 +19,7 @@
 #include "utilities/Common.h"
 #include "core/ModuleBase.hpp"
 #include "DeviceBackendLayer.hpp"
+#include "resource/JSONResource.hpp"
 
 #if CITRUS_INCLUDE_AUDITION
 #include "audition/HotReloadDetection.hpp"
@@ -79,9 +80,10 @@ struct CT_API ctInteractNode {
 class CT_API ctInteractDirectorySystem {
 public:
    ~ctInteractDirectorySystem();
-   ctResults CreateActionSetsFromFile(ctFile& file); /* todo: run action set lua script */
    ctResults
-   CreateBindingsFromFile(ctFile& file); /* todo: feeds user settings json to script */
+   CreateActionSetsFromFile(const char* nickname); /* todo: run action set lua script */
+   ctResults CreateBindingsFromFile(
+     const char* nickname); /* todo: feeds user settings json to script */
    ctResults Update();
    ctResults AddNode(ctInteractNode& node);
    ctResults RemoveNode(ctInteractPath& path);
@@ -122,10 +124,6 @@ public:
    }
    inline void _SetCursorPos(ctVec3 pos) {
    }
-
-#if CITRUS_INCLUDE_AUDITION
-   ctHotReloadCategory configHotReload;
-#endif
 
 private:
    bool usedRelative;

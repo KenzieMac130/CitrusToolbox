@@ -206,6 +206,68 @@ On a node:
 				}
 			}
 ```
+
+#### CITRUS_node_constraint
+On a node (rotation_axis):
+```json
+"extensions":{
+				"CITRUS_node_constraint":{
+					"type":"rotation_axis",
+					"friction":0.5,
+                    "limit_x":true,
+                    "limit_y":true,
+                    "limit_z":true,
+                    "min_x":0.0,
+                    "max_x":3.14,
+                    "min_y":0.0,
+                    "max_y":3.14,
+                    "min_z":0.0,
+                    "max_z":3.14
+				}
+			}
+```
+
+On a node (rotation_axis):
+```json
+"extensions":{
+				"CITRUS_node_constraint":{
+					"type":"rotation_hinge",
+					"friction":0.5,
+                    "axis":"x",
+                    "min_angle":0.0,
+                    "max_angle":3.14
+				}
+			}
+```
+
+On a node (rotation_socket):
+```json
+"extensions":{
+				"CITRUS_node_constraint":{
+					"type":"rotation_hinge",
+					"friction":0.5,
+                    "max_angle":3.14,
+                    "limit_twist":true,
+                    "min_twist":0.0,
+                    "max_twist":3.14
+				}
+			}
+```
+
+#### CITRUS_node_spawner
+
+Keeps spawner key-values
+
+On a node:
+```json
+"extensions":{
+				"CITRUS_node_spline":{
+					"keyExampleA":1.0,
+                    "keyExampleB":true
+				}
+			}
+```
+
 Will generate additional accessors (expected to be all vec3s)
 
 ### Citrus Model Format

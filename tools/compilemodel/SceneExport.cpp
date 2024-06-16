@@ -117,30 +117,40 @@ void ctGltf2Model::TryCreateSpawnerForNode(const cgltf_node& node) {
       }
    }
 
-   /* mesh */
+   /* scene mesh overrides */
    int32_t meshIdx = GetNodeMeshAssociation(node);
-   if (meshIdx >= 0) { SpawnScriptNumber("mesh_index", (int64_t)meshIdx); }
+   if (meshIdx >= 0) { SpawnScriptNumber("scene_mesh", (int64_t)meshIdx); }
 
-   /* scatter */
+   /* scene scatter override */
    int32_t scatterIdx = GetNodeScatterAssociation(node);
-   if (scatterIdx >= 0) { SpawnScriptNumber("scatter_index", (int64_t)scatterIdx); }
 
-   /* collision */
+   if (scatterIdx >= 0) { SpawnScriptNumber("scene_scatter", (int64_t)scatterIdx); }
+
+   /* scene collision override */
    int32_t collisionIdx = GetNodeCollisionAssociation(node);
-   if (collisionIdx >= 0) { SpawnScriptNumber("collision_index", (int64_t)collisionIdx); }
+   if (collisionIdx >= 0) { SpawnScriptNumber("scene_collision", (int64_t)collisionIdx); }
 
-   /* splines */
+   /* scene spline overrides */
    for (int32_t i = 0; true; i++) {
       ctStringUtf8 splineName;
       int32_t splineIdx = GetNodeSplineAssociation(node, i, splineName);
       if (splineIdx < 0) { break; }
-      ctStringUtf8 propName = "spline_";
+      ctStringUtf8 propName = "scene_spline_";
       propName += splineName;
       SpawnScriptNumber(propName.CStr(), (int64_t)splineIdx);
    }
 
    /* custom spawner args */
-   // todo
+   for (size_t extIdx = 0; extIdx < node.extensions_count; extIdx++) {
+       cgltf_extension* ext = &node.extensions[extIdx];
+       if (ctCStrEql(ext->name, "CITRUS_node_spline")) {
+           ctJSONReader json = ctJSONReader();
+           json.BuildJsonForPtr(ext->data, strlen(ext->data));
+           //ctJSONReadEntry root = 
+           //for(int32_t i = 0; i < )
+           break;
+       }
+   }
 
    SpawnScriptEnd();
 }

@@ -37,6 +37,25 @@ void LoadBuffer(uint8_t* dest, size_t size, ExternBufferLoadCtx* pCtx) {
    delete pCtx;
 }
 
+struct ExternImageLoadCtx {
+    ctGPUDeviceBase* pDeviceBase;
+    ctGPUAssetIdentifier identifier;
+};
+
+#include "formats/texture/TextureLoad.h"
+
+void LoadTexture(uint8_t* dest, size_t size, ExternImageLoadCtx* pCtx) {
+    ctFile file = pCtx->pDeviceBase->OpenAssetFile(&pCtx->identifier);
+    if (!file.isOpen()) {
+        memset(dest, 0, size);
+        delete pCtx;
+        return;
+    }
+    //ctTextureLoadCtx textureLoader;
+    //ctTexture
+    delete pCtx;
+}
+
 CT_API ctResults
 ctGPUExternalBufferCreateLoadCPU(ctGPUDevice* pDevice,
                                  ctGPUExternalBufferPool* pPool,
@@ -49,7 +68,7 @@ ctGPUExternalBufferCreateLoadCPU(ctGPUDevice* pDevice,
    pCtx->size = pInfo->size;
    ctGPUExternalBufferCreateFuncInfo info;
    info.debugName = pInfo->debugName;
-   info.async = true;
+   info.async = pInfo->async;
    info.pPlaceholder = NULL;
    info.updateMode = CT_GPU_UPDATE_STATIC;
    info.size = pInfo->size;
@@ -61,10 +80,6 @@ ctGPUExternalBufferCreateLoadCPU(ctGPUDevice* pDevice,
 CT_API ctResults ctGPUExternalTextureCreateLoadCPU(ctGPUDevice* pDevice,
                                                    ctGPUExternalTexturePool* pPool,
                                                    ctGPUExternalTexture** ppTexture,
-                                                   const char* debugName,
-                                                   int32_t desiredBinding,
-                                                   ctGPUExternalTexture* pPlaceholder,
-                                                   ctGPUExternalTextureType type,
-                                                   ctGPUAssetIdentifier* identifier) {
+                                                   ctGPUExternalTextureCreateLoadInfo* pInfo) {
    return CT_API ctResults();
 }

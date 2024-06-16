@@ -128,6 +128,7 @@ void ctGltf2Model::AddTranslationChannel(const cgltf_animation_sampler& insample
    animChan.type = CT_MODEL_ANIMCHAN_BONE_TRANSLATION;
    animChan.keyCount = (uint32_t)insampler.output->count;
    animScalars.Resize(animScalars.Count() + (size_t)animChan.keyCount * 3);
+   /* todo: assert component count */
    CopyAccessorToReserve(*insampler.output,
                          (uint8_t*)&animScalars[animChan.valueScalarOffset],
                          TinyImageFormat_R32G32B32_SFLOAT,
@@ -146,6 +147,7 @@ void ctGltf2Model::AddRotationChannel(const cgltf_animation_sampler& insampler,
    animChan.type = CT_MODEL_ANIMCHAN_BONE_ROTATION;
    animChan.keyCount = (uint32_t)insampler.output->count;
    animScalars.Resize(animScalars.Count() + (size_t)animChan.keyCount * 4);
+   /* todo: assert component count */
    CopyAccessorToReserve(*insampler.output,
                          (uint8_t*)&animScalars[animChan.valueScalarOffset],
                          TinyImageFormat_R32G32B32A32_SFLOAT,
@@ -164,6 +166,7 @@ void ctGltf2Model::AddScaleChannel(const cgltf_animation_sampler& insampler,
    animChan.type = CT_MODEL_ANIMCHAN_BONE_SCALE;
    animChan.keyCount = (uint32_t)insampler.output->count;
    animScalars.Resize(animScalars.Count() + (size_t)animChan.keyCount * 3);
+   /* todo: assert component count */
    CopyAccessorToReserve(*insampler.output,
                          (uint8_t*)&animScalars[animChan.valueScalarOffset],
                          TinyImageFormat_R32G32B32_SFLOAT,

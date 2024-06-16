@@ -53,7 +53,7 @@ char* _FindParamOccurance(const char* name, int occurance, int argc, char* argv[
 
 int main(int argc, char* argv[]) {
    ZoneScoped;
-   if (argc < 4) {
+   if (argc < 3) {
       ctDebugError("Not enough args!\n%s", gHelpString);
       return -1;
    }
@@ -65,7 +65,6 @@ int main(int argc, char* argv[]) {
 
    const char* inputFilePath = argv[1];
    const char* outputFilePath = argv[2];
-   const char* assetCompilerPath = argv[3];
 
    ctGltf2Model exporter = ctGltf2Model();
 

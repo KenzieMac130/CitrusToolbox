@@ -108,7 +108,7 @@ ctSettingsManager::ctSettingsManager(int _argc, char** _argv) {
 ctSettingsSection* ctSettingsManager::CreateSection(
   const char* name, int max, ctTranslationCatagory translationCatagory) {
    ZoneScoped;
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    ctSettingsSection* section =
      new ctSettingsSection(Engine->FileSystem, this, name, max, translationCatagory);
    return *_sections.Insert(hash, section);
@@ -116,7 +116,7 @@ ctSettingsSection* ctSettingsManager::CreateSection(
 
 ctSettingsSection* ctSettingsManager::GetOrCreateSection(
   const char* name, int max, ctTranslationCatagory translationCatagory) {
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    if (_sections.Exists(hash)) {
       return GetSection(name);
    } else {
@@ -125,7 +125,7 @@ ctSettingsSection* ctSettingsManager::GetOrCreateSection(
 }
 
 ctSettingsSection* ctSettingsManager::GetSection(const char* name) {
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    ctSettingsSection** ppSection = _sections.FindPtr(hash);
    if (ppSection) {
       return *ppSection;
@@ -161,7 +161,7 @@ ctResults ctSettingsSection::BindVar(SettingType type,
                                      double max) {
    ZoneScoped;
    if (!ptr) { return CT_FAILURE_INVALID_PARAMETER; }
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    const Setting setting = Setting {
      false, type, save, load, name, help, ptr, setCallback, customData, min, max};
    settings.Insert(hash, setting);
@@ -267,7 +267,7 @@ ctResults ctSettingsSection::GetFallbackFloat(const char* name, float& out) {
    {
       ctJSONReadEntry root = ctJSONReadEntry();
       ctJSONReadEntry var = ctJSONReadEntry();
-      defaultJson.GetRootEntry(root);
+      defaultJson.Get().GetRootEntry(root);
       root.GetObjectEntry(name, var);
       if (var.isNumber()) {
          var.GetNumber(out);
@@ -309,7 +309,7 @@ ctResults ctSettingsSection::GetFallbackInteger(const char* name, int32_t& out) 
    {
       ctJSONReadEntry root = ctJSONReadEntry();
       ctJSONReadEntry var = ctJSONReadEntry();
-      defaultJson.GetRootEntry(root);
+      defaultJson.Get().GetRootEntry(root);
       root.GetObjectEntry(name, var);
       if (var.isNumber()) {
          var.GetNumber(out);
@@ -351,7 +351,7 @@ ctResults ctSettingsSection::GetFallbackString(const char* name, ctStringUtf8& o
    {
       ctJSONReadEntry root = ctJSONReadEntry();
       ctJSONReadEntry var = ctJSONReadEntry();
-      defaultJson.GetRootEntry(root);
+      defaultJson.Get().GetRootEntry(root);
       root.GetObjectEntry(name, var);
       if (var.isString()) {
          var.GetString(out);
@@ -364,7 +364,7 @@ ctResults ctSettingsSection::GetFallbackString(const char* name, ctStringUtf8& o
 ctResults
 ctSettingsSection::ExecCommand(const char* name, const char* command, bool markChanged) {
    ZoneScoped;
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    Setting* pSetting = settings.FindPtr(hash);
    if (!pSetting) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    if (pSetting->setCallback) {
@@ -406,7 +406,7 @@ ctSettingsSection::ExecCommand(const char* name, const char* command, bool markC
 
 ctResults ctSettingsSection::GetValueStr(const char* name, ctStringUtf8& out) {
    ZoneScoped;
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    Setting* pSetting = settings.FindPtr(hash);
    if (!pSetting) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    if (pSetting->type == SETTING_TYPE_INTEGER) {
@@ -428,7 +428,7 @@ ctResults ctSettingsSection::GetValueStr(const char* name, ctStringUtf8& out) {
 
 ctResults ctSettingsSection::GetHelp(const char* name, ctStringUtf8& out) {
    ZoneScoped;
-   const uint32_t hash = XXH32(name, strlen(name), 0);
+   const uint32_t hash = ctXXHash32(name, strlen(name), 0);
    Setting* pSetting = settings.FindPtr(hash);
    if (!pSetting) { return CT_FAILURE_DATA_DOES_NOT_EXIST; }
    ctAssert(pSetting->help);
@@ -460,19 +460,7 @@ ctResults ctSettingsSection::LoadConfigs(ctFileSystem* pFileSystem) {
    ctFile defFile;
    path = "";
    path.Printf(256, "Settings_%s", name.CStr());
-   if (pFileSystem->OpenDataFileByGUID(
-         defFile, CT_DDATA(path.CStr()), CT_FILE_OPEN_READ, false) == CT_SUCCESS) {
-      /* Load default data */
-      defFile.GetBytes(defaultJsonBytes);
-      if (defaultJson.BuildJsonForPtr(defaultJsonBytes.Data(),
-                                      defaultJsonBytes.Count()) != CT_SUCCESS) {
-         ctDebugError("Bad %s defaults file!", name.CStr());
-      }
-      defFile.Close();
-   } else {
-      defaultJsonBytes.Clear();
-      defaultJson = {};
-   }
+   defaultJson = ctGetResourceCritical(ctResourceJSON, path.CStr());
    return CT_SUCCESS;
 }
 

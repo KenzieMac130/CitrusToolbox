@@ -18,6 +18,7 @@
 #include "core/EngineCore.hpp"
 #include "core/OSEvents.hpp"
 #include "interact/InteractionEngine.hpp"
+#include "resource/TextResource.hpp"
 
 void SDLGamecontrollerOnEvent(SDL_Event* event, void* data) {
    ctInteractSDLGamepadBackend* pGamepadBackend = (ctInteractSDLGamepadBackend*)data;
@@ -30,7 +31,7 @@ void SDLGamecontrollerOnEvent(SDL_Event* event, void* data) {
          pGamepadBackend->RemoveController(event->cdevice.which);
          return;
       }
-      //case SDL_CONTROLLERDEVICEREMAPPED: {
+      // case SDL_CONTROLLERDEVICEREMAPPED: {
       //   pGamepadBackend->OnRemapController(event->cdevice.which);
       //   return;
       //}
@@ -95,19 +96,10 @@ ctResults ctInteractSDLGamepadBackend::Register(ctInteractDirectorySystem& direc
          directory.AddNode(node);
       }
    }
-   ctFile file;
-   Engine->FileSystem->OpenDataFileByGUID(
-     file, CT_CDATA("Input_Gamepad"), CT_FILE_OPEN_READ_TEXT);
-   directory.CreateBindingsFromFile(file);
-   file.Close();
-#if CITRUS_INCLUDE_AUDITION
-   directory.configHotReload.RegisterData(CT_CDATA("Input_Gamepad"));
-#endif
-   ctFile gcontrollerdb;
-   Engine->FileSystem->OpenDataFileByGUID(
-     gcontrollerdb, CT_CDATA("Input_GamecontrollerDB"), CT_FILE_OPEN_READ_TEXT);
-   ctStringUtf8 gcontrollerdbtext = "";
-   gcontrollerdb.GetText(gcontrollerdbtext);
+   directory.CreateBindingsFromFile("Input_Gamepad");
+   ctHandlePtr<ctResourceText> gcontrollerdb =
+     ctGetResourceCritical(ctResourceText, "Input_GamecontrollerDB");
+   ctStringUtf8 gcontrollerdbtext = gcontrollerdb.Get().GetString();
    SDL_GameControllerAddMapping(gcontrollerdbtext.CStr());
    return CT_SUCCESS;
 }
@@ -187,10 +179,11 @@ void ctInteractSDLGamepadBackend::RemoveController(int32_t id) {
    }
 }
 
-//void ctInteractSDLGamepadBackend::OnRemapController(int32_t id) {
+// void ctInteractSDLGamepadBackend::OnRemapController(int32_t id) {
 //   ZoneScoped;
 //   // for (int i = 0; i < 4; i++) {
-//   //   if (gamepads[i].controllerId == id) { remaps.Append({gamepads[i].controller, id});
+//   //   if (gamepads[i].controllerId == id) { remaps.Append({gamepads[i].controller,
+//   id});
 //   //   }
 //   //}
 //}

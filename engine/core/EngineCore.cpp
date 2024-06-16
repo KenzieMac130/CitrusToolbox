@@ -27,6 +27,7 @@
 #include "WindowManager.hpp"
 #include "OSEvents.hpp"
 #include "Translation.hpp"
+#include "resource/ResourceManager.hpp"
 
 #include "middleware/ImguiIntegration.hpp"
 #include "middleware/Im3dIntegration.hpp"
@@ -47,6 +48,7 @@
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ZoneScoped;
+   _ctHandlePtrGlobalInit(CT_MAX_HANDLE_POINTERS);
    App = pApp;
 
    /*SDL*/
@@ -63,6 +65,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
 
    /* Create Modules */
    FileSystem = new ctFileSystem(App->GetAppName(), App->GetAppDeveloperName());
+   ResourceManager = new ctResourceManager(true);
    Settings = new ctSettingsManager(argc, argv);
    Debug = new ctDebugSystem(32, true);
 #if CITRUS_INCLUDE_AUDITION
@@ -91,6 +94,7 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    /* Startup Modules */
    Settings->ModuleStartup(this);
    FileSystem->ModuleStartup(this);
+   ResourceManager->ModuleStartup(this);
    Debug->ModuleStartup(this);
 #if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleStartup(this);
@@ -145,7 +149,6 @@ bool ctEngineCore::isExitRequested() const {
 
 ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    ZoneScoped;
-   Translation->NextFrame();
    App->OnFrameAdvance(deltatime);
    SceneEngine->NextFrame(deltatime);
    App->OnUIUpdate();
@@ -194,6 +197,7 @@ ctResults ctEngineCore::Shutdown() {
 #if CITRUS_INCLUDE_AUDITION
    HotReload->ModuleShutdown();
 #endif
+   ResourceManager->ModuleShutdown();
    Debug->ModuleShutdown();
    Settings->ModuleShutdown();
    FileSystem->ModuleShutdown();
@@ -211,6 +215,7 @@ ctResults ctEngineCore::Shutdown() {
    delete WindowManager;
    delete Debug;
    delete FileSystem;
+   delete ResourceManager;
    delete Settings;
    delete OSEventManager;
    delete Translation;
@@ -226,5 +231,6 @@ ctResults ctEngineCore::Shutdown() {
    if (leakedAllocations) {
       ctDebugWarning("POSSIBLE LEAKED ALLOCATIONS %lu!", leakedAllocations);
    }
+   _ctHandlePtrGlobalShutdown();
    return CT_SUCCESS;
 }

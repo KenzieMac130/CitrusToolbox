@@ -27,9 +27,13 @@ public:
    virtual void DebugUI(bool useGizmos);
 
    ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
-
    ctResults RenderFrame();
 
+   ctResults LoadOrReplaceTexture(ctGUID guid, struct ctGPUExternalTexture** ppTexture);
+   ctResults DeleteTexture(struct ctGPUExternalTexture* pTexture);
+
+protected:
+   ctMutex renderThreadLock;
    struct ctGPUDevice* pGPUDevice;
    struct ctGPUPresenter* pGPUPresenter;
    struct ctGPUBindlessManager* pGPUBindless;
@@ -37,6 +41,7 @@ public:
    struct ctGPUExternalBufferPool* pGPUBufferPool;
    struct ctGPUExternalTexturePool* pGPUTexturePool;
 
+   struct ctGPUExternalTexture* pMissingTexture;
    void* pTestPipeline;
    bool rebuildRequired;
 
