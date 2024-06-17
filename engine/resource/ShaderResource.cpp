@@ -15,6 +15,7 @@
 */
 
 #include "ShaderResource.hpp"
+#include "renderer/KeyLimeRenderer.hpp"
 
 const char* ctResourceShader::GetName() {
    return "Shader";
@@ -32,11 +33,8 @@ ctResults ctResourceShader::LoadTask() {
 void ctResourceShader::OnRelease() {
 }
 
-bool ctResourceShader::isHotReloadSupported() {
-   return false;
-}
-
 void ctResourceShader::OnReloadComplete() {
+   Engine->Renderer->ReloadShaders();
 }
 
 ctResourceBase* ctResourceServerShader::NewResource(ctGUID guid) {

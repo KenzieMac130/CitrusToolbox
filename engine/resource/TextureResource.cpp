@@ -32,11 +32,8 @@ ctResults ctResourceTexture::LoadTask() {
 void ctResourceTexture::OnRelease() {
 }
 
-bool ctResourceTexture::isHotReloadSupported() {
-   return true;
-}
-
 void ctResourceTexture::OnReloadComplete() {
+   /* todo: reload texture */
 }
 
 ctResourceBase* ctResourceServerTexture::NewResource(ctGUID guid) {

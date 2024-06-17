@@ -97,3 +97,7 @@ void ctSceneEngine::PushAndResetCursor() {
 const char* ctSceneEngine::GetModuleName() {
    return "Scene Engine";
 }
+
+void ctSceneEngine::RestartScene()
+{
+}

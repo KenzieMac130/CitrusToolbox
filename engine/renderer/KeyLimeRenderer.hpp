@@ -30,6 +30,7 @@ public:
    ctResults Shutdown() final;
    const char* GetModuleName() final;
    virtual void DebugUI(bool useGizmos);
+   void ReloadShaders();
 
    ctResults UpdateCamera(const ctCameraInfo& cameraInfo);
    ctResults RenderFrame();

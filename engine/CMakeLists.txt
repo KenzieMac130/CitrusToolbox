@@ -233,6 +233,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceManager.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceTypeBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/JSONResource.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/TextResource.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/BinaryResource.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ShaderResource.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/TranslationResource.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/TextureResource.cpp
@@ -244,6 +245,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceTypeBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/JSONResource.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/TextResource.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/resource/BinaryResource.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/ShaderResource.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/TranslationResource.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/resource/TextureResource.hpp

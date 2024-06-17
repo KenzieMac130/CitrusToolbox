@@ -15,6 +15,7 @@
 */
 
 #include "TranslationResource.hpp"
+#include "core/Translation.hpp"
 
 const char* ctResourceTranslation::GetName() {
    return "Translation";
@@ -34,12 +35,8 @@ void ctResourceTranslation::OnRelease() {
    ctMOReaderRelease(&mo);
 }
 
-bool ctResourceTranslation::isHotReloadSupported() {
-   return true;
-}
-
 void ctResourceTranslation::OnReloadComplete() {
-   /* todo: signal to the translation system to reload */
+   Engine->Translation->LoadAll();
 }
 
 ctResourceBase* ctResourceServerTranslation::NewResource(ctGUID guid) {

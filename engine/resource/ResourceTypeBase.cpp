@@ -16,6 +16,7 @@
 
 #include "ResourceTypeBase.hpp"
 #include "ResourceManager.hpp"
+#include "scene/SceneEngine.hpp"
 
 void ctResourceBase::LoadTaskFn(ctResourceBase* resource) {
    if (resource->LoadTask() != CT_SUCCESS) {
@@ -25,13 +26,14 @@ void ctResourceBase::LoadTaskFn(ctResourceBase* resource) {
 }
 
 bool ctResourceBase::isHotReloadSupported() {
-   return false;
+   return true;
 }
 
 void ctResourceBase::OnReloadBegin() {
 }
 
 void ctResourceBase::OnReloadComplete() {
+    Engine->SceneEngine->RestartScene();
 }
 
 bool ctResourceBase::isReady() {

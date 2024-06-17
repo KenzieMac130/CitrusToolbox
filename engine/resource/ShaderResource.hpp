@@ -35,7 +35,6 @@ public:
 protected:
    virtual ctResults LoadTask();
    virtual void OnRelease();
-   virtual bool isHotReloadSupported();
    virtual void OnReloadComplete();
 
    ctDynamicArray<uint8_t> bytes;

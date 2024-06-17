@@ -28,9 +28,6 @@ public:
 protected:
    virtual ctResults LoadTask();
    virtual void OnRelease();
-   virtual bool isValid();
-   virtual bool isReady();
-   virtual bool isHotReloadSupported();
    virtual void OnReloadComplete();
 };
 

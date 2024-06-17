@@ -32,14 +32,6 @@ void ctResourceText::OnRelease() {
    /* destructor handles this */
 }
 
-bool ctResourceText::isHotReloadSupported() {
-   return true;
-}
-
-void ctResourceText::OnReloadComplete() {
-   /* signal the scene system to reset (covers many use cases) */
-}
-
 ctResourceBase* ctResourceServerText::NewResource(ctGUID guid) {
    return new ctResourceText(this, Engine, guid);
 }

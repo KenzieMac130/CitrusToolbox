@@ -23,6 +23,7 @@
 #include "renderer/KeyLimeRenderer.hpp"
 #include "core/AsyncTasks.hpp"
 #include "core/JobSystem.hpp"
+#include "resource/TextureResource.hpp"
 
 class TestApp : public ctApplication {
    virtual const char* GetAppName();
@@ -32,19 +33,6 @@ class TestApp : public ctApplication {
    virtual ctResults OnTick(const float deltatime);
    virtual ctResults OnUIUpdate();
    virtual ctResults OnShutdown();
-
-   float rad = 5.0f;
-   float phase = 0;
-   float diskPos[2] = {0};
-
-   int gausPts = 0;
-   int gausSeed = 0;
-
-   int spherePts = 0;
-   int sphereSeed = 0;
-   float sphereRad = 1.0f;
-
-   ctAsyncTaskHandle tasks[32];
 };
 
 const char* TestApp::GetAppName() {
@@ -60,7 +48,8 @@ ctAppVersion TestApp::GetAppVersion() {
 }
 
 ctResults TestApp::OnStartup() {
-
+   ctHandlePtr<ctResourceTexture> testTexture =
+     ctGetResource(ctResourceTexture, "TEST_IMAGE_PERLIN_NOISE");
    return CT_SUCCESS;
 }
 

@@ -390,6 +390,9 @@ void ctKeyLimeRenderer::DebugUI(bool useGizmos) {
    ctGPUDebugUIArchitect(pGPUDevice, pGPUArchitect, true);
 }
 
+void ctKeyLimeRenderer::ReloadShaders() {
+}
+
 ctResults ctKeyLimeRenderer::RenderFrame() {
    ZoneScoped;
    ctMutexLockScoped(RenderThread, renderThreadLock);
@@ -453,13 +456,13 @@ ctResults ctKeyLimeRenderer::CreateOrReplaceTexture(struct ctTextureLoadCtx* pLo
    ctAssert(ppTexture);
    ctMutexLockScoped(RenderThread, renderThreadLock);
    /* todo */
-   //ctGPUExternalTextureCreateInfo createInfo = {};
-   //createInfo.depth = pLoadCtx->depth;
-   //createInfo.width = pLoadCtx->width;
-   //createInfo.format = pLoadCtx->format;
-   //createInfo.mips = pLoadCtx->mips;
-   //createInfo.userData = pLoadCtx;
-   //createInfo.generationFunction 
+   // ctGPUExternalTextureCreateInfo createInfo = {};
+   // createInfo.depth = pLoadCtx->depth;
+   // createInfo.width = pLoadCtx->width;
+   // createInfo.format = pLoadCtx->format;
+   // createInfo.mips = pLoadCtx->mips;
+   // createInfo.userData = pLoadCtx;
+   // createInfo.generationFunction
    return CT_SUCCESS;
 }
 

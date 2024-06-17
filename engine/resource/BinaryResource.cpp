@@ -14,20 +14,24 @@
    limitations under the License.
 */
 
-#include "ModelResource.hpp"
+#include "BinaryResource.hpp"
 
-const char* ctResourceModel::GetName() {
-   return "Model";
+const char* ctResourceBinary::GetName() {
+   return "Text";
 }
 
-ctResults ctResourceModel::LoadTask() {
+ctResults ctResourceBinary::LoadTask() {
+   ctFile file;
+   CT_RETURN_FAIL(Engine->FileSystem->OpenDataFileByGUID(file, GetDataGUID()));
+   file.GetBytes(bytes);
+   file.Close();
    return CT_SUCCESS;
 }
 
-void ctResourceModel::OnRelease() {
-
+void ctResourceBinary::OnRelease() {
+   /* destructor handles this */
 }
 
-ctResourceBase* ctResourceServerModel::NewResource(ctGUID guid) {
-   return new ctResourceModel(this, Engine, guid);
+ctResourceBase* ctResourceServerBinary::NewResource(ctGUID guid) {
+   return new ctResourceBinary(this, Engine, guid);
 }

@@ -31,8 +31,6 @@ public:
 protected:
    virtual ctResults LoadTask();
    virtual void OnRelease();
-   virtual bool isHotReloadSupported();
-   virtual void OnReloadComplete();
    ctStringUtf8 string;
 };
 

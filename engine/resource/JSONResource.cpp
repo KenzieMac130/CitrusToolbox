@@ -34,14 +34,6 @@ void ctResourceJSON::OnRelease() {
    /* destructor handles this */
 }
 
-bool ctResourceJSON::isHotReloadSupported() {
-   return true;
-}
-
-void ctResourceJSON::OnReloadComplete() {
-   /* signal the scene system to reset (covers many use cases) */
-}
-
 ctResourceBase* ctResourceServerJSON::NewResource(ctGUID guid) {
    return new ctResourceJSON(this, Engine, guid);
 }

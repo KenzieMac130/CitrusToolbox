@@ -18,30 +18,23 @@
 
 #include "utilities/Common.h"
 #include "ResourceTypeBase.hpp"
-#include "formats/mo/MO.h"
 
-class ctResourceTranslation : public ctResourceBase {
+class ctResourceBinary : public ctResourceBase {
 public:
-   ctResourceTranslation(ctResourceServerBase* pServer,
-                         ctEngineCore* pEngine,
-                         ctGUID guid) :
-       ctResourceBase(pServer, pEngine, guid) {
-      mo = ctMOReader();
-   };
-   inline const char* FindTranslation(const char* native) {
-      ctAssert(isReady());
-      return ctMOFindTranslation(&mo, native);
+   ctResourceBinary(ctResourceServerBase* pServer, ctEngineCore* pEngine, ctGUID guid) :
+       ctResourceBase(pServer, pEngine, guid) {};
+   const ctDynamicArray<uint8_t>& GetBytes() {
+      return bytes;
    }
    virtual const char* GetName();
 
 protected:
    virtual ctResults LoadTask();
    virtual void OnRelease();
-   virtual void OnReloadComplete();
-   ctMOReader mo;
+   ctDynamicArray<uint8_t> bytes;
 };
 
-class ctResourceServerTranslation : public ctResourceServerBase {
+class ctResourceServerBinary : public ctResourceServerBase {
 public:
    virtual ctResourceBase* NewResource(ctGUID guid);
 };

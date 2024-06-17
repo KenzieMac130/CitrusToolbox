@@ -28,6 +28,8 @@ public:
    virtual ctResults NextFrame(double deltaTime);
    virtual const char* GetModuleName();
 
+   virtual void RestartScene();
+
    /* ------------ Camera Override ------------ */
    inline void EnableCameraOverride() {
       cameraOverride = true;

@@ -21,12 +21,16 @@
 #include "TextResource.hpp"
 #include "TranslationResource.hpp"
 #include "ShaderResource.hpp"
+#include "TextureResource.hpp"
+#include "ModelResource.hpp"
 
 void ctResourceManager::StartupServers() {
    RegisterServer("ctResourceJSON", new ctResourceServerJSON());
    RegisterServer("ctResourceText", new ctResourceServerText());
    RegisterServer("ctResourceTranslation", new ctResourceServerTranslation());
    RegisterServer("ctResourceShader", new ctResourceServerShader());
+   RegisterServer("ctResourceTexture", new ctResourceServerTexture());
+   RegisterServer("ctResourceModel", new ctResourceServerModel());
 }
 
 /* --------------------------------------------------- */
