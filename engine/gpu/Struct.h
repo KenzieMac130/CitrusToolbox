@@ -25,7 +25,6 @@ extern "C" {
 /* Creates gpu compatible struct types at runtime according to API alignment guidelines */
 
 struct ctGPUStructAssembler;
-typedef uint32_t uint32_t;
 
 enum ctGPUStructType { CT_GPU_STRUCT_TYPE_UNIFORM, CT_GPU_STRUCT_TYPE_STORAGE };
 
