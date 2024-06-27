@@ -20,8 +20,8 @@
 #include "core/Application.hpp"
 #include "core/Translation.hpp"
 
-#include "middleware/Im3dIntegration.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/Im3dIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 
 #include "animation/Skeleton.hpp"
 #include "animation/MorphSet.hpp"
@@ -32,6 +32,7 @@
 
 #include "scene/SceneEngine.hpp"
 #include "core/JobSystem.hpp"
+#include "core/PhysicsEngine.hpp"
 
 enum ctModelViewerMeshMode {
    CT_MODELVIEW_SUBMESH,

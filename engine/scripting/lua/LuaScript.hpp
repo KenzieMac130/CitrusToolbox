@@ -17,7 +17,6 @@
 #pragma once
 
 #include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
 
 #include "lua.hpp"
 

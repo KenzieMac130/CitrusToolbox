@@ -61,6 +61,10 @@ set (UTILITIES_EXTRA_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/../../.clang-format
 ${CMAKE_CURRENT_SOURCE_DIR}/../../citrus.natvis)
 
+set (UTILITIES_THIRD_PARTY
+${THIRD_PARTY_DIRECTORY}/lz4/lz4.c
+${THIRD_PARTY_DIRECTORY}/lz4/lz4frame.c)
+
 # ---------- Generate Config Files ----------
 configure_file (
 ${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in
@@ -69,17 +73,19 @@ ${CITRUS_CODEGEN_DIR}/Config.h)
 add_library(utilities 
 ${UTILITIES_EXTRA_FILES}
 ${TRACY_FILES}
+${UTILITIES_THIRD_PARTY}
 ${UTILITIES_SOURCE_FILES} ${UTILITIES_HEADER_FILES})
 
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${UTILITIES_SOURCE_FILES} ${UTILITIES_HEADER_FILES})
 source_group(tracy FILES ${TRACY_FILES})
 source_group(extra FILES ${UTILITIES_EXTRA_FILES})
+source_group(thirdparty FILES ${UTILITIES_THIRD_PARTY})
 
 target_include_directories(utilities PUBLIC ${CMAKE_SOURCE_DIR}/engine)
 target_include_directories(utilities PUBLIC ${CITRUS_CODEGEN_DIR})
 target_include_directories(utilities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../thirdparty/)
 target_include_directories(utilities PUBLIC ${TOOLS_INCLUDE})
 target_link_libraries(utilities system)
+set_target_properties(utilities PROPERTIES FOLDER "engine")
 
 if(CITRUS_SDL)
 	target_link_libraries(utilities ${SDL2_LIBRARIES})

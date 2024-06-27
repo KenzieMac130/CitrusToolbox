@@ -33,7 +33,7 @@ const char* ctSettingsManager::GetModuleName() {
    return "Settings Manager";
 }
 
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 void ctSettingsManager::DebugUI(bool useGizmos) {
    for (auto it = _sections.GetIterator(); it; it++) {
       if (ImGui::CollapsingHeader(it.Value()->name.CStr())) {

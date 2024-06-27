@@ -83,7 +83,7 @@ ctResults ctGameLayerManager::ShutdownGamelayer() {
 #include "core/EngineCore.hpp"
 #include "core/Logging.hpp"
 #include "core/Translation.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 #include "middleware/Im3dIntegration.hpp"
 
 void ctGameLayerManager::_StartupGameLayerAsSharedObject() {

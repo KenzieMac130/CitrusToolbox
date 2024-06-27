@@ -25,6 +25,12 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/system)
 # ---------- Utility Libraries ----------
 add_subdirectory(utilities)
 
+# ---------- File Formats  ---------- 
+add_subdirectory(formats)
+
+# ---------- GPU Abstraction  ---------- 
+add_subdirectory(gpu)
+
 # ---------- Engine Core Framework ----------
 set(ENGINE_SOURCE_FILES_CORE
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Application.cpp
@@ -36,6 +42,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/core/PhysicsEngine.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.cpp
@@ -51,6 +58,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/Logging.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/ModuleBase.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/OSEvents.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Settings.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/core/PhysicsEngine.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/Translation.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.hpp
@@ -58,320 +66,40 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.hpp
 
 # ---------- Audition  ---------- 
 if(CITRUS_INCLUDE_AUDITION)
-set(ENGINE_SOURCE_FILES_AUDITION
-${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSyncSocket.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetUtilities.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextureImport.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextEditor.cpp
-)
-
-set(ENGINE_HEADER_FILES_AUDITION
-${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetUtilities.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/ModuleInspector.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/HexViewer.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/SpaceBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/AssetEditorBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/ModelImport.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextureImport.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/asseteditors/TextEditor.hpp
-)
+add_subdirectory(audition)
 endif()
 
 # ---------- Animation System ----------
-set(ENGINE_SOURCE_FILES_ANIMATION
-${CMAKE_CURRENT_SOURCE_DIR}/animation/AnimationSystem.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Bank.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Canvas.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/CustomPropSet.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerBase.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerClip.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/MorphSet.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Skeleton.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Spline.cpp
-)
-
-set(ENGINE_HEADER_FILES_ANIMATION
-${CMAKE_CURRENT_SOURCE_DIR}/animation/AnimationSystem.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Bank.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Canvas.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/CustomPropSet.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/LayerClip.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/MorphSet.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Skeleton.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/animation/Spline.hpp
-)
-
-# ---------- File Formats  ---------- 
-set(ENGINE_SOURCE_FILES_FORMAT
-${CMAKE_CURRENT_SOURCE_DIR}/formats/json/JSON.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.c
-${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/archive/CitrusArchive.cpp
-)
-
-set(ENGINE_HEADER_FILES_FORMAT
-${CMAKE_CURRENT_SOURCE_DIR}/formats/json/JSON.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/archive/CitrusArchive.hpp
-)
+add_subdirectory(animation)
 
 # ---------- Resource Manager  ---------- 
-set(ENGINE_SOURCE_FILES_RESOURCE_MANAGER
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceManager.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceTypeBase.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/JSONResource.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/TextResource.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/BinaryResource.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ShaderResource.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/TranslationResource.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/TextureResource.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ModelResource.cpp
-)
+add_subdirectory(resource)
 
-set(ENGINE_HEADER_FILES_RESOURCE_MANAGER
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceManager.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ResourceTypeBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/JSONResource.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/TextResource.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/BinaryResource.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ShaderResource.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/TranslationResource.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/TextureResource.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/resource/ModelResource.hpp
-)
-
-# ---------- Renderer Frontend ---------- 
-set(ENGINE_SOURCE_FILES_RENDERER
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.cpp
-)
-
-set(ENGINE_HEADER_FILES_RENDERER
-${CMAKE_CURRENT_SOURCE_DIR}/renderer/KeyLimeRenderer.hpp
-)
-
-# ---------- Graphics Backend Files ----------
-set(ENGINE_HEADER_FILES_GPU_INTERFACE
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Architect.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Bindless.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Buffer.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Commands.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Device.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/DebugUI.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Pipeline.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Present.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Texture.h
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/Struct.h)
-set(ENGINE_SOURCE_FILES_GPU_INTERFACE)
-
-if(CITRUS_GPU_NULL)
-set(ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/null/DeviceNull.cpp)
-set(ENGINE_HEADER_FILES_GPU_BACKEND)
-endif()
-
-if(CITRUS_GPU_VULKAN)
-set(ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DebugUIVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/StructVulkan.cpp)
-
-set(ENGINE_HEADER_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/DeviceVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PipelineVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/PresentVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/ArchitectVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BindlessVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/CommandsVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/TextureVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/BufferVulkan.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/vulkan/StructVulkan.hpp)
-endif()
-
-list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/TextureUpload.cpp)
-list(APPEND ENGINE_HEADER_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/DeviceBase.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/gpu/shared/ArchitectGraphBuilder.hpp)
+# ---------- Renderer ---------- 
+add_subdirectory(renderer)
 
 # ---------- Physics Backend Files ----------
-set(ENGINE_HEADER_FILES_PHYSICS_INTERFACE
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Baking.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Body.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Character.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Constraint.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Module.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Physics.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Query.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Ragdoll.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Shape.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/Surface.hpp)
-set(ENGINE_SOURCE_FILES_PHYSICS_INTERFACE)
-
-if(CITRUS_JOLT)
-set(ENGINE_SOURCE_FILES_PHYSICS_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBaking.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBody.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltCharacter.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltConstraint.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltContext.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltDebugRender.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltQuery.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltRagdoll.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltShape.cpp)
-
-set(ENGINE_HEADER_FILES_PHYSICS_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBaking.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltBody.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltCharacter.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltConstraint.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltContext.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltDebugRender.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltQuery.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltRagdoll.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/jolt/JoltShape.hpp)
-endif()
-
-list(APPEND ENGINE_SOURCE_FILES_GPU_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Module.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Surface.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/ConvexDecompose.cpp
-)
-
-list(APPEND ENGINE_HEADER_FILES_PHYSICS_BACKEND
-${CMAKE_CURRENT_SOURCE_DIR}/physics/shared/Surface.hpp
-)
+add_subdirectory(physics)
 
 # ---------- Scene Engine ---------- 
-set(ENGINE_SOURCE_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/DebugCamera.cpp
-)
+add_subdirectory(scene)
 
-set(ENGINE_HEADER_FILES_SCENE
-${CMAKE_CURRENT_SOURCE_DIR}/scene/SceneEngine.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/scene/DebugCamera.hpp
-)
-
-# ---------- Third Party Implementation ---------- 
-set(THIRD_PARTY_IMPL_FILES
-${THIRD_PARTY_DIRECTORY}/imgui/imgui_demo.cpp
-${THIRD_PARTY_DIRECTORY}/imgui/imgui_draw.cpp
-${THIRD_PARTY_DIRECTORY}/imgui/imgui_tables.cpp
-${THIRD_PARTY_DIRECTORY}/imgui/imgui_widgets.cpp
-${THIRD_PARTY_DIRECTORY}/imgui/imgui.cpp
-${THIRD_PARTY_DIRECTORY}/imnodes/imnodes.cpp
-${THIRD_PARTY_DIRECTORY}/implot/implot.cpp
-${THIRD_PARTY_DIRECTORY}/implot/implot_items.cpp
-${THIRD_PARTY_DIRECTORY}/implot/implot_demo.cpp
-${THIRD_PARTY_DIRECTORY}/im3d/im3d.cpp
-${THIRD_PARTY_DIRECTORY}/lz4/lz4.c
-${THIRD_PARTY_DIRECTORY}/lz4/lz4frame.c
-)
-
-if(CITRUS_INCLUDE_AUDITION)
-list(APPEND THIRD_PARTY_IMPL_FILES ${THIRD_PARTY_DIRECTORY}/imguicolortextedit/TextEditor.cpp)
-endif()
-
-if(CITRUS_GFX_VULKAN)
-list(APPEND THIRD_PARTY_IMPL_FILES ${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp)
-endif()
-if(CITRUS_SDL)
-list(APPEND THIRD_PARTY_IMPL_FILES ${THIRD_PARTY_DIRECTORY}/imgui/backends/imgui_impl_sdl.cpp)
-endif()
-
-# ---------- Middleware Integration ---------- 
-set(ENGINE_SOURCE_FILES_MIDDLEWARE
-${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.cpp
-)
-
-set(ENGINE_HEADER_FILES_MIDDLEWARE
-${CMAKE_CURRENT_SOURCE_DIR}/middleware/Im3dIntegration.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/middleware/ImguiIntegration.hpp
-)
+# ---------- ImGUI Integration ---------- 
+add_subdirectory(imgui)
 
 # ---------- Scripting Integration ---------- 
-if(CITRUS_LUA)
-set(ENGINE_SOURCE_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.cpp
-)
-
-set(ENGINE_HEADER_FILES_SCRIPTING
-${CMAKE_CURRENT_SOURCE_DIR}/scripting/lua/LuaScript.hpp
-)
-endif()
+add_subdirectory(scripting)
 
 # ---------- Interaction Engine ----------
-set(ENGINE_SOURCE_FILES_INTERACT
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/InteractionEngine.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/DeviceBackendLayer.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.cpp)
-
-set(ENGINE_HEADER_FILES_INTERACT
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/InteractionEngine.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/DeviceBackendLayer.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/BackendManifest.hpp)
-
-# ---------- Interaction Engine All Active Backends ----------
-if(CITRUS_INTERACT_INPUT_SDL)
-list(APPEND ENGINE_SOURCE_FILES_INTERACT
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLGamepad.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLKeyboardMouse.cpp)
-
-list(APPEND ENGINE_HEADER_FILES_INTERACT
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLGamepad.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/interact/backends/sdl/SDLKeyboardMouse.hpp)
-endif()
+add_subdirectory(interact)
 
 # ---------- All Engine Files ----------
 set(ENGINE_FILES 
 ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
-${ENGINE_SOURCE_FILES_ANIMATION} ${ENGINE_HEADER_FILES_ANIMATION}
-${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
 ${ENGINE_SOURCE_FILES_RENDERER} ${ENGINE_HEADER_FILES_RENDERER}
-${ENGINE_SOURCE_FILES_GPU_INTERFACE} ${ENGINE_HEADER_FILES_GPU_INTERFACE}
-${ENGINE_SOURCE_FILES_GPU_BACKEND} ${ENGINE_HEADER_FILES_GPU_BACKEND}
-${ENGINE_SOURCE_FILES_PHYSICS_INTERFACE} ${ENGINE_HEADER_FILES_PHYSICS_INTERFACE}
-${ENGINE_SOURCE_FILES_PHYSICS_BACKEND} ${ENGINE_HEADER_FILES_PHYSICS_BACKEND}
-${ENGINE_SOURCE_FILES_INTERACT} ${ENGINE_HEADER_FILES_INTERACT}
-${ENGINE_SOURCE_FILES_INTERACT_BACKEND} ${ENGINE_SOURCE_FILES_INTERACT_BACKEND}
 ${ENGINE_SOURCE_FILES_SCENE} ${ENGINE_HEADER_FILES_SCENE}
 ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
 ${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
-${ENGINE_SOURCE_FILES_ASSET_SYSTEM} ${ENGINE_HEADER_FILES_ASSET_SYSTEM}
-${ENGINE_SOURCE_FILES_FORMAT} ${ENGINE_HEADER_FILES_FORMAT}
 ${ENGINE_SOURCE_FILES_RESOURCE_MANAGER} ${ENGINE_HEADER_FILES_RESOURCE_MANAGER})
 
 # ---------- Create Engine Library ----------
@@ -386,6 +114,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../ FILES ${THIRD_PARTY_IMPL_FILES
 source_group(native FILES ${NATIVE_SOURCE_FILES})
 source_group(generated FILES 
 ${CITRUS_REFLECT_OUTPUTS})
+set_target_properties(engine PROPERTIES FOLDER "engine")
 
 # ---------- Include and Link ----------
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
@@ -394,43 +123,21 @@ target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdpar
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
 target_link_libraries(engine utilities)
+target_link_libraries(engine formats)
+target_link_libraries(engine gpu)
+target_link_libraries(engine scripting)
+target_link_libraries(engine interact)
+target_link_libraries(engine imgui)
+target_link_libraries(engine animation)
+target_link_libraries(engine physics)
+target_link_libraries(engine renderer)
+target_link_libraries(engine scene)
+target_link_libraries(engine resource)
+if(CITRUS_INCLUDE_AUDITION)
+target_link_libraries(engine audition)
+endif()
 if(IS_STATIC_GAME)
 target_link_libraries(engine game)
-endif()
-
-if(CITRUS_SDL)
-	target_link_libraries(engine ${SDL2_LIBRARIES})
-	target_include_directories(engine PUBLIC ${SDL2_INCLUDE_DIRS})
-endif()
-
-if(CITRUS_GPU_VULKAN)
-	target_link_libraries(engine ${Vulkan_LIBRARIES})
-	target_include_directories(engine PUBLIC ${Vulkan_INCLUDE_DIRS})
-endif()
-
-if(CITRUS_LUA)
-	target_link_libraries(engine ${LUA_LIBRARIES})
-	target_include_directories(engine PUBLIC ${LUA_INCLUDE_DIR})
-endif()
-
-if(CITRUS_JOLT)
-	target_link_libraries(engine debug ${JOLT_LIBRARY_DEBUG} optimized ${JOLT_LIBRARY_RELEASE})
-	target_include_directories(engine PUBLIC ${JOLT_INCLUDE_DIR})
-endif()
-
-if(CITRUS_RECAST)
-	target_link_libraries(engine ${RECAST_LIBRARIES})
-	target_include_directories(engine PUBLIC ${RECAST_INCLUDE_DIR})
-endif()
-
-if(CITRUS_DETOUR)
-	target_link_libraries(engine ${DETOUR_LIBRARIES})
-	target_include_directories(engine PUBLIC ${DETOUR_INCLUDE_DIR})
-endif()
-
-if(CITRUS_ANGELSCRIPT)
-	target_link_libraries(engine ${ANGELSCRIPT_LIBRARIES})
-	target_include_directories(engine PUBLIC ${ANGELSCRIPT_INCLUDE_DIR})
 endif()
 
 # ---------- Copy Shared Libraries and Config ----------

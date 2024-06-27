@@ -18,7 +18,7 @@
 
 #include "utilities/Common.h"
 #include "core/Translation.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 #include "audition/AuditionEditor.hpp"
 
 class CT_API ctAuditionSpaceBase {

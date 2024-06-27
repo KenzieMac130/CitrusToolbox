@@ -14,22 +14,23 @@
    limitations under the License.
 */
 
-#pragma once
+#include "PhysicsEngine.hpp"
 
-#include "utilities/Common.h"
-#include "core/ModuleBase.hpp"
-#include "Physics.hpp"
+ctResults ctPhysicsModule::Startup() {
+   ctPhysicsEngineDesc desc = {};
+   desc.scratchAllocationSize = 10 * 1024 * 1024;
+   return ctPhysicsEngineStartup(ctx, desc);
+}
 
-class CT_API ctPhysicsModule : public ctModuleBase {
-public:
-   ctResults Startup() final;
-   ctResults Shutdown() final;
-   const char* GetModuleName() final;
-   void DebugUI(bool useGizmos) final;
-   inline ctPhysicsEngine GetPhysicsEngine() {
-      return ctx;
-   }
+ctResults ctPhysicsModule::Shutdown() {
+   return ctPhysicsEngineShutdown(ctx);
+}
 
-private:
-   ctPhysicsEngine ctx;
-};
+const char* ctPhysicsModule::GetModuleName() {
+   return "Physics";
+}
+
+void ctPhysicsModule::DebugUI(bool useGizmos) {
+   ctPhysicsEngineExecDebugUI(ctx);
+   if (useGizmos) { ctPhysicsEngineExecDebugDraw(ctx); }
+}

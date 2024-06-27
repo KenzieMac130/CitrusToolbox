@@ -15,6 +15,7 @@
 */
 
 #include "StackTest.hpp"
+#include "core/PhysicsEngine.hpp"
 
 const char* StackTest::GetName() {
    return "Stack Test";

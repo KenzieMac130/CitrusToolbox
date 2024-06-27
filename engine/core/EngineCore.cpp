@@ -29,8 +29,8 @@
 #include "Translation.hpp"
 #include "resource/ResourceManager.hpp"
 
-#include "middleware/ImguiIntegration.hpp"
-#include "middleware/Im3dIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
+#include "imgui/Im3dIntegration.hpp"
 
 #if CITRUS_INCLUDE_AUDITION
 #include "audition/HotReloadDetection.hpp"
@@ -39,12 +39,11 @@
 #include "audition/LiveSync.hpp"
 #endif
 
-#include "animation/AnimationSystem.hpp"
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
 #include "scene/SceneEngine.hpp"
 
-#include "physics/Module.hpp"
+#include "PhysicsEngine.hpp"
 
 ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    ZoneScoped;
@@ -79,7 +78,6 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Interact = new ctInteractionEngine(true);
    ImguiIntegration = new ctImguiIntegration();
    Im3dIntegration = new ctIm3dIntegration();
-   Animation = new ctAnimationSystem();
    Renderer = new ctKeyLimeRenderer();
    Physics = new ctPhysicsModule();
    FrameTime = ctStopwatch();
@@ -111,7 +109,6 @@ ctResults ctEngineCore::Ignite(ctApplication* pApp, int argc, char* argv[]) {
    Interact->ModuleStartup(this);
    ImguiIntegration->ModuleStartup(this);
    Im3dIntegration->ModuleStartup(this);
-   Animation->ModuleStartup(this);
    Physics->ModuleStartup(this);
    SceneEngine->ModuleStartup(this);
    Renderer->ModuleStartup(this);
@@ -187,7 +184,6 @@ ctResults ctEngineCore::Shutdown() {
 #endif
    SceneEngine->ModuleShutdown();
    Physics->ModuleShutdown();
-   Animation->ModuleShutdown();
    Renderer->ModuleShutdown();
    Im3dIntegration->ModuleShutdown();
    ImguiIntegration->ModuleShutdown();
@@ -211,7 +207,6 @@ ctResults ctEngineCore::Shutdown() {
    delete Editor;
 #endif
    delete Physics;
-   delete Animation;
    delete Renderer;
    delete Im3dIntegration;
    delete ImguiIntegration;

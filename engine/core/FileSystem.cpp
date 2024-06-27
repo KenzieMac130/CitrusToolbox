@@ -17,7 +17,7 @@
 #include "FileSystem.hpp"
 #include "EngineCore.hpp"
 #include "Translation.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 
 ctFileSystem::ctFileSystem(const ctStringUtf8& appName,
                            const ctStringUtf8& organizationName) {

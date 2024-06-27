@@ -35,8 +35,8 @@
 #include "core/Translation.hpp"
 #include "core/AsyncTasks.hpp"
 
-#include "middleware/ImguiIntegration.hpp"
-#include "middleware/Im3dIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
+#include "imgui/Im3dIntegration.hpp"
 
 #define CT_KEYLIME_BIND_BUFFER_IMGUI_INDICES  0
 #define CT_KEYLIME_BIND_BUFFER_IMGUI_VERTICES 1

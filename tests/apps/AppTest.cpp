@@ -16,8 +16,8 @@
 
 #include "core/Application.hpp"
 #include "core/Translation.hpp"
-#include "middleware/Im3dIntegration.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/Im3dIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 #include "core/FileSystem.hpp"
 #include "interact/InteractionEngine.hpp"
 #include "renderer/KeyLimeRenderer.hpp"

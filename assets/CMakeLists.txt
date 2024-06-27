@@ -72,3 +72,7 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 add_custom_target(assets_clean 
 COMMAND python waf distclean
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+set_target_properties(assets_clean PROPERTIES FOLDER "assets")
+set_target_properties(assets_configure PROPERTIES FOLDER "assets")
+set_target_properties(assets_build PROPERTIES FOLDER "assets")

@@ -17,12 +17,12 @@
 #include "SceneEngine.hpp"
 #include "core/EngineCore.hpp"
 
-#include "middleware/ImguiIntegration.hpp"
-#include "middleware/Im3dIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
+#include "imgui/Im3dIntegration.hpp"
 #include "renderer/KeyLimeRenderer.hpp"
 #include "core/WindowManager.hpp"
 #include "core/Application.hpp"
-#include "physics/Module.hpp"
+#include "core/PhysicsEngine.hpp"
 
 ctResults ctSceneEngine::Startup() {
    return ctResults();

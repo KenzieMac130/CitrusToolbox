@@ -18,7 +18,7 @@
 #include "EngineCore.hpp"
 #include "Settings.hpp"
 #include "WindowManager.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 
 ctDynamicArray<ctDebugSystem*> danglingDebugSystems;
 bool savedExit = false;

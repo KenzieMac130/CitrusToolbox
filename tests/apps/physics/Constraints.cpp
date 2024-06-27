@@ -15,6 +15,7 @@
 */
 
 #include "Constraints.hpp"
+#include "core/PhysicsEngine.hpp"
 
 const char* ConstraintTest::GetName() {
    return "Constraints";

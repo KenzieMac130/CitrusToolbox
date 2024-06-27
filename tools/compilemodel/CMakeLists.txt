@@ -52,4 +52,5 @@ ${CITRUS_MODEL_HEADER_FILES}
 ${CITRUS_MODEL_SOURCE_FILES})
 target_include_directories(CitrusModel PUBLIC ${SHADERC_INCLUDE_DIRS})
 target_link_libraries(CitrusModel PUBLIC engine)
-target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
+target_include_directories(CitrusModel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
+set_target_properties(CitrusModel PROPERTIES FOLDER "tools")

@@ -81,7 +81,7 @@ const char* ctAssetCompilerBootstrap::GetModuleName() {
    return "Asset Compiler Bootstrap";
 }
 
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 void ctAssetCompilerBootstrap::DebugUI(bool useGizmos) {
    AcquireOutputLock();
    ImGui::Text(GetOutputText());

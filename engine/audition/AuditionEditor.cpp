@@ -14,7 +14,7 @@
    limitations under the License.
 */
 #include "AuditionEditor.hpp"
-#include "middleware/ImguiIntegration.hpp"
+#include "imgui/ImguiIntegration.hpp"
 #include "core/EngineCore.hpp"
 #include "core/Translation.hpp"
 #include "core/Settings.hpp"
@@ -61,7 +61,6 @@ ctResults ctAuditionEditor::Startup() {
    RegisterModule((ctModuleBase*)Engine->Interact);
    RegisterModule((ctModuleBase*)Engine->JobSystem);
    RegisterModule((ctModuleBase*)Engine->OSEventManager);
-   RegisterModule((ctModuleBase*)Engine->Animation);
    RegisterModule((ctModuleBase*)Engine->Renderer);
    RegisterModule((ctModuleBase*)Engine->Physics);
    RegisterModule((ctModuleBase*)Engine->SceneEngine);
