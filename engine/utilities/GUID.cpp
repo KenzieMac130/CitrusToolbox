@@ -55,32 +55,3 @@ bool ctGUID::isValid() const {
    const uint64_t empty[2] = {0, 0};
    return memcmp(data, empty, 16) != 0;
 }
-
-ctResults ctGUIDFromAssetPath(ctGUID& result, const char* assetPath, const char* output) {
-   ctStringUtf8 ctacPath = assetPath;
-   ctacPath += ".ctac";
-   ctacPath.FilePathLocalize();
-   ctFile ctac = ctFile();
-   CT_RETURN_FAIL(ctac.Open(ctacPath.CStr(), CT_FILE_OPEN_READ_TEXT));
-   ctStringUtf8 string;
-   ctac.GetText(string);
-   ctac.Close();
-
-   ctJSONReader json = ctJSONReader();
-   CT_RETURN_FAIL(json.BuildJsonForPtr(string.CStr(), string.ByteLength()));
-
-   ctJSONReadEntry root;
-   CT_RETURN_FAIL(json.GetRootEntry(root));
-
-   ctJSONReadEntry guids;
-   CT_RETURN_FAIL(root.GetObjectEntry("guids", guids));
-
-   ctJSONReadEntry guid;
-   CT_RETURN_FAIL(root.GetObjectEntry(output, guid));
-
-   ctStringUtf8 str;
-   guid.GetString(str);
-
-   result = ctGUID(str.CStr());
-   return CT_SUCCESS;
-}

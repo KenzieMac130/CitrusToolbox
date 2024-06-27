@@ -17,6 +17,7 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "formats/json/JSON.hpp"
 #include "cgltf/cgltf.h"
 #include "formats/model/Model.hpp"
 #include "tiny_imageFormat/tinyimageformat.h"

@@ -18,15 +18,39 @@
 
 #include "utilities/Common.h"
 
+class CT_API ctKeyLimeRenderPassDefinitionContext {
+public:
+   ctKeyLimeRenderPassDefinitionContext(ctGPUArchitectDefinitionContext* ctx) { pArchitectCtx = ctx; }
+   void RunAfter(ctGPUArchitectDefinitionContext* ctx, const char* passName);
+   void SetActive(bool);
+
+   void DeclareResource();
+
+private:
+   ctGPUArchitectDefinitionContext* pArchitectCtx;
+   ctStaticArray<ArchitectDependency, 32>
+};
+
+class CT_API ctKeyLimeRenderPassExecutionContext {
+public:
+   ctGPUArchitectExecutionContext(ctGPUArchitectExecutionContext* ctx) { pArchitectCtx = ctx; }
+
+   void RasterDrawTriangle(const char* pipeline);
+   void RasterDrawVertices(const char* pipeline, uint32_t triCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
+   void RasterDrawScene(const char* renderMode);
+   void RasterDrawImGUI();
+   void RasterDrawIm3D(const char* layer);
+
+   void ComputeDispatch(pipeline, x, y, z);
+private:
+   ctGPUArchitectExecutionContext* pArchitectCtx;
+};
+
 class CT_API ctKeyLimeRenderPassBase {
 public:
-   const char* name;
-
-   virtual bool Define(ctGPUArchitectDefinitionContext* ctx);
-   virtual void Execute(ctGPUArchitectExecutionContext* ctx);
-
-   /* Features for definition */
-   void RunAfter(ctGPUArchitectDefinitionContext* ctx, ctKeyLimeRenderPassBase* otherFeature);
+   virtual bool Poll(); /* decide whether to run and set the parent */
+   virtual void Define(ctKeyLinmRenderPassDefinitionContext& ctx); /* define needed resources */
+   virtual void Execute(ctKeyLimeRenderPassExecutionContext& ctx); /* render the data */
 
    private:
    ctGPUDependencyID GetFinishedBarrier();
@@ -34,4 +58,4 @@ public:
    static ctResults DefinePassCallback(ctGPUArchitectDefinitionContext* ctx, void* pSelf);
    static ctResults (*ctGPUArchitectTaskExecutionFn)(ctGPUArchitectExecutionContext* pCtx,
                                                       void* pUserData)
-}
+};

@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "Common.h"
-#include "String.hpp"
+#include "../engine/utilities/Common.h"
 
 #define JSMN_PARENT_LINKS
 #define JSMN_HEADER

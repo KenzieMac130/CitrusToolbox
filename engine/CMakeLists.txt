@@ -73,10 +73,10 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandlePointer.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
@@ -95,11 +95,11 @@ ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandledList.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandlePointer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/JSON.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/utilities/ReflectForward.h
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/RingBuffer.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
@@ -209,22 +209,21 @@ ${CMAKE_CURRENT_SOURCE_DIR}/animation/Spline.hpp
 
 # ---------- File Formats  ---------- 
 set(ENGINE_SOURCE_FILES_FORMAT
+${CMAKE_CURRENT_SOURCE_DIR}/formats/json/JSON.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.c
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/archive/CitrusArchive.cpp
 )
 
 set(ENGINE_HEADER_FILES_FORMAT
+${CMAKE_CURRENT_SOURCE_DIR}/formats/json/JSON.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/WADCore.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/Header.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/wad/prototypes/MarkersAndBlobs.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/texture/TextureLoad.h
-${CMAKE_CURRENT_SOURCE_DIR}/formats/package/CitrusPackage.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/mo/MO.h
 ${CMAKE_CURRENT_SOURCE_DIR}/formats/model/Model.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/formats/archive/CitrusArchive.hpp
 )
 
 # ---------- Resource Manager  ---------- 

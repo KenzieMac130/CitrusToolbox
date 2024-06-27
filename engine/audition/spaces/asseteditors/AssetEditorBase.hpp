@@ -18,6 +18,7 @@
 
 #include "utilities/Common.h"
 #include "../SpaceBase.hpp"
+#include "formats/json/JSON.hpp"
 
 class CT_API ctAuditionSpaceAssetEditorBase : public ctAuditionSpaceBase {
 public:

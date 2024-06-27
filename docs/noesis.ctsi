@@ -60,11 +60,17 @@ CT_ATTRIBUTES_END()
 /* ... */
 
 /* renderstate pipeline variants:
-blend: src, lerp, mult, screen, add, (ignore dual)
+blend: src, lerp, mult, screen, add, (ignore dual and disable subpixelRendering)
 stencil: none, keep, incr, decr, clear
 wireframe: ignore in production builds
 25 pipeline varaints 
 Look into "IsValidState" for further culling */ 
+
+/*
+RenderTarget is just the architect hashes
+cloning a target doesn't actually do anything since architect handles that
+Texture is an External Texture
+*/
 
 /* uniform data gets packed into a continuous flattened structured buffer */
 

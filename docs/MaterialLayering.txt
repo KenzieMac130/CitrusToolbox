@@ -1,0 +1,42 @@
+struct Texture {
+    int32_t Binding;
+    int32_t UV;
+    Vector2 Offset;
+    Vector2 Scale;
+};
+
+enum MaterialLayerBlendMode {
+    MAT_BLEND_OVER, /* lerped over base layer */
+    MAT_BLEND_DETAIL /* added over base layer */
+};
+
+struct MaterialLayer {
+    MaterialLayerBlendMode BlendMode; /* */
+    Texture BaseColorTexture;
+    Vector4 BaseColor;
+
+    Texture NormalHeight;
+    float NormalStrength;
+    float HeightStrength;
+    float HeightMidlevel;
+    Texture OcclusionMetalRoughness;
+    float OcclusionStrength;
+    float Metalness;
+    float Roughness;
+    Texture AuxTexture0; /* emission on basic material */
+    Texture AuxTexture1; /* blend mask (only active on layer 0) */
+    Texture AuxTexture2; /* reserved */
+    Texture AuxTexture3; /* reserved */
+    Vector4 AuxProps0; /* blending: multiplied over the blend mask */
+    Vector4 AuxProps1; /* blending: multiplied over vertex color 1 */
+    Vector4 AuxProps2; /* blending: multiplied over vertex color 2 */
+    Vector4 AuxProps3; /* blending: multiplied over normal XYZ of previous results */
+    Vector4 AuxProps4; /* blending: added to blend result */
+    Vector4 AuxProps5; /* blending: contrast */
+};
+
+struct Material {
+    const char* ShaderType;
+    int32_t LayerCount;
+    MaterialLayer MaterialLayers[8];
+};

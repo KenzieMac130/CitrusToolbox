@@ -17,6 +17,7 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "formats/json/JSON.hpp"
 
 class ctPhysicsSurfaceTypeT {
 public:

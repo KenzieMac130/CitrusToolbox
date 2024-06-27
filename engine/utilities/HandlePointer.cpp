@@ -37,7 +37,7 @@ struct ctHandlePtrEntry {
    }
 #endif
    void GarbageCollect() {
-      ctAssert(fpGarbageCollection);
+      if (!fpGarbageCollection) { return; }
       fpGarbageCollection(pPointer, pUserdata);
    }
    _ctHandleOpaquePtrGarbageCollectFn fpGarbageCollection;

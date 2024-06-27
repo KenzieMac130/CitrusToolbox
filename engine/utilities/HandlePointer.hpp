@@ -84,7 +84,7 @@ public:
    }
 
    /* pointer access (do not store long term)
-   guarantees this handle will be alive and not NULL (assuming the original pointer was
+   guarantees this pointer will be alive and not NULL (assuming the original pointer was
    not NULL) */
    inline T* GetPtr() const {
       return (T*)opaque.Get();
@@ -103,9 +103,29 @@ public:
    inline ctHandle GetHandle() const {
       return opaque.handle;
    }
+
+   /* Reflect */
+   static struct ctReflectContainerInterface _GetReflectInterface();
 };
 
 template<class T, class U>
 ctHandlePtr<T> ctHandlePtrCast(const ctHandlePtr<U>& original) {
    return ctHandlePtr<T>(original.GetHandle());
+}
+
+template<class T>
+inline ctReflectContainerInterface ctHandlePtr<T>::_GetReflectInterface() {
+   ctReflectContainerInterface reflectInterface = {};
+   reflectInterface.containerType = "ctHandlePtr";
+   reflectInterface.GetCount = [](void* baseAddress, void* extra) -> size_t { return 1; };
+   reflectInterface.GetCapacity = [](void* baseAddress, void* extra) -> size_t {
+      return 1;
+   };
+   reflectInterface.GetValue = [](size_t index, void* baseAddress, void* extra) -> void* {
+      ctAssert(baseAddress);
+      ctHandlePtr<T>& handle = *(ctHandlePtr<T>*)baseAddress;
+      if (!handle.isHandleValid()) { return NULL; }
+      return handle.GetPtr();
+   };
+   return reflectInterface;
 }

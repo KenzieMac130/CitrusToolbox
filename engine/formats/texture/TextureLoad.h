@@ -49,6 +49,8 @@ struct ctTextureLoadCtx {
 };
 
 enum ctResults ctTextureLoadFromFile(ctFile& file, struct ctTextureLoadCtx* pCtx);
+enum ctResults ctTextureLoadFromFileWithBudget(ctFile& file,
+                                               struct ctTextureLoadCtx* pCtx);
 void ctTextureLoadCtxRelease(struct ctTextureLoadCtx* pCtx);
 
 #ifdef __cplusplus

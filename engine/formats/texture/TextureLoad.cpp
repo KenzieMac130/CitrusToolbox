@@ -215,19 +215,20 @@ ctResults LoadMisc(ctFile& file, ctTextureLoadCtx* ctx) {
    return CT_SUCCESS;
 }
 
-ctResults ctTextureLoadFromFile(ctFile& file, ctTextureLoadCtx* ctx) {
-   *ctx = ctTextureLoadCtx();
+ctResults ctTextureLoadFromFile(ctFile& file, ctTextureLoadCtx* pCtx) {
+   ctAssert(pCtx);
+   *pCtx = ctTextureLoadCtx();
    char peek[6];
    memset(peek, 0, 6);
    int64_t read = (int64_t)file.ReadRaw(peek, 1, 5);
    file.Seek(-read, CT_FILE_SEEK_CUR);
    uint8_t ktxId[5] = {0xAB, 0x4B, 0x54, 0x58, 0x00};
    if (ctCStrNEql(peek, (const char*)ktxId, 4)) {
-      return LoadKTX(file, ctx);
+      return LoadKTX(file, pCtx);
    } else if (ctCStrNEql(peek, "DDS", 3)) {
-      return LoadDDS(file, ctx);
+      return LoadDDS(file, pCtx);
    } else {
-      return LoadMisc(file, ctx);
+      return LoadMisc(file, pCtx);
    }
 }
 

@@ -16,7 +16,7 @@
 
 #include "PipelineVulkan.hpp"
 #include "BindlessVulkan.hpp"
-#include "formats/wad/prototypes/MarkersAndBlobs.h"
+#include "../shared/WadMarkersAndBlobs.h"
 
 ctGPUPipelineBuilder::ctGPUPipelineBuilder(ctGPUPipelineType pipelineType) {
    type = pipelineType;

@@ -74,6 +74,8 @@ public:
    QSort(const size_t position, const size_t amount, int (*compare)(const T*, const T*));
    /* Reverse */
    void Reverse();
+   /* Swap */
+   ctResults Swap(int64_t indexA, int64_t indexB);
 
    /* Hash */
    uint32_t xxHash32(const size_t position, const size_t amount, const int seed) const;
@@ -82,6 +84,9 @@ public:
    uint64_t xxHash64(const size_t position, const size_t amount, const int seed) const;
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
+
+   /* Reflect */
+   static struct ctReflectContainerInterface _GetReflectInterface();
 
 private:
    size_t _count;
@@ -356,6 +361,17 @@ inline void ctStaticArray<T, TCAPACITY>::Reverse() {
 }
 
 template<class T, size_t TCAPACITY>
+inline ctResults ctStaticArray<T, TCAPACITY>::Swap(int64_t indexA, int64_t indexB) {
+   ctAssert((size_t)indexA < Count());
+   ctAssert((size_t)indexB < Count());
+   ctAssert(_pData);
+   T tmp = _pData[indexA];
+   _pData[indexA] = _pData[indexB];
+   _pData[indexB] = tmp;
+   return CT_SUCCESS;
+}
+
+template<class T, size_t TCAPACITY>
 inline uint32_t ctStaticArray<T, TCAPACITY>::xxHash32(const size_t position,
                                                       const size_t amount,
                                                       const int seed) const {
@@ -389,4 +405,50 @@ inline uint64_t ctStaticArray<T, TCAPACITY>::xxHash64(const int seed) const {
 template<class T, size_t TCAPACITY>
 inline uint64_t ctStaticArray<T, TCAPACITY>::xxHash64() const {
    return xxHash64(0);
+}
+
+template<class T, size_t TCAPACITY>
+inline ctReflectContainerInterface ctStaticArray<T, TCAPACITY>::_GetReflectInterface() {
+   ctReflectContainerInterface reflectInterface = {};
+   reflectInterface.containerType = "ctStaticArray";
+   reflectInterface.GetCount = [](void* baseAddress, void* extra) -> size_t {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return array.Count();
+   };
+   reflectInterface.GetCapacity = [](void* baseAddress, void* extra) -> size_t {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return array.Capacity();
+   };
+   reflectInterface.GetValue = [](size_t index, void* baseAddress, void* extra) -> void* {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return &array[index];
+   };
+   reflectInterface.Swap = [](
+     int64_t indexA, int64_t indexB, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return array.Swap(indexA, indexB);
+   };
+   reflectInterface.RemoveAt =
+     [](int64_t index, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      array.RemoveAt(index);
+      return CT_SUCCESS;
+   };
+   reflectInterface.InsertNew =
+     [](int64_t index, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return array.Insert(T(), index);
+   };
+   reflectInterface.AppendNew = [](void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return array.Append(T());
+   };
+   return reflectInterface;
 }

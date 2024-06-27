@@ -20,6 +20,7 @@ enable_testing()
 add_executable(Test_Units UnitTestBase.cpp AllTests.h.in
 utilities/UtilitiesTest.cpp
 ecs/ECSBasics.cpp
+reflect/ReflectTest.cpp
 )
 
 set_property(TARGET Test_Units PROPERTY FOLDER "tests")
@@ -32,6 +33,8 @@ add_test(${test_name} Test_Units ${test_name} Test_Units)
 endmacro()
 
 # --------------- Define All Tests Here ---------------
+ct_add_test(basic_reflect_test)
+
 ct_add_test(array_test)
 ct_add_test(dynamic_string_test)
 ct_add_test(file_path_test)

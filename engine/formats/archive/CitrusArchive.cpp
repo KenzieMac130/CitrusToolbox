@@ -14,16 +14,4 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include "utilities/Common.h"
-
-#define CT_WADPROTO_NAME_HEADER "CITRUS"
-#define CT_WADPROTO_HEADER_MAGIC 0x52544943
-#define CT_WADPROTO_HEADER_INTERNAL_REV 1
-
-struct CT_API ctWADProtoHeader {
-	int32_t magic;
-	int32_t revision;
-	int32_t flags;
-};
+#include "CitrusArchive.hpp"

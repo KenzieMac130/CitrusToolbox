@@ -18,6 +18,8 @@
 
 #include "utilities/Common.h"
 
+class ctStringUtf8;
+
 enum ctFileSeekMode {
    CT_FILE_SEEK_SET = RW_SEEK_SET,
    CT_FILE_SEEK_CUR = RW_SEEK_CUR,

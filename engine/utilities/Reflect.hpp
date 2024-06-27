@@ -18,93 +18,104 @@
 
 #include "utilities/Common.h"
 
-/* ------------------ USEAGE ------------------ */
-/*
-Example.hpp:
-
-struct Foo {
-   ctString mvar;
+struct ctReflectEnumEntryInfo {
+   const char* programmerName;
+   const char* friendlyName;
+   uint64_t value;
 };
 
-class Baz : public ctReflectorBase {
-public:
-   CT_DEFINE_REFLECTOR_VFUNC()
-   int* mvar3; // pointers are supported!
-   ctDynamicArray<uint8_t> darray;
-   ctStaticArray<uint8_t> darray;
+enum ctReflectEnumType { CT_REFLECT_ENUM_NUMBERED, CT_REFLECT_ENUM_BITMASK };
+
+struct ctReflectEnumInfo {
+   ctReflectEnumType type; /* SEQUENCE or BITMASK */
+   const ctReflectEnumEntryInfo* pEntries;
 };
 
-struct Bar {
-   int mvar;
-   Foo mvar2;
-   Baz myvar3;
+// clang-format off
+#define CT_REFLECT_ENUM_DECLARE(_TYPE_NAME) const ctReflectEnumInfo _##_TYPE_NAME##_citenumreflget();
+#define CT_REFLECT_ENUM_DEFINE_START(_TYPE_NAME, _ENUM_TYPE) const ctReflectEnumInfo _##_TYPE_NAME##_citenumreflget() \
+   { ctReflectEnumType etype = _ENUM_TYPE; \
+static ctReflectEnumEntryInfo _##_TYPE_NAME##_enum_info_ents[] = {
+#define CT_REFLECT_ENUM_DEFINE_ENTRY(_TYPE_NAME, _NAME, _FRIENDLY_NAME) { #_NAME, _FRIENDLY_NAME, (uint64_t)_NAME },
+#define CT_REFLECT_ENUM_DEFINE_END(_TYPE_NAME) CT_REFLECT_ENUM_DEFINE_ENTRY(NULL, NULL, 0)}; \
+    ctReflectEnumInfo _##_TYPE_NAME##_enum_info = { etype, _##_TYPE_NAME##_enum_info_ents };\
+    return _##_TYPE_NAME##_enum_info; \
 };
-
-CT_DEFINE_REFLECTOR(Foo)
-CT_DEFINE_REFLECTOR(Bar)
-CT_DEFINE_REFLECTOR(Baz)
-
-Example.cpp:
-
-CT_IMPLEMENT_REFLECTOR(Foo){
-   CT_REFLECT_BASIC_TYPE(Foo, ctStringUtf8, myvar, "")
-}
-
-CT_IMPLEMENT_REFLECTOR(Bar){
-   CT_REFLECT_BASIC_TYPE(Bar, int, myvar, "")
-   CT_REFLECT_STRUCT_TYPE(Bar, Foo, myvar, "")
-   CT_REFLECT_POLY_TYPE(Bar, Baz, myvar, "")
-}
-
-CT_IMPLEMENT_REFLECTOR(Baz){
-   CT_REFLECT_BASIC_TYPE(Baz, int*, myvar, "")
-}
-
-CT_IMPLEMENT_REFLECTOR_VFUNC(Baz)
-*/
-
-struct ctReflectContainerInterface {
-   /* container type */
-   /* get extra offset */
-   /* get count */
-   /* get size */
-   /* get key type */
-   /* get value type */
-   /* get key at */
-   /* get value at */
-   /* insert at */
-   /* remove at */
-};
+// clang-format on
 
 /* the reflector context is responsible for implementing ui/saving/loading/etc */
 class ctReflectContext {
 public:
-   virtual void OnBasicType(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-   virtual void OnStructBegin(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-   virtual void OnStructEnd(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-   virtual void OnArrayBegin(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-   virtual void OnArrayEnd(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-
-   virtual void OnTableKey(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-   virtual void OnTableBegin(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-   virtual void OnTableEnd(const char* typeName, const char* name, const char* metadata, const ctReflectContainerInterface* pCallbacks, void* data);
-
-   virtual void LowLevelBasicType(const char* typeName,
+   /* number types, booleans, 3D math classes */
+   virtual void OnBasicType(const char* typeName,
                             const char* name,
-                            size_t offset,
-                            const ctReflectContainerInterface* pCallbacks,
-                            const char* metadata) const = 0;
-   virtual void LowLevelStructType(const char* typeName,
-                             const char* name,
-                             size_t offset,
-                             const ctReflectContainerInterface* pCallbacks,
-                             const char* metadata,
-                             const class ctReflectorBase& reflector) const = 0;
-   virtual void LowLevelPolyType(const char* typeName,
+                            const char* metadata,
+                            void* data) = 0;
+   virtual void OnEnumType(const char* typeName,
+                           const char* name,
+                           const char* metadata,
+                           const ctReflectEnumInfo& enumInfo,
+                           uint64_t& data) = 0;
+   virtual void
+   OnByteBuffer(const char* name, const char* metadata, size_t size, uint8_t* data) = 0;
+   virtual void
+   OnCStringBuffer(const char* name, const char* metadata, size_t size, char* data) = 0;
+   virtual void OnDynamicString(const char* name,
+                                const char* metadata,
+                                class ctStringUtf8& string) = 0;
+
+   virtual void
+   OnStructBegin(const char* typeName, const char* name, const char* metadata) = 0;
+   virtual void
+   OnStructEnd(const char* typeName, const char* name, const char* metadata) = 0;
+   virtual void OnContainerBegin(const char* typeName,
+                                 const char* name,
+                                 const char* metadata,
+                                 ctReflectContainerInterface& containerInterface) = 0;
+   virtual void
+   OnContainerEntryBegin(size_t index,
+                         ctReflectContainerInterface& containerInterface) = 0;
+   virtual void OnContainerEntryEnd(size_t index,
+                                    ctReflectContainerInterface& containerInterface) = 0;
+   virtual void OnContainerEnd(const char* typeName,
+                               const char* name,
+                               const char* metadata,
+                               ctReflectContainerInterface& containerInterface) = 0;
+
+   void LowLevelBasicType(const char* typeName,
+                          const char* name,
+                          size_t offset,
+                          size_t size,
+                          size_t fixedCount,
+                          ctReflectContainerInterface* pContainerInterface,
+                          const char* metadata,
+                          void* data);
+   void LowLevelEnumType(const char* typeName,
+                         const char* name,
+                         size_t offset,
+                         size_t size,
+                         size_t fixedCount,
+                         ctReflectContainerInterface* pContainerInterface,
+                         const ctReflectEnumInfo& enumInfo,
+                         const char* metadata,
+                         void* data);
+   void LowLevelStructType(const char* typeName,
                            const char* name,
                            size_t offset,
-                           const ctReflectContainerInterface* pCallbacks,
-                           const char* metadata) const = 0;
+                           size_t size,
+                           size_t fixedCount,
+                           ctReflectContainerInterface* pContainerInterface,
+                           const char* metadata,
+                           const class ctReflectorBase& reflector,
+                           void* data);
+   void LowLevelPolyType(const char* typeName,
+                         const char* name,
+                         size_t offset,
+                         size_t size,
+                         size_t fixedCount,
+                         ctReflectContainerInterface* pContainerInterface,
+                         const char* metadata,
+                         void* data);
 };
 
 /* sidecar or even base class object which caries reflection */
@@ -112,7 +123,7 @@ class ctReflectorBase {
 public:
    virtual size_t GetStructSize() const = 0;
    virtual const char* GetStructName() const = 0;
-   virtual void GetStructReflection(ctReflectContext& ctx) const = 0;
+   virtual void GetStructReflection(ctReflectContext& ctx, void* data) const = 0;
 };
 
 /* ------------------ DEFINITION ------------------ */
@@ -121,17 +132,17 @@ public:
 #define CT_DEFINE_REFLECTOR(_CLASS_TYPE)                                                 \
    class _##_CLASS_TYPE##_citrefl : public ctReflectorBase {                             \
    public:                                                                               \
-      virtual void GetStructReflection(ctReflectContext& ctx) const override;            \
-      virtual const char* GetName() const override;                                      \
-      virtual size_t GetSize() const override;                                           \
+      virtual void GetStructReflection(ctReflectContext& ctx, void* data) const;         \
+      virtual const char* GetStructName() const;                                         \
+      virtual size_t GetStructSize() const;                                              \
    };                                                                                    \
    const ctReflectorBase& _##_CLASS_TYPE##_citreflget();
 
 /* add this to classes which inherit from ctReflectorBase */
 #define CT_DEFINE_REFLECTOR_VFUNC()                                                      \
-   virtual void GetStructReflection(class ctReflectContext& ctx) override;               \
-   virtual const char* GetName() const override;                                         \
-   virtual size_t GetSize() const override;
+   virtual void GetStructReflection(ctReflectContext& ctx, void* data) const;            \
+   virtual const char* GetStructName() const;                                            \
+   virtual size_t GetStructSize() const;
 
 /* ------------------ IMPLEMENTATION ------------------ */
 
@@ -145,41 +156,237 @@ public:
       return #_CLASS_TYPE;                                                               \
    }                                                                                     \
    size_t _##_CLASS_TYPE##_citrefl::GetStructSize() const {                              \
-      return sizeof(_CLASS_TYPE)                                                         \
+      return sizeof(_CLASS_TYPE);                                                        \
    }                                                                                     \
-   void _##_CLASS_TYPE##_citrefl::GetStructReflection(ctReflectContext& ctx) const
+   void _##_CLASS_TYPE##_citrefl::GetStructReflection(ctReflectContext& _CTX,            \
+                                                      void* _DATA) const
+
+#define CT_IMPLEMENT_REFLECTOR_POLY()
 
 /* to implement the reflector vfunctions on a poly type (inherits from ctReflectorBase) */
-#define CT_IMPLEMENT_REFLECTOR_VFUNC(_CLASS_TYPE)                                        \
-   void _CLASS_TYPE::GetStructReflection(ctReflectContext& ctx) {                        \
-      _##_TYPE##_citreflget().GetStructReflection(ctx);                                  \
+#define CT_IMPLEMENT_REFLECTOR_VFUNC_BASE(_CLASS_TYPE)                                   \
+   void _CLASS_TYPE::GetStructReflection(ctReflectContext& _CTX, void* _DATA) const {    \
+      _##_CLASS_TYPE##_citreflget().GetStructReflection(_CTX, _DATA);                    \
    }                                                                                     \
    const char* _CLASS_TYPE::GetStructName() const {                                      \
-      return _##_TYPE##_citreflget().GetStructName();                                    \
+      return _##_CLASS_TYPE##_citreflget().GetStructName();                              \
    }                                                                                     \
    size_t _CLASS_TYPE::GetStructSize() const {                                           \
-      return _##_TYPE##_citreflget().GetStructSize()                                     \
+      return _##_CLASS_TYPE##_citreflget().GetStructSize();                              \
+   }
+
+/* for children of classes that inherit from ctReflectorBase */
+#define CT_IMPLEMENT_REFLECTOR_VFUNC(_BASE_CLASS, _CLASS_TYPE)                           \
+   void _CLASS_TYPE::GetStructReflection(ctReflectContext& _CTX, void* _DATA) const {    \
+      _##_BASE_CLASS##_citreflget().GetStructReflection(_CTX, _DATA);                    \
+      _##_CLASS_TYPE##_citreflget().GetStructReflection(_CTX, _DATA);                    \
+   }                                                                                     \
+   const char* _CLASS_TYPE::GetStructName() const {                                      \
+      return _##_CLASS_TYPE##_citreflget().GetStructName();                              \
+   }                                                                                     \
+   size_t _CLASS_TYPE::GetStructSize() const {                                           \
+      return _##_CLASS_TYPE##_citreflget().GetStructSize();                              \
    }
 
 /* Adds a basic type (whatever is handled natively by the context) */
 #define CT_REFLECT_BASIC_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
-   ctx.LowLevelBasicType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), NULL, _METADATA)
+   _CTX.LowLevelBasicType(#_TYPE,                                                        \
+                          #_NAME,                                                        \
+                          offsetof(_CLASS_TYPE, _NAME),                                  \
+                          sizeof(_TYPE),                                                 \
+                          1,                                                             \
+                          NULL,                                                          \
+                          _METADATA,                                                     \
+                          _DATA)
+
+#define CT_REFLECT_ENUM_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                       \
+   _CTX.LowLevelEnumType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         1,                                                              \
+                         NULL,                                                           \
+                         _##_TYPE##_citenumreflget(),                                    \
+                         _METADATA,                                                      \
+                         _DATA)
 
 /* for other classes/structs that have a sidecar ctReflectorBase defined */
 #define CT_REFLECT_STRUCT_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                     \
-   ctx.LowLevelStructType(                                                                     \
-     #_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), NULL, _METADATA, _##_TYPE##_citreflget())
+   _CTX.LowLevelStructType(#_TYPE,                                                       \
+                           #_NAME,                                                       \
+                           offsetof(_CLASS_TYPE, _NAME),                                 \
+                           sizeof(_TYPE),                                                \
+                           1,                                                            \
+                           NULL,                                                         \
+                           _METADATA,                                                    \
+                           _##_TYPE##_citreflget(),                                      \
+                           _DATA)
 
 /* for classes that derive from ctReflectorBase themself */
 #define CT_REFLECT_POLY_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                       \
-   ctx.LowLevelPolyType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), NULL, _METADATA)
+   _CTX.LowLevelPolyType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         1,                                                              \
+                         NULL,                                                           \
+                         _METADATA,                                                      \
+                         _DATA)
 
 /* Adds a citrus container */
-#define CT_REFLECT_CONTAINER_BASIC_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
-   ctx.LowLevelBasicType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _TYPE::_GetReflectInterface(), _METADATA)
+#define CT_REFLECT_CONTAINER_BASIC_TYPE(                                                 \
+  _CLASS_TYPE, _CONTAINER, _TYPE, _NAME, _METADATA)                                      \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE>::_GetReflectInterface();                                          \
+   _CTX.LowLevelBasicType(#_TYPE,                                                        \
+                          #_NAME,                                                        \
+                          offsetof(_CLASS_TYPE, _NAME),                                  \
+                          sizeof(_TYPE),                                                 \
+                          1,                                                             \
+                          &_##_NAME##_CIF,                                               \
+                          _METADATA,                                                     \
+                          _DATA)
 
-#define CT_REFLECT_CONTAINER_STRUCT_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
-   ctx.LowLevelStructType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _TYPE::_GetReflectInterface(), _METADATA, _##_TYPE##_citreflget())
+#define CT_REFLECT_CONTAINER_ENUM_TYPE(_CLASS_TYPE, _CONTAINER, _TYPE, _NAME, _METADATA) \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE>::_GetReflectInterface();                                          \
+   _CTX.LowLevelEnumType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         1,                                                              \
+                         &_##_NAME##_CIF,                                                \
+                         _##_TYPE##_citenumreflget(),                                    \
+                         _METADATA,                                                      \
+                         _DATA)
 
-#define CT_REFLECT_CONTAINER_POLY_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \
-   ctx.LowLevelStructType(#_TYPE, #_NAME, offsetof(_CLASS_TYPE, _NAME), _TYPE::_GetReflectInterface(), _METADATA)
+#define CT_REFLECT_CONTAINER_STRUCT_TYPE(                                                \
+  _CLASS_TYPE, _CONTAINER, _TYPE, _NAME, _METADATA)                                      \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE>::_GetReflectInterface();                                          \
+   _CTX.LowLevelStructType(#_TYPE,                                                       \
+                           #_NAME,                                                       \
+                           offsetof(_CLASS_TYPE, _NAME),                                 \
+                           sizeof(_TYPE),                                                \
+                           1,                                                            \
+                           &_##_NAME##_CIF,                                              \
+                           _METADATA,                                                    \
+                           _##_TYPE##_citreflget(),                                      \
+                           _DATA)
+
+#define CT_REFLECT_CONTAINER_POLY_TYPE(_CLASS_TYPE, _CONTAINER, _TYPE, _NAME, _METADATA) \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE>::_GetReflectInterface();                                          \
+   _CTX.LowLevelPolyType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         1,                                                              \
+                         &_##_NAME##_CIF,                                                \
+                         _METADATA,                                                      \
+                         _DATA)
+
+/* 2 param containers */
+#define CT_REFLECT_CONTAINER2_BASIC_TYPE(                                                \
+  _CLASS_TYPE, _CONTAINER, _TYPE, _AUX, _NAME, _METADATA)                                \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE, _AUX>::_GetReflectInterface();                                    \
+   _CTX.LowLevelBasicType(#_TYPE,                                                        \
+                          #_NAME,                                                        \
+                          offsetof(_CLASS_TYPE, _NAME),                                  \
+                          sizeof(_TYPE),                                                 \
+                          1,                                                             \
+                          &_##_NAME##_CIF,                                               \
+                          _METADATA,                                                     \
+                          _DATA)
+
+#define CT_REFLECT_CONTAINER2_ENUM_TYPE(                                                 \
+  _CLASS_TYPE, _CONTAINER, _TYPE, _AUX, _NAME, _METADATA)                                \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE, _AUX>::_GetReflectInterface();                                    \
+   _CTX.LowLevelEnumType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         1,                                                              \
+                         &_##_NAME##_CIF,                                                \
+                         _##_TYPE##_citenumreflget(),                                    \
+                         _METADATA,                                                      \
+                         _DATA)
+
+#define CT_REFLECT_CONTAINER2_STRUCT_TYPE(                                               \
+  _CLASS_TYPE, _CONTAINER, _TYPE, _AUX, _NAME, _METADATA)                                \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE, _AUX>::_GetReflectInterface();                                    \
+   _CTX.LowLevelStructType(#_TYPE,                                                       \
+                           #_NAME,                                                       \
+                           offsetof(_CLASS_TYPE, _NAME),                                 \
+                           sizeof(_TYPE),                                                \
+                           1,                                                            \
+                           &_##_NAME##_CIF,                                              \
+                           _METADATA,                                                    \
+                           _##_TYPE##_citreflget(),                                      \
+                           _DATA)
+
+#define CT_REFLECT_CONTAINER2_POLY_TYPE(                                                 \
+  _CLASS_TYPE, _CONTAINER, _TYPE, _AUX, _NAME, _METADATA)                                \
+   ctReflectContainerInterface _##_NAME##_CIF =                                          \
+     _CONTAINER<_TYPE, _AUX>::_GetReflectInterface();                                    \
+   _CTX.LowLevelPolyType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         1,                                                              \
+                         &_##_NAME##_CIF,                                                \
+                         _METADATA,                                                      \
+                         _DATA)
+
+/* C arrays */
+#define CT_REFLECT_CARRAY_BASIC_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)               \
+   _CTX.LowLevelBasicType(#_TYPE,                                                        \
+                          #_NAME,                                                        \
+                          offsetof(_CLASS_TYPE, _NAME),                                  \
+                          sizeof(_TYPE),                                                 \
+                          ctCStaticArrayLen(_CLASS_TYPE::_NAME),                         \
+                          NULL,                                                          \
+                          _METADATA,                                                     \
+                          _DATA)
+
+#define CT_REFLECT_CARRAY_ENUM_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                \
+   _CTX.LowLevelEnumType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         ctCStaticArrayLen(_CLASS_TYPE::_NAME),                          \
+                         NULL,                                                           \
+                         _##_TYPE##_citenumreflget(),                                    \
+                         _METADATA,                                                      \
+                         _DATA)
+
+#define CT_REFLECT_CARRAY_STRUCT_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)              \
+   _CTX.LowLevelStructType(#_TYPE,                                                       \
+                           #_NAME,                                                       \
+                           offsetof(_CLASS_TYPE, _NAME),                                 \
+                           sizeof(_TYPE),                                                \
+                           ctCStaticArrayLen(_CLASS_TYPE::_NAME),                        \
+                           NULL,                                                         \
+                           _METADATA,                                                    \
+                           _##_TYPE##_citreflget(),                                      \
+                           _DATA)
+
+#define CT_REFLECT_CARRAY_POLY_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                \
+   _CTX.LowLevelPolyType(#_TYPE,                                                         \
+                         #_NAME,                                                         \
+                         offsetof(_CLASS_TYPE, _NAME),                                   \
+                         sizeof(_TYPE),                                                  \
+                         ctCStaticArrayLen(_CLASS_TYPE::_NAME),                          \
+                         NULL,                                                           \
+                         _METADATA,                                                      \
+                         _DATA)
+
+/* ------------------ Calling ------------------ */
+
+#define CT_REFLECTOR_GET(_CLASS_TYPE) _##_CLASS_TYPE##_citreflget()
+
+#define ctReflectionExecute(_CLASS_TYPE, _REFLECTOR_CONTEXT, _DATA)                      \
+   CT_REFLECTOR_GET(_CLASS_TYPE).GetStructReflection(_REFLECTOR_CONTEXT, _DATA)

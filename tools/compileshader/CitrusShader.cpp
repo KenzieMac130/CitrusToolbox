@@ -16,9 +16,9 @@
 
 #include "../engine/utilities/Common.h"
 
+#include "../engine/formats/json/JSON.hpp"
 #include "../engine/formats/wad/WADCore.h"
-#include "../engine/formats/wad/prototypes/MarkersAndBlobs.h"
-#include "../engine/formats/wad/prototypes/Header.h"
+#include "../engine/gpu/shared/WadMarkersAndBlobs.h"
 
 #include "shaderc/shaderc.h"
 
@@ -309,12 +309,6 @@ int main(int argc, char* argv[]) {
 
    const char* glslPath = argv[1];
    const char* outPath = argv[2];
-
-   /* Common Citrus Header */
-   ctWADProtoHeader header = ctWADProtoHeader();
-   header.magic = CT_WADPROTO_HEADER_MAGIC;
-   header.revision = CT_WADPROTO_HEADER_INTERNAL_REV;
-   MakeSection(CT_WADPROTO_NAME_HEADER, sizeof(header), &header);
 
    ctStringUtf8 relativePath = glslPath;
    relativePath.FilePathPop();

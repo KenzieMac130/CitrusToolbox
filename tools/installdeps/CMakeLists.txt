@@ -19,6 +19,7 @@ if(${LIBRARY_FETCH} STREQUAL "Win64")
 		message("Getting Libraries...")
 		make_directory(${CMAKE_SOURCE_DIR}/libs)
 		make_directory(${CMAKE_SOURCE_DIR}/libs/Win64)
+		# todo: install precompiled libraries
 	endif()
 else()
 	message("Libraries for platform could not be downloaded...")

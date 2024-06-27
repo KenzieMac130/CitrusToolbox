@@ -82,6 +82,8 @@ public:
               const size_t amount = 0);
    /* Reverse */
    void Reverse();
+   /* Swap */
+   ctResults Swap(int64_t indexA, int64_t indexB);
 
    /* Hash */
    uint32_t xxHash32(const size_t position, const size_t amount, const int seed) const;
@@ -90,6 +92,9 @@ public:
    uint64_t xxHash64(const size_t position, const size_t amount, const int seed) const;
    uint64_t xxHash64(const int seed) const;
    uint64_t xxHash64() const;
+
+   /* Reflect */
+   static struct ctReflectContainerInterface _GetReflectInterface();
 
 private:
    ctResults _expand_size(size_t amount);
@@ -450,6 +455,17 @@ inline void ctDynamicArray<T>::Reverse() {
 }
 
 template<class T>
+inline ctResults ctDynamicArray<T>::Swap(int64_t indexA, int64_t indexB) {
+   ctAssert((size_t)indexA < Count());
+   ctAssert((size_t)indexB < Count());
+   ctAssert(_pData);
+   T tmp = _pData[indexA];
+   _pData[indexA] = _pData[indexB];
+   _pData[indexB] = tmp;
+   return CT_SUCCESS;
+}
+
+template<class T>
 inline uint32_t ctDynamicArray<T>::xxHash32(const size_t position,
                                             const size_t amount,
                                             const int seed) const {
@@ -488,4 +504,46 @@ inline uint64_t ctDynamicArray<T>::xxHash64() const {
 template<class T>
 inline bool ctDynamicArray<T>::Exists(const T& val) const {
    return FindIndex(val, 0, 1) != -1 ? true : false;
+}
+
+template<class T>
+inline ctReflectContainerInterface ctDynamicArray<T>::_GetReflectInterface() {
+   ctReflectContainerInterface reflectInterface = {};
+   reflectInterface.containerType = "ctDynamicArray";
+   reflectInterface.GetCount = [](void* baseAddress, void* extra) -> size_t {
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return array.Count();
+   };
+   reflectInterface.GetCapacity = [](void* baseAddress, void* extra) -> size_t {
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return array.Capacity();
+   };
+   reflectInterface.GetValue = [](size_t index, void* baseAddress, void* extra) -> void* {
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return &array[index];
+   };
+   reflectInterface.Swap = [](
+     int64_t indexA, int64_t indexB, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return array.Swap(indexA, indexB);
+   };
+   reflectInterface.RemoveAt =
+     [](int64_t index, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      array.RemoveAt(index);
+      return CT_SUCCESS;
+   };
+   reflectInterface.InsertNew =
+     [](int64_t index, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return array.Insert(T(), index);
+   };
+   reflectInterface.AppendNew = [](void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return array.Append(T());
+   };
+   return reflectInterface;
 }

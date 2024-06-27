@@ -164,6 +164,10 @@ ctResults ctEngineCore::LoopSingleShot(const float deltatime) {
    return CT_SUCCESS;
 }
 
+void ctEngineCoreAtExit(void) {
+   _ctHandlePtrGlobalShutdown();
+}
+
 ctResults ctEngineCore::Shutdown() {
    ZoneScoped;
    /* Kill all dangling tasks first */
@@ -231,6 +235,6 @@ ctResults ctEngineCore::Shutdown() {
    if (leakedAllocations) {
       ctDebugWarning("POSSIBLE LEAKED ALLOCATIONS %lu!", leakedAllocations);
    }
-   _ctHandlePtrGlobalShutdown();
+   atexit(ctEngineCoreAtExit);
    return CT_SUCCESS;
 }

@@ -186,8 +186,10 @@ CT_API size_t ctGetAliveAllocations();
 
 /*Include common cpp files*/
 #ifdef __cplusplus
+#include "ReflectForward.h"
 #include "SharedLogging.h"
 #include "DynamicArray.hpp"
+#include "String.hpp"
 #include "GUID.hpp"
 #include "HandleManager.hpp"
 #include "StaticArray.hpp"
@@ -196,10 +198,8 @@ CT_API size_t ctGetAliveAllocations();
 #include "Math3d.hpp"
 #include "Noise.hpp"
 #include "Hash.hpp"
-#include "String.hpp"
 #include "HashTable.hpp"
 #include "Sync.hpp"
-#include "JSON.hpp"
 #include "Time.hpp"
 #include "File.hpp"
 #include "Random.hpp"

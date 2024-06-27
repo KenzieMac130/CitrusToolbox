@@ -21,6 +21,7 @@
 #include "utilities/HandledList.hpp"
 #include "utilities/GUID.hpp"
 #include "utilities/Noise.hpp"
+#include "formats/json/JSON.hpp"
 #include "system/System.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -358,9 +359,9 @@ void json_test(void) {
 }
 
 void noise_test(void) {
-   // uint8_t* image = new uint8_t[1024 * 1024 * 3];
-   // for (int x = 0; x < 1024; x++) {
-   //   for (int y = 0; y < 1024; y++) {
+   // uint8_t* image = new uint8_t[256 * 256 * 3];
+   // for (int x = 0; x < 256; x++) {
+   //   for (int y = 0; y < 256; y++) {
    //      float value = ctNoiseWhite3DScalar(ctVec3((float)x / 50, (float)y / 50, 0));
    //      ctVec3 color = ctVec3(value * 0.5f + 0.5f);
 
@@ -377,13 +378,13 @@ void noise_test(void) {
    //      color = ctVec3(ctClamp(color.x, 0.0f, 1.0f),
    //                     ctClamp(color.y, 0.0f, 1.0f),
    //                     ctClamp(color.z, 0.0f, 1.0f));
-   //      image[(x + y * 1024) * 3 + 0] = (uint8_t)(color.x * 255);
-   //      image[(x + y * 1024) * 3 + 1] = (uint8_t)(color.y * 255);
-   //      image[(x + y * 1024) * 3 + 2] = (uint8_t)(color.z * 255);
+   //      image[(x + y * 256) * 3 + 0] = (uint8_t)(color.x * 255);
+   //      image[(x + y * 256) * 3 + 1] = (uint8_t)(color.y * 255);
+   //      image[(x + y * 256) * 3 + 2] = (uint8_t)(color.z * 255);
    //   }
    //}
    // const char* path = "NoiseTest.bmp";
-   // stbi_write_bmp(path, 1024, 1024, 3, image);
+   // stbi_write_bmp(path, 256, 256, 3, image);
    // ctSystemShowFileToDeveloper(path);
 }
 
@@ -408,7 +409,7 @@ create_handle(int value, ctStaticArray<ctHandlePtr<MyTestObject>, 500>& handles)
 void handle_ptr_test_generation_ctx(size_t generation) {
    ctStaticArray<ctHandlePtr<MyTestObject>, 500> handles;
    for (size_t i = 0; i < 500; i++) {
-      ctHandlePtr<MyTestObject> obj = create_handle(((int)i + generation), handles);
+      ctHandlePtr<MyTestObject> obj = create_handle(((int)(i + generation)), handles);
       ctAssert(obj.Get().value == ((int)i + generation));
    }
    handles[0].SwapPointer(new MyTestObject(64));

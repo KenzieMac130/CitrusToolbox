@@ -18,6 +18,7 @@
 
 #include "utilities/Common.h"
 #include "ResourceTypeBase.hpp"
+#include "formats/json/JSON.hpp"
 
 class ctResourceJSON : public ctResourceBase {
 public:

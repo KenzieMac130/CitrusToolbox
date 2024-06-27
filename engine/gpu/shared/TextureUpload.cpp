@@ -31,11 +31,12 @@ void ctGPUTextureUploadFnTextureLoader(uint8_t* dest,
                                        ctGPUExternalGenerateContext* pCtx,
                                        void* userData) {
    const ctTextureLoadCtx* pTextureLoader = (ctTextureLoadCtx*)userData;
-   size_t mipLevel = pCtx->currentMipLevel;
-   size_t arraylayer = pCtx->currentLayer;
-   size_t arraylayercount =
+   const size_t mipLevel = pCtx->currentMipLevel;
+   const size_t arrayLayer = pCtx->currentLayer;
+   const size_t arrayLayerCount =
      pTextureLoader->type == CT_TEXTURELOAD_3D ? 1 : pTextureLoader->depth;
-   size_t sliceSize = pTextureLoader->levelSizes[mipLevel] / arraylayercount;
-   size_t sliceOffset = arraylayer * sliceSize;
+   ctAssert(pTextureLoader->levelSizes[mipLevel] % arrayLayerCount == 0);
+   const size_t sliceSize = pTextureLoader->levelSizes[mipLevel] / arrayLayerCount;
+   const size_t sliceOffset = arrayLayer * sliceSize;
    memcpy(dest, (uint8_t*)pTextureLoader->levels[mipLevel] + sliceOffset, sliceSize);
 }

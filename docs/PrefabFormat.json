@@ -1,0 +1,20 @@
+{
+    "Inherits": [
+        "/game/prefabs/ParentPrefab.ctp",
+        "/game/art/RenderModel.gtlf"
+    ], // can be another prefab or a gltf model
+    "Entities": {
+        "MyObject": {
+            "Template": "/ecs/EntityTemplates.ctp/3DEntity", // can inherit the first entiy of another prefab resource
+            "Components": {
+                "Location": {}, // undefined contents will be taken from the default, the template, or parent prefab
+                "Rotation": {
+                    "rotation": [0.0, 0.0, 0.0, 1.0]
+                },
+                "Scale": {
+                    "scale": [1.0, 1.0, 1.0]
+                }
+            }
+        }
+    }
+}
