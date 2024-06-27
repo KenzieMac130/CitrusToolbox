@@ -116,6 +116,15 @@ else()
 set(CT_HASH_COLLISION_CHECK 0)
 endif()
 
+# ---------- Endian Test ----------
+include (TestBigEndian)
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
+set (CITRUS_ENDIAN 0xFF)
+else()
+set (CITRUS_ENDIAN 0x00)
+endif()
+
 # ---------- Binary output directory ----------
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)

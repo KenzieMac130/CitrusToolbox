@@ -19,97 +19,11 @@ set (CITRUS_ENGINE_VERSION_MAJOR 1)
 set (CITRUS_ENGINE_VERSION_MINOR 0)
 set (CITRUS_ENGINE_VERSION_PATCH 0)
 
-# ---------- Endian Test ----------
-include (TestBigEndian)
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-if(IS_BIG_ENDIAN)
-set (CITRUS_ENDIAN 0xFF)
-else()
-set (CITRUS_ENDIAN 0x00)
-endif()
-
-#---------- Compile ISPC Kernels ----------
-file(MAKE_DIRECTORY ${CITRUS_CODEGEN_DIR}/ispc)
-
-set(ISPC_KERNEL_INPUTS
-#${CMAKE_CURRENT_SOURCE_DIR}/XXX.ispc
-)
-
-set(ISPC_KERNEL_OUTPUTS
-#${CITRUS_CODEGEN_DIR}/ispc/XXX.o
-)
-
-# Configure ispc options
-set(ISPC_ARCH "x86-64")
-set(ISPC_TARGET "sse2")
-option(ISPC_DEBUG "Output ISPC debug symbols" ON)
-if(ISPC_DEBUG)
-set(ISPC_DEBUG_FLAGS "-g")
-else()
-set(ISPC_DEBUG_FLAGS "")
-endif()
-set(ISPC_OPT_FLAGS "-O2")
-
-# Add build command for each file
-foreach(ISPC_IN ISPC_OUT 
-IN ZIP_LISTS
-ISPC_KERNEL_INPUTS ISPC_KERNEL_OUTPUTS)
-file(TOUCH ${ISPC_OUT})
-add_custom_command(OUTPUT ${ISPC_OUT}
-COMMAND 
-${ISPC_COMPILER_PATH} 
-${ISPC_DEBUG_FLAGS} ${ISPC_IN} 
--o ${ISPC_OUT} 
-${ISPC_OPT_FLAGS} 
---arch=${ISPC_ARCH} 
---target=${ISPC_TARGET} 
-DEPENDS ${ISPC_IN} 
-${LIBRARY_INSTALL_DEPENDENCY})
-endforeach()
+# ---------- System Abstraction ---------- 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/system)
 
 # ---------- Utility Libraries ----------
-set(ENGINE_SOURCE_FILES_UTILITIES
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandlePointer.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Memory.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.c
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.cpp
-)
-
-set(ENGINE_HEADER_FILES_UTILITIES
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Common.h
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/BloomFilter.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/DynamicArray.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/File.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/GUID.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandleManager.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandledList.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/HandlePointer.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Hash.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/HashTable.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Math3d.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Noise.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Random.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/ReflectForward.h
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Reflect.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/RingBuffer.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/SharedLogging.h
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/SpacialQuery.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/StaticArray.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/String.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Sync.hpp
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Time.hpp
-)
-
+add_subdirectory(utilities)
 
 # ---------- Engine Core Framework ----------
 set(ENGINE_SOURCE_FILES_CORE
@@ -142,9 +56,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/core/WindowManager.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/core/GameLayer.hpp
 )
 
-# ---------- System Abstraction ---------- 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/system)
-
 # ---------- Audition  ---------- 
 if(CITRUS_INCLUDE_AUDITION)
 set(ENGINE_SOURCE_FILES_AUDITION
@@ -153,6 +64,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSyncSocket.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetUtilities.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.cpp
@@ -169,6 +81,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/audition/HotReloadDetection.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/AuditionEditor.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetCompilerBootstrap.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/LiveSync.hpp
+${CMAKE_CURRENT_SOURCE_DIR}/audition/AssetUtilities.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetBrowser.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/AssetActions.hpp
 ${CMAKE_CURRENT_SOURCE_DIR}/audition/spaces/Compiler.hpp
@@ -444,7 +357,6 @@ endif()
 
 # ---------- All Engine Files ----------
 set(ENGINE_FILES 
-${ENGINE_SOURCE_FILES_UTILITIES} ${ENGINE_HEADER_FILES_UTILITIES}
 ${ENGINE_SOURCE_FILES_CORE} ${ENGINE_HEADER_FILES_CORE}
 ${ENGINE_SOURCE_FILES_ANIMATION} ${ENGINE_HEADER_FILES_ANIMATION}
 ${ENGINE_SOURCE_FILES_AUDITION} ${ENGINE_HEADER_FILES_AUDITION}
@@ -460,43 +372,20 @@ ${ENGINE_SOURCE_FILES_MIDDLEWARE} ${ENGINE_HEADER_FILES_MIDDLEWARE}
 ${ENGINE_SOURCE_FILES_SCRIPTING} ${ENGINE_HEADER_FILES_SCRIPTING}
 ${ENGINE_SOURCE_FILES_ASSET_SYSTEM} ${ENGINE_HEADER_FILES_ASSET_SYSTEM}
 ${ENGINE_SOURCE_FILES_FORMAT} ${ENGINE_HEADER_FILES_FORMAT}
-${ENGINE_SOURCE_FILES_RESOURCE_MANAGER} ${ENGINE_HEADER_FILES_RESOURCE_MANAGER}
-${ISPC_KERNEL_INPUTS})
-
-# ---------- Generate Config Files ----------
-configure_file (
-${CMAKE_CURRENT_SOURCE_DIR}/utilities/Config.h.in
-${CITRUS_CODEGEN_DIR}/Config.h)
-
-# ---------- Asset System Codegen ----------
-if(EXISTS ${CITRUS_CODEGEN_DIR}/DataNicknames.cpp)
-else()
-write_file(${CITRUS_CODEGEN_DIR}/DataNicknames.cpp "#include <stdint.h>\nconst char* ctGetDataGuidFromHash(size_t hash){return NULL;}")
-endif()
-add_library(data ${CITRUS_CODEGEN_DIR}/DataNicknames.cpp)
+${ENGINE_SOURCE_FILES_RESOURCE_MANAGER} ${ENGINE_HEADER_FILES_RESOURCE_MANAGER})
 
 # ---------- Create Engine Library ----------
 add_library(engine 
-${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format
-${CMAKE_CURRENT_SOURCE_DIR}/../citrus.natvis
 ${ENGINE_FILES}
-${ASSET_SYSTEM_CODEGEN}
-${TRACY_FILES}
 ${THIRD_PARTY_IMPL_FILES}
-${NATIVE_SOURCE_FILES}
-${ISPC_KERNEL_OUTPUTS}
-${SWIG_OUTPUTS})
+${NATIVE_SOURCE_FILES})
 
 # ---------- Setup Folders ----------
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../ FILES ${THIRD_PARTY_IMPL_FILES})
-source_group(tracy FILES ${TRACY_FILES})
 source_group(native FILES ${NATIVE_SOURCE_FILES})
 source_group(generated FILES 
-${CITRUS_REFLECT_OUTPUTS}
-${SWIG_OUTPUTS}
-${ISPC_KERNEL_OUTPUTS}
-${ASSET_SYSTEM_CODEGEN})
+${CITRUS_REFLECT_OUTPUTS})
 
 # ---------- Include and Link ----------
 target_include_directories(engine PUBLIC ${CITRUS_CODEGEN_DIR})
@@ -504,8 +393,7 @@ target_include_directories(engine PUBLIC ${CITRUS_REFLECT_OUTPUT_DIR})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/)
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(engine PUBLIC ${TOOLS_INCLUDE})
-target_link_libraries(engine data)
-target_link_libraries(engine system)
+target_link_libraries(engine utilities)
 if(IS_STATIC_GAME)
 target_link_libraries(engine game)
 endif()

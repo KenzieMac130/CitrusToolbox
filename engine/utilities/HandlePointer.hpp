@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "utilities/Common.h"
+#include "Common.h"
 
 /* --------------- Internal --------------- */
 /* must either be initted from instance or copied from other memory*/

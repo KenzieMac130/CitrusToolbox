@@ -21,6 +21,7 @@
 #include "cgltf/cgltf.h"
 #include "formats/model/Model.hpp"
 #include "tiny_imageFormat/tinyimageformat.h"
+#include "audition/AssetUtilities.hpp"
 
 #include "physics/Physics.hpp"
 #include "physics/Baking.hpp"

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "AssetUtils.hpp"
+#include "AssetUtilities.hpp"
 #include "formats/json/JSON.hpp"
 
 ctResults ctGUIDFromAssetPath(ctGUID& result, const char* assetPath, const char* output) {

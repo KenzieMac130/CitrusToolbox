@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "utilities/Common.h"
+#include "Common.h"
 
 class CT_API ctStopwatch {
 public:
