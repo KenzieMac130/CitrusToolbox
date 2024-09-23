@@ -19,6 +19,8 @@
 #define TEST_NO_MAIN
 #include "acutest/acutest.h"
 
+#include "ReflectTest.hpp"
+
 class DebugReflectContext : public ctReflectContext {
    virtual void OnBasicType(const char* typeName,
                             const char* name,
@@ -149,77 +151,18 @@ private:
    int arrayIndex = -1;
 };
 
-/* CT_REFLECT */
-enum MyEnum {
-   MY_ENUM_APPLES = 3,  /* CT_REFLECT Name = "Apples"; */
-   MY_ENUM_ORANGES = 7, /* CT_REFLECT Name = "Oranges"; */
-   MY_ENUM_LEMONS = 420 /* CT_REFLECT Name = "Lemons"; */
-};
-
-const char* PARSER_DISTRACTION = "CT_REFLECT";
-
-/* CT_REFLECT */
-class AuxClassA : public ctReflectorBase {
-public:
-   CT_DEFINE_REFLECTOR_VFUNC()
-   /* CT_REFLECT
-   Min = 0.0;
-   Max = 32.0; */
-   /* My Useless comment */
-   float a;
-   ctDynamicArray<int32_t> dArrayTest;    /* CT_REFLECT */
-   ctDynamicArray<MyEnum> dArrayTest2;    /* CT_REFLECT */
-   ctStaticArray<int32_t, 32> sArrayTest; /* CT_REFLECT */
-   /* Useless comment */
-   ctStringUtf8 dynamicString; /* CT_REFLECT */
-};
-
-/* CT_REFLECT */
-struct AuxStruct {
-   char myFixedString[32]; /* CT_REFLECT */
-   uint8_t bytesTest[64];  /* CT_REFLECT */
-   float myArray[8];       /* CT_REFLECT */
-   float data;             /* CT_REFLECT */
-   MyEnum enumTest;        /* CT_REFLECT */
-};
-
-/* CT_REFLECT (invalid) */
-int randomAssVar;
-
-/* CT_REFLECT */
-class AuxClassB : public AuxClassA {
-public:
-   CT_DEFINE_REFLECTOR_VFUNC()
-   float b;                            /* CT_REFLECT */
-   ctHandlePtr<int32_t> smartPtr;      /* CT_REFLECT */
-   MyEnum myEnumArray[4];              /* CT_REFLECT */
-   ctDynamicArray<AuxStruct> objArray; /* CT_REFLECT */
-};
-
-/* CT_REFLECT */
-struct MyBasicStruct {
-   /* CT_REFLECT:
-   Min = 0.0f
-   Max = 5.0f */
-   float weight;
-   AuxClassB complexClass; /* CT_REFLECT */
-   float stiffness;        /* CT_REFLECT */
-   ctVec3 position;        /* CT_REFLECT */
-   AuxStruct sidecar;      /* CT_REFLECT */
-};
-
 /* -------------- Make future codegen -------------- */
 CT_REFLECT_ENUM_DECLARE(MyEnum);
+CT_REFLECT_CLASS_DECLARE(AuxClassA)
+CT_REFLECT_CLASS_DECLARE(AuxClassB)
+CT_REFLECT_CLASS_DECLARE(AuxStruct)
+CT_REFLECT_CLASS_DECLARE(MyBasicStruct)
+/* END OF HEADER */
 
 CT_REFLECT_ENUM_DEFINE_START(MyEnum, CT_REFLECT_ENUM_NUMBERED)
 CT_REFLECT_ENUM_DEFINE_ENTRY(MyEnum, MY_ENUM_APPLES, "Apples")
 CT_REFLECT_ENUM_DEFINE_ENTRY(MyEnum, MY_ENUM_ORANGES, "Oranges")
 CT_REFLECT_ENUM_DEFINE_END(MyEnum)
-
-CT_DEFINE_REFLECTOR(AuxClassA)
-CT_DEFINE_REFLECTOR(AuxClassB)
-CT_DEFINE_REFLECTOR(AuxStruct)
-CT_DEFINE_REFLECTOR(MyBasicStruct)
 
 CT_IMPLEMENT_REFLECTOR(AuxClassA) {
    CT_REFLECT_BASIC_TYPE(AuxClassA, float, a, "");
@@ -282,7 +225,7 @@ void basic_reflect_test() {
    }
    object.complexClass.dArrayTest2.Append(MY_ENUM_APPLES);
    strncpy(object.sidecar.myFixedString, "Hello World!", 32);
-   object.complexClass.dynamicString = "Its alive!!!";
+   object.complexClass.SetDString("Its alive!!!");
    object.complexClass.smartPtr = new int32_t(32);
    for (size_t i = 0; i < ctCStaticArrayLen(object.sidecar.bytesTest); i++) {
       object.sidecar.bytesTest[i] = (uint8_t)ctRand() % CT_MAX_RAND;

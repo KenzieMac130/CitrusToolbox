@@ -371,7 +371,7 @@ void noise_test(void) {
    //                           (float)y / 50,
    //                           0)) *
    //          0.5f +
-   //        ctVec3(0.5f);  */
+   //        ctVec3(0.5f);*/
    //
    //      //color = ctNoiseVorronoiRich(ctVec3((float)x / 50, (float)y / 50, 0));
 
@@ -410,15 +410,15 @@ void handle_ptr_test_generation_ctx(size_t generation) {
    ctStaticArray<ctHandlePtr<MyTestObject>, 500> handles;
    for (size_t i = 0; i < 500; i++) {
       ctHandlePtr<MyTestObject> obj = create_handle(((int)(i + generation)), handles);
-      ctAssert(obj.Get().value == ((int)i + generation));
+      TEST_ASSERT(obj.Get().value == ((int)i + generation));
    }
    handles[0].SwapPointer(new MyTestObject(64));
    for (size_t i = 0; i < handles.Count(); i++) {
       ctHandlePtr<MyTestObject> handle = handles[i];
-      ctAssert(handle.isHandleValid());
-      ctAssert(handle.Get().string == "FOO");
-      ctAssert(handle.Get().value == i + generation ||
-               i == 0 && handle.Get().value == 64);
+      TEST_ASSERT(handle.isHandleValid());
+      TEST_ASSERT(handle.Get().string == "FOO");
+      TEST_ASSERT(handle.Get().value == i + generation ||
+                  i == 0 && handle.Get().value == 64);
    }
 }
 
@@ -460,3 +460,286 @@ void output_direct(const char* text, void* userData) {
 void process_test(void) {
    TEST_ASSERT(ctSystemExecuteCommand("help", 0, NULL, output_direct, NULL, NULL) == 0);
 }
+
+const char* weirdString = "\"\"\"";
+
+#include "utilities/Lexer.hpp"
+void lexer_build_test(void) {
+   ctFile f = ctFile(__FILE__, CT_FILE_OPEN_READ_TEXT);
+   ctLexer lexer;
+   lexer.SetContents(f);
+   f.Close();
+   ctResults results = lexer.BuildTokens();
+   TEST_ASSERT(results == CT_SUCCESS);
+   // ctStringUtf8 tokenContents;
+   //  for (size_t i = 0; i < lexer.GetTokenCount(); i++) {
+   //    ctLexerToken token = lexer.GetToken(i);
+   //    token.GetContents(tokenContents);
+   //    if (token.isComment()) { ctDebugLog("/* %s */", tokenContents.CStr()); }
+   //    if (token.isString()) { ctDebugLog("\"%s\"", tokenContents.CStr()); }
+   //    if (token.isCharacter()) { ctDebugLog("'%s'", tokenContents.CStr()); }
+   //    if (token.isNumber()) { ctDebugLog("%s", tokenContents.CStr()); }
+   //    if (token.isIdentifier()) { ctDebugLog("%s", tokenContents.CStr()); }
+   //    if (token.isSymbol()) { ctDebugLog("%s", tokenContents.CStr()); }
+   // }
+}
+
+int __a = 32;
+int __c = -32;
+int __b = 0xFF;
+float __d = 0.05334f;
+double __e = 0.5;
+double __f = .0f;
+char __f3var = 'a';
+
+#define EXPECT_ITERATOR(_IT, _VALUE)                                                     \
+   if (_VALUE) { TEST_ASSERT(_IT.ToString() == _VALUE); }
+
+void lexer_iterator_comment_test(void) {
+   /* simple inclusion */
+   struct CommentTestCase {
+      const char* input;
+      const char* contents;
+   };
+   CommentTestCase commentTestCases[] = {{"/* my //comment */", "my //comment"},
+                                         {"// my comment \n garbage", "my comment"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(commentTestCases); i++) {
+      ctLexer lexer;
+      lexer.SetContents(commentTestCases[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+      it.IncludeComments(true);
+      TEST_ASSERT(it.Token().ExpectContents(commentTestCases[i].contents));
+   }
+
+   /* implied subject */
+   struct CommentSubjectTestCase {
+      size_t tokenOffset;
+      const char* input;
+      const char* subject;
+   };
+   CommentSubjectTestCase subjectTestCases[] = {
+     {3, "foo\n subject ext /* my //comment */\n other", "subject"},
+     {1, "other\n // my comment \n subject ext", "subject"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(subjectTestCases); i++) {
+      ctLexer lexer;
+      lexer.SetContents(subjectTestCases[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+      it.IncludeComments(true);
+      for (size_t j = 0; j < subjectTestCases[i].tokenOffset; j++) {
+         it++;
+      }
+      it.SeekToCommentedLineSubject();
+      TEST_ASSERT(it.Token().ExpectContents(subjectTestCases[i].subject));
+   }
+}
+
+void lexer_iterator_variable_test(void) {
+   /* variable */
+   struct VariableTestCase {
+      const char* input;
+      const char* nameOut;
+      const char* typeOut;
+      const char* valueOut;
+      const char* arrayInfoOut;
+   };
+   VariableTestCase variableTestCases[] = {
+     {"int var = 32", "var", "int", "32"},
+     {"const char* var_name[] = \"value\"", "var_name", "const char*", "value", "[]"},
+     {
+       "static float val[2][2] = {{0.5f, 0.5f}, {0.2f, 0.24f}}",
+       "val",
+       "static float",
+       "{{0.5f,0.5f},{0.2f,0.24f}}",
+       "[2][2]",
+     },
+     {"enum class NS::FOO<0, APPLE<PIE> > var = /* comment */ true",
+      "var",
+      "enum class NS::FOO<0,APPLE<PIE>>",
+      "true"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(variableTestCases); i++) {
+      ctLexer lexer;
+      lexer.SetContents(variableTestCases[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+
+      ctLexerIterator name = ctLexerIterator();
+      ctLexerIterator type = ctLexerIterator();
+      ctLexerIterator value = ctLexerIterator();
+      ctLexerIterator array = ctLexerIterator();
+      TEST_ASSERT(it.ReadAsVariable(&name, &type, &value, &array) == CT_SUCCESS);
+      EXPECT_ITERATOR(name, variableTestCases[i].nameOut);
+      EXPECT_ITERATOR(type, variableTestCases[i].typeOut);
+      EXPECT_ITERATOR(value, variableTestCases[i].valueOut);
+      EXPECT_ITERATOR(array, variableTestCases[i].arrayInfoOut);
+   }
+
+   // todo: check type info
+}
+
+void lexer_iterator_enum_test(void) {
+   struct EnumTestCase {
+      const char* input;
+      const char* nameOut;
+   };
+   EnumTestCase enumCases[] = {{"enum MyEnum", "MyEnum"},
+                               {"enum class My_Enum", "My_Enum"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(enumCases); i++) {
+      ctLexer lexer;
+      lexer.SetContents(enumCases[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+      ctLexerIterator name = ctLexerIterator();
+      it.ReadAsEnumDefinition(&name);
+      EXPECT_ITERATOR(name, enumCases[i].nameOut);
+   }
+   struct EnumContentsTestCase {
+      const char* input;
+      const char* nameOut;
+      const char* valueOut;
+   };
+   EnumContentsTestCase enumContentsCases[] = {
+     {"MY_VALUE1", "MY_VALUE1"},
+     {"MY_VALUE2 = 23,", "MY_VALUE2", "23"},
+     {"MY_VALUE3 = 0x23", "MY_VALUE3", "0x23"},
+     {"MY_VALUE4 = OTHER | MAIN | 32 >> 0x32", "MY_VALUE4", "OTHER|MAIN|32>>0x32"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(enumContentsCases); i++) {
+      ctLexer lexer;
+      lexer.SetContents(enumContentsCases[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+      ctLexerIterator name = ctLexerIterator();
+      ctLexerIterator value = ctLexerIterator();
+      it.ReadAsEnumEntry(&name, &value);
+      EXPECT_ITERATOR(name, enumContentsCases[i].nameOut);
+      EXPECT_ITERATOR(value, enumContentsCases[i].valueOut);
+   }
+}
+
+void lexer_iterator_struct_test(void) {
+   struct StructTestCase {
+      const char* input;
+      const char* nameOut;
+   };
+   StructTestCase structCases[] = {
+     {"struct Foo", "Foo"}, {"class Bar", "Bar"}, {"class CT_API Baz", "Baz"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(structCases); i++) {
+      ctLexer lexer;
+      lexer.SetContents(structCases[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+      ctLexerIterator name = ctLexerIterator();
+      it.ReadAsStructDefinition(&name);
+      EXPECT_ITERATOR(name, structCases[i].nameOut);
+   }
+   struct InheritanceTestCase {
+      const char* input;
+      const char* nameOut;
+      const char* scopeOut;
+   };
+   InheritanceTestCase inheritanceTests[] = {
+     {"MyClass", "MyClass"},
+     {"class NS::MyClass", "class NS::MyClass"},
+     {"protected class NS::MyClass", "class NS::MyClass", "protected"}};
+   for (size_t i = 0; i < ctCStaticArrayLen(inheritanceTests); i++) {
+      ctLexer lexer;
+      lexer.SetContents(inheritanceTests[i].input);
+      TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+      ctLexerIterator it = ctLexerIterator(lexer);
+      ctLexerIterator name = ctLexerIterator();
+      ctLexerIterator scope = ctLexerIterator();
+      it.ReadAsStructInheritanceInfo(&name, &scope);
+      EXPECT_ITERATOR(name, inheritanceTests[i].nameOut);
+      EXPECT_ITERATOR(scope, inheritanceTests[i].scopeOut);
+   }
+}
+
+#define EXPECT_VALUE_CUSTOM(_TYPE, _EXPECT)                                              \
+   {                                                                                     \
+      _TYPE value;                                                                       \
+      TEST_ASSERT(it.ReadValue(value) == CT_SUCCESS);                                    \
+      TEST_ASSERT(_EXPECT);                                                              \
+   }
+#define EXPECT_VALUE(_TYPE, _EXPECT) EXPECT_VALUE_CUSTOM(_TYPE, value == _EXPECT)
+
+void lexer_iterator_value_test(void) {
+   ctLexer lexer;
+   ctLexerIterator it;
+
+   /* boolean */
+   const char* boolTests = "true false, 0 1";
+   lexer.SetContents(boolTests);
+   TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+   it = ctLexerIterator(lexer);
+   EXPECT_VALUE(bool, true);
+   EXPECT_VALUE(bool, false);
+   EXPECT_VALUE(bool, false);
+   EXPECT_VALUE(bool, true);
+
+   /* numbers */
+   const char* intTests =
+     "255 -32 0xFFFF -800 75 -75, 0xFFFFFFFFFFFFF 0 3.4129f 100000.064";
+   lexer.SetContents(intTests);
+   TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+   it = ctLexerIterator(lexer);
+   EXPECT_VALUE(uint8_t, 255);
+   EXPECT_VALUE(int8_t, -32);
+   EXPECT_VALUE(uint16_t, 0xFFFF);
+   EXPECT_VALUE(int16_t, -800);
+   EXPECT_VALUE(uint32_t, 75);
+   EXPECT_VALUE(int32_t, -75);
+   EXPECT_VALUE(uint64_t, 0xFFFFFFFFFFFFF); /* full range isn't parsable... */
+   EXPECT_VALUE(int64_t, 0);
+   EXPECT_VALUE_CUSTOM(float, ctFloatCompare(value, 3.4129f));
+   EXPECT_VALUE_CUSTOM(double, ctFloatCompare((float)value, 100000.064f));
+
+   /* string */
+   const char* strTests = "'\n' \"Test\"";
+   lexer.SetContents(strTests);
+   TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+   it = ctLexerIterator(lexer);
+   EXPECT_VALUE(char, '\n');
+   EXPECT_VALUE(ctStringUtf8, "Test");
+
+   /* vectors */
+   const char* vectorTest =
+     "{{ 1.0f, 2.0f, 3.0f, 4.0f }, { 5.0f, 6.0f, 7.0f, 8.0f }, { "
+     "9.0f, 10.0f, 11.0f, 12.0f }, { 13.0f, 14.0f, 15.0f, 16.0f }}";
+   lexer.SetContents(vectorTest);
+   TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+   it = ctLexerIterator(lexer);
+   it.GetBracketIterator(it);
+   EXPECT_VALUE(ctVec2, ctVec2(1.0f, 2.0f));
+   EXPECT_VALUE(ctVec3, ctVec3(5.0f, 6.0f, 7.0f));
+   EXPECT_VALUE(ctVec4, ctVec4(9.0f, 10.0f, 11.0f, 12.0f));
+   it = ctLexerIterator(lexer);
+   EXPECT_VALUE(ctMat4,
+                ctMat4(1.0f,
+                       2.0f,
+                       3.0f,
+                       4.0f,
+                       5.0f,
+                       6.0f,
+                       7.0f,
+                       8.0f,
+                       9.0f,
+                       10.0f,
+                       11.0f,
+                       12.0f,
+                       13.0f,
+                       14.0f,
+                       15.0f,
+                       16.0f));
+
+   /* hexidecimal */
+   const char* hexTest = "\"0123456789ABCDEFFFFFFFFFFFFFFFFF\"";
+   lexer.SetContents(hexTest);
+   TEST_ASSERT(lexer.BuildTokens() == CT_SUCCESS);
+   it = ctLexerIterator(lexer);
+   EXPECT_VALUE(ctGUID, ctGUID("0123456789ABCDEFFFFFFFFFFFFFFFFF"));
+   it = ctLexerIterator(lexer);
+   EXPECT_VALUE_CUSTOM(ctDynamicArray<uint8_t>, value.Count() == 16);
+}
+
+// eof comment

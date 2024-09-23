@@ -21,6 +21,7 @@ add_executable(Test_Units UnitTestBase.cpp AllTests.h.in
 utilities/UtilitiesTest.cpp
 ecs/ECSBasics.cpp
 reflect/ReflectTest.cpp
+reflect/ReflectTest.hpp
 )
 
 set_property(TARGET Test_Units PROPERTY FOLDER "tests")
@@ -33,6 +34,12 @@ add_test(${test_name} Test_Units ${test_name} Test_Units)
 endmacro()
 
 # --------------- Define All Tests Here ---------------
+ct_add_test(lexer_build_test)
+ct_add_test(lexer_iterator_comment_test)
+ct_add_test(lexer_iterator_variable_test)
+ct_add_test(lexer_iterator_enum_test)
+ct_add_test(lexer_iterator_struct_test)
+ct_add_test(lexer_iterator_value_test)
 ct_add_test(basic_reflect_test)
 
 ct_add_test(array_test)
@@ -48,3 +55,12 @@ ct_add_test(process_test)
 configure_file (
 ${CMAKE_CURRENT_SOURCE_DIR}/AllTests.h.in
 ${CITRUS_CODEGEN_DIR}/AllTests.h)
+
+# ---------- Do Code Generation ----------
+set(CT_CODEGEN_INPUTS
+${CMAKE_CURRENT_SOURCE_DIR}/reflect/ReflectTest.hpp
+)
+
+# link outputs back to library
+add_citrus_codegen(unit_tests_codegen ${CT_CODEGEN_INPUTS})
+add_dependencies(Test_Units unit_tests_codegen)
