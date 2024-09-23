@@ -90,11 +90,6 @@ set(CT_ALIGNMENT_QUAT 16)
 set(CT_ALIGNMENT_MAT4 32)
 set(CT_ALIGNMENT_MODEL_GPU 16)
 
-# ---------- Scene Engine ----------
-set(CITRUS_SCENE_ENGINES HONEYBELL KINNOW)
-set(CITRUS_SCENE_ENGINE KINNOW CACHE STRING "Scene engine")
-set_property(CACHE CITRUS_SCENE_ENGINE PROPERTY STRINGS ${CITRUS_SCENE_ENGINES})
-
 # ---------- Other Defines ----------
 option(USE_STDOUT "Enable STD Out" ON)
 if(USE_STDOUT)
@@ -109,7 +104,7 @@ else()
 set(CITRUS_IS_PRODUCTION 0)
 endif()
 
-# ------------ Hash Checking 
+# ------------ Hash Checking ------------
 option(HASH_COLLISION_CHECK "Enable Hash Collision Check" OFF)
 if(HASH_COLLISION_CHECK)
 set(CT_HASH_COLLISION_CHECK 1)
@@ -260,6 +255,9 @@ else()
    set(CITRUS_INCLUDE_AUDITION 0)
 endif()
 
+# ---------- Code Generator
+include(${CMAKE_CURRENT_SOURCE_DIR}/tools/codegen/CitrusCodegen.cmake)
+
 # ---------- Interaction Backends ----------
 set(CITRUS_INTERACT_INPUT_SDL 1)
 
@@ -275,8 +273,8 @@ if(IS_HEADLESS)
    set(CITRUS_GPU_NULL 1)
    set(CITRUS_INTERACT_INPUT_SDL 0)
    set(CITRUS_INTERACT_INPUT_NULL 1)
-   set(CITRUS_IMGUI 0)
-   set(CITRUS_IM3D 0)
+   set(CITRUS_IMGUI 1)
+   set(CITRUS_IM3D 1)
 else()
    set(CITRUS_HEADLESS 0)
 endif()
