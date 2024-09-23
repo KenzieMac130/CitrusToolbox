@@ -1,0 +1,92 @@
+/* the way this works is we use the lexer to digest these files and convert them into archives */
+/* this is useful for much more than prefabs as we can use this to construct all serialization data */
+
+#include "/game/prefabs/ParentPrefab.ctprefab" /* top level file names get imported into the namespace */
+#include "/game/art/RenderModel.gtlf" /* nonschematic data is imported as binary that can be passed to functions */
+#include "/game/mybigfile.bin" namespace BinFile
+#include "/ecs/EntityTemplates.ctp/3DEntity.cta"
+
+ctVec3 globalVariable = 0.9f;
+
+/* Datatypes
+All C datatypes
+All core Citrus datatypes
+string
+bytes */
+
+/* structs: defined by putting struct before a type, acts like a dictionary */
+/* arrays: declare like c arrays with [], serializes multiple of them */
+
+/* inheritence, works by referencing another part of a ctarc adjacent file */
+
+struct Entities : ParentPrefab::Entities, ctGLTFEntities(RenderModel) {
+    struct MyObject : 3DEntity {
+        struct Location {
+            ctVec3 location = {0.0f, 0.0f, 0.0f};
+        };
+        struct Rotation {
+            ctQuat rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+        };
+        struct Scale {
+            ctVec3 scale = {1.0f, 1.0f, 1.0f};
+        };
+        struct MyAdvancedComponent {
+            float myArray[] = {1.0f, 3.0f, 32.0f};
+            uint32_t myHashValue = ctXXHash32("MyObject"); /* calls to pre-defined functions work */
+            ctGUID myAssetPath = ctDataNickname("MY_ASSET_NICKNAME");
+            string string = "TestString";
+            ctStringUtf8 alsoString = "String";
+            bytes bytes = ctGetBytes(BinFile);
+            enum MyReflectableEnum enumValue = CT_VAL_A | CT_VAL_B; /* enums can be fetched via the codegen/reflection system */
+            struct SubStruct {
+
+            };
+        };
+    };
+    struct MyObject2 : 3DEntity {
+        struct Location {
+            ctVec3 location = {0.0f, 0.0f, 0.0f};
+        };
+        struct Rotation {
+            ctQuat rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+        };
+        struct Scale {
+            ctVec3 scale = {1.0f, 1.0f, 1.0f};
+        };
+        struct MyAdvancedComponent {
+            float myArray[] = {1.0f, 3.0f, 32.0f};
+            uint32_t myHashValue = ctXXHash32("MyObject"); /* calls to pre-defined functions work */
+            ctGUID myAssetPath = ctDataNickname("MY_ASSET_NICKNAME");
+            string string = "TestString";
+            ctStringUtf8 alsoString = "String";
+            bytes bytes = ctGetBytes(BinFile);
+            enum MyReflectableEnum enumValue = CT_VAL_A | CT_VAL_B; /* enums can be fetched via the codegen/reflection system */
+            struct SubStruct {
+
+            };
+        };
+    };
+    struct MyObject3 : MyObject2 {
+        struct Location {
+            ctVec3 location = {0.0f, 0.0f, 0.0f};
+        };
+        struct Rotation {
+            ctQuat rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+        };
+        struct Scale {
+            ctVec3 scale = {1.0f, 1.0f, 1.0f};
+        };
+        struct MyAdvancedComponent {
+            float myArray[] = {1.0f, 3.0f, 32.0f};
+            uint32_t myHashValue = ctXXHash32("MyObject"); /* calls to pre-defined functions work */
+            ctGUID myAssetPath = ctDataNickname("MY_ASSET_NICKNAME");
+            string string = "TestString";
+            ctStringUtf8 alsoString = "String";
+            bytes bytes = ctGetBytes(BinFile);
+            enum MyReflectableEnum enumValue = CT_VAL_A | CT_VAL_B; /* enums can be fetched via the codegen/reflection system */
+            struct SubStruct {
+
+            };
+        };
+    };
+};
