@@ -1,0 +1,25 @@
+{
+  "name": "citrusarchive",
+  "displayName": "CitrusArchive",
+  "description": "Adds support for the Citrus Toolbox unified file format",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "ctarc",
+      "aliases": ["Citrus Archive", "ctarc"],
+      "extensions": [".ctarc", ".ctinc"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "ctarc",
+      "scopeName": "source.ctarc",
+      "path": "./syntaxes/ctarc.tmLanguage"
+    }]
+  }
+}
