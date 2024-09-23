@@ -171,25 +171,25 @@ inline T ctStaticArray<T, TCAPACITY>::Last() const {
 template<class T, size_t TCAPACITY>
 inline T* ctStaticArray<T, TCAPACITY>::Begin() {
    ctAssert(_pData);
-   return pData;
+   return _pData;
 }
 
 template<class T, size_t TCAPACITY>
 inline const T* ctStaticArray<T, TCAPACITY>::Begin() const {
    ctAssert(_pData);
-   return pData;
+   return _pData;
 }
 
 template<class T, size_t TCAPACITY>
 inline T* ctStaticArray<T, TCAPACITY>::End() {
    ctAssert(_pData);
-   return pData + Count();
+   return _pData + Count() - 1;
 }
 
 template<class T, size_t TCAPACITY>
 inline const T* ctStaticArray<T, TCAPACITY>::End() const {
    ctAssert(_pData);
-   return pData + Count();
+   return _pData + Count() - 1;
 }
 
 template<class T, size_t TCAPACITY>
@@ -407,6 +407,7 @@ inline uint64_t ctStaticArray<T, TCAPACITY>::xxHash64() const {
    return xxHash64(0);
 }
 
+// clang-format off
 template<class T, size_t TCAPACITY>
 inline ctReflectContainerInterface ctStaticArray<T, TCAPACITY>::_GetReflectInterface() {
    ctReflectContainerInterface reflectInterface = {};
@@ -450,5 +451,29 @@ inline ctReflectContainerInterface ctStaticArray<T, TCAPACITY>::_GetReflectInter
       ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
       return array.Append(T());
    };
+   reflectInterface.GetByteBufferSize = [](void* baseAddress, void* extra) -> size_t {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      return array.Count() * sizeof(T);
+   };
+   reflectInterface.ByteBufferCopyFrom = [](
+      uint8_t* src, size_t srcSize, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      if (srcSize % sizeof(T) != 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+      CT_RETURN_FAIL(array.Resize(srcSize / sizeof(T)));
+      memcpy(array.Data(), src, srcSize);
+      return CT_SUCCESS;
+   };
+   reflectInterface.ByteBufferCopyTo =
+      [](uint8_t* dest, size_t dstSize, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctStaticArray<T, TCAPACITY>& array = *(ctStaticArray<T, TCAPACITY>*)baseAddress;
+      if (dstSize % sizeof(T) != 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+      if (dstSize < array.Count() * sizeof(T)) { return CT_FAILURE_OUT_OF_BOUNDS; }
+      memcpy(dest, array.Data(), dstSize);
+      return CT_SUCCESS;
+   };
    return reflectInterface;
 }
+// clang-format on

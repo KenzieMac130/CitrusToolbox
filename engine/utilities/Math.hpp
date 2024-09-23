@@ -282,3 +282,21 @@ inline void ctFormatBytes(size_t count, char* buffer, size_t max) {
       snprintf(buffer, max, "%zub", count);
    }
 }
+
+inline double ctStringToDouble(const char* buffer, size_t max = 0) {
+   if (!max) { max = strlen(buffer); }
+   if (max >= 64) { max = 63; }
+   char tmp[64];
+   memset(tmp, 0, 64);
+   strncpy(tmp, buffer, max);
+   return strtod(tmp, NULL);
+}
+
+inline long double ctStringToLongDouble(const char* buffer, size_t max = 0) {
+   if (!max) { max = strlen(buffer); }
+   if (max >= 64) { max = 63; }
+   char tmp[64];
+   memset(tmp, 0, 64);
+   strncpy(tmp, buffer, max);
+   return strtold(tmp, NULL);
+}

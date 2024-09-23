@@ -16,7 +16,9 @@
 
 #pragma once
 
+#define IS_CITRUS_CODEGEN
 #include "Common.h"
+#undef IS_CITRUS_CODEGEN
 
 struct ctReflectEnumEntryInfo {
    const char* programmerName;
@@ -30,18 +32,6 @@ struct ctReflectEnumInfo {
    ctReflectEnumType type; /* SEQUENCE or BITMASK */
    const ctReflectEnumEntryInfo* pEntries;
 };
-
-// clang-format off
-#define CT_REFLECT_ENUM_DECLARE(_TYPE_NAME) const ctReflectEnumInfo _##_TYPE_NAME##_citenumreflget();
-#define CT_REFLECT_ENUM_DEFINE_START(_TYPE_NAME, _ENUM_TYPE) const ctReflectEnumInfo _##_TYPE_NAME##_citenumreflget() \
-   { ctReflectEnumType etype = _ENUM_TYPE; \
-static ctReflectEnumEntryInfo _##_TYPE_NAME##_enum_info_ents[] = {
-#define CT_REFLECT_ENUM_DEFINE_ENTRY(_TYPE_NAME, _NAME, _FRIENDLY_NAME) { #_NAME, _FRIENDLY_NAME, (uint64_t)_NAME },
-#define CT_REFLECT_ENUM_DEFINE_END(_TYPE_NAME) CT_REFLECT_ENUM_DEFINE_ENTRY(NULL, NULL, 0)}; \
-    ctReflectEnumInfo _##_TYPE_NAME##_enum_info = { etype, _##_TYPE_NAME##_enum_info_ents };\
-    return _##_TYPE_NAME##_enum_info; \
-};
-// clang-format on
 
 /* the reflector context is responsible for implementing ui/saving/loading/etc */
 class ctReflectContext {
@@ -128,8 +118,23 @@ public:
 
 /* ------------------ DEFINITION ------------------ */
 
+// clang-format off
+#define CT_REFLECT_ENUM_DECLARE(_TYPE_NAME) const ctReflectEnumInfo& _##_TYPE_NAME##_citenumreflget();
+#define CT_REFLECT_ENUM_DEFINE_START(_TYPE_NAME, _ENUM_TYPE) const ctReflectEnumInfo& _##_TYPE_NAME##_citenumreflget() \
+   { static const ctReflectEnumType etype = _ENUM_TYPE; \
+static const ctReflectEnumEntryInfo _##_TYPE_NAME##_enum_info_ents[] = {
+#define CT_REFLECT_ENUM_DEFINE_ENTRY(_TYPE_NAME, _NAME, _FRIENDLY_NAME) { #_NAME, _FRIENDLY_NAME, (uint64_t)_NAME },
+#define CT_REFLECT_ENUM_DEFINE_END(_TYPE_NAME) CT_REFLECT_ENUM_DEFINE_ENTRY(NULL, NULL, 0)}; \
+    static const ctReflectEnumInfo _##_TYPE_NAME##_enum_info = { etype, _##_TYPE_NAME##_enum_info_ents };\
+    return _##_TYPE_NAME##_enum_info; \
+};
+// clang-format on
+
+#define CT_REFLECT_ENUM_FORWARD(_CLASS_TYPE)                                            \
+   const ctReflectEnumInfo& _##_CLASS_TYPE##_citenumreflget();
+
 /* Put in include files to add reflectors to a type */
-#define CT_DEFINE_REFLECTOR(_CLASS_TYPE)                                                 \
+#define CT_REFLECT_CLASS_DECLARE(_CLASS_TYPE)                                            \
    class _##_CLASS_TYPE##_citrefl : public ctReflectorBase {                             \
    public:                                                                               \
       virtual void GetStructReflection(ctReflectContext& ctx, void* data) const;         \
@@ -139,10 +144,17 @@ public:
    const ctReflectorBase& _##_CLASS_TYPE##_citreflget();
 
 /* add this to classes which inherit from ctReflectorBase */
-#define CT_DEFINE_REFLECTOR_VFUNC()                                                      \
+#define CT_REFLECT_CLASS_DECLARE_VFUNC()                                                 \
    virtual void GetStructReflection(ctReflectContext& ctx, void* data) const;            \
    virtual const char* GetStructName() const;                                            \
    virtual size_t GetStructSize() const;
+
+/* allow reflector to access protected members */
+#define CT_REFLECT_ACCESS_PROTECTED(_CLASS_TYPE) friend class _##_CLASS_TYPE##_citrefl;
+
+/* forward declarations in code generation */
+#define CT_REFLECT_CLASS_FORWARD(_CLASS_TYPE)                                            \
+   const ctReflectorBase& _##_CLASS_TYPE##_citreflget();
 
 /* ------------------ IMPLEMENTATION ------------------ */
 
@@ -160,8 +172,6 @@ public:
    }                                                                                     \
    void _##_CLASS_TYPE##_citrefl::GetStructReflection(ctReflectContext& _CTX,            \
                                                       void* _DATA) const
-
-#define CT_IMPLEMENT_REFLECTOR_POLY()
 
 /* to implement the reflector vfunctions on a poly type (inherits from ctReflectorBase) */
 #define CT_IMPLEMENT_REFLECTOR_VFUNC_BASE(_CLASS_TYPE)                                   \
@@ -187,6 +197,10 @@ public:
    size_t _CLASS_TYPE::GetStructSize() const {                                           \
       return _##_CLASS_TYPE##_citreflget().GetStructSize();                              \
    }
+
+/* static inheritance */
+#define CT_IMPLEMENT_REFLECTOR_STATIC_INHERIT(_BASE_CLASS, _CLASS_TYPE)                  \
+   _##_BASE_CLASS##_citreflget().GetStructReflection(_CTX, _DATA);
 
 /* Adds a basic type (whatever is handled natively by the context) */
 #define CT_REFLECT_BASIC_TYPE(_CLASS_TYPE, _TYPE, _NAME, _METADATA)                      \

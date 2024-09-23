@@ -47,6 +47,7 @@ extern "C" {
 #include <math.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #if CITRUS_SDL
 #define HAVE_STDIO_H
@@ -103,7 +104,8 @@ enum ctResults {
    CT_FAILURE_TYPE_ERROR = -20,
    CT_FAILURE_NOT_FINISHED = -21,
    CT_FAILURE_SKIPPED = -22,
-   CT_FAILURE_INCORRECT_VERSION = -23
+   CT_FAILURE_INCORRECT_VERSION = -23,
+   CT_FAILURE_END_OF_STREAM = -24
 };
 
 #define CT_PANIC_FAIL(_arg, _message)                                                    \
@@ -147,6 +149,15 @@ enum ctResults {
 #define ctCStrNEql(a, b, n)     strncmp(a, b, n) == 0
 #define ctCFlagCheck(v, f)      ((v & f) == f)
 #define ctAlign(v, a)           ((v + (a - 1)) & -a)
+
+/* Alphanumeric checks (ASCII/UTF8 simplified, no-locale) */
+#define ctIsDigit(c) (c >= '0' && c <= '9')
+#define ctIsAlpha(c) ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+#define ctIsAlnum(c) (ctIsDigit(c) || ctIsAlpha(c))
+#define ctIsUnicode(c) (c > 127 || c < 0)
+#define ctIsAscii(c) (c <= 127 && c >= 0)
+#define ctIsAlphaUnicode(c) (ctIsAlpha(c) || ctIsUnicode(c))
+#define ctIsAlnumUnicode(c) (ctIsAlnum(c) || ctIsUnicode(c))
 
 /*Debug*/
 #ifdef NDEBUG
@@ -204,4 +215,6 @@ CT_API size_t ctGetAliveAllocations();
 #include "File.hpp"
 #include "Random.hpp"
 #include "HandlePointer.hpp"
+#include "Reflect.hpp"
+#include "HardcodedReflection.hpp"
 #endif

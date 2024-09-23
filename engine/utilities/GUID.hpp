@@ -28,6 +28,7 @@ public:
    ctResults Generate();
    bool isValid() const;
    void ToHex(char dest[32]) const;
+   class ctStringUtf8 ToHex() const;
    inline bool operator==(const ctGUID& other) const {
       return memcmp(data, other.data, 16) == 0;
    }

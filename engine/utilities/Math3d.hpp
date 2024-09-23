@@ -51,6 +51,16 @@ enum ctAxis {
    CT_AXIS_EW = CT_AXIS_X
 };
 
+enum ctTransformOrder {
+   CT_TRANSFORM_TRS,
+   CT_TRANSFORM_TSR,
+   CT_TRANSFORM_STR,
+   CT_TRANSFORM_SRT,
+   CT_TRANSFORM_RTS,
+   CT_TRANSFORM_RST,
+   CT_TRANSFORM_DEFAULT = CT_TRANSFORM_TRS
+};
+
 /* --- Vec2 --- */
 struct CT_API CT_ALIGN(CT_ALIGNMENT_VEC2) ctVec2 {
    inline ctVec2() {
@@ -454,6 +464,20 @@ enum ctColorComponents {
 #define CT_COLOR_PURPLE          ctVec4(0.5f, 0.0f, 1.0f, 1.0f)
 #define CT_COLOR_PINK            ctVec4(1.0f, 0.0f, 1.0f, 1.0f)
 
+struct CT_API ctColorRGBA8 {
+   inline ctColorRGBA8(ctVec4 input) {
+      r = (uint8_t)(ctSaturate(input.r) * 255.0f);
+      g = (uint8_t)(ctSaturate(input.g) * 255.0f);
+      b = (uint8_t)(ctSaturate(input.b) * 255.0f);
+      a = (uint8_t)(ctSaturate(input.a) * 255.0f);
+   }
+
+   uint8_t r;
+   uint8_t g;
+   uint8_t b;
+   uint8_t a;
+};
+
 /* --- Bounding Box --- */
 
 struct CT_API ctBoundBox {
@@ -834,6 +858,19 @@ inline void ctMat4FromTransform(ctMat4& m, const ctTransform& transform) {
    ctMat4Scale(m, transform.scale);
 }
 
+inline void
+ctMat4FromTransform(ctMat4& m, const ctTransform& transform, ctTransformOrder order) {
+   m = ctMat4Identity();
+   // todo
+}
+
+inline void
+ctMat4FromConversion(ctAxis inputUp, ctAxis inputRight, float metersToUnits = 1.0f) {
+   ctMat4& m = ctMat4Identity();
+   // todo
+   ctMat4Scale(m, metersToUnits);
+}
+
 inline void ctMat4RemoveTranslation(ctMat4& m) {
    m.data[3][0] = 0.0f;
    m.data[3][1] = 0.0f;
@@ -1000,6 +1037,13 @@ inline bool operator==(const ctVec4& a, const ctVec4& b) {
 inline bool operator==(const ctQuat& a, const ctQuat& b) {
    return ctFloatCompare(a.x, b.x) && ctFloatCompare(a.y, b.y) &&
           ctFloatCompare(a.z, b.z) && ctFloatCompare(a.w, b.w);
+}
+
+inline bool operator==(const ctMat4& a, const ctMat4& b) {
+   for (size_t i = 0; i < 4 * 4; i++) {
+      if (!ctFloatCompare(*(&a.data[0][0] + i), *(&b.data[0][0] + i))) { return false; }
+   }
+   return true;
 }
 
 /* --- Middleware Conversion --- */

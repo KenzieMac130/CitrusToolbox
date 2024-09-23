@@ -195,25 +195,25 @@ inline T ctDynamicArray<T>::Last() const {
 template<class T>
 inline T* ctDynamicArray<T>::Begin() {
    ctAssert(_pData);
-   return pData;
+   return _pData;
 }
 
 template<class T>
 inline const T* ctDynamicArray<T>::Begin() const {
    ctAssert(_pData);
-   return pData;
+   return _pData;
 }
 
 template<class T>
 inline T* ctDynamicArray<T>::End() {
    ctAssert(_pData);
-   return pData + Count();
+   return _pData + (Count() - 1);
 }
 
 template<class T>
 inline const T* ctDynamicArray<T>::End() const {
    ctAssert(_pData);
-   return pData + Count();
+   return _pData + (Count() - 1);
 }
 
 template<class T>
@@ -506,6 +506,7 @@ inline bool ctDynamicArray<T>::Exists(const T& val) const {
    return FindIndex(val, 0, 1) != -1 ? true : false;
 }
 
+// clang-format off
 template<class T>
 inline ctReflectContainerInterface ctDynamicArray<T>::_GetReflectInterface() {
    ctReflectContainerInterface reflectInterface = {};
@@ -527,23 +528,51 @@ inline ctReflectContainerInterface ctDynamicArray<T>::_GetReflectInterface() {
    };
    reflectInterface.Swap = [](
      int64_t indexA, int64_t indexB, void* baseAddress, void* extra) -> enum ctResults {
-      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
       return array.Swap(indexA, indexB);
    };
    reflectInterface.RemoveAt =
      [](int64_t index, void* baseAddress, void* extra) -> enum ctResults {
-      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
       array.RemoveAt(index);
       return CT_SUCCESS;
    };
    reflectInterface.InsertNew =
      [](int64_t index, void* baseAddress, void* extra) -> enum ctResults {
-      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
       return array.Insert(T(), index);
    };
    reflectInterface.AppendNew = [](void* baseAddress, void* extra) -> enum ctResults {
-      ctAssert(baseAddress); ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
       return array.Append(T());
+   };
+   reflectInterface.GetByteBufferSize = [](void* baseAddress, void* extra) -> size_t {
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      return array.Count() * sizeof(T);
+   };
+   reflectInterface.ByteBufferCopyFrom = [](
+     uint8_t * src, size_t srcSize, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      if (srcSize % sizeof(T) != 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+      CT_RETURN_FAIL(array.Resize(srcSize / sizeof(T)));
+      memcpy(array.Data(), src, srcSize);
+      return CT_SUCCESS;
+   };
+   reflectInterface.ByteBufferCopyTo =
+      [](uint8_t * dest, size_t dstSize, void* baseAddress, void* extra) -> enum ctResults {
+      ctAssert(baseAddress);
+      ctDynamicArray<T>& array = *(ctDynamicArray<T>*)baseAddress;
+      if (dstSize % sizeof(T) != 0) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+      if (dstSize < array.Count() * sizeof(T)) { return CT_FAILURE_OUT_OF_BOUNDS; }
+      memcpy(dest, array.Data(), dstSize);
+      return CT_SUCCESS;
    };
    return reflectInterface;
 }
+// clang-format on

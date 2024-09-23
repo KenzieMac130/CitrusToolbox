@@ -36,6 +36,7 @@ ctFile::ctFile() {
    _fSize = -1;
    _ctx = NULL;
    _mode = CT_FILE_OPEN_READ;
+   _filePath = NULL;
 }
 
 ctFile::ctFile(FILE* fp, const ctFileOpenMode mode) : ctFile() {
@@ -50,12 +51,14 @@ ctFile::ctFile(void* memory, size_t size, const ctFileOpenMode mode) {
       _ctx = SDL_RWFromConstMem(memory, (int)size);
    }
    _mode = mode;
+   _filePath = NULL;
 }
 
 ctFile::ctFile(const void* memory, size_t size, const ctFileOpenMode mode) {
    _fSize = -1;
    _ctx = SDL_RWFromConstMem(memory, (int)size);
    _mode = mode;
+   _filePath = NULL;
 }
 
 ctFile::ctFile(const char* filePath,
@@ -75,6 +78,7 @@ ctFile::ctFile(const ctStringUtf8& filePath,
 }
 
 ctFile::~ctFile() {
+   ctFree(_filePath);
    // if (isOpen()) { Close(); } (explicit close is now required)
 }
 
@@ -97,9 +101,14 @@ ctResults ctFile::Open(const char* filePath,
                        bool silent,
                        size_t reserve) {
    ZoneScoped;
+   size_t pathLength = strlen(filePath) + 1;
+   _filePath = (char*)ctRealloc(_filePath, pathLength);
+   memset(_filePath, 0, pathLength);
+   strncpy(_filePath, filePath, pathLength);
    if (_mode == CT_FILE_OPEN_READ_VIRTUAL || _mode == CT_FILE_OPEN_WRITE_VIRTUAL) {
       size_t mapSize = 0;
-      void* map = ctSystemMapVirtualFile(filePath, false, reserve, &mapSize);
+      void* map = ctSystemMapVirtualFile(
+        filePath, _mode == CT_FILE_OPEN_WRITE_VIRTUAL, reserve, &mapSize);
       if (!map) { return CT_FAILURE_INACCESSIBLE; }
       _ctx = SDL_RWFromLargeMem(map, mapSize, _mode == CT_FILE_OPEN_WRITE_VIRTUAL);
    } else {
@@ -164,20 +173,12 @@ size_t ctFile::GetText(ctStringUtf8& outString) {
    outString = "";
    outString.Append('\0', fsize + 1);
    ReadRaw(outString.Data(), 1, fsize);
+   outString.RemoveByteOrderMark();
    return fsize;
 }
 
-ctStringUtf8 ctFile::ReadLine(char separator) {
-   ctStringUtf8 outString = ctStringUtf8();
-   char nextByte;
-   do {
-      ReadRaw(&nextByte, 1, 1);
-      outString += nextByte;
-   } while (nextByte != separator);
-   return outString;
-}
-
 size_t ctFile::GetVirtualMemory(uint8_t** ppOutBytes) {
+   ctAssert(ppOutBytes);
    if (_mode == CT_FILE_OPEN_READ_VIRTUAL || _mode == CT_FILE_OPEN_WRITE_VIRTUAL) {
       if (_ctx->type == SDL_RWOPS_MEMORY || _ctx->type == SDL_RWOPS_MEMORY_RO) {
          *ppOutBytes = _ctx->hidden.mem.base;

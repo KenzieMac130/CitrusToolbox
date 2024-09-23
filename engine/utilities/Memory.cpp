@@ -27,6 +27,7 @@ void* ctAlignedMalloc(size_t size, size_t alignment) {
    ZoneScoped;
    const size_t allocSize = size + alignment + sizeof(alignedAllocTracker);
    char* rawMemory = (char*)malloc(allocSize);
+   CT_PANIC_UNTRUE(rawMemory, "OUT OF MEMORY!");
    TracyAlloc(rawMemory, allocSize);
    ctAtomicAdd(gAllocCount, 1);
    alignedAllocTracker* ptr =
@@ -112,6 +113,7 @@ void* operator new[](size_t size) {
    ctAssert(ptr);
    return ptr;
 }
+
 void operator delete[](void* ptr) {
    ZoneScoped;
    ctFree(ptr);

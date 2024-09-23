@@ -18,7 +18,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-/* Generic Container Interface */
+/* Generic Container Interface for Reflection */
 struct ctReflectContainerInterface {
    void* extra;
    const char* containerType;
@@ -37,4 +37,14 @@ struct ctReflectContainerInterface {
    enum ctResults (*InsertNew)(int64_t index, void* baseAddress, void* extra);
    enum ctResults (*AppendNew)(void* baseAddress, void* extra);
    enum ctResults (*InsertNewWithKey)(void* keyPtr, void* baseAddress, void* extra);
+
+   size_t (*GetByteBufferSize)(void* baseAddress, void* extra);
+   enum ctResults (*ByteBufferCopyTo)(uint8_t* dest,
+                                      size_t dstSize,
+                                      void* baseAddress,
+                                      void* extra);
+   enum ctResults (*ByteBufferCopyFrom)(uint8_t* src,
+                                        size_t srcSize,
+                                        void* baseAddress,
+                                        void* extra);
 };

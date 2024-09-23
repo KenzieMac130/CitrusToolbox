@@ -19,7 +19,6 @@
 #include "utf8/utf8.h"
 #define CUTE_UTF_IMPLEMENTATION
 #include "cute/cute_utf.h"
-#include <ctype.h>
 
 /* ------------------------ Global String Pool ------------------------ */
 
@@ -226,8 +225,8 @@ ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
             case '\"': _data[outIdx] = '\"'; break;
             case '?': _data[outIdx] = '\?'; break;
             case '\\': _data[outIdx] = '\\'; break;
-            case 'a': continue;
-            case 'b': continue;
+            case 'a': continue; /* ignore alarm */
+            case 'b': continue; /* ignore backspace */
             case 'f': _data[outIdx] = '\f'; break;
             case 'n': _data[outIdx] = '\n'; break;
             case 'r': _data[outIdx] = '\r'; break;
@@ -247,10 +246,25 @@ ctStringUtf8& ctStringUtf8::ProcessEscapeCodes() {
    return *this;
 }
 
+ctResults ctStringUtf8::Split(const char* separator, ctStringUtf8& output) {
+   size_t separatorLength = strlen(separator);
+   size_t selfLength = ByteLength();
+   for (size_t i = 0; i < selfLength - (separatorLength - 1); i++) {
+      if (ctCStrNEql(CStr() + i, separator, separatorLength)) {
+         output = ctStringUtf8(CStr(), size_t(i));
+         size_t afterSepIndex = i + separatorLength;
+         *this = ctStringUtf8(CStr() + afterSepIndex, selfLength - afterSepIndex);
+         return CT_SUCCESS;
+      }
+   }
+   output = ctStringUtf8(CStr());
+   return CT_FAILURE_NOT_FOUND;
+}
+
 bool ctStringUtf8::isNumber() const {
    if (isEmpty()) { return false; }
    for (int i = 0; i < ByteLength(); i++) {
-      if (!(_data[i] == '.' || _data[i] == '-' || isdigit(_data[i]))) { return false; }
+      if (!(_data[i] == '.' || _data[i] == '-' || ctIsDigit(_data[i]))) { return false; }
    }
    return true;
 }
@@ -258,7 +272,7 @@ bool ctStringUtf8::isNumber() const {
 bool ctStringUtf8::isInteger() const {
    if (isEmpty()) { return false; }
    for (int i = 0; i < ByteLength(); i++) {
-      if (!(_data[i] == '-' || isdigit(_data[i]))) { return false; }
+      if (!(_data[i] == '-' || ctIsDigit(_data[i]))) { return false; }
    }
    return true;
 }
@@ -326,6 +340,18 @@ ctStringUtf8& ctStringUtf8::FilePathPop() {
       }
    }
    return *this;
+}
+
+ctResults ctStringUtf8::FilePathMakeRelative(const ctStringUtf8& parent) {
+   size_t parentLength = parent.ByteLength();
+   if (ByteLength() < parentLength) { return CT_FAILURE_NOT_FOUND; }
+   if (ctCStrNEql(CStr(), parent.CStr(), parentLength)) {
+      for (size_t i = 0; i < parentLength; i++) {
+         _data.RemoveFirst();
+      }
+      return CT_SUCCESS;
+   }
+   return CT_FAILURE_NOT_FOUND;
 }
 
 ctStringUtf8& ctStringUtf8::FilePathAppend(const char* path) {
@@ -444,6 +470,15 @@ void ctStringUtf8::MakeUTF32Array(ctDynamicArray<char32_t>& arr) const {
 void ctStringUtf8::CopyToArray(char* dest, size_t destSize) {
    memset(dest, 0, destSize);
    strncpy(dest, CStr(), destSize - 1);
+}
+
+void ctStringUtf8::RemoveByteOrderMark() {
+   const char bom[] = {(char)0xEF, (char)0xBB, (char)0xBF};
+   if (Cmp(bom, 3) == 0) {
+      for (int i = 0; i < 3; i++) {
+         _data.RemoveFirst();
+      }
+   }
 }
 
 inline void* ctStringUtf8::_dataVoid() const {

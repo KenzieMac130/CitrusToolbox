@@ -46,6 +46,13 @@ void ctGUID::ToHex(char dest[32]) const {
    ctBytesToHex(16, data, dest);
 }
 
+ctStringUtf8 ctGUID::ToHex() const {
+   char buff[33];
+   memset(buff, 0, 33);
+   ToHex(buff);
+   return ctStringUtf8(buff);
+}
+
 ctResults ctGUID::Generate() {
    ZoneScoped;
    return ctSystemCreateGUID((void*)data) == 0 ? CT_SUCCESS : CT_FAILURE_UNKNOWN;

@@ -69,6 +69,8 @@ public:
    ctStringUtf8& ExpandToEscapeCodes();
    ctStringUtf8& ProcessEscapeCodes();
 
+   ctResults Split(const char* separator, ctStringUtf8& output);
+
    bool isNumber() const;
    bool isInteger() const;
 
@@ -77,6 +79,7 @@ public:
    ctStringUtf8& FilePathRemoveTrailingSlash();
    ctStringUtf8& FilePathRemoveExtension();
    ctStringUtf8& FilePathPop();
+   ctResults FilePathMakeRelative(const ctStringUtf8& parent);
    ctStringUtf8& FilePathAppend(const char* path);
    ctStringUtf8& FilePathAppend(const ctStringUtf8& path);
    ctStringUtf8 FilePathGetName() const;
@@ -91,6 +94,8 @@ public:
    void MakeUTF16Array(ctDynamicArray<char16_t>& arr) const;
    void MakeUTF32Array(ctDynamicArray<char32_t>& arr) const;
    void CopyToArray(char* dest, size_t destSize);
+
+   void RemoveByteOrderMark();
 
 private:
    void* _dataVoid() const;

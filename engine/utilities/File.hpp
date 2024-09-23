@@ -18,8 +18,6 @@
 
 #include "Common.h"
 
-class ctStringUtf8;
-
 enum ctFileSeekMode {
    CT_FILE_SEEK_SET = RW_SEEK_SET,
    CT_FILE_SEEK_CUR = RW_SEEK_CUR,
@@ -59,6 +57,7 @@ public:
                   const ctFileOpenMode mode,
                   bool silent = false,
                   size_t reserve = 0);
+   ctResults OpenTemp(const char* extension = NULL);
    void Close();
 
    int64_t GetFileSize();
@@ -67,13 +66,14 @@ public:
    size_t GetBytes(ctDynamicArray<char>& outArray);
    size_t GetText(ctStringUtf8& outString);
    size_t GetVirtualMemory(uint8_t** ppOutBytes);
+   inline const char* GetFilePath() {
+      return _filePath;
+   }
 
    int64_t Tell();
    ctResults Seek(const int64_t offset, const ctFileSeekMode mode);
 
    size_t ReadRaw(void* pDest, const size_t size, const size_t count);
-   ctStringUtf8 ReadLine(char separator = '\n');
-
    size_t WriteRaw(const void* pData, size_t size, const size_t count);
    size_t Printf(const char* format, ...);
    size_t VPrintf(const char* format, va_list va);
@@ -83,7 +83,9 @@ public:
    bool isOpen() const;
 
 private:
+   bool _isTemp;
    ctFileOpenMode _mode;
    int64_t _fSize;
    SDL_RWops* _ctx;
+   char* _filePath;
 };
