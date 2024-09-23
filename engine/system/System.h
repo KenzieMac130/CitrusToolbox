@@ -50,3 +50,6 @@ time_t ctSystemGetDirDate(void* handle);
 
 int ctSystemFileExists(const char* path);
 const char* ctSystemGetGameLayerLibName();
+
+const char* ctSystemGetTempDir();
+int ctSystemDeleteFile(const char* path, bool useTrashBin);
