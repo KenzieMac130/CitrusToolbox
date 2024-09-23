@@ -14,7 +14,15 @@
    limitations under the License.
 */
 
-#include "TextureLoad.h"
+#include "Image.hpp"
+
+enum ctImageSource {
+   CT_IMAGE_SOURCE_NONE,
+   CT_IMAGE_SOURCE_CUSTOM,
+   CT_IMAGE_SOURCE_TINYKTX,
+   CT_IMAGE_SOURCE_TINYDDS,
+   CT_IMAGE_SOURCE_STB
+};
 
 #define STBI_ASSERT(x)         ctAssert(x)
 #define STBI_MALLOC(sz)        ctMalloc(sz)
@@ -84,161 +92,248 @@ int ctStbEof(void* user) {
 
 stbi_io_callbacks stbCallbacks = {ctStbRead, ctStbSkip, ctStbEof};
 
-ctResults LoadKTX(ctFile& file, ctTextureLoadCtx* ctx) {
-   ctx->src = CT_TEXTURELOAD_TINYKTX;
+ctResults ctImage::LoadKTX(ctFile& file) {
+   source = CT_IMAGE_SOURCE_TINYKTX;
    bool errorOccured = false;
    tinyUserData ud = {&file, &errorOccured, "[TinyKTX] "};
    TinyKtx_ContextHandle tinyKtx = TinyKtx_CreateContext(&tinyKtxCbs, &ud);
-   ctx->loaderdata = tinyKtx;
+   loaderdata = tinyKtx;
    if (!TinyKtx_ReadHeader(tinyKtx)) {
       TinyKtx_DestroyContext(tinyKtx);
       return CT_FAILURE_CORRUPTED_CONTENTS;
    }
 
    /* only support native endian */
-   if (TinyKtx_NeedsEndianCorrecting(tinyKtx)) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (TinyKtx_NeedsEndianCorrecting(tinyKtx)) {
+      Invalidate();
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
 
    /* get format */
-   ctx->format = TinyImageFormat_FromTinyKtxFormat(TinyKtx_GetFormat(tinyKtx));
+   format = TinyImageFormat_FromTinyKtxFormat(TinyKtx_GetFormat(tinyKtx));
 
    /* get dimensions */
-   ctx->width = TinyKtx_Width(tinyKtx);
-   ctx->height = TinyKtx_Height(tinyKtx);
+   width = TinyKtx_Width(tinyKtx);
+   height = TinyKtx_Height(tinyKtx);
 
    /* mipmaps */
    if (TinyKtx_NeedsGenerationOfMipmaps(tinyKtx)) {
-      ctx->mips = 1; /* nope: not doing it here */
+      mips = 1; /* nope: not doing it here */
    } else {
-      ctx->mips = TinyKtx_NumberOfMipmaps(tinyKtx);
+      mips = TinyKtx_NumberOfMipmaps(tinyKtx);
    }
 
    /* get type */
    if (TinyKtx_Is1D(tinyKtx)) {
-      ctx->type = CT_TEXTURELOAD_1D;
-      ctx->depth = TinyKtx_ArraySlices(tinyKtx);
+      type = CT_IMAGE_TYPE_1D;
+      depth = TinyKtx_ArraySlices(tinyKtx);
    } else if (TinyKtx_Is2D(tinyKtx)) {
-      ctx->type = CT_TEXTURELOAD_2D;
-      ctx->depth = TinyKtx_ArraySlices(tinyKtx);
+      type = CT_IMAGE_TYPE_2D;
+      depth = TinyKtx_ArraySlices(tinyKtx);
    } else if (TinyKtx_Is3D(tinyKtx)) {
-      ctx->type = CT_TEXTURELOAD_3D;
-      ctx->depth = TinyKtx_Depth(tinyKtx);
+      type = CT_IMAGE_TYPE_3D;
+      depth = TinyKtx_Depth(tinyKtx);
    } else if (TinyKtx_IsCubemap(tinyKtx)) {
-      ctx->type = CT_TEXTURELOAD_CUBEMAP;
-      ctx->depth = TinyKtx_ArraySlices(tinyKtx);
+      type = CT_IMAGE_TYPE_CUBE;
+      depth = TinyKtx_ArraySlices(tinyKtx);
    }
 
    /* load data */
-   for (uint32_t mip = 0; mip < ctx->mips; mip++) {
+   for (uint32_t mip = 0; mip < mips; mip++) {
       uint32_t size = TinyKtx_ImageSize(tinyKtx, mip);
       if (TinyKtx_IsMipMapLevelUnpacked(tinyKtx, mip)) {
          /* todo read with TinyKtx_UnpackedRowStride stride */
          ctAssert(0);
+         Invalidate();
          return CT_FAILURE_CORRUPTED_CONTENTS;
       } else {
-         ctx->levels[mip] = TinyKtx_ImageRawData(tinyKtx, mip);
+         levels[mip] = (void*)TinyKtx_ImageRawData(tinyKtx, mip);
       }
    }
-   if (errorOccured) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (errorOccured) {
+      Invalidate();
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
    return CT_SUCCESS;
 }
 
 /* mostly mirrors KTX code */
-ctResults LoadDDS(ctFile& file, ctTextureLoadCtx* ctx) {
-   ctx->src = CT_TEXTURELOAD_TINYDDS;
+ctResults ctImage::LoadDDS(ctFile& file) {
+   source = CT_IMAGE_SOURCE_TINYDDS;
    bool errorOccured = false;
    tinyUserData ud = {&file, &errorOccured, "[TinyDDS] "};
    TinyDDS_ContextHandle tinyDDS = TinyDDS_CreateContext(&tinyDdsCbs, &ud);
-   ctx->loaderdata = tinyDDS;
+   loaderdata = tinyDDS;
    if (!TinyDDS_ReadHeader(tinyDDS)) {
       TinyDDS_DestroyContext(tinyDDS);
       return CT_FAILURE_CORRUPTED_CONTENTS;
    }
 
    /* only support native endian */
-   if (TinyDDS_NeedsEndianCorrecting(tinyDDS)) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (TinyDDS_NeedsEndianCorrecting(tinyDDS)) {
+      Invalidate();
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
 
    /* get format */
-   ctx->format = TinyImageFormat_FromTinyDDSFormat(TinyDDS_GetFormat(tinyDDS));
+   format = TinyImageFormat_FromTinyDDSFormat(TinyDDS_GetFormat(tinyDDS));
 
    /* get dimensions */
-   ctx->width = TinyDDS_Width(tinyDDS);
-   ctx->height = TinyDDS_Height(tinyDDS);
+   width = TinyDDS_Width(tinyDDS);
+   height = TinyDDS_Height(tinyDDS);
 
    /* mipmaps */
    if (TinyDDS_NeedsGenerationOfMipmaps(tinyDDS)) {
-      ctx->mips = 1; /* nope: not doing it here */
+      mips = 1; /* nope: not doing it here */
    } else {
-      ctx->mips = TinyDDS_NumberOfMipmaps(tinyDDS);
+      mips = TinyDDS_NumberOfMipmaps(tinyDDS);
    }
 
    /* get type */
    if (TinyDDS_Is1D(tinyDDS)) {
-      ctx->type = CT_TEXTURELOAD_1D;
-      ctx->depth = TinyDDS_ArraySlices(tinyDDS);
+      type = CT_IMAGE_TYPE_1D;
+      depth = TinyDDS_ArraySlices(tinyDDS);
    } else if (TinyDDS_Is2D(tinyDDS)) {
-      ctx->type = CT_TEXTURELOAD_2D;
-      ctx->depth = TinyDDS_ArraySlices(tinyDDS);
+      type = CT_IMAGE_TYPE_2D;
+      depth = TinyDDS_ArraySlices(tinyDDS);
    } else if (TinyDDS_Is3D(tinyDDS)) {
-      ctx->type = CT_TEXTURELOAD_3D;
-      ctx->depth = TinyDDS_Depth(tinyDDS);
+      type = CT_IMAGE_TYPE_3D;
+      depth = TinyDDS_Depth(tinyDDS);
    } else if (TinyDDS_IsCubemap(tinyDDS)) {
-      ctx->type = CT_TEXTURELOAD_CUBEMAP;
-      ctx->depth = TinyDDS_ArraySlices(tinyDDS);
+      type = CT_IMAGE_TYPE_CUBE;
+      depth = TinyDDS_ArraySlices(tinyDDS);
    }
 
    /* load data */
-   for (uint32_t mip = 0; mip < ctx->mips; mip++) {
-      ctx->levelSizes[mip] = TinyDDS_ImageSize(tinyDDS, mip);
-      ctx->levels[mip] = TinyDDS_ImageRawData(tinyDDS, mip);
+   for (uint32_t mip = 0; mip < mips; mip++) {
+      levelSizes[mip] = TinyDDS_ImageSize(tinyDDS, mip);
+      levels[mip] = (void*)TinyDDS_ImageRawData(tinyDDS, mip);
    }
 
-   if (errorOccured) { return CT_FAILURE_CORRUPTED_CONTENTS; }
+   if (errorOccured) {
+      Invalidate();
+      return CT_FAILURE_CORRUPTED_CONTENTS;
+   }
    return CT_SUCCESS;
 }
 
-ctResults LoadMisc(ctFile& file, ctTextureLoadCtx* ctx) {
-   ctx->src = CT_TEXTURELOAD_STB;
+ctResults ctImage::LoadMisc(ctFile& file) {
+   source = CT_IMAGE_SOURCE_STB;
    stbUserData ud = {&file};
    int channels = 0;
    int iwidth, iheight;
 
-   ctx->loaderdata =
+   loaderdata =
      stbi_load_from_callbacks(&stbCallbacks, &ud, &iwidth, &iheight, &channels, 4);
-   if (!ctx->loaderdata) { return CT_FAILURE_CORRUPTED_CONTENTS; }
-   ctx->width = (uint32_t)iwidth;
-   ctx->height = (uint32_t)iheight;
-   ctx->depth = 1;
-   ctx->mips = 1;
-   ctx->format = TinyImageFormat_R8G8B8A8_UNORM;
-   ctx->type = CT_TEXTURELOAD_2D;
-   ctx->levels[0] = ctx->loaderdata;
+   if (!loaderdata) {
+      Invalidate();
+      return CT_FAILURE_UNKNOWN_FORMAT;
+   }
+   width = (uint32_t)iwidth;
+   height = (uint32_t)iheight;
+   depth = 1;
+   mips = 1;
+   format = TinyImageFormat_R8G8B8A8_UNORM;
+   type = CT_IMAGE_TYPE_2D;
+   levels[0] = loaderdata;
    return CT_SUCCESS;
 }
 
-ctResults ctTextureLoadFromFile(ctFile& file, ctTextureLoadCtx* pCtx) {
-   ctAssert(pCtx);
-   *pCtx = ctTextureLoadCtx();
+ctResults ctImage::Load(ctFile& file) {
+   Release();
    char peek[6];
    memset(peek, 0, 6);
    int64_t read = (int64_t)file.ReadRaw(peek, 1, 5);
    file.Seek(-read, CT_FILE_SEEK_CUR);
    uint8_t ktxId[5] = {0xAB, 0x4B, 0x54, 0x58, 0x00};
    if (ctCStrNEql(peek, (const char*)ktxId, 4)) {
-      return LoadKTX(file, pCtx);
+      return LoadKTX(file);
    } else if (ctCStrNEql(peek, "DDS", 3)) {
-      return LoadDDS(file, pCtx);
+      return LoadDDS(file);
    } else {
-      return LoadMisc(file, pCtx);
+      return LoadMisc(file);
    }
 }
 
-void ctTextureLoadCtxRelease(ctTextureLoadCtx* pCtx) {
-   if (!pCtx) { return; }
-   if (pCtx->src == CT_TEXTURELOAD_TINYKTX) {
-      TinyKtx_DestroyContext((TinyKtx_ContextHandle)pCtx->loaderdata);
-   } else if (pCtx->src == CT_TEXTURELOAD_TINYDDS) {
-      TinyDDS_DestroyContext((TinyDDS_ContextHandle)pCtx->loaderdata);
-   } else if (pCtx->src == CT_TEXTURELOAD_STB) {
-      stbi_image_free(pCtx->loaderdata);
+void ctImage::Invalidate() {
+   width = 0;
+   height = 0;
+   depth = 0;
+   mips = 0;
+   format = TinyImageFormat_UNDEFINED;
+   type = CT_IMAGE_TYPE_2D;
+   source = CT_IMAGE_SOURCE_NONE;
+}
+
+void ctImage::MakeCustom() {
+if (source == CT_IMAGE_SOURCE_CUSTOM) {
+      return; /* already editable */
+   } else {
+      for(uint32_t i = 0; i < GetMipCount(); i++){
+         size_t size = GetByteCount(i);
+         void* original = GetData(i);
+         void* newData = ctMalloc(size);
+         memcpy(newData, original, size);
+         levels[i] = newData;
+      }
+      ReleaseLoader();
+      source = CT_IMAGE_SOURCE_CUSTOM;
    }
+}
+
+void ctImage::Release() {
+   ReleaseLoader();
+   Invalidate();
+}
+
+void ctImage::ReleaseLoader() {
+   if (source == CT_IMAGE_SOURCE_CUSTOM) {
+      for(size_t i = 0; i < GetMipCount(); i++){
+         ctFree(levels[i]);
+      }
+   } else if (source == CT_IMAGE_SOURCE_TINYKTX) {
+      TinyKtx_DestroyContext((TinyKtx_ContextHandle)loaderdata);
+   } else if (source == CT_IMAGE_SOURCE_TINYDDS) {
+      TinyDDS_DestroyContext((TinyDDS_ContextHandle)loaderdata);
+   } else if (source == CT_IMAGE_SOURCE_STB) {
+      stbi_image_free(loaderdata);
+   }
+   loaderdata = NULL;
+   source = CT_IMAGE_SOURCE_NONE;
+}
+
+ctImage::ctImage() {
+   Release();
+}
+
+ctImage::ctImage(ctFile& file) {
+   Load(file);
+}
+
+ctImage::~ctImage() {
+   Release();
+}
+
+ctResults ctImage::Create(uint32_t iwidth,
+                          uint32_t iheight,
+                          uint32_t idepth,
+                          uint32_t imips,
+                          TinyImageFormat iformat,
+                          ctImageType itype,
+                          size_t* pLevelSizes) {
+   width = iwidth;
+   height = iheight;
+   depth = idepth;
+   mips = imips;
+   format = iformat;
+   type = itype;
+   source = CT_IMAGE_SOURCE_CUSTOM;
+   for(size_t i = 0; i < imips; i++){
+      levels[i] = ctMalloc(pLevelSizes[i]);
+   }
+   return CT_SUCCESS;
+}
+
+bool ctImage::isValid() const {
+   return true;
 }
