@@ -37,12 +37,18 @@ ctResults ctSceneEngine::NextFrame(double deltaTime) {
    timeAccumulator += deltaTime;
    int32_t tickNumber = 0;
    float frameTime = 0.0f;
+   /* ecs frame start */
+
    while (timeAccumulator >= timeStep) {
       ctStopwatch tickTimer = ctStopwatch();
+
+      /* ecs pre-physics */
 
       /* update subsystems */
       Engine->App->OnTick((float)timeStep);
       ctPhysicsEngineUpdate(Engine->Physics->GetPhysicsEngine(), timeStep);
+
+      /* ecs post-physics */
 
       /* finalize tick loop info */
       tickTimer.NextLap();
@@ -58,11 +64,14 @@ ctResults ctSceneEngine::NextFrame(double deltaTime) {
       tickNumber++;
    }
 
+   /* ecs frame end */
+
    /* debug camera */
    if (debugCameraEnabled) {
       debugCamera.FrameUpdate((float)deltaTime);
       mainCamera = debugCamera.camera;
    }
+
    PushCameraToRenderer();
    PushAndResetCursor();
    return CT_SUCCESS;

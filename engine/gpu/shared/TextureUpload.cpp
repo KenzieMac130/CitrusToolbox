@@ -15,11 +15,12 @@
 */
 
 #include "../Texture.h"
-#include "formats/texture/TextureLoad.h"
+#include "formats/image/Image.hpp"
 
 void ctGPUTextureUploadFnQuickMemcpy(uint8_t* dest,
                                      ctGPUExternalGenerateContext* pCtx,
                                      void* userData) {
+   ctAssert(userData);
    ctAssert(pCtx->currentLayer == 0 && pCtx->currentMipLevel == 0);
    ctAssert(TinyImageFormat_IsHomogenous(pCtx->format));
    const size_t bytesPerPixel = (size_t)TinyImageFormat_BitSizeOfBlock(pCtx->format) / 8;
@@ -27,16 +28,37 @@ void ctGPUTextureUploadFnQuickMemcpy(uint8_t* dest,
    memcpy(dest, userData, byteCount);
 }
 
-void ctGPUTextureUploadFnTextureLoader(uint8_t* dest,
-                                       ctGPUExternalGenerateContext* pCtx,
-                                       void* userData) {
-   const ctTextureLoadCtx* pTextureLoader = (ctTextureLoadCtx*)userData;
-   const size_t mipLevel = pCtx->currentMipLevel;
+void ctGPUTextureUploadFnImage(uint8_t* dest,
+                               ctGPUExternalGenerateContext* pCtx,
+                               void* userData) {
+   ctAssert(userData);
+   const ctImage& image = *(const ctImage*)userData;
+   const uint32_t mipLevel = pCtx->currentMipLevel;
    const size_t arrayLayer = pCtx->currentLayer;
    const size_t arrayLayerCount =
-     pTextureLoader->type == CT_TEXTURELOAD_3D ? 1 : pTextureLoader->depth;
-   ctAssert(pTextureLoader->levelSizes[mipLevel] % arrayLayerCount == 0);
-   const size_t sliceSize = pTextureLoader->levelSizes[mipLevel] / arrayLayerCount;
+     image.GetType() == CT_IMAGE_TYPE_3D ? 1 : image.GetDepth();
+   ctAssert(image.GetByteCount(mipLevel) % arrayLayerCount == 0);
+   const size_t sliceSize = image.GetByteCount(mipLevel) / arrayLayerCount;
    const size_t sliceOffset = arrayLayer * sliceSize;
-   memcpy(dest, (uint8_t*)pTextureLoader->levels[mipLevel] + sliceOffset, sliceSize);
+   memcpy(dest, (uint8_t*)image.GetData(mipLevel) + sliceOffset, sliceSize);
+}
+
+CT_API enum ctResults
+ctGPUExternalTextureFromImage(struct ctGPUDevice* pDevice,
+                              struct ctGPUExternalTexturePool* pPool,
+                              struct ctGPUExternalTexture** ppTexture,
+                              const char* debugName,
+                              const class ctImage* pImage) {
+   ctGPUExternalTextureCreateInfo createInfo = {};
+   createInfo.debugName = debugName;
+   createInfo.type = (ctGPUExternalTextureType)pImage->GetType();
+   createInfo.updateMode = CT_GPU_UPDATE_STATIC;
+   createInfo.format = pImage->GetFormat();
+   createInfo.height = pImage->GetHeight();
+   createInfo.width = pImage->GetWidth();
+   createInfo.depth = pImage->GetDepth();
+   createInfo.mips = pImage->GetMipCount();
+   createInfo.fpUploadSlice = ctGPUTextureUploadFnImage;
+   createInfo.uploadData = (void*)pImage;
+   return ctGPUExternalTextureCreate(pDevice, pPool, ppTexture, &createInfo);
 }

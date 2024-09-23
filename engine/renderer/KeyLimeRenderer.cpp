@@ -450,7 +450,6 @@ ctResults ctKeyLimeRenderer::RenderFrame() {
    return CT_SUCCESS;
 }
 
-#include "formats/texture/TextureLoad.h"
 ctResults ctKeyLimeRenderer::CreateOrReplaceTexture(struct ctTextureLoadCtx* pLoadCtx,
                                                     struct ctKeyLimeTexture** ppTexture) {
    ctAssert(ppTexture);

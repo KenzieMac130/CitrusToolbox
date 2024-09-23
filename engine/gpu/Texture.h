@@ -85,11 +85,6 @@ void ctGPUTextureUploadFnQuickMemcpy(uint8_t* dest,
                                      struct ctGPUExternalGenerateContext* pCtx,
                                      void* userData);
 
-/* Assumes userdata is a pointer to a valid ctTextureLoadCtx */
-void ctGPUTextureUploadFnTextureLoader(uint8_t* dest,
-                                       struct ctGPUExternalGenerateContext* pCtx,
-                                       void* userData);
-
 struct ctGPUExternalTextureCreateInfo {
    const char* debugName;
    enum ctGPUExternalTextureType type;
@@ -108,6 +103,15 @@ ctGPUExternalTextureCreate(struct ctGPUDevice* pDevice,
                            struct ctGPUExternalTexturePool* pPool,
                            struct ctGPUExternalTexture** ppTexture,
                            struct ctGPUExternalTextureCreateInfo* pInfo);
+
+#ifdef __cplusplus
+CT_API enum ctResults
+ctGPUExternalTextureFromImage(struct ctGPUDevice* pDevice,
+                           struct ctGPUExternalTexturePool* pPool,
+                           struct ctGPUExternalTexture** ppTexture,
+                           const char* debugName,
+                           const class ctImage* pImage);
+#endif
 
 CT_API enum ctResults ctGPUExternalTextureUpload(struct ctGPUDevice* pDevice,
                                                  struct ctGPUExternalTexturePool* pPool,

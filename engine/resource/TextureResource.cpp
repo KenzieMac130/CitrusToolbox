@@ -15,7 +15,7 @@
 */
 
 #include "TextureResource.hpp"
-#include "formats/texture/TextureLoad.h"
+#include "formats/image/Image.hpp"
 
 const char* ctResourceTexture::GetName() {
    return "Texture";
@@ -24,8 +24,9 @@ const char* ctResourceTexture::GetName() {
 ctResults ctResourceTexture::LoadTask() {
    ctFile file;
    CT_RETURN_FAIL(Engine->FileSystem->OpenDataFileByGUID(file, GetDataGUID()));
-   ctTextureLoadCtx* pTextureLoader = new ctTextureLoadCtx();
-   ctTextureLoadFromFile(file, pTextureLoader);
+   ctImage image = ctImage();
+   CT_RETURN_FAIL(image.Load(file));
+   /* todo: create renderer texture */
    return CT_SUCCESS;
 }
 
