@@ -233,6 +233,10 @@ enum myEnum {
 * Use C++03 style formatting (code generator reasons)
 * Only use a limited set of template functionality if needed and avoid meta-programming.
 
+### Lambdas
+* Do not use function capture
+* Must be compatible with C function pointers
+
 ### STL/BOOST/Other Features
 * **DONT**
 * Some external libraries may use STL. They should be closely inspected for their usage and ideally be kept offline or outside hot sections as much as possible. Jolt is an example of a library that makes mostly responsible use of the STL containers and keeps runtime memory allocations in check using a custom scratch allocator.
