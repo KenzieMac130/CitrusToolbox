@@ -57,6 +57,10 @@ def build_step_generate_mapping(ctx):
 	for file in ctx.path.ant_glob("**/*.ctac"):
 		metadata = AssetMetaData(dict = file.read_json())
 		if metadata.nickname:
-			nickname_dict[metadata.nickname] = metadata.guids["OUTPUT"].hex
+			for name, guid in metadata.guids.items():
+				postfix = ""
+				if name != "OUTPUT":
+					postfix = name
+				nickname_dict[metadata.nickname + postfix] = guid.hex
 	mapping_file = ctx.bldnode.make_node(mapping_file_guid)
 	mapping_file.write_json(nickname_dict)
