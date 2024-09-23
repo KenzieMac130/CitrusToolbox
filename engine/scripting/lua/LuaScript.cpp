@@ -147,7 +147,7 @@ ctResults ctLuaContext::CallFunction(const char* function, const char* signature
    while (*signature) {
       switch (*signature++) {
          case 'd': lua_pushnumber(L, va_arg(vlist, double)); break;
-         case 'i': lua_pushnumber(L, va_arg(vlist, int)); break;
+         case 'i': lua_pushnumber(L, (double)va_arg(vlist, int)); break;
          case 's': lua_pushstring(L, va_arg(vlist, const char*)); break;
          case 'u':
             /* Enforce typing */
@@ -164,7 +164,7 @@ ctResults ctLuaContext::CallFunction(const char* function, const char* signature
                   lua_pushlightuserdata(L, va_arg(vlist, void*));
                   luaL_setmetatable(L, typeName);
                } else {
-                  return CT_FAILURE_SYNTAX_ERROR;
+                  return CT_FAILURE_INVALID_PARAMETER;
                }
             }
             break;
@@ -193,10 +193,10 @@ endwhile:
             *va_arg(vlist, double*) = lua_tonumber(L, nres);
          case 'i':
             if (!lua_isnumber(L, nres)) { return CT_FAILURE_TYPE_ERROR; }
-            *va_arg(vlist, double*) = lua_tonumber(L, nres);
+            *va_arg(vlist, int*) = (int)lua_tonumber(L, nres);
          case 's':
             if (!lua_isstring(L, nres)) { return CT_FAILURE_TYPE_ERROR; }
-            *va_arg(vlist, ctStringUtf8*) = lua_tostring(L, nres);
+            *va_arg(vlist, ctStringUtf8*) = ctStringUtf8(lua_tostring(L, nres));
          default: return CT_FAILURE_INVALID_PARAMETER; break;
       }
       nres++;

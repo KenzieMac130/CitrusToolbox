@@ -23,6 +23,9 @@
 /* Function declaration */
 #define CT_LUA_FUNCTION_DECLARE(_NAME) static int _NAME(lua_State* L)
 
+/* Function body begin */
+#define CT_LUA_FUNCTION_BEGIN(_ARG_COUNT) int _NUM = -_ARG_COUNT;
+
 /* Raising an error inside a function */
 #define CT_LUA_RAISE_ERROR(_TEXT)                                                        \
    lua_pushstring(L, #_TEXT);                                                            \
@@ -30,48 +33,58 @@
    return 0;
 
 /* Fetch arguments */
-#define CT_LUA_ARG_IS_NULL(_NUM) lua_isnil(L, _NUM)
+#define CT_LUA_ARG_IS_NULL()                                                             \
+   ctAssert(_NUM);                                                                       \
+   lua_isnil(L, _NUM);                                                                   \
+   _NUM++;
 
-#define CT_LUA_ARG_NUMBER(_NUM, _NAME, _TYPE)                                            \
+#define CT_LUA_ARG_NUMBER(_NAME, _TYPE)                                                  \
+   ctAssert(_NUM);                                                                       \
    _TYPE _NAME;                                                                          \
    if (lua_isnumber(L, _NUM)) {                                                          \
       _NAME = (_TYPE)lua_tonumber(L, _NUM);                                              \
    } else {                                                                              \
-      CT_LUA_RAISE_ERROR("argument " #_NUM " is not a number")                           \
-   }
+      CT_LUA_RAISE_ERROR("argument is not a number")                                     \
+   }                                                                                     \
+   _NUM++;
 
-#define CT_LUA_ARG_BOOL(_NUM, _NAME)                                                     \
+#define CT_LUA_ARG_BOOL(_NAME)                                                           \
+   ctAssert(_NUM);                                                                       \
    bool _NAME;                                                                           \
    if (lua_isboolean(L, _NUM)) {                                                         \
       _NAME = (bool)lua_toboolean(L, _NUM);                                              \
    } else {                                                                              \
-      CT_LUA_RAISE_ERROR("argument " #_NUM " is not a bool")                             \
-   }
+      CT_LUA_RAISE_ERROR("argument is not a bool")                                       \
+   }                                                                                     \
+   _NUM++;
 
-#define CT_LUA_ARG_TEMP_STRING(_NUM, _NAME)                                              \
+#define CT_LUA_ARG_TEMP_STRING(_NAME)                                                    \
+   ctAssert(_NUM);                                                                       \
    const char* _NAME;                                                                    \
    if (lua_isstring(L, _NUM)) {                                                          \
       _NAME = lua_tostring(L, _NUM);                                                     \
    } else {                                                                              \
-      CT_LUA_RAISE_ERROR("argument " #_NUM " is not a string")                           \
-   }
+      CT_LUA_RAISE_ERROR("argument is not a string")                                     \
+   }                                                                                     \
+   _NUM++;
 
-#define CT_LUA_ARG_OBJECT_PTR(_NUM, _NAME, _TYPE)                                        \
-   _TYPE* _NAME;                                                                         \
-   if (lua_isuserdata(L, _NUM)) {                                                        \
-      _NAME = (_TYPE*)luaL_checkudata(L, _NUM, #_TYPE);                                  \
-      if (!_NAME) {                                                                      \
-         CT_LUA_RAISE_ERROR("argument " #_NUM                                            \
-                            " is null or not a reference to a " #_TYPE);                 \
+#define CT_LUA_ARG_OBJECT_PTR(_NAME, _TYPE)                                              \
+   ctAssert(_NUM);                                                                       \
+   _TYPE* _NAME = NULL;                                                                  \
+   if (!lua_isnil(L, _NUM)) {                                                            \
+      if (lua_isuserdata(L, _NUM)) {                                                     \
+         _NAME = (_TYPE*)luaL_checkudata(L, _NUM, #_TYPE);                               \
+      } else {                                                                           \
+         CT_LUA_RAISE_ERROR("argument is not a reference to a " #_TYPE);                 \
       }                                                                                  \
-   } else {                                                                              \
-      CT_LUA_RAISE_ERROR("argument " #_NUM " is not a reference to a " #_TYPE);          \
-   }
+   }                                                                                     \
+   _NUM++;
 
 #define CT_LUA_ARG_OBJECT(_NUM, _NAME, _TYPE)                                            \
    _TYPE _NAME;                                                                          \
    {                                                                                     \
       CT_LUA_ARG_OBJECT_PTR(_NUM, _tmpPtr, _TYPE);                                       \
+      if (!*_tmpPtr) { CT_LUA_RAISE_ERROR("argument was nil"); }                         \
       _NAME = *_tmpPtr;                                                                  \
    }
 
@@ -99,6 +112,15 @@
    luaL_setmetatable(L, _TYPE_STR);                                                      \
    return 1;
 
+/* Example:
+CT_LUA_FUNCTION_DECLARE(MyFunction){
+   CT_LUA_FUNCTION_BEGIN(2)
+   CT_LUA_ARG_NUMBER(MyNumber, uint32_t);
+   CT_LUA_ARG_TEMP_STRING(MyString);
+   ctDebugLog(MyString);
+   CT_LUA_RETURN_NUMBER(MyNumber + 32);
+} */
+
 class CT_API ctLuaContext {
 public:
    ctResults Startup(bool trusted);
@@ -112,6 +134,23 @@ public:
 
    ctResults RegisterType(const char* name, lua_CFunction garbageCollect = NULL);
    ctResults RegisterFunction(const char* name, lua_CFunction function);
+
+   /* Calls a lua function with the specified name using the following signature:
+
+   Inputs:
+   d: double
+   i: int
+   s: const char*
+   u<TYPENAME>: pointer to a type registered with RegisterType()
+
+   Move to output: ':'
+
+   Outputs:
+   d: double*
+   i: int*
+   s: ctStringUtf8*
+
+   Example: "disu<OBJ>:di", &doublev, $intv, "FOO", &obj, &outdobule, &outint */
    ctResults CallFunction(const char* name, const char* signature, ...);
 
    lua_State* L;
