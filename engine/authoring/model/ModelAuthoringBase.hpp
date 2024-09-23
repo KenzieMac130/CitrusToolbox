@@ -17,4 +17,11 @@
 #pragma once
 
 #include "utilities/Common.h"
+#include "../Authoring.hpp"
 
+class CT_API ctAuthoringModelGeneratorBase : public ctAuthoringAssetGeneratorBase {
+public:
+   /* return ecs output */
+   virtual ctResults GetArchiveInheritableData(ctAuthoringArchiveData& output);
+protected:
+};
