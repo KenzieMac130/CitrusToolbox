@@ -1,2 +1,3 @@
+add_subdirectory(codegen)
 add_subdirectory(compilemodel)
 add_subdirectory(compileshader)
