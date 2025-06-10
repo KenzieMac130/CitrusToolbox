@@ -9,6 +9,7 @@ Demo video: https://files.mastodon.social/media_attachments/files/111/050/086/11
   * Windows 64bit
  
 ## Building:
+(currently not building, todo: host dependency pack)
   * Prerequisites:
      *  CMake 3.15x
      *  C++ 17 Compiler
