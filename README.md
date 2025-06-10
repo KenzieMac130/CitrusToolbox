@@ -1,7 +1,7 @@
 # CitrusToolbox
  Small Game Engine
 
-![](https://files.mastodon.social/media_attachments/files/111/050/086/112/223/606/original/ad38e5c27328cb63.mp4)
+Demo video: https://files.mastodon.social/media_attachments/files/111/050/086/112/223/606/original/ad38e5c27328cb63.mp4
 
  Project is a work-in-progress, feel free to take a look around.
  
