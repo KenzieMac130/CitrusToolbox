@@ -1,5 +1,7 @@
 # CitrusToolbox
- Small Game Engine
+ Small Hobby Game Engine
+
+Demo video: https://files.mastodon.social/media_attachments/files/111/050/086/112/223/606/original/ad38e5c27328cb63.mp4
 
  Project is a work-in-progress, feel free to take a look around.
  
@@ -7,6 +9,7 @@
   * Windows 64bit
  
 ## Building:
+(currently not building, todo: host dependency pack)
   * Prerequisites:
      *  CMake 3.15x
      *  C++ 17 Compiler
