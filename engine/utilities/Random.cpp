@@ -96,7 +96,7 @@ ctVec2 ctRandomGenerator::GetGaussian2D(ctVec2 mean, float standardDeviation) {
 
 ctVec3 ctRandomGenerator::GetInSphere(float radius) {
    return ctVec3(
-     GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f));
+     GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f), GetGaussian(0.0f, 1.0f)) * radius;
 }
 
 ctVec3 ctRandomGenerator::GetOnSphere(float radius) {

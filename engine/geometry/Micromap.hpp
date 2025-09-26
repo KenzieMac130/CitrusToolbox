@@ -18,6 +18,8 @@
 
 #include "utilities/Common.h"
 
+/* Micromap techniques allow for material blending, alpha cutouts, and hardware accellerated */
+
 /* see https://developer.download.nvidia.com/ProGraphics/nvpro-samples/slides/Micro-Mesh_Basics.pdf */
 struct ctGeometryBakerMicromapFace {
     inline ctGeometryBakerMicromapFace() {

@@ -68,6 +68,16 @@
    }                                                                                     \
    _NUM++;
 
+#define CT_LUA_ARG_STRING(_NAME)                                                         \
+   ctAssert(_NUM);                                                                       \
+   ctStringUtf8 _NAME;                                                                   \
+   {                                                                                     \
+      CT_LUA_ARG_TEMP_STRING(_NUM, _tmpStr, _TYPE);                                      \
+      if (!*_tmpPtr) { CT_LUA_RAISE_ERROR("argument was nil"); }                         \
+      _NAME = _tmpStr;                                                                   \
+   }                                                                                     \
+   _NUM++;
+
 #define CT_LUA_ARG_OBJECT_PTR(_NAME, _TYPE)                                              \
    ctAssert(_NUM);                                                                       \
    _TYPE* _NAME = NULL;                                                                  \
@@ -81,6 +91,7 @@
    _NUM++;
 
 #define CT_LUA_ARG_OBJECT(_NUM, _NAME, _TYPE)                                            \
+   ctAssert(_NUM);                                                                       \
    _TYPE _NAME;                                                                          \
    {                                                                                     \
       CT_LUA_ARG_OBJECT_PTR(_NUM, _tmpPtr, _TYPE);                                       \
