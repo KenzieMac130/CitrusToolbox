@@ -1,6 +1,8 @@
 # CitrusToolbox
  Small Hobby Game Engine
 
+(This project is on indefinite hiatus. It has been incredibly time consuming to work on and my life has shifted focus elsewhere. It now exists as a museum of my past work programming as well as my C++ style. I may return to it someday to fix the build and migrate to Linux but that is not a priority at this moment.)
+
 Demo video: https://files.mastodon.social/media_attachments/files/111/050/086/112/223/606/original/ad38e5c27328cb63.mp4
 
  Project is a work-in-progress, feel free to take a look around.
